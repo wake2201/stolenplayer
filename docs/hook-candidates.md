@@ -1,0 +1,31 @@
+# Hook candidates
+
+All gameplay candidates below have inspected implementations for the analyzed assembly fingerprint. Confidence measures identification of relevant behavior, **not** a complete authority boundary. **Harmony detours VERIFIED:** an opt-in temporary Prefix/Postfix on the inspected empty `LootBox.Start()` executed exactly once each in the game runtime, then UnpatchSelf removed that verification owner. An inactive temporary object invoked the empty method; no gameplay method was changed. The normal diagnostics deployment disables verification, and Phase 1 installs no gameplay patches. Supports SRE=False did not prevent this harmless detour.
+
+| System | Class | Method | Purpose and evidence | Potential multiplayer hook | Confidence |
+|---|---|---|---|---|---|
+| Player setup | PlayerScript | Start() | Binds Rewired slot 0, CharacterController, item catalog and GM | Future postfix optional; Phase 1 resolves exact PlayerScript/type and CC/motor/camera instead | Verified runtime hierarchy/binding |
+| Player setup | GameManager | Awake() / Start() | Input/environment and world/vehicle initialization | Observe ownership and scene boot lifecycle; Awake is not proof of player readiness | High static |
+| Player movement | PlayerMotorBehavior | CalculateMovement() | Private method computes direction and calls CharacterController.Move | Observation/debug sampling candidate; actual final pose should be sampled in our LateUpdate | High static |
+| Camera orientation | PlayerCameraBehavior | HandleMouseLook() | Root yaw and camera pitch are updated | Observe orientation; remote visual never runs this method | High static |
+| Door action | Door | Use() / UseFully() | Toggle isOpen/opening with audio and player side effects | Future prefix captures a local request; host checks preconditions and emits explicit target state | High static; not a pure state setter |
+| Door alternatives | Door | NPCUse(bool), OpenDoorNPC(), CloseDoorNPC(), OpenOnStartt(), Update() | NPC/startup/slow-door routes bypass ordinary Use | Audit alternative mutations before claiming complete door sync | High static |
+| Pickup request | Pickupable | PickUp() | Starts PickingItem coroutine; IL independently confirms StartCoroutine call | Host validates request before starting; postfix is not pickup completion | High static |
+| Pickup completion | ItemID | Item_Picked(string,float,bool,bool) | Changes quantity/weight/save marker, XP and progression | Observe committed inventory mutation; deduplicate by transaction ID; also audit money/heavy pickup routes | High static |
+| Inventory removal | ItemID | Drop_Item() / Remove_Item_Blackbay(int) | Quantity/weight changes and special effects | Future mutation adapter; keep UI and authority separate | High static |
+| Drop spawn | Inventory | DropItemNewSystem() | Instantiates prefab, sets dropped flag/name and calls Drop_Item | Assign host spawn ID and broadcast result; runtime spawn identity required | High static |
+| Window traversal | WindowUse | UseWindow() | Drives cached local player via coroutine/Update | Request interception; replaying this method on a peer would move that peer's local player | High static, high integration risk |
+| Scene start | GameManager | LoadNewSceneAsync(string) | Coroutine loads a world scene additively | Observe intended world scene; coroutine entry postfix does not mean scene is ready | High static |
+| Travel | GameManager | LoadWait() / LoadYourAsyncScene() | Reloads MainScene Single with save/location-dependent setup | Host travel decision and scene epoch; inspect generated MoveNext if later needed | High static |
+| Scene lifecycle | UnityEngine.SceneManagement.SceneManager | sceneLoaded / sceneUnloaded / activeSceneChanged events | Gameplay MainScene/IntroHouse reload and player/GM replacement observed | Phase 1 disconnects, destroys proxy, resets adapter; temporary absence uses readiness | Verified gameplay lifecycle |
+| AI perception | AI | Player_Is_Seen(), HeardSoundAction(Vector3,bool,float), Update() | Single PlayerScript target, sensor and navigation state | Future host perception/simulation adapters, not blanket Update suppression | High static |
+| Police | Police_Manager | Activate_Chase(int,AI,bool), SpawnPoliceSimple(float,int) | Chase flags and entity spawning | Future host ownership for escalation/spawning | High static |
+| Vehicle control | CarController | EnterVehicle(), ExitVehicle() | Local player's colliders, state and control maps change | Future seat request/ownership; excluded from Phase 1 | High static |
+| Vehicle input/physics | EVP.VehicleStandardInput / EVP.VehicleController | FixedUpdate() | Reads local input / simulates physical wheels | Separate driver input authority from physics replication | High static |
+| Story | StoryManager | AdvanceStory() / SaveStory() | Advances and persists story index | Future shared progression policy; excluded from Phase 1 | High static |
+| Mission | Mission_Item | Mission_Complete() | Guarded active mission completion | Future host transaction event | High static |
+| Save | SaveGame | SaveGameNewSystem(bool,float) / OnApplicationQuit() | Writes/flushes extensive state; quit calls LoseGame | Future save ownership policy; do not hook during recon | High static |
+
+Future patches must resolve exact overloads with argument types, check the game assembly fingerprint, catch/report integration exceptions, and unpatch only our Harmony ID. UI Update methods are too broad as primary authority hooks. Prefer finite action methods and explicit before/after state checks. Prefix cancellation can skip side effects needed by the local UI, so it requires an action-specific adapter and replay guard.
+
+Local evidence: `.local/type-index.json`, targeted `.local/decompiled/Assembly-CSharp.dll/<Type>.cs`, and `.local/evidence/{pickup,door-use,player-movement}-il.txt`. Seven signatures and patch-owner lists were recorded. Detour verification is in `recon-20261006-125807-869880d0.ndjson` and `recon-20261006-130053-24944b8e.ndjson`: harmony_detour_verified, harmony_verification_removed. Verification code is retained behind an explicit diagnostics flag for repeatable compatibility checks, with no patch left installed. Final root pose is sampled by the plugin's own LateUpdate after Update movement/look; camera pitch stays local.

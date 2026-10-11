@@ -1,0 +1,248 @@
+using System;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading;
+using ThiefSim2Multiplayer.Core;
+using ThiefSim2Multiplayer.Core.Networking;
+using ThiefSim2Multiplayer.Core.World;
+using ThiefSim2Multiplayer.Game;
+
+internal static class VehicleTests
+{
+    internal static void Run(Action<bool,string> check)
+    {
+        check(VehicleMultiplayerPolicy.PassThroughNativeEntry(false,false),"Offline driver entry passes through to native CarController.EnterVehicle");
+        check(!VehicleMultiplayerPolicy.PassThroughNativeEntry(true,false) && VehicleMultiplayerPolicy.PassThroughNativeEntry(true,true),"Host/Client cooperative entry is intercepted only for authorization, then uses the same native method");
+        check(VehicleMultiplayerPolicy.NativeEntryRole==SeatRole.Driver,"vanilla SitCar entry remains a driver-seat request");
+        check(!VehicleMultiplayerPolicy.UsesPassengerPresentation(SeatRole.Driver) && VehicleMultiplayerPolicy.UsesPassengerPresentation(SeatRole.Passenger),"passenger positioning/camera branch is restricted to passenger role");
+        check(VehicleMultiplayerPolicy.ShowPassengerPrompt(SeatRole.Passenger,false,false) && !VehicleMultiplayerPolicy.ShowPassengerPrompt(SeatRole.Driver,false,false) && !VehicleMultiplayerPolicy.ShowPassengerPrompt(SeatRole.Passenger,true,false) && !VehicleMultiplayerPolicy.ShowPassengerPrompt(SeatRole.Passenger,false,true),"custom seat prompt is passenger-only and yields to native SitCar interaction");
+        check(VehicleMultiplayerPolicy.ShouldConsumePassengerEntryInput(true,false) && VehicleMultiplayerPolicy.ShouldConsumePassengerEntryInput(false,true) && !VehicleMultiplayerPolicy.ShouldConsumePassengerEntryInput(false,false),"Passenger entry consumes E only for a queued or already pending request, leaving native door close available after request failure");
+        check(VehicleMultiplayerPolicy.MeetsSeatSpeedGate(SeatRole.Driver,50f) && VehicleMultiplayerPolicy.MeetsSeatSpeedGate(SeatRole.Passenger,4.9f) && !VehicleMultiplayerPolicy.MeetsSeatSpeedGate(SeatRole.Passenger,5f),"vanilla driver entry has no multiplayer speed gate; passenger adaptation retains its safety gate");
+        check(VehicleMultiplayerPolicy.LocalPeerSimulates(true,1,1) && !VehicleMultiplayerPolicy.LocalPeerSimulates(false,2,1) && VehicleMultiplayerPolicy.LocalPeerSimulates(false,2,2) && !VehicleMultiplayerPolicy.LocalPeerSimulates(true,1,2),"confirmed driver alone owns multiplayer vehicle simulation on its local peer");
+        check(VehicleMultiplayerPolicy.LocalPeerSimulates(false,2,2),"confirmed Client driver keeps native simulation through delayed Host motion acknowledgements");
+        var selection=new VehicleState {PassengerSeat=true,Driver=1};
+        check(selection.AvailableSeat(false)==SeatRole.Passenger,"Nearest taken driver selects available passenger interaction");
+        selection.Driver=0; selection.Passenger=2;
+        check(selection.AvailableSeat(true)==SeatRole.Driver,"Nearest taken passenger selects available driver interaction");
+        selection.Passenger=0; selection.PendingDriver=1;
+        check(selection.AvailableSeat(false)==SeatRole.Passenger,"Reserved driver cannot steal available passenger interaction");
+        selection.PendingDriver=0;
+        check(selection.AvailableSeat(true)==SeatRole.Passenger && selection.AvailableSeat(false)==SeatRole.Driver,"Two free seats preserve nearest authored-seat preference");
+        selection.Driver=1; selection.Passenger=2; selection.ExitingDriver=true;
+        check(selection.AvailableSeat(false)==SeatRole.None,"Occupied and exiting seats expose no available interaction");
+        selection=new VehicleState {Driver=1};
+        check(selection.AvailableSeat(true)==SeatRole.None,"Missing passenger capability cannot offer nonexistent seat");
+        var registry=new NetworkEntityRegistry(true,3); var authority=new VehicleAuthority();
+        var a=new ManagedVehicleAdapter(); var car=registry.Spawn(a,new EntityOwnership(OwnershipKind.System));
+        for(int i=0;i<100;i++) registry.Spawn(new TestEntityAdapter(),new EntityOwnership(OwnershipKind.System));
+        check(registry.Capture(EntityTypeId.Vehicle).Length==1 && registry.Capture(EntityTypeId.Vehicle)[0].Entity.Equals(car),"Vehicle query excludes unrelated mission entities");
+        check(registry.Capture(EntityTypeId.Vehicle)[0].Revision==registry.Lookup(car).State.Revision,"Vehicle query retains canonical revision and identity");
+        check(registry.Capture(EntityTypeId.Door).Length==0,"Empty typed registry query is safe");
+        ulong[] ids=new ulong[3];
+        EntityRef TestDoor() => new EntityRef(new NetworkEntityId(EntityScope.Static,0x7FFFFFFFFFFFFFFEUL),1);
+        SeatRequest Request(byte actor,SeatRole seat,SeatAction action,EntityRef? entity=null) => new SeatRequest { SessionId=7, Epoch=3, Actor=actor, Vehicle=entity??car, Door=VehicleDoorPolicy.RequiresDoorTarget(seat,action)?TestDoor():default(EntityRef), Seat=seat, Action=action, RequestId=++ids[actor], OccupancyRevision=(registry.GetBinding(entity??car) as IVehicleAdapter)?.State.OccupancyRevision??1 };
+        SeatResult Handle(SeatRequest r,bool ready=true,bool eligible=true) => authority.Handle(registry,r,7,r.Actor,ready,1,(_,__,___,____,_____)=>eligible);
+        foreach (byte driver in new byte[] {1,2}) {
+            byte passenger=(byte)(3-driver);
+            var enter=Request(driver,SeatRole.Driver,SeatAction.Enter);
+            check(Handle(enter)==SeatResult.Reserved && a.State.Driver==0 && a.State.PendingDriver==driver,"Vehicle driver reservation actor "+driver);
+            ulong revision=a.State.OccupancyRevision;
+            check(Handle(enter)==SeatResult.Duplicate && revision==a.State.OccupancyRevision,"Vehicle duplicated entry idempotent");
+            check(!VehicleAuthority.BothConfirmed(registry),"Vehicle travel denied while driver pending");
+            check(Handle(Request(driver,SeatRole.Driver,SeatAction.Confirm))==SeatResult.Confirmed && a.State.Driver==driver,"Vehicle driver confirmed actor "+driver);
+            check(!VehicleAuthority.BothConfirmed(registry),"Vehicle travel denied with empty passenger seat");
+            check(Handle(Request(passenger,SeatRole.Driver,SeatAction.Enter))==SeatResult.SeatTaken,"Vehicle occupied driver seat conflict");
+            check(Handle(Request(passenger,SeatRole.Passenger,SeatAction.Enter))==SeatResult.Reserved,"Vehicle passenger reservation actor "+passenger);
+            check(!VehicleAuthority.BothConfirmed(registry),"Vehicle travel denied while passenger pending");
+            check(Handle(Request(passenger,SeatRole.Passenger,SeatAction.Confirm))==SeatResult.Confirmed,"Vehicle passenger confirmed actor "+passenger);
+            check(VehicleAuthority.BothConfirmed(registry),"Vehicle same car two confirmed roles allows travel");
+            var q=new DriverInput { SessionId=7, Epoch=3, Actor=passenger, Vehicle=car, Sequence=1, OccupancyRevision=a.State.OccupancyRevision, Forward=.5f, EngineRunning=true };
+            check(!authority.AcceptInput(registry,q,7,passenger,true,1),"Vehicle passenger driving input rejected");
+            q.Actor=driver;
+            check(authority.AcceptInput(registry,q,7,driver,true,1),"Vehicle driver input accepted actor "+driver);
+            check(!authority.AcceptInput(registry,q,7,driver,true,1),"Vehicle duplicate driver sequence rejected");
+            check(authority.Latest(car,1.2)!=null && authority.Latest(car,1.36)==null,"Vehicle input deadman expires at 350 ms");
+            q.Sequence=2; q.Steer=float.NaN; check(!authority.AcceptInput(registry,q,7,driver,true,1),"Vehicle NaN driving input rejected");
+            q.Steer=0; q.Forward=2; check(!VehicleProtocol.Valid(q),"Vehicle out of range throttle rejected"); q.Forward=.5f;
+            q.Epoch=2; check(!authority.AcceptInput(registry,q,7,driver,true,1),"Vehicle old epoch input rejected"); q.Epoch=3;
+            q.OccupancyRevision--; check(!authority.AcceptInput(registry,q,7,driver,true,1),"Vehicle old seat token input rejected");
+            var exit=Request(passenger,SeatRole.Passenger,SeatAction.Exit);
+            check(Handle(exit)==SeatResult.Exiting && a.State.ExitingPassenger,"Vehicle passenger exit holds seat until native detach actor "+passenger);
+            revision=a.State.OccupancyRevision;
+            check(Handle(exit)==SeatResult.Duplicate && revision==a.State.OccupancyRevision,"Vehicle repeated exit packet idempotent");
+            check(!VehicleAuthority.BothConfirmed(registry),"Vehicle exit in progress cannot authorize travel");
+            check(Handle(Request(passenger,SeatRole.Passenger,SeatAction.ExitConfirm))==SeatResult.Exited && a.State.Passenger==0,"Vehicle passenger detach acknowledgement releases seat"); revision=a.State.OccupancyRevision;
+            check(Handle(Request(passenger,SeatRole.Passenger,SeatAction.Exit))==SeatResult.Exited && revision==a.State.OccupancyRevision,"Vehicle repeated exit with new id is no-op");
+            check(Handle(Request(driver,SeatRole.Driver,SeatAction.Exit))==SeatResult.Exiting && a.State.ExitingDriver,"Vehicle driver exits actor "+driver);
+            check(Handle(Request(driver,SeatRole.Driver,SeatAction.ExitConfirm))==SeatResult.Exited && a.State.Driver==0,"Vehicle driver detach acknowledgement releases seat");
+        }
+        authority.Reset();
+        var racedEntry=Request(1,SeatRole.Driver,SeatAction.Enter);
+        Handle(Request(2,SeatRole.Passenger,SeatAction.Enter));
+        check(Handle(racedEntry)==SeatResult.StaleRevision && a.State.PendingDriver==0,"Concurrent passenger reservation rejects stale driver intent without ghost reservation");
+        check(Handle(Request(1,SeatRole.Driver,SeatAction.Enter))==SeatResult.Reserved,"Fresh driver intent retry accepts current canonical revision");
+        check(Handle(Request(1,SeatRole.Driver,SeatAction.Confirm))==SeatResult.Confirmed && a.State.Driver==1 && a.State.PendingDriver==0,"Retried entry confirms one driver only");
+        var racedExit=Request(1,SeatRole.Driver,SeatAction.Exit);
+        Handle(Request(2,SeatRole.Passenger,SeatAction.Confirm));
+        check(Handle(racedExit)==SeatResult.StaleRevision && a.State.Driver==1 && !a.State.ExitingDriver,"Concurrent passenger confirmation rejects stale exit without losing driver");
+        check(Handle(Request(1,SeatRole.Driver,SeatAction.Exit))==SeatResult.Exiting,"Fresh exit intent retry begins canonical detach");
+        check(Handle(Request(1,SeatRole.Driver,SeatAction.ExitConfirm))==SeatResult.Exited && a.State.Driver==0,"Retried exit releases driver after detach confirmation");
+        Handle(Request(2,SeatRole.Passenger,SeatAction.Exit)); Handle(Request(2,SeatRole.Passenger,SeatAction.ExitConfirm));
+        authority.Reset();
+        var rejected=Request(1,SeatRole.Driver,SeatAction.Enter); rejected.SessionId=8; check(Handle(rejected)==SeatResult.WrongSession,"Vehicle wrong session rejected");
+        var passengerEntry=Request(1,SeatRole.Passenger,SeatAction.Enter);
+        check(VehicleProtocol.Valid(passengerEntry) && !VehicleProtocol.Valid(new SeatRequest {SessionId=7,Epoch=3,Actor=1,Vehicle=car,Seat=SeatRole.Passenger,Action=SeatAction.Enter,RequestId=99,OccupancyRevision=1}),"Passenger entry requires a concrete native door identity");
+        check(VehicleDoorPolicy.RequiresDoorTarget(SeatRole.Passenger,SeatAction.Enter) && !VehicleDoorPolicy.RequiresDoorTarget(SeatRole.Driver,SeatAction.Enter) && !VehicleDoorPolicy.RequiresDoorTarget(SeatRole.Passenger,SeatAction.Confirm),"Only passenger entry carries a door target");
+        var wrongOwner=new EntityRef(new NetworkEntityId(EntityScope.Dynamic,0x7FFFFFFFFFFFFFFDUL),1);
+        check(VehicleDoorPolicy.MatchesVehicleTarget(car,car,true) && !VehicleDoorPolicy.MatchesVehicleTarget(car,wrongOwner,true) && !VehicleDoorPolicy.MatchesVehicleTarget(car,car,false),"Rear door identity is bound to its own registered vehicle");
+        check(VehicleDoorPolicy.IsRearPassengerDoor(true,false,true,.8f,.5f,.4f,1.2f) && !VehicleDoorPolicy.IsRearPassengerDoor(true,true,true,.8f,.5f,.4f,1.2f) && !VehicleDoorPolicy.IsRearPassengerDoor(true,false,false,.8f,.5f,.4f,1.2f) && !VehicleDoorPolicy.IsRearPassengerDoor(true,false,true,.2f,.5f,.4f,1.2f) && !VehicleDoorPolicy.IsRearPassengerDoor(true,false,true,.8f,1.6f,.4f,1.2f),"Rear passenger door classification excludes front, colliderless, central and wrong-row leaves");
+        check(VehicleDoorPolicy.WithinNativeInteractionReach(2.25f*2.25f) && !VehicleDoorPolicy.WithinNativeInteractionReach(2.2501f*2.2501f) && !VehicleDoorPolicy.WithinNativeInteractionReach(-1) && !VehicleDoorPolicy.WithinNativeInteractionReach(float.NaN),"Host vehicle-door range keeps the native 2.25 m limit without a guessed ray tolerance");
+        check(VehicleDoorPolicy.StableIdentity("VehiclesManager.firstCar","Door_R/leaf[1]",0)==VehicleDoorPolicy.StableIdentity("VehiclesManager.firstCar","Door_R/leaf[1]",0) && VehicleDoorPolicy.StableIdentity("VehiclesManager.firstCar","Door_R/leaf[1]",0)!=VehicleDoorPolicy.StableIdentity("VehiclesManager.van","Door_R/leaf[1]",0) && VehicleDoorPolicy.StableIdentity("VehiclesManager.firstCar","Door_L/leaf[1]",0)!=VehicleDoorPolicy.StableIdentity("VehiclesManager.firstCar","Door_R/leaf[1]",0),"Vehicle door identity uses manager slot, relative hierarchy path and component ordinal");
+        rejected=Request(1,SeatRole.Driver,SeatAction.Enter); rejected.Epoch=2; check(Handle(rejected)==SeatResult.WrongEpoch,"Vehicle stale seat epoch rejected");
+        rejected=Request(1,SeatRole.Driver,SeatAction.Enter); check(authority.Handle(registry,rejected,7,2,true,1,(_,__,___,____,_____ )=>true)==SeatResult.WrongActor,"Vehicle actor impersonation rejected");
+        check(Handle(Request(1,SeatRole.Driver,SeatAction.Enter),false)==SeatResult.NotReady,"Vehicle entries frozen before WorldReady");
+        check(Handle(Request(1,SeatRole.Driver,SeatAction.Enter),true,false)==SeatResult.Ineligible,"Vehicle ineligible or distant actor rejected");
+        rejected=Request(1,SeatRole.Driver,SeatAction.Enter); rejected.Vehicle=new EntityRef(car.Id,2); check(Handle(rejected)==SeatResult.Unavailable,"Vehicle generation mismatch rejected");
+        rejected=Request(1,SeatRole.Driver,SeatAction.Enter); rejected.OccupancyRevision++; check(Handle(rejected)==SeatResult.StaleRevision,"Vehicle future occupancy revision rejected");
+        var b=new ManagedVehicleAdapter(); var other=registry.Spawn(b,new EntityOwnership(OwnershipKind.System));
+        check(registry.Capture(EntityTypeId.Vehicle).Length==2,"Vehicle query includes both supported bindings");
+        check(Handle(Request(1,SeatRole.Driver,SeatAction.Enter))==SeatResult.Reserved,"Vehicle reconnect driver reserves fresh seat");
+        check(Handle(Request(1,SeatRole.Passenger,SeatAction.Enter,other))==SeatResult.AlreadySeated,"Vehicle actor cannot reserve another car while pending");
+        Handle(Request(1,SeatRole.Driver,SeatAction.Confirm)); Handle(Request(2,SeatRole.Passenger,SeatAction.Enter,other)); Handle(Request(2,SeatRole.Passenger,SeatAction.Confirm,other));
+        check(!VehicleAuthority.BothConfirmed(registry),"Vehicle separate cars cannot authorize travel");
+        authority.RemoveActor(registry,2); check(b.State.Passenger==0,"Vehicle passenger disconnect releases seat");
+        authority.RemoveActor(registry,1); check(a.State.Driver==0 && authority.Latest(car,1)==null,"Vehicle driver disconnect clears control token");
+        Handle(Request(2,SeatRole.Passenger,SeatAction.Enter)); authority.Tick(registry,7);
+        check(a.State.PendingPassenger==0 && !VehicleAuthority.BothConfirmed(registry),"Vehicle abandoned entry timeout releases reservation");
+        var noSeat=new ManagedVehicleAdapter { State=new VehicleState() }; var single=registry.Spawn(noSeat,new EntityOwnership(OwnershipKind.System));
+        check(Handle(Request(1,SeatRole.Passenger,SeatAction.Enter,single))==SeatResult.Unavailable,"Vehicle missing passenger anchor rejected");
+        authority.Reset();
+        a.State.PendingDriver=a.State.PendingPassenger=0; a.State.Driver=a.State.Passenger=0; registry.CommitState(car);
+        Handle(Request(1,SeatRole.Driver,SeatAction.Enter)); Handle(Request(2,SeatRole.Passenger,SeatAction.Enter));
+        authority.RemoveActor(registry,2); authority.Tick(registry,7);
+        check(a.State.PendingDriver==0 && a.State.PendingPassenger==0,"Vehicle disconnect preserves timeout for other actor's unfinished entry");
+        var readyFalse=new DriverInput { SessionId=7,Epoch=3,Actor=1,Vehicle=car,Sequence=2,OccupancyRevision=a.State.OccupancyRevision };
+        check(!authority.AcceptInput(registry,readyFalse,7,1,false,1),"Vehicle input blocked during transition freeze");
+        authority.Reset();
+        for (int i=0;i<30;i++) Handle(Request(1,SeatRole.Driver,SeatAction.Enter),true,false);
+        check(Handle(Request(1,SeatRole.Driver,SeatAction.Enter))==SeatResult.RateLimited,"Vehicle entry flood is bounded per authenticated actor");
+        Codec(check,Request(1,SeatRole.Driver,SeatAction.Enter));
+        Codec(check,passengerEntry);
+        DriverMotion(check);
+        Transport(check);
+    }
+    private static void DriverMotion(Action<bool,string> check)
+    {
+        var registry=new NetworkEntityRegistry(true,3); var authority=new VehicleAuthority();
+        var a=new ManagedVehicleAdapter {State=new VehicleState {Driver=2,PassengerSeat=true,Fuel=60}};
+        var car=registry.Spawn(a,new EntityOwnership(OwnershipKind.System));
+        var q=new VehicleMotion {SessionId=7,Epoch=3,Actor=2,AuthorityGeneration=1,Vehicle=car,Sequence=1,Tick=100,Qw=1,X=1,Vx=8,Fuel=59.9f};
+        var invalid=q; invalid.Actor=1;
+        bool rejected=!authority.AcceptMotion(registry,invalid,7,2,true,1,out _);
+        invalid=q; invalid.Epoch=2; rejected&=!authority.AcceptMotion(registry,invalid,7,2,true,1,out _);
+        invalid=q; invalid.AuthorityGeneration=2; rejected&=!authority.AcceptMotion(registry,invalid,7,2,true,1,out _);
+        invalid=q; invalid.Vehicle=new EntityRef(car.Id,car.Generation+1); rejected&=!authority.AcceptMotion(registry,invalid,7,2,true,1,out _);
+        invalid=q; invalid.Vx=float.NaN; rejected&=!authority.AcceptMotion(registry,invalid,7,2,true,1,out _);
+        check(rejected && authority.AcceptMotion(registry,q,7,2,true,1,out _) && a.State.X==1 && a.State.Fuel==59.9f,"Driver motion authenticates actor/vehicle/epoch/generation/finite state and accepts native Client outcomes");
+        a.State.Passenger=1; a.State.OccupancyRevision++; q.Sequence++; q.Tick+=50; q.X=1.4f; q.Vx=0;
+        bool accepted=authority.AcceptMotion(registry,q,7,2,true,1.05,out _);
+        check(accepted && !authority.AcceptMotion(registry,q,7,2,true,1.06,out _) && authority.RecentMotion(registry,car,2,1,1.2) && authority.RecentImpactSpeed(car)==8,"Passenger revisions retain motion authority; duplicate sequence rejected; collision validation retains pre-impact speed");
+        invalid=q; invalid.Sequence++; invalid.Tick+=50; invalid.X=1000;
+        bool teleport=!authority.AcceptMotion(registry,invalid,7,2,true,1.1,out bool severe) && severe;
+        authority.RecoverMotion(registry,car,1.1); ulong recovery=a.State.AuthorityGeneration;
+        bool oldRejected=!authority.AcceptMotion(registry,invalid,7,2,true,1.2,out severe) && !severe;
+        q.AuthorityGeneration=recovery; q.Sequence++; q.Tick+=100;
+        check(teleport && oldRejected && recovery==2 && authority.AcceptMotion(registry,q,7,2,true,1.2,out _) && a.State.Driver==2,"Severe teleport causes one authority-generation recovery; stale packets cannot repeatedly correct the driver");
+        var resumed=q; resumed.Sequence++; resumed.Tick+=5000; resumed.X+=1;
+        bool silentGapKeepsSeat=a.State.Driver==2 && a.State.Passenger==1 && !a.State.ExitingDriver && a.State.AuthorityGeneration==recovery && !authority.RecentMotion(registry,car,2,recovery,6.7);
+        bool resumedAfterGap=authority.AcceptMotion(registry,resumed,7,2,true,6.7,out _);
+        check(silentGapKeepsSeat && resumedAfterGap && a.State.Driver==2 && a.State.Passenger==1 && !a.State.ExitingDriver && a.State.AuthorityGeneration==recovery,"Unreliable motion silence does not revoke the confirmed native driver or force a detach");
+        var impact=new VehicleImpact {SessionId=7,Epoch=3,Actor=2,AuthorityGeneration=2,Vehicle=car,Sequence=1,Target=42,Vx=8};
+        var bytes=VehicleImpactProtocol.Write(impact);
+        check(VehicleImpactProtocol.Read(bytes,out var decoded) && decoded.Target==42 && !VehicleImpactProtocol.Read(bytes.Take(bytes.Length-1).ToArray(),out _) && !authority.RecentMotion(registry,car,2,decoded.AuthorityGeneration,7.5),"Reliable native collision codec is bounded and stale motion cannot authorize world consequences");
+    }
+    private static void Codec(Action<bool,string> check,SeatRequest request)
+    {
+        var bytes=VehicleProtocol.Encode(request); check(VehicleProtocol.Decode(bytes,out SeatRequest read) && read.Vehicle.Equals(request.Vehicle) && read.Door.Equals(request.Door),"Vehicle seat packet semantic roundtrip includes optional native door target");
+        for (int n=0;n<bytes.Length;n++) if (VehicleProtocol.Decode(bytes.Take(n).ToArray(),out SeatRequest _)) throw new Exception("Seat truncation accepted");
+        check(!VehicleProtocol.Decode(bytes.Concat(new byte[1]).ToArray(),out SeatRequest _),"Vehicle truncated and trailing requests rejected");
+        var q=new DriverInput { SessionId=7,Epoch=3,Actor=1,Vehicle=request.Vehicle,Sequence=1,OccupancyRevision=1,EngineRunning=true };
+        bytes=VehicleProtocol.Encode(q); check(VehicleProtocol.Decode(bytes,out DriverInput input) && input.EngineRunning,"Vehicle bounded input codec roundtrip");
+        for (int n=0;n<bytes.Length;n++) if (VehicleProtocol.Decode(bytes.Take(n).ToArray(),out DriverInput _)) throw new Exception("Input truncation accepted");
+        check(!VehicleProtocol.Decode(bytes.Concat(new byte[1]).ToArray(),out DriverInput _),"Vehicle input truncations and trailing bytes rejected");
+        bytes[51]=2; check(!VehicleProtocol.Decode(bytes,out DriverInput _),"Vehicle malformed engine flag rejected");
+        var v=new VehicleState { PassengerSeat=true,Driver=1,Passenger=2,X=5,EngineRunning=true };
+        check(VehicleState.TryDecode(v.Encode(),out var state) && state.Passenger==2 && state.X==5 && state.EngineRunning,"Vehicle occupancy, native engine and motion baseline roundtrip");
+        var unknownFlag=v.Encode(); unknownFlag[14]=8; check(!VehicleState.TryDecode(unknownFlag,out _),"Vehicle unknown storage/engine flags fail closed");
+        v.Passenger=1; check(!v.Valid(),"Vehicle malformed duplicate actor payload rejected"); v.Passenger=2; v.PendingDriver=2; check(!v.Valid(),"Vehicle occupied and pending driver payload rejected"); v.PendingDriver=0; v.Qw=2; check(!v.Valid(),"Vehicle malformed quaternion rejected");
+        var rng=new Random(581); for (int n=0;n<10000;n++) { var r=new byte[rng.Next(0,600)]; rng.NextBytes(r); VehicleProtocol.Decode(r,out SeatRequest _); VehicleProtocol.Decode(r,out DriverInput _); VehicleState.TryDecode(r,out _); }
+        check(true,"Vehicle 10000 malformed seat input state packets cannot throw");
+        var pose=new PlayerTransform { PlayerId=1,SceneEpoch=1,State=new PlayerReplicationState { Vehicle=new VehicleOccupancyState { Seat=SeatRole.Passenger,PresentationKey=4 },SeatEligibility=SeatEligibility.Ineligible } };
+        bytes=new byte[Protocol.StateBytes]; check(Protocol.WriteState(pose,bytes) && Protocol.TryReadState(bytes,0,bytes.Length,out var p) && p.State.Vehicle.Seat==SeatRole.Passenger,"Vehicle passenger first-person semantic codec");
+    }
+    private static void Transport(Action<bool,string> check)
+    {
+        using var host=new NetworkManager("vehicle-tests",Console.WriteLine); using var client=new NetworkManager("vehicle-tests",Console.WriteLine);
+        host.SeatCompleted+=(id,result)=>Console.WriteLine("SEAT host "+id+" "+result); client.SeatCompleted+=(id,result)=>Console.WriteLine("SEAT client "+id+" "+result);
+        var mission=new NetworkSceneDescriptor("MadisonSt");
+        var descriptor=new StaticEntityDescriptor("vehicle-tests","MainScene","car[0]","vehicle-v1",0);
+        ManagedVehicleAdapter h=null,c=null; EntityRef href=default,cref=default;
+        host.World.PrepareRegistry=()=> { if (host.World.Registry.Count==0) { h=new ManagedVehicleAdapter(); href=host.World.Registry.RegisterStatic(descriptor,h,new EntityOwnership(OwnershipKind.System)); } };
+        client.World.PrepareRegistry=()=> { if (client.World.Registry.Count==0) { c=new ManagedVehicleAdapter(); cref=client.World.Registry.RegisterStatic(descriptor,c,new EntityOwnership(OwnershipKind.System)); } };
+        host.ValidateSeat=(_,__,___,____,_____)=>true;
+        host.Host(FreePort(),"Host"); host.SetLocalScene(true,mission.SceneKey); host.PublishStableScene(mission);
+        client.HostSceneRequested+=target=>client.MarkSceneLoaded(target.SceneKey); client.Join("127.0.0.1",host.Port,"Client");
+        void Pump(Func<bool> done) { var timer=Stopwatch.StartNew(); while (!done() && timer.Elapsed.TotalSeconds<8) { host.Poll(); client.Poll(); Thread.Sleep(5); } if (!done()) throw new Exception("Vehicle UDP timeout: "+host.World.LastError+" / "+client.World.LastError+" host="+host.World.State+" client="+client.World.State+" ready="+host.ScenesCompatible+"/"+client.ScenesCompatible+" driver="+h?.State.Driver+" pending="+h?.State.PendingDriver+" clientPending="+c?.State.PendingDriver); }
+        Pump(()=>host.GameplayReady && client.GameplayReady);
+        check(client.Scenes.Target.Map=="MadisonSt" && href.Equals(cref),"Vehicle UDP mission late join binds baseline identity");
+        check(!client.CanGlobalAction(false,out _) && !host.CanGlobalAction(true,out _) && host.CanGlobalAction(false,out _),"Vehicle UDP keeps destination selection Host-owned while seat requirements stay scoped to explicit shared-vehicle actions");
+        ulong session=host.Session.SessionId; uint epoch=host.World.Registry.SceneEpoch;
+        host.BeginSceneTransition(new NetworkSceneDescriptor("PlayerHideout"));
+        Pump(()=>host.Scenes.Active && client.Scenes.Active && client.Scenes.Target?.Map=="PlayerHideout");
+        host.MarkSceneLoaded(host.Scenes.Target.SceneKey); Pump(()=>host.GameplayReady && client.GameplayReady);
+        check(host.Scenes.Target.Map=="PlayerHideout" && client.Scenes.Target.Map=="PlayerHideout" && host.World.Registry.SceneEpoch==epoch+1 && client.World.Registry.SceneEpoch==epoch+1 && host.PeerConnected,"Vehicle UDP native mission return carries both peers without requiring vehicle occupants");
+        host.BeginSceneTransition(mission); Pump(()=>host.Scenes.Active && client.Scenes.Active && client.Scenes.Target?.Map=="MadisonSt");
+        host.MarkSceneLoaded(host.Scenes.Target.SceneKey); Pump(()=>host.GameplayReady && client.GameplayReady); epoch=host.World.Registry.SceneEpoch;
+        check(host.Scenes.Target.Map=="MadisonSt" && client.Scenes.Target.Map=="MadisonSt" && host.PeerConnected,"Vehicle UDP return from hideout restores the shared mission scene");
+        foreach (byte driver in new byte[] {1,2}) {
+            var dn=driver==1 ? host : client; var pn=driver==1 ? client : host;
+            EntityRef de=driver==1 ? href : cref, pe=driver==1 ? cref : href;
+            dn.RequestSeat(de,SeatRole.Driver,SeatAction.Enter); Pump(()=>h.State.PendingDriver==driver && c.State.PendingDriver==driver);
+            dn.RequestSeat(de,SeatRole.Driver,SeatAction.Confirm); Pump(()=>h.State.Driver==driver && c.State.Driver==driver);
+            pn.RequestSeat(pe,SeatRole.Passenger,SeatAction.Enter,new EntityRef(new NetworkEntityId(EntityScope.Static,0x7FFFFFFFFFFFFFFEUL),1)); Pump(()=>h.State.PendingPassenger!=0 && c.State.PendingPassenger!=0);
+            check(!host.CanGlobalAction(true,out _),"Vehicle UDP pending passenger denies return/sleep");
+            pn.RequestSeat(pe,SeatRole.Passenger,SeatAction.Confirm); Pump(()=>h.State.Passenger!=0 && c.State.Passenger!=0);
+            check(host.CanGlobalAction(true,out _),"Vehicle UDP both confirmed allows host return/sleep driver "+driver);
+            check(!pn.SendDriverInput(pe,0,1,0),"Vehicle UDP passenger cannot send driving commands");
+            dn.SendDriverInput(de,.2f,.5f,0); Pump(()=>host.Vehicles.Latest(href,host.Now)!=null);
+            check(host.Vehicles.Latest(href,host.Now).Actor==driver,"Vehicle UDP validated driving input actor "+driver);
+            ulong beforeMotion=host.World.Registry.WorldRevision; float x=h.State.X+1;
+            (driver==1 ? h : c).State.X=x;
+            dn.SendVehicleMotion(new VehicleMotion {Vehicle=de,X=x,Qw=1,Vx=4,Ay=.1f}); Pump(()=>(driver==1 ? c : h).State.X==x);
+            check(host.World.Registry.WorldRevision==beforeMotion && (driver==1 ? client.VehicleMotionReceived : host.VehicleMotionReceived)>0,"Vehicle UDP active driver motion channel does not increment reliable world revisions");
+            check(!pn.SendVehicleMotion(new VehicleMotion {Vehicle=pe,Qw=1}),"Vehicle UDP passenger cannot author vehicle physics role "+driver);
+            check(c.State.Passenger==h.State.Passenger && c.State.Driver==driver,"Vehicle UDP moving car retains both semantic seat occupants");
+            pn.RequestSeat(pe,SeatRole.Passenger,SeatAction.Exit); Pump(()=>h.State.ExitingPassenger && c.State.ExitingPassenger);
+            pn.RequestSeat(pe,SeatRole.Passenger,SeatAction.ExitConfirm); Pump(()=>h.State.Passenger==0 && c.State.Passenger==0);
+            dn.RequestSeat(de,SeatRole.Driver,SeatAction.Exit); Pump(()=>h.State.ExitingDriver && c.State.ExitingDriver);
+            dn.RequestSeat(de,SeatRole.Driver,SeatAction.ExitConfirm); Pump(()=>h.State.Driver==0 && c.State.Driver==0);
+        }
+        host.RequestSeat(href,SeatRole.Driver,SeatAction.Enter); host.RequestSeat(href,SeatRole.Driver,SeatAction.Confirm); Pump(()=>c.State.Driver==1);
+        client.RequestSeat(cref,SeatRole.Passenger,SeatAction.Enter,new EntityRef(new NetworkEntityId(EntityScope.Static,0x7FFFFFFFFFFFFFFEUL),1)); Pump(()=>c.State.PendingPassenger==2); client.RequestSeat(cref,SeatRole.Passenger,SeatAction.Confirm); Pump(()=>c.State.Passenger==2);
+        host.BeginSceneTransition(new NetworkSceneDescriptor("PlayerHideout")); host.MarkSceneLoaded(host.Scenes.Target.SceneKey);
+        Pump(()=>host.GameplayReady && client.GameplayReady);
+        check(host.Session.SessionId==session && client.Session.SessionId==session && host.PeerConnected && client.PeerConnected,"Vehicle UDP mission-to-hideout retains established connection");
+        check(host.World.Registry.SceneEpoch==epoch+1 && client.World.Registry.SceneEpoch==epoch+1 && h.State.Driver==0 && c.State.Passenger==0,"Vehicle UDP new epoch discards old seats and bindings");
+        client.Disconnect(); Pump(()=>host.Session.State==SessionState.Hosting);
+        client.Join("127.0.0.1",host.Port,"Reconnected"); Pump(()=>host.GameplayReady && client.GameplayReady);
+        check(client.Scenes.Target.Map=="PlayerHideout" && c.State.Driver==0 && c.State.Passenger==0,"Vehicle UDP hideout reconnect never auto-occupies seat");
+        host.RequestSeat(href,SeatRole.Driver,SeatAction.Enter); host.RequestSeat(href,SeatRole.Driver,SeatAction.Confirm); Pump(()=>c.State.Driver==1);
+        client.Disconnect(); Pump(()=>host.Session.State==SessionState.Hosting);
+        client.Join("127.0.0.1",host.Port,"LateJoin"); Pump(()=>host.GameplayReady && client.GameplayReady);
+        check(c.State.Driver==1 && c.State.Passenger==0,"Vehicle UDP late join while host seated retains driver only");
+        check(host.CanGlobalAction(false,out _),"Vehicle UDP host can initiate global hideout actions");
+        client.Disconnect(); Pump(()=>host.Session.State==SessionState.Hosting);
+        check(host.CanGlobalAction(true,out _),"Vehicle host alone preserves singleplayer no absent passenger requirement");
+    }
+    private static int FreePort() { using var s=new System.Net.Sockets.UdpClient(0); return ((System.Net.IPEndPoint)s.Client.LocalEndPoint).Port; }
+}

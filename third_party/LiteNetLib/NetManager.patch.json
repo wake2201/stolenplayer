@@ -1,0 +1,22 @@
+[
+  {
+    "count": 1,
+    "before": "        private NetEvent _pendingEventTail;",
+    "after": "        private NetEvent _pendingEventTail;\n        private int _pendingEventCount;\n        public int PendingEventCount { get { lock (_eventLock) return _pendingEventCount; } }\n        public int LastProcessedEvents { get; private set; }"
+  },
+  {
+    "count": 2,
+    "before": "                    _pendingEventTail = evt;",
+    "after": "                    _pendingEventTail = evt;\n                    _pendingEventCount++;"
+  },
+  {
+    "count": 1,
+    "before": "        public void PollEvents(int maxProcessedEvents = 0)\n        {\n            if (_manualMode)\n            {\n                if (_udpSocketv4 != null)\n                    ManualReceive(_udpSocketv4, _bufferEndPointv4, maxProcessedEvents);\n                if (_udpSocketv6 != null && _udpSocketv6 != _udpSocketv4)\n                    ManualReceive(_udpSocketv6, _bufferEndPointv6, maxProcessedEvents);\n                ProcessDelayedPackets();\n                return;\n            }\n            if (UnsyncedEvents)\n                return;\n            NetEvent pendingEvent;\n            lock (_eventLock)\n            {\n                pendingEvent = _pendingEventHead;\n                _pendingEventHead = null;\n                _pendingEventTail = null;\n            }\n\n            int counter = 0;\n            while (pendingEvent != null)\n            {\n                var next = pendingEvent.Next;\n                ProcessEvent(pendingEvent);\n                pendingEvent = next;\n                counter++;\n                if (counter == maxProcessedEvents)\n                    break;\n            }\n        }\n",
+    "after": "        public void PollEvents(int maxProcessedEvents = 0, double maxMilliseconds = 0)\n        {\n            LastProcessedEvents = 0;\n            if (_manualMode)\n            {\n                if (_udpSocketv4 != null)\n                    ManualReceive(_udpSocketv4, _bufferEndPointv4, maxProcessedEvents);\n                if (_udpSocketv6 != null && _udpSocketv6 != _udpSocketv4)\n                    ManualReceive(_udpSocketv6, _bufferEndPointv6, maxProcessedEvents);\n                ProcessDelayedPackets();\n                return;\n            }\n            if (UnsyncedEvents)\n                return;\n            // Keep unprocessed events on the original queue, ahead of newer events.\n            // The upstream bounded poll detached the whole chain and lost its tail.\n            long started = maxMilliseconds > 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;\n            while (maxProcessedEvents <= 0 || LastProcessedEvents < maxProcessedEvents)\n            {\n                NetEvent pendingEvent;\n                lock (_eventLock)\n                {\n                    pendingEvent = _pendingEventHead;\n                    if (pendingEvent == null) break;\n                    _pendingEventHead = pendingEvent.Next;\n                    if (_pendingEventHead == null) _pendingEventTail = null;\n                    _pendingEventCount--;\n                    pendingEvent.Next = null;\n                }\n                ProcessEvent(pendingEvent);\n                LastProcessedEvents++;\n                // An event/transaction remains atomic. Yield between complete callbacks.\n                if (started != 0 && (System.Diagnostics.Stopwatch.GetTimestamp()-started)*1000.0/System.Diagnostics.Stopwatch.Frequency >= maxMilliseconds)\n                    break;\n            }\n        }\n"
+  },
+  {
+    "count": 1,
+    "before": "            _connectedPeersCount = 0;\n            _pendingEventHead = null;\n            _pendingEventTail = null;",
+    "after": "            _connectedPeersCount = 0;\n            _pendingEventHead = null;\n            _pendingEventTail = null;\n            _pendingEventCount = 0;"
+  }
+]

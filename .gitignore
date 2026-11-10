@@ -1,0 +1,4 @@
+build/
+*.user
+*.suo
+game-path.txt

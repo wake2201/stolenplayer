@@ -10,9 +10,32 @@ Build a **two-player cooperative mod for Thief Simulator 2** on Windows. Player 
 
 Favor original game systems and animation/assets rather than recreations. Do not modify or distribute proprietary game binaries/assets. Verify licenses before copying third-party code.
 
+## Permanent rules (every milestone)
+**1. Preserve original game code.** Never modify the original game's source, binaries, assemblies, or assets unless a specific technical necessity is established **and** the user explicitly approves it. Prefer, in order: BepInEx plugins, narrowly scoped Harmony runtime patches (only when technically necessary), the game's own public/internal APIs, existing game assets loaded at runtime, small compatibility adapters inside the mod. Do not rewrite or replace original systems (movement, animation, physics, AI, missions), patch assemblies on disk, make destructive changes to the installation, or change game behaviour unrelated to the current milestone. If on-disk modification becomes unavoidable: explain why and **stop for user approval**.
+
+**2. Mod performance.** Minimize the overhead *our* mod adds (CPU, frame time, allocations/GC, bandwidth, memory, main-thread work, Harmony patch cost, logging, scene transitions). Do not spend time optimizing or refactoring the original game's code.
+- No `GameObject.Find`/`FindObjectOfType`/scene-wide searches in per-frame paths; cache Unity references and invalidate them on scene changes.
+- No allocating LINQ, string formatting, or logging in `Update`/`FixedUpdate` hot paths; logging conditional and rate-limited.
+- Cached accessors instead of repeated reflection; no expensive per-frame work without justification; bounded buffers/queues.
+- Fixed send rates (not per rendered frame); never transmit unchanged shared state; interpolate frequently updated remote objects; no work for unloaded regions; no blocking file I/O or networking on the main thread.
+- **Verification per milestone:** identify the performance-sensitive paths added/changed, measure them where practical, record network traffic and relevant memory/GC behaviour, compare with the previous mod version when meaningful, and report potential FPS impact. **Never claim FPS improvements without real in-game FPS measurements.**
+
+**3. Correct implementation over shortcuts (permanent, 2026-11-11).** Enforceable rules:
+- **Original systems first.** Reuse the game's own objects, components, colliders, animations, interaction paths and methods. A replacement (clone, substitute animation, custom key handler, teleport-into-seat) needs a written reason why the original cannot be used **and** user approval.
+- **No workaround presented as a feature.** An approximation (e.g. a non-solid remote car, a door that never opens, an instant seat teleport) is recorded as `DESIGN COMPROMISE` or `INCOMPLETE` in `docs/PROGRESS.md` and never marked done. A required feature is never removed or downgraded to make a test or milestone pass.
+- **Verify, don't recall.** Original behaviour is established from IL/scene data (cite method + IL offsets or asset path) or a user baseline test in unmodified single-player. Unverifiable facts stay `unknown` with a proposed in-game test.
+- **Multiplayer may differ internally** (authoritative simulation + local representation) as long as gameplay behaviour and the invariants hold: exactly one simulating instance per car, host-committed shared state, no duplicated rewards/costs/items.
+- **Status vocabulary for every subsystem in reports:** `VERIFIED CORRECT` (in-game evidence + code review), `IMPLEMENTED BUT UNVERIFIED`, `INCOMPLETE`, `DEFECTIVE`, `DESIGN COMPROMISE` (state whether necessary/avoidable/unacceptable), `HIGH-RISK`. New code ships as `PENDING MANUAL QA` until the user confirms it in game.
+- **Done means:** specified behaviour exists, offline tests pass **and** the user verified it in game. A compiling intermediate architecture is not a completed milestone.
+- **Testing boundaries:** do not combine independently risky changes (e.g. collision rewrite + new passenger system + persistence changes) in one untested deployment; stop for user QA when a foundation changes.
+- **No unnecessary rewrites:** keep working, verified systems; change them only with evidence of a defect or a requirement they cannot meet. Simple is preferred when it is genuinely correct; fewer lines is not a goal.
+- **Never** modify installed game assemblies/assets, never delete or overwrite user saves, never commit without user approval.
+
+**4. No mod text in the gameplay UI (permanent, user preference 2026-11-11).** The game must feel unmodified. The mod never shows its own notices, toasts, popups, status overlays or debug labels in game (no "Multiplayer: ...", seat/handoff/travel/authority status, implementation-stage hints). Routine multiplayer feedback goes to the BepInEx log only. An invalid or refused interaction does nothing, like the original game; the game's own UI, its original prompts and its original warning texts (e.g. `cant_fast_travel` where the game itself would refuse) stay untouched. Never perform an unsafe operation to avoid an error. A critical unrecoverable failure is logged and handled safely (e.g. fail-closed quit for save protection), never by corrupting data. Diagnostics overlays exist only behind an explicit config switch that is off by default (`Debug.ShowOverlay`). Enforced by `tests/InteractionTests.cs` case 15 (source scan).
+
 ## Responsibility and editing discipline
 - **Claude Code is the primary implementer and project coordinator.**
-- **Codex is an optional, independent specialist** for bounded review, diagnosis, or a specifically delegated coding task. Do not invoke it automatically or after every change.
+- **Codex is an optional, independent specialist** for bounded review, diagnosis, or a specifically delegated coding task. Do not invoke it automatically or after every change. Good uses: one focused read-only review after a high-risk implementation (moving-vehicle collision, seat/handoff races, travel transactions, persistence, complex hooks), with named files, constraints and questions. Claude evaluates its findings critically and implements accepted changes itself, sequentially. No review loops without new evidence.
 - Only **one AI may edit project files at a time**. Never have Claude and Codex edit concurrently; complete, report, and hand off explicitly.
 - For Codex review requests: default to **read-only review** with concrete findings, severity, affected files/lines, evidence, and minimal proposed fixes. Never rewrite code during review unless explicitly authorized.
 - Do not initiate background Codex jobs unless the user explicitly authorizes them. Wait for completion before any overlapping edits.

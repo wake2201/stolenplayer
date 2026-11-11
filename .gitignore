@@ -2,3 +2,14 @@ build/
 *.user
 *.suo
 game-path.txt
+build/
+bin/
+obj/
+logs/
+*.log
+*.pdb
+*.exe
+*.dll
+.env
+.env.*
+.vs/

@@ -60,6 +60,7 @@ namespace TS2MP.Plugin
         RemoteAvatar _avatar;
         RemoteView _view = RemoteView.NotConnected;
         double _visibleConditionsSince = -1;
+        int _seatFrame = -10;   // M4.2.2: last Time.frameCount VehicleSync posed the avatar in a driver seat
         long _accepted, _stale, _invalid, _wrongSlot;
         double _nextStats;
 
@@ -219,7 +220,7 @@ namespace TS2MP.Plugin
                 if (ReadBool(_fMoving, _pmb)) flags |= MoveFlags.Moving;
                 if (ReadBool(_fRunning, _pmb)) flags |= MoveFlags.Running;
                 if (ReadBool(_fCrouching, _pmb)) flags |= MoveFlags.Crouching;
-                if (ReadBool(_fInVehicle, _ps)) flags |= MoveFlags.InVehicle;
+                if (ReadBool(_fInVehicle, _ps) || LocalSeated) flags |= MoveFlags.InVehicle;
                 if (ReadBool(_fHiding, _ps)) flags |= MoveFlags.Hidden;
                 s.Pos = new Vec3(feet.x, feet.y, feet.z);
                 s.Yaw = yaw;
@@ -263,7 +264,7 @@ namespace TS2MP.Plugin
                 _log.Info("SCENE remote=" + si.SceneKey + " hash=" + si.SceneHash.ToString("X8") + " present=" + si.Present
                     + (si.SceneHash == _sceneHash ? " (same as local)" : " (local=" + _sceneKey + ")"));
             }
-            else _log.Warn("SYNC unknown message type " + type);
+            else if (type < (byte)MsgType.StateSnapshot) _log.Warn("SYNC unknown message type " + type);   // 4+ handled by WorldSync
         }
 
         void OnRemoteConnected(string id)
@@ -294,6 +295,9 @@ namespace TS2MP.Plugin
             if (view != RemoteView.Visible)
             {
                 _visibleConditionsSince = -1;
+                // M4.2.2: in a car, VehicleSync (runs after this) poses the avatar in the driver seat every frame it finds
+                // the car presented here; without a pose in the previous frame the avatar is hidden (as before M4.2.2).
+                if (view == RemoteView.InVehicle && _avatar != null && _seatFrame >= Time.frameCount - 1) return;
                 if (_avatar != null) _avatar.SetVisible(false);
                 if (view == RemoteView.NotConnected) DestroyAvatar(null);
                 return;
@@ -316,6 +320,27 @@ namespace TS2MP.Plugin
             }
         }
 
+        // ---------------- M4.2.2 seated remote driver (called by VehicleSync after the car moved this frame) ----------------
+        // M4.3: set by VehicleSync while the local player sits in a passenger seat (the game's is_in_vehicle stays false:
+        // the passenger is no driver, see VehicleSync.EnterSeat).
+        public bool LocalSeated;
+
+        public bool RemoteSeatRequested { get { return _view == RemoteView.InVehicle && Now - _lastRecvAt < 3.0; } }
+
+        public void PoseSeated(Vector3 anchorPos, Quaternion anchorRot, bool codenameRoot)
+        {
+            if (_view != RemoteView.InVehicle) return;
+            if (_avatar == null)
+            {
+                if (!RemoteAvatar.TryEnsureTemplate(_log)) return;   // no capsule fallback for seats
+                _avatar = RemoteAvatar.Spawn(_node.RemoteInstanceId ?? "remote", _log, false);
+                if (_avatar == null) return;
+            }
+            _avatar.ApplySeated(anchorPos, anchorRot, codenameRoot);
+            _avatar.SetVisible(true);
+            _seatFrame = Time.frameCount;
+        }
+
         void DestroyAvatar(string why)
         {
             if (_avatar == null) return;
@@ -334,6 +359,19 @@ namespace TS2MP.Plugin
                 if (_avatar != null && _avatar.Visible) s += " clip=" + _avatar.CurrentClip + (_avatar.IsFallback ? " (capsule)" : "");
                 return s;
             }
+        }
+
+        // M4.2 arrival placement: the remote player's latest feet position (same scene, fresh data only). Read-only.
+        public bool TryGetRemote(out Vector3 feet, out bool inVehicle, out float horizontalSpeed)
+        {
+            feet = Vector3.zero; inVehicle = false; horizontalSpeed = 0f;
+            if (!_node.IsConnected || !_remotePresent || !_buffer.HasData || Now - _lastRecvAt > 3.0 || _remoteSceneHash != _sceneHash) return false;
+            RemoteSample s;
+            if (!_buffer.TrySample(Now, out s)) return false;
+            feet = new Vector3(s.Pos.X, s.Pos.Y, s.Pos.Z);
+            inVehicle = (s.Flags & MoveFlags.InVehicle) != 0;
+            horizontalSpeed = s.HorizontalSpeed;
+            return true;
         }
 
         public bool TryGetNameTag(out Vector3 worldPos, out string label)

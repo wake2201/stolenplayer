@@ -52,14 +52,27 @@ namespace TS2MP.Plugin
                 SendRateHz = Mathf.Clamp(Config.Bind("Sync", "SendRateHz", 20, "Movement snapshots per second (10-30).").Value, 10, 30),
                 InterpolationDelayMs = Mathf.Clamp(Config.Bind("Sync", "InterpolationDelayMs", 100, "Remote rendering delay used for interpolation (50-300 ms).").Value, 50, 300),
                 YawOffset = Config.Bind("Avatar", "YawOffsetDegrees", 0f, "Rotation correction if the remote model faces the wrong way.").Value,
-                ShowNameTag = Config.Bind("Avatar", "ShowNameTag", true, "Show a label above the remote player.").Value
+                ShowNameTag = Config.Bind("Avatar", "ShowNameTag", true, "Show a label above the remote player (diagnostics; only with Debug.ShowOverlay = true).").Value
+            };
+            var world = new WorldSettings
+            {
+                ClockRefreshSeconds = Mathf.Clamp(Config.Bind("World", "ClockRefreshSeconds", 10f, "Max seconds between region clock re-anchors while the clock runs normally (5-60). Changes are sent immediately.").Value, 5f, 60f)
             };
 
             var go = new GameObject("TS2MP_Runner");
             go.hideFlags = HideFlags.HideAndDontSave;
             DontDestroyOnLoad(go);
             var runner = go.AddComponent<NetRunner>();
-            runner.Init(args, log, saveSafe, sync);
+            KeyCode travelKey;
+            var keyName = Config.Bind("Vehicles", "TravelMenuKey", "F7", "Opens the original travel menu on foot in the hideout / Auto Shop when you have no car there (another player simulates it or it is parked elsewhere).").Value;
+            try { travelKey = (KeyCode)Enum.Parse(typeof(KeyCode), keyName, true); } catch { travelKey = KeyCode.F7; }
+            var seatAdjust = Config.Bind("Vehicles", "DriverSeatAdjust", "", "Manual correction of the remote driver's seat in car-local metres, format carNr:dx,dy,dz;... (0 = Ranger, 1 = Shadowhawk), each value within +-0.5. Empty = automatic anchor from the car's own seat transforms.").Value;
+            var passengerAdjust = Config.Bind("Vehicles", "PassengerSeatAdjust", "", "Manual correction of YOUR first-person passenger seat (player root, car-local metres), format carNr:dx,dy,dz;... (0 = Ranger, 1 = Shadowhawk), each within +-0.5. Empty = derived from the car's original companion seat (associateSitPos).").Value;
+            var vehicles = new VehicleSettings { TravelMenuKey = travelKey, DriverSeatAdjust = seatAdjust ?? "", PassengerSeatAdjust = passengerAdjust ?? "", InteractDebug = Config.Bind("Vehicles", "InteractDebug", false, "Diagnostics: on each E press near another player's car (max 1/s) log what the original interaction ray hits.").Value };
+            // M4.3.2a permanent rule: no mod text in the gameplay UI by default. The status lines and the name tag above the other
+            // player are diagnostics, shown only when this is switched on (BepInEx log has the same information).
+            runner.ShowDebugOverlay = Config.Bind("Debug", "ShowOverlay", false, "Diagnostics only: draw the TS2MP status lines and the name tag above the other player (Avatar.ShowNameTag) on screen. Off = the game looks unmodified; everything is in the BepInEx log.").Value;
+            runner.Init(args, log, saveSafe, sync, world, vehicles);
         }
     }
 
@@ -118,10 +131,14 @@ namespace TS2MP.Plugin
         InstanceLog _log;
         SessionNode _node;
         PlayerSync _sync;
+        WorldSync _world;
+        VehicleSync _vehicles;
+        CarBoxSync _carbox;
+        Player2Sync _p2;
         bool _quitRequested, _shutdown;
         GUIStyle _style, _tagStyle;
 
-        public void Init(LaunchArgs args, InstanceLog log, bool saveSafe, SyncSettings sync)
+        public void Init(LaunchArgs args, InstanceLog log, bool saveSafe, SyncSettings sync, WorldSettings world, VehicleSettings vehicles)
         {
             _args = args;
             _log = log;
@@ -140,7 +157,17 @@ namespace TS2MP.Plugin
             _node.BindAddress = args.BindAddress;
             _node.ConnectAddress = args.ConnectAddress;
             log.StateProvider = delegate { return _node.StateText; };
-            if (_node.Start()) _sync = new PlayerSync(_node, log, sync);
+            if (_node.Start())
+            {
+                _sync = new PlayerSync(_node, log, sync);
+                _world = new WorldSync(_node, log, world);
+                try { _vehicles = new VehicleSync(_node, log, _world, _sync, args.DataDir, vehicles); }
+                catch (Exception ex) { log.Error("VEHICLE init failed (vehicle sync disabled)", ex); _vehicles = null; }
+                try { _p2 = new Player2Sync(_node, log, _world, args.DataDir); }
+                catch (Exception ex) { log.Error("P2INV init failed (Player-2 persistence disabled)", ex); _p2 = null; }
+                try { _carbox = new CarBoxSync(_node, log, _world); }
+                catch (Exception ex) { log.Error("CARBOX init failed (shared car storage disabled)", ex); _carbox = null; }
+            }
         }
 
         float _nextSaveCheck;
@@ -164,16 +191,65 @@ namespace TS2MP.Plugin
                 try { _sync.Update(); }
                 catch (Exception ex) { _log.Error("SYNC update exception (sync disabled)", ex); _sync.Dispose(); _sync = null; }
             }
+            if (_world != null)
+            {
+                try { _world.Update(Time.unscaledDeltaTime); }
+                catch (Exception ex) { _log.Error("WORLD update exception (world sync disabled)", ex); _world.Dispose(); _world = null; }
+            }
+            if (_vehicles != null)
+            {
+                if (_world == null) { _vehicles.Dispose(); _vehicles = null; }
+                else
+                {
+                    try { _vehicles.Update(); }
+                    catch (Exception ex) { _log.Error("VEHICLE update exception (vehicle sync disabled)", ex); _vehicles.Dispose(); _vehicles = null; }
+                }
+            }
+            if (_p2 != null && _world != null)
+            {
+                try { _p2.Update(); }
+                catch (Exception ex) { _log.Error("P2INV update exception (Player-2 persistence disabled)", ex); _p2.Dispose(); _p2 = null; }
+            }
+            if (_carbox != null && _world != null)
+            {
+                try { _carbox.Update(); }
+                catch (Exception ex) { _log.Error("CARBOX update exception (shared car storage disabled)", ex); _carbox.Dispose(); _carbox = null; }
+            }
         }
+
+        // M5.0: observed cars are kinematic bodies moved in the physics step.
+        void FixedUpdate()
+        {
+            if (_vehicles == null) return;
+            try { _vehicles.FixedStep(); }
+            catch (Exception ex) { _log.Error("VEHICLE fixed step exception (vehicle sync disabled)", ex); _vehicles.Dispose(); _vehicles = null; }
+        }
+
+        // M4.2: client proposals are applied here, after this frame's UI events (host's own travel click wins a same-frame tie).
+        void LateUpdate()
+        {
+            if (_world == null) return;
+            try { _world.LateUpdate(); }
+            catch (Exception ex) { _log.Error("WORLD late update exception", ex); }
+            if (_vehicles != null)
+            {
+                try { _vehicles.LateUpdate(); }
+                catch (Exception ex) { _log.Error("VEHICLE late update exception (vehicle sync disabled)", ex); _vehicles.Dispose(); _vehicles = null; }
+            }
+        }
+
+        public bool ShowDebugOverlay;
 
         void OnGUI()
         {
-            if (_args == null) return;
+            if (_args == null || !ShowDebugOverlay) return;
             if (_style == null) { _style = new GUIStyle(GUI.skin.label); _style.fontSize = 12; }
             string s = "TS2MP " + _args.Role.ToString().ToUpperInvariant() + " " + _args.InstanceId + " | "
                 + (_node != null ? _node.State.ToString() + (_node.RemoteInstanceId != null ? " <-> " + _node.RemoteInstanceId : "") : "network off")
                 + (_sync != null ? " | " + _sync.StatusLine : "");
-            GUI.Label(new Rect(6, 2, 900, 20), s, _style);
+            GUI.Label(new Rect(6, 2, 1400, 20), s, _style);
+            if (_world != null) GUI.Label(new Rect(6, 18, 1400, 20), "TS2MP world | " + _world.StatusLine, _style);
+            if (_vehicles != null) GUI.Label(new Rect(6, 34, 1400, 20), "TS2MP vehicles | " + _vehicles.StatusLine, _style);
 
             Vector3 world; string label;
             var cam = Camera.main;
@@ -197,6 +273,10 @@ namespace TS2MP.Plugin
             _shutdown = true;
             if (_log == null) return;
             _log.Info("PLUGIN_SHUTDOWN (" + why + ")");
+            if (_carbox != null) { try { _carbox.Dispose(); } catch { } _carbox = null; }
+            if (_p2 != null) { try { _p2.Dispose(); } catch { } _p2 = null; }
+            if (_vehicles != null) { try { _vehicles.Dispose(); } catch { } _vehicles = null; }
+            if (_world != null) { try { _world.Dispose(); } catch { } _world = null; }
             if (_sync != null) { try { _sync.Dispose(); } catch { } _sync = null; }
             if (_node != null) { _node.Dispose(); _node = null; }
             _log.Dispose();

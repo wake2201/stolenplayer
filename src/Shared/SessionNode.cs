@@ -36,7 +36,7 @@ namespace TS2MP.Shared
         public string ConnectAddress = "127.0.0.1";
 
         // Channels: 0 = reliable lifecycle (Welcome, SceneInfo), 1 = sequenced movement snapshots.
-        public const byte ChannelReliable = 0, ChannelState = 1;
+        public const byte ChannelReliable = 0, ChannelState = 1, ChannelVehicle = 2;   // 2 = M4.1 vehicle snapshots (own sequence)
 
         // Post-handshake messages other than Welcome. Raised on the thread calling Tick() (Unity main thread in game).
         public event Action<NetPeer, byte, NetPacketReader> MessageReceived;
@@ -90,7 +90,7 @@ namespace TS2MP.Shared
             _net.AutoRecycle = true;
             _net.UnconnectedMessagesEnabled = false;
             _net.MaxConnectAttempts = 5;
-            _net.ChannelsCount = 2;
+            _net.ChannelsCount = 3;
             _net.EnableStatistics = true;
 
             bool ok;

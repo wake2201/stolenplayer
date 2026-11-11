@@ -16,10 +16,12 @@ namespace TS2MP.Plugin
         static GameObject _holder, _template;
         static float _nextSearch;
         public static string TemplateSource = "none";
+        // M4.2.2: local pose of 'anim' inside its 'Codename' root (CodenameAI places the ROOT at a seat anchor)
+        static Vector3 _rootLocalPos; static Quaternion _rootLocalRot = Quaternion.identity;
 
         GameObject _go;
         Animation _anim;
-        string _idle, _walk, _run, _crouch, _current;
+        string _idle, _walk, _run, _crouch, _sit, _current;
         float _smoothSpeed;
         public bool IsFallback { get; private set; }
         public Vector3 Position { get { return _go != null ? _go.transform.position : Vector3.zero; } }
@@ -46,6 +48,7 @@ namespace TS2MP.Plugin
                 }
                 var clone = UnityEngine.Object.Instantiate(src.gameObject, _holder.transform, false);
                 clone.name = "TS2MP_RemoteTemplate";
+                if (src.transform.parent != null && src.transform.parent.name == "Codename") { _rootLocalPos = src.transform.localPosition; _rootLocalRot = src.transform.localRotation; }
                 int removed = Strip(clone);
                 _template = clone;
                 var clips = ClipNames(clone.GetComponent<Animation>());
@@ -159,7 +162,8 @@ namespace TS2MP.Plugin
             _walk = names.Contains("Walk") ? "Walk" : null;
             _run = names.Contains("Run") ? "Run" : (names.Contains("CarryRun") ? "CarryRun" : _walk);
             _crouch = names.Contains("Sneaking") ? "Sneaking" : null;
-            foreach (var n in new[] { _idle, _walk, _run, _crouch })
+            _sit = names.Contains("Sitting") ? "Sitting" : null;   // original clip, also used by CodenameAI in cars
+            foreach (var n in new[] { _idle, _walk, _run, _crouch, _sit })
                 if (n != null) _anim[n].wrapMode = WrapMode.Loop;
             _anim.playAutomatically = false;
             _anim.cullingType = AnimationCullingType.AlwaysAnimate;
@@ -195,6 +199,19 @@ namespace TS2MP.Plugin
             if (clip == null) return;
             if (clip != _current) { _anim.CrossFade(clip, 0.2f); _current = clip; }
             _anim[clip].speed = speed;
+        }
+
+        // M4.2.2: seated in a car seat. The anchor comes from the car's own seat transforms (VehicleSync.ProbeSeat); only the
+        // pose is set (no walking movement is applied while seated), so turning follows the car exactly.
+        public void ApplySeated(Vector3 anchorPos, Quaternion anchorRot, bool codenameRoot)
+        {
+            if (_go == null) return;
+            if (codenameRoot) _go.transform.SetPositionAndRotation(anchorPos + anchorRot * _rootLocalPos, anchorRot * _rootLocalRot);
+            else _go.transform.SetPositionAndRotation(anchorPos, anchorRot);
+            _smoothSpeed = 0f;
+            if (_anim == null || _sit == null) return;
+            if (_current != _sit) { _anim.CrossFade(_sit, 0.2f); _current = _sit; }
+            _anim[_sit].speed = 1f;
         }
 
         public string CurrentClip { get { return _current ?? "-"; } }

@@ -24,6 +24,8 @@ namespace TS2MP.Shared
         public int RateLimitedDelayMs = 30000;
         public int HandshakeTimeoutMs = 10000;
         public int AuthTimeoutMs = 5000;        // host: an accepted peer must answer the challenge within this time
+        public int ReadyTimeoutMs = 90000;      // host (N1.2): a welcomed client must send ClientReady within this time
+        public int HostNotReadyDelayMs = 5000;  // client (N1.2): retry delay after HostNotReady
         public int DisconnectTimeoutMs = 15000;
         public int LatencyLogIntervalMs = 30000;
 
@@ -50,6 +52,15 @@ namespace TS2MP.Shared
         public byte[] JoinKey;
         public readonly AuthLimiter Limiter;
 
+        // N1.2 host: null = gameplay-ready; otherwise the reason new joins are refused (RejectCode.HostNotReady, retryable).
+        // Checked at the connection request and again right before Welcome. Null delegate = always ready (launcher dev mode).
+        public Func<string> HostGate;
+        // N1.2 client: true = send ClientReady right after a valid Welcome (launcher dev mode, reconnects). False = stop in
+        // ConnState.Preparing and raise Welcomed; the owner arms save isolation and then calls ConfirmReady() or AbortPreparation().
+        public bool AutoReady = true;
+        public event Action Welcomed;
+        public string HostWaitReason { get; private set; }   // client: last HostNotReady (host still loading); null otherwise
+
         // Channels: 0 = reliable lifecycle (Welcome, SceneInfo), 1 = sequenced movement snapshots.
         public const byte ChannelReliable = 0, ChannelState = 1, ChannelVehicle = 2;   // 2 = M4.1 vehicle snapshots (own sequence)
 
@@ -75,6 +86,8 @@ namespace TS2MP.Shared
         sealed class Pending { public NetPeer Peer; public string Ip, ClientInstance; public byte[] ClientNonce, ServerNonce; public long Since; }
         readonly Dictionary<NetPeer, Pending> _pending = new Dictionary<NetPeer, Pending>();
         readonly NonceCache _seenClientNonces = new NonceCache(512);
+        // host: authenticated + welcomed peer that has not sent ClientReady yet (occupies the only slot)
+        NetPeer _joining; string _joiningInstance; long _joiningSince;
         // client: per-attempt handshake state
         byte[] _clientNonce, _serverNonce;
         bool _challenged;
@@ -265,6 +278,12 @@ namespace TS2MP.Shared
                     late.Peer.Disconnect(new[] { (byte)RejectCode.AuthFailed });
                 }
             }
+            if (Role == Role.Host && _joining != null && now - _joiningSince > ReadyTimeoutMs)
+            {
+                var j = _joining; _joining = null;
+                _log.Warn("READY_TIMEOUT " + j + " instance=" + _joiningInstance + ": no ClientReady within " + ReadyTimeoutMs + " ms");
+                j.Disconnect();
+            }
             if (State == ConnState.Connected && _lastLatency >= 0 && now - _lastLatencyLog >= LatencyLogIntervalMs)
             {
                 double secs = _lastBytesSent == 0 && _lastBytesRecv == 0 ? (now - _stateSince) / 1000.0 : LatencyLogIntervalMs / 1000.0;
@@ -320,8 +339,10 @@ namespace TS2MP.Shared
                 Limiter.Failure(ip);
                 rej = RejectCode.AuthFailed;
             }
-            // One remote player: an authenticated client or a peer in the challenge occupies the only slot.
-            if (rej == null && (_net.ConnectedPeersCount >= ProtocolInfo.MaxClients || _peer != null || _pending.Count > 0)) rej = RejectCode.SessionFull;
+            // One remote player: an authenticated client, a welcomed client preparing, or a peer in the challenge occupies the only slot.
+            if (rej == null && (_net.ConnectedPeersCount >= ProtocolInfo.MaxClients || _peer != null || _joining != null || _pending.Count > 0)) rej = RejectCode.SessionFull;
+            string notReady = rej == null ? GateReason() : null;
+            if (notReady != null) { rej = RejectCode.HostNotReady; _log.Info("JOIN_DEFERRED " + req.RemoteEndPoint + ": host not gameplay-ready (" + notReady + ")"); }
 
             if (rej != null)
             {
@@ -339,16 +360,38 @@ namespace TS2MP.Shared
 
         static string Trim(string s) { return s == null ? "" : s.Length > 40 ? s.Substring(0, 40) + "..." : s; }
 
-        void CompleteHostHandshake(NetPeer peer, string clientInstance, byte[] hostProof)
+        string GateReason()
         {
-            _peer = peer;
-            RemoteInstanceId = clientInstance;
+            if (HostGate == null) return null;
+            try { return HostGate(); } catch (Exception ex) { _log.Error("HostGate threw (treated as not ready)", ex); return "gate error"; }
+        }
+
+        // Authenticated (or loopback) client: re-check gameplay readiness, send Welcome, then wait for ClientReady.
+        void SendWelcome(NetPeer peer, string clientInstance, byte[] hostProof)
+        {
+            string notReady = GateReason();
+            if (notReady != null)
+            {
+                _log.Info("JOIN_DEFERRED " + peer + " instance=" + clientInstance + ": host not gameplay-ready (" + notReady + ")");
+                peer.Disconnect(new[] { (byte)RejectCode.HostNotReady });
+                return;
+            }
+            _joining = peer; _joiningInstance = clientInstance; _joiningSince = Now;
             var w = new NetDataWriter();
             new Welcome { SessionId = SessionId, HostInstanceId = InstanceId, GameVersion = GameVersion, PlayerSlot = 2, HostProof = hostProof ?? new byte[0] }.Write(w);
             peer.Send(w, ChannelReliable, DeliveryMethod.ReliableOrdered);
+            _log.Info("WELCOME sent to " + clientInstance + " (slot 2" + (hostProof != null ? ", join code verified" : "") + "), waiting for ClientReady");
+        }
+
+        void CompleteHostHandshake(NetPeer peer)
+        {
+            string clientInstance = _joiningInstance;
+            _joining = null;
+            _peer = peer;
+            RemoteInstanceId = clientInstance;
             HandshakesCompleted++;
             SetState(ConnState.Connected, "client " + RemoteInstanceId);
-            _log.Info("HANDSHAKE_OK host side: Welcome sent to " + RemoteInstanceId + " (slot 2" + (hostProof != null ? ", join code verified" : "") + ")");
+            _log.Info("HANDSHAKE_OK host side: " + RemoteInstanceId + " is ready (slot 2)");
             if (RemoteConnected != null) RemoteConnected(RemoteInstanceId);
         }
 
@@ -368,7 +411,7 @@ namespace TS2MP.Shared
                     return;
                 }
                 if (JoinKey != null) { _log.Warn("Unexpected connected peer " + peer + " without challenge state; disconnecting"); peer.Disconnect(); return; }
-                CompleteHostHandshake(peer, peer.Tag as string, null);
+                SendWelcome(peer, peer.Tag as string, null);
             }
             else
             {
@@ -402,7 +445,15 @@ namespace TS2MP.Shared
                     AuthSuccesses++;
                     Limiter.Success(p.Ip);
                     _log.Info("AUTH_OK " + peer + " instance=" + p.ClientInstance);
-                    CompleteHostHandshake(peer, p.ClientInstance, HostProof(InstanceId, p.ClientInstance, p.ClientNonce, p.ServerNonce));
+                    SendWelcome(peer, p.ClientInstance, HostProof(InstanceId, p.ClientInstance, p.ClientNonce, p.ServerNonce));
+                    return;
+                }
+                if (peer == _joining)
+                {
+                    if (type == (byte)MsgType.ClientReady && reader.AvailableBytes == 0) { CompleteHostHandshake(peer); return; }
+                    _log.Warn("Message type " + type + " from " + peer + " before ClientReady; disconnecting");
+                    _joining = null;
+                    peer.Disconnect();
                     return;
                 }
                 if (peer != _peer) { _log.Warn("Message type " + type + " from unknown peer " + peer + "; disconnecting"); peer.Disconnect(); return; }
@@ -414,7 +465,7 @@ namespace TS2MP.Shared
             }
 
             if (State == ConnState.Connected && peer == _peer && MessageReceived != null && type != (byte)MsgType.Welcome
-                && type != (byte)MsgType.AuthChallenge && type != (byte)MsgType.AuthResponse)
+                && type != (byte)MsgType.AuthChallenge && type != (byte)MsgType.AuthResponse && type != (byte)MsgType.ClientReady)
             {
                 MessageReceived(peer, type, reader);
                 return;
@@ -434,7 +485,7 @@ namespace TS2MP.Shared
             _challenged = true;
             if (JoinKey == null)
             {
-                Fatal("AUTH_REQUIRED: the host requires a join code; start Join Game from the launcher and enter the code shown on the host PC");
+                Fatal("AUTH_REQUIRED: the host requires a join code; use Join Game (F8 menu) with the code shown on the host PC");
                 peer.Disconnect();
                 return;
             }
@@ -472,11 +523,41 @@ namespace TS2MP.Shared
             _serverNonce = null;
             RemoteInstanceId = wel.HostInstanceId;
             RemoteSessionId = wel.SessionId;
-            HandshakesCompleted++;
+            HostWaitReason = null;
             ConnectAttempts = 0;
-            SetState(ConnState.Connected, "host " + wel.HostInstanceId);
-            _log.Info("HANDSHAKE_OK client side: host=" + wel.HostInstanceId + " slot=" + wel.PlayerSlot + " mod=" + wel.HostModVersion + " game=" + wel.GameVersion + (JoinKey != null ? " (host proved the join code)" : ""));
+            _log.Info("WELCOME client side: host=" + wel.HostInstanceId + " slot=" + wel.PlayerSlot + " mod=" + wel.HostModVersion + " game=" + wel.GameVersion + (JoinKey != null ? " (host proved the join code)" : ""));
+            if (AutoReady) { SendReady(); return; }
+            SetState(ConnState.Preparing, "host " + wel.HostInstanceId + " welcomed us; preparing before ClientReady");
+            if (Welcomed != null) Welcomed();
+        }
+
+        void SendReady()
+        {
+            var w = new NetDataWriter();
+            w.Put((byte)MsgType.ClientReady);
+            _peer.Send(w, ChannelReliable, DeliveryMethod.ReliableOrdered);
+            HandshakesCompleted++;
+            SetState(ConnState.Connected, "host " + RemoteInstanceId);
+            _log.Info("HANDSHAKE_OK client side: ClientReady sent to host=" + RemoteInstanceId);
             if (RemoteConnected != null) RemoteConnected(RemoteInstanceId);
+        }
+
+        // N1.2: the owner finished its preparation (save isolation armed and verified, client systems built).
+        // Later reconnects of this node send ClientReady automatically.
+        public bool ConfirmReady()
+        {
+            if (Role != Role.Client || State != ConnState.Preparing || _peer == null) return false;
+            AutoReady = true;
+            SendReady();
+            return true;
+        }
+
+        // N1.2: preparation failed (e.g. save isolation not verifiable): disconnect without retry.
+        public void AbortPreparation(string why)
+        {
+            if (Role != Role.Client) return;
+            Fatal("PREPARATION_FAILED: " + why);
+            if (_peer != null) _peer.Disconnect(); else SetState(ConnState.Failed, why);
         }
 
         void Fatal(string why)
@@ -500,6 +581,7 @@ namespace TS2MP.Shared
             if (Role == Role.Host)
             {
                 _pending.Remove(peer);
+                if (peer == _joining) _joining = null;
                 _log.Warn("DISCONNECT peer=" + peer + " reason=" + info.Reason + extra);
                 if (peer == _peer)
                 {
@@ -528,7 +610,8 @@ namespace TS2MP.Shared
                 SetState(ConnState.Failed, "rejected " + code.Value);
                 return;
             }
-            int delay = code == RejectCode.RateLimited ? RateLimitedDelayMs : ReconnectDelayMs;
+            HostWaitReason = code == RejectCode.HostNotReady ? "host not gameplay-ready" : null;
+            int delay = code == RejectCode.RateLimited ? RateLimitedDelayMs : code == RejectCode.HostNotReady ? HostNotReadyDelayMs : ReconnectDelayMs;
             _retryAt = Now + delay;
             SetState(ConnState.WaitingRetry, "retry in " + delay + " ms");
         }
@@ -554,6 +637,7 @@ namespace TS2MP.Shared
                 _net = null;
             }
             _pending.Clear();
+            _joining = null;
             State = ConnState.Stopped;
             _log.Info("STATE -> Stopped (disposed)");
         }

@@ -36,10 +36,10 @@ Invoke-Csc 'TS2MP.Plugin.dll' (@('/target:library', '/noconfig', '/nostdlib+', "
     "/r:$core\BepInEx.dll", "/r:$core\0Harmony.dll", "/r:$lnl") + $shared + @(Get-ChildItem "$src\Plugin\*.cs" | ForEach-Object FullName))
 Copy-Item $lnl $outPlugin -Force
 
-# Launcher: plain .NET Framework 4.x console exe. N1: shares join-code / address validation with the plugin
-# (src\Shared\JoinAuth.cs has no LiteNetLib dependency).
+# Developer launcher (local two-instance tests; not part of the player release): plain .NET Framework 4.x console exe,
+# shares join-code / address validation with the plugin (src\Shared\JoinAuth.cs has no LiteNetLib dependency).
 Invoke-Csc 'TS2-Multiplayer-Launcher.exe' @('/target:exe', '/platform:anycpu', "/out:$BuildDir\TS2-Multiplayer-Launcher.exe",
-    "$src\Launcher\Launcher.cs", "$src\Launcher\Installer.cs", "$src\Shared\JoinAuth.cs")
+    "$src\Launcher\Launcher.cs", "$src\Shared\JoinAuth.cs")
 
 # Tests (offline). Each entry: exe name, test source.
 $suites = @(
@@ -60,7 +60,8 @@ $suites = @(
     @('TS2MP.W3Tests', 'W3Tests.cs', 'shared locker / dropped items / gear tests (M5 W3)'),
     @('TS2MP.DurabilityTests', 'DurabilityTests.cs', 'storage durability tests (M5 W3.4)'),
     @('TS2MP.WorldLootTests', 'WorldLootTests.cs', 'shared world loot tests (M5 W4.1)'),
-    @('TS2MP.NetAuthTests', 'NetAuthTests.cs', 'direct connect / join-code auth tests (N1)')
+    @('TS2MP.NetAuthTests', 'NetAuthTests.cs', 'direct connect / join-code auth tests (N1)'),
+    @('TS2MP.LifecycleTests', 'LifecycleTests.cs', 'F8 session lifecycle / host gate / ClientReady / save isolation rules (N1.2)')
 )
 foreach ($s in $suites) {
     Invoke-Csc "$($s[0]).exe" (@('/target:exe', "/out:$outTests\$($s[0]).exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\$($s[1])"))
@@ -102,7 +103,7 @@ if ($Test) {
     & "$outTests\TS2MP.RedirectTest.exe" $managed
     if ($LASTEXITCODE -ne 0) { throw "redirect test failed" }
     $ran++
-    foreach ($t in @(@('launcher-test.ps1', 'launcher tests'), @('installer-test.ps1', 'installer / host-join launcher / package tests (N1)'), @('n1-smoke.ps1', 'two-process join-code smoke test (N1)'))) {
+    foreach ($t in @(@('launcher-test.ps1', 'launcher tests'), @('launcher-dev-test.ps1', 'developer launcher host/join tests (N1)'), @('package-test.ps1', 'drag-and-drop release package tests (N1.2)'), @('n1-smoke.ps1', 'two-process join-code smoke test (N1)'))) {
         Write-Host "== $($t[1])"
         & powershell -NoProfile -ExecutionPolicy Bypass -File "$RepoRoot\tests\$($t[0])"
         if ($LASTEXITCODE -ne 0) { throw "$($t[1]) failed" }

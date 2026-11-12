@@ -3,7 +3,8 @@ TS2-Multiplayer - third-party components in this package
 
 Thief Simulator 2 is NOT included. No game files are distributed or modified; the mod is loaded at runtime by BepInEx.
 
-payload\bepinex\  BepInEx 5.4.23.5 (win x64), unmodified files from the official release archive
+winhttp.dll, doorstop_config.ini, .doorstop_version, BepInEx\core\*.dll:
+                  BepInEx 5.4.23.5 (win x64), unmodified files from the official release archive
                   https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.5
                   (BepInEx_win_x64_5.4.23.5.zip, SHA-256 82F9878551030F54657792C0740D9D51A09500EEAE1FBA21106B0C441E6732C4)
   - BepInEx (BepInEx.dll, BepInEx.Preloader.dll, BepInEx.Harmony.dll)  MIT          licenses\BepInEx-LICENSE.txt
@@ -14,7 +15,7 @@ payload\bepinex\  BepInEx 5.4.23.5 (win x64), unmodified files from the official
       Source code: https://github.com/NeighTools/UnityDoorstop (the binary is the unmodified build shipped with
       BepInEx 5.4.23.5; it can be replaced by any compatible build of your choice).
 
-payload\plugin\LiteNetLib.dll  LiteNetLib 1.3.1, MIT, (c) Ruslan Pyrch   licenses\LiteNetLib-LICENSE.txt
+BepInEx\plugins\TS2MP\LiteNetLib.dll  LiteNetLib 1.3.1, MIT, (c) Ruslan Pyrch   licenses\LiteNetLib-LICENSE.txt
                                https://github.com/RevenantX/LiteNetLib
 
-The license texts in licenses\ were taken from the upstream repositories.
+The license texts in BepInEx\plugins\TS2MP\licenses\ were taken from the upstream repositories.

@@ -1,15 +1,14 @@
-// TS2-Multiplayer-Launcher (N1). Starts the installed game exe normally (same as a double-click) and only adds
-// command-line arguments; the join code goes to the started game through its process environment only.
+// TS2-Multiplayer-Launcher - DEVELOPER TOOL ONLY (N1.2). Players use the in-game F8 menu of the drag-and-drop release;
+// this launcher is not part of it. It starts the installed game exe normally and only adds command-line arguments
+// (fixed-role launcher mode of the plugin); a join code goes to the started game through its process environment only.
 // No Steam/DRM/account handling. C# 5, .NET Framework 4.x, no dependencies.
 //
 //   (no arguments)                 interactive menu
-//   host  [--port N] [--bind A]    Host Game: new join code, listen on UDP N (default 27960) on A (default 0.0.0.0)
-//   join  [--host H] [--port N] [--code-stdin]   Join Game: connect to H:N; the code is typed in (or one stdin line)
-//   local                          Local Test / Developer: 1st run = host, 2nd run = client, loopback only
-//   install | update | repair | uninstall [--yes]   BepInEx 5.4.23.5 + plugin from the release package
-//   status                         installation and package check
-// Common: --game <folder> --data-dir <folder> --config <ini> --package <folder> --no-pause
-// Legacy: only common options and no command = local (kept for the developer workflow and tests).
+//   local                          Local Test: 1st run = host, 2nd run = client, loopback only (default)
+//   host  [--port N] [--bind A]    fixed-role host with a new join code (developer two-PC tests)
+//   join  [--host H] [--port N] [--code-stdin]   fixed-role client
+// Common: --game <folder> --data-dir <folder> --config <ini> --no-pause
+// Legacy: only common options and no command = local.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,12 +27,13 @@ namespace TS2MP.Launcher
     {
         const string MutexName = @"Local\TS2MP.Launcher";
         const string IniName = "TS2-Multiplayer-Launcher.ini";
-        const string PluginRel = Installer.PluginRel;
+        internal const string GameExe = "Thief Simulator 2.exe";
+        const string PluginRel = @"BepInEx\plugins\TS2MP\TS2MP.Plugin.dll";
         const string Version = ProtocolText.ModVersion;
 
         enum Exit { Ok = 0, Config = 2, Unmanaged = 3, Full = 4, Backup = 5, StartFailed = 6, EarlyExit = 7, Locked = 8, Inconsistent = 9, Internal = 10, PortInUse = 11, Install = 12, Cancelled = 13 }
 
-        static string _dataDir, _iniPath, _packageDir;
+        static string _dataDir, _iniPath;
         static bool _noPause, _interactive, _yes, _codeStdin;
         static Config _cfg;
         static string _optHost, _optBind; static int _optPort;
@@ -55,7 +55,6 @@ namespace TS2MP.Launcher
         {
             string exeDir = AppDomain.CurrentDomain.BaseDirectory;
             _iniPath = Path.Combine(exeDir, IniName);
-            _packageDir = exeDir;
             string command = null, gameOpt = null, dataOpt = null;
             for (int i = 0; i < argv.Length; i++)
             {
@@ -69,7 +68,6 @@ namespace TS2MP.Launcher
                     case "--config": if (next == null) return Fail(Exit.Config, "--config needs a file"); _iniPath = Path.GetFullPath(next); i++; break;
                     case "--game": if (next == null) return Fail(Exit.Config, "--game needs a folder"); gameOpt = next; i++; break;
                     case "--data-dir": if (next == null) return Fail(Exit.Config, "--data-dir needs a folder"); dataOpt = next; i++; break;
-                    case "--package": if (next == null) return Fail(Exit.Config, "--package needs a folder"); _packageDir = Path.GetFullPath(next); i++; break;
                     case "--host": if (next == null) return Fail(Exit.Config, "--host needs an address"); _optHost = next.Trim(); i++; break;
                     case "--bind": if (next == null) return Fail(Exit.Config, "--bind needs an address"); _optBind = next.Trim(); i++; break;
                     case "--port":
@@ -87,7 +85,6 @@ namespace TS2MP.Launcher
             if (dataOpt != null) _cfg.DataDir = dataOpt;
             _dataDir = _cfg.DataDir;
             Directory.CreateDirectory(_dataDir);
-            Installer.Log = Log;
             Log("---- launcher " + Version + " start pid=" + Process.GetCurrentProcess().Id + " command=" + (command ?? (argv.Length == 0 ? "menu" : "local")));
 
             if (command == null && argv.Length == 0) { _interactive = true; return Menu(); }
@@ -96,12 +93,7 @@ namespace TS2MP.Launcher
                 case "local": return Locked(() => LaunchLocal());
                 case "host": return Locked(() => LaunchHost());
                 case "join": return Locked(() => LaunchJoin());
-                case "install": return DoInstall("Install");
-                case "update": return DoInstall("Update");
-                case "repair": return DoInstall("Repair");
-                case "uninstall": return DoUninstall();
-                case "status": return ShowStatus();
-                default: return Fail(Exit.Config, "Unknown command '" + command + "'. Commands: host, join, local, install, update, repair, uninstall, status.");
+                default: return Fail(Exit.Config, "Unknown command '" + command + "'. Commands: local, host, join. (Players use the in-game F8 menu.)");
             }
         }
 
@@ -112,19 +104,13 @@ namespace TS2MP.Launcher
             while (true)
             {
                 Clear();
-                Console.WriteLine("Thief Simulator 2 Multiplayer " + Version + " (2 players, direct connection)");
+                Console.WriteLine("TS2-Multiplayer " + Version + " - DEVELOPER launcher (players use the in-game F8 menu)");
                 Console.WriteLine("Game folder: " + (GameOk() ? _cfg.GamePath : "NOT FOUND - open Settings"));
-                string perr;
-                var p = Payload.Load(_packageDir, out perr);
-                if (GameOk() && p != null) { string d; Installer.Status(_cfg.GamePath, p, out d); Console.WriteLine("Mod        : " + d); }
                 Console.WriteLine();
-                Console.WriteLine("  1  Host Game          (you play as Player 1, your friend joins)");
-                Console.WriteLine("  2  Join Game          (connect to your friend's game)");
-                Console.WriteLine("  3  Install / Update   (BepInEx 5.4.23.5 + multiplayer plugin)");
-                Console.WriteLine("  4  Repair             (check all mod files, restore damaged ones)");
-                Console.WriteLine("  5  Uninstall          (remove only files the launcher installed)");
+                Console.WriteLine("  1  Local Test         (two game instances on this PC: run twice)");
+                Console.WriteLine("  2  Host (fixed role)  (developer two-PC test)");
+                Console.WriteLine("  3  Join (fixed role)  (developer two-PC test)");
                 Console.WriteLine("  6  Settings");
-                Console.WriteLine("  7  Local Test         (developer: two game instances on this PC)");
                 Console.WriteLine("  0  Exit");
                 Console.WriteLine();
                 string choice = Ask("Choice");
@@ -132,13 +118,10 @@ namespace TS2MP.Launcher
                 Console.WriteLine();
                 switch (choice.Trim())
                 {
-                    case "1": last = Locked(() => LaunchHost()); break;
-                    case "2": last = Locked(() => LaunchJoin()); break;
-                    case "3": last = DoInstall(IsInstalled() ? "Update" : "Install"); break;
-                    case "4": last = DoInstall("Repair"); break;
-                    case "5": last = DoUninstall(); break;
+                    case "1": last = Locked(() => LaunchLocal()); break;
+                    case "2": last = Locked(() => LaunchHost()); break;
+                    case "3": last = Locked(() => LaunchJoin()); break;
                     case "6": SettingsMenu(); continue;
-                    case "7": last = Locked(() => LaunchLocal()); break;
                     case "0": return last;
                     default: continue;
                 }
@@ -171,7 +154,7 @@ namespace TS2MP.Launcher
                         string g = Ask("Folder that contains 'Thief Simulator 2.exe'");
                         if (g == null) return;
                         g = g.Trim().Trim('"');
-                        if (g.Length > 0 && File.Exists(Path.Combine(g, Installer.GameExe))) { _cfg.GamePath = Path.GetFullPath(g); _cfg.Save(_iniPath); }
+                        if (g.Length > 0 && File.Exists(Path.Combine(g, GameExe))) { _cfg.GamePath = Path.GetFullPath(g); _cfg.Save(_iniPath); }
                         else Pause("'Thief Simulator 2.exe' was not found in that folder.");
                         break;
                     case "2":
@@ -200,87 +183,15 @@ namespace TS2MP.Launcher
             }
         }
 
-        // ================= install =================
-        static Payload LoadPayload(out Exit failure)
-        {
-            string err;
-            var p = Payload.Load(_packageDir, out err);
-            failure = Exit.Ok;
-            if (p == null) failure = Fail(Exit.Install, "Release package not usable: " + err + ". Extract the complete TS2-Multiplayer ZIP and start the launcher from that folder.");
-            return p;
-        }
-
-        static Exit DoInstall(string verb)
-        {
-            Exit f;
-            if (!GameOk()) return Fail(Exit.Config, GameMissingText());
-            var p = LoadPayload(out f);
-            if (p == null) return f;
-            string detail;
-            var st = Installer.Status(_cfg.GamePath, p, out detail);
-            Console.WriteLine(verb + " TS2-Multiplayer " + p.Version + " into " + _cfg.GamePath);
-            Console.WriteLine("  Current  : " + detail);
-            if (st == InstallState.ForeignBepInEx)
-                return Fail(Exit.Install, "A different BepInEx version is already installed. The launcher does not overwrite files it does not own. Remove that BepInEx first (or use 5.4.23.5).");
-            string err;
-            if (!Installer.Apply(_cfg.GamePath, p, Path.Combine(_dataDir, "backups"), verb, out err)) return Fail(Exit.Install, err);
-            Installer.Status(_cfg.GamePath, p, out detail);
-            Console.WriteLine("  Now      : " + detail);
-            Log(verb.ToLowerInvariant() + " ok: " + detail);
-            return Exit.Ok;
-        }
-
-        static Exit DoUninstall()
-        {
-            if (!GameOk()) return Fail(Exit.Config, GameMissingText());
-            string perr;
-            var p = Payload.Load(_packageDir, out perr); // optional: recognises plugin files when there is no install record
-            Console.WriteLine("Uninstall TS2-Multiplayer from " + _cfg.GamePath);
-            Console.WriteLine("  Removes only files the launcher installed (and the plugin's config). Saves and game files are not touched.");
-            if (!_yes && !Confirm("Remove the mod now?")) return Exit.Cancelled;
-            string err;
-            if (!Installer.Uninstall(_cfg.GamePath, p, Path.Combine(_dataDir, "backups"), out err)) return Fail(Exit.Install, err);
-            Log("uninstall ok");
-            return Exit.Ok;
-        }
-
-        static Exit ShowStatus()
-        {
-            Console.WriteLine("TS2-Multiplayer launcher " + Version);
-            Console.WriteLine("  Game     : " + (GameOk() ? _cfg.GamePath : "not found"));
-            Exit f;
-            var p = LoadPayload(out f);
-            if (p == null) return f;
-            string err;
-            if (!p.Verify(out err)) return Fail(Exit.Install, "Release package damaged: " + err);
-            Console.WriteLine("  Package  : version " + p.Version + ", " + p.AllHashes.Count + " files verified against " + Payload.ManifestName);
-            if (!GameOk()) return Exit.Config;
-            string d;
-            var st = Installer.Status(_cfg.GamePath, p, out d);
-            Console.WriteLine("  Installed: " + d);
-            return st == InstallState.Installed ? Exit.Ok : Exit.Install;
-        }
-
-        // Before Host/Join: the mod must be present; with a package next to the launcher it must also match it,
-        // otherwise host and client would run different builds and the handshake refuses them anyway.
-        static Exit CheckInstalledForPlay()
-        {
-            Exit e = CheckModFiles();
-            if (e != Exit.Ok) return e;
-            string perr;
-            var p = Payload.Load(_packageDir, out perr);
-            if (p != null && Installer.Sha256(Path.Combine(_cfg.GamePath, PluginRel)) != p.Plugin.Sha256)
-                return Fail(Exit.Config, "The installed plugin is not the one from this package (" + p.Version + "). Choose Install / Update first; both players need the same version.");
-            return Exit.Ok;
-        }
+        static Exit CheckInstalledForPlay() { return CheckModFiles(); }
 
         static Exit CheckModFiles()
         {
             if (!GameOk()) return Fail(Exit.Config, GameMissingText());
             if (!File.Exists(Path.Combine(_cfg.GamePath, "winhttp.dll")) || !File.Exists(Path.Combine(_cfg.GamePath, @"BepInEx\core\BepInEx.dll")))
-                return Fail(Exit.Config, "BepInEx is not installed in " + _cfg.GamePath + ". Choose Install in the launcher menu.");
+                return Fail(Exit.Config, "BepInEx is not installed in " + _cfg.GamePath + ". Extract the release ZIP into the game folder (or tools\\bepinex.ps1 -Install).");
             if (!File.Exists(Path.Combine(_cfg.GamePath, PluginRel)))
-                return Fail(Exit.Config, "Multiplayer plugin missing: " + Path.Combine(_cfg.GamePath, PluginRel) + ". Choose Install in the launcher menu.");
+                return Fail(Exit.Config, "Multiplayer plugin missing: " + Path.Combine(_cfg.GamePath, PluginRel) + ". Run tools\\build.ps1 -Deploy or extract the release ZIP.");
             return Exit.Ok;
         }
 
@@ -302,7 +213,7 @@ namespace TS2MP.Launcher
 
         static Exit CheckInstances(out Instances inst)
         {
-            string procName = Path.GetFileNameWithoutExtension(Installer.GameExe);
+            string procName = Path.GetFileNameWithoutExtension(GameExe);
             inst = new Instances { StatePath = Path.Combine(_dataDir, "session.state") };
             inst.St = SessionState.Load(inst.StatePath);
             inst.HostAlive = IsAlive(inst.St.HostPid, inst.St.HostStart, procName);
@@ -503,7 +414,7 @@ namespace TS2MP.Launcher
         static Exit StartGame(string role, string sessionId, string instanceId, int port, string bind, string connect, string joinCode, out Process proc, out string logDir)
         {
             proc = null;
-            string gameExe = Path.Combine(_cfg.GamePath, Installer.GameExe);
+            string gameExe = Path.Combine(_cfg.GamePath, GameExe);
             logDir = Path.Combine(_dataDir, "logs", DateTime.Now.ToString("yyyyMMdd-HHmmss") + "_" + role + "_" + instanceId);
             Directory.CreateDirectory(logDir);
             var psi = new ProcessStartInfo(gameExe)
@@ -554,7 +465,7 @@ namespace TS2MP.Launcher
                     string dst = Path.Combine(dest, "saves", rel);
                     Directory.CreateDirectory(Path.GetDirectoryName(dst));
                     File.Copy(src, dst, false);
-                    if (Installer.Sha256(src) != Installer.Sha256(dst)) throw new IOException("hash mismatch after copy: " + rel + " (file may be in use)");
+                    if (Sha256(src) != Sha256(dst)) throw new IOException("hash mismatch after copy: " + rel + " (file may be in use)");
                     n++;
                 }
                 string regKey = @"HKCU\Software\" + company + @"\" + product;
@@ -602,8 +513,12 @@ namespace TS2MP.Launcher
         }
 
         // ---- helpers ----
-        static bool GameOk() { return !string.IsNullOrEmpty(_cfg.GamePath) && File.Exists(Path.Combine(_cfg.GamePath, Installer.GameExe)); }
-        static bool IsInstalled() { return GameOk() && File.Exists(Path.Combine(_cfg.GamePath, PluginRel)); }
+        static bool GameOk() { return !string.IsNullOrEmpty(_cfg.GamePath) && File.Exists(Path.Combine(_cfg.GamePath, GameExe)); }
+        public static string Sha256(string f)
+        {
+            using (var st = new FileStream(f, FileMode.Open, FileAccess.Read, FileShare.Read)) using (var h = System.Security.Cryptography.SHA256.Create())
+                return BitConverter.ToString(h.ComputeHash(st)).Replace("-", "");
+        }
 
         static string GameMissingText()
         {
@@ -726,7 +641,7 @@ namespace TS2MP.Launcher
 
     // The launcher does not link the LiteNetLib-dependent Protocol.cs; tests/installer-test.ps1 checks that this
     // matches ProtocolInfo.ModVersion.
-    static class ProtocolText { public const string ModVersion = "0.11.1"; }
+    static class ProtocolText { public const string ModVersion = "0.12.0"; }
 
     sealed class SessionState
     {
@@ -806,7 +721,7 @@ namespace TS2MP.Launcher
                     else if (Is(k, "SessionKey")) c.LegacyLanKeys[2] = v;
                 }
             }
-            if (string.IsNullOrEmpty(c.GamePath) || !File.Exists(Path.Combine(c.GamePath, Installer.GameExe)))
+            if (string.IsNullOrEmpty(c.GamePath) || !File.Exists(Path.Combine(c.GamePath, Program.GameExe)))
             {
                 string found = AutoDetect(AppDomain.CurrentDomain.BaseDirectory);
                 if (found != null) c.GamePath = found;
@@ -833,7 +748,7 @@ namespace TS2MP.Launcher
         public static string AutoDetect(string exeDir)
         {
             foreach (var d in new[] { exeDir, Path.GetDirectoryName(exeDir.TrimEnd('\\')) })
-                if (d != null && File.Exists(Path.Combine(d, Installer.GameExe))) return d;
+                if (d != null && File.Exists(Path.Combine(d, Program.GameExe))) return d;
             try
             {
                 var steam = Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Valve\Steam", "SteamPath", null) as string;
@@ -850,7 +765,7 @@ namespace TS2MP.Launcher
                     foreach (var lib in libs)
                     {
                         string d = Path.Combine(lib, @"steamapps\common\Thief Simulator 2");
-                        if (File.Exists(Path.Combine(d, Installer.GameExe))) return d;
+                        if (File.Exists(Path.Combine(d, Program.GameExe))) return d;
                     }
                 }
             }

@@ -1,13 +1,16 @@
-// Client-only persistence protection.
-// Primary: every game method that reads Application.persistentDataPath is transpiled to use a client sandbox folder,
-//          so the client's saves, backups and "new game" wipes land in the sandbox, never in the real save folder.
-// Defense in depth: guarded FBPP writes, File.* writes into the real save folder / game folder are blocked,
-//          PlayerPrefs (registry) writes, graphics ini writes and Steam achievement writes are blocked.
-// Failure to verify => caller quits the client (fail closed).
+// Player-2 (client) persistence protection.
+// N1.2: a normally started game (solo / host) applies NO patch here. Only when the process becomes Player 2 - from the
+// F8 menu after authentication + host readiness (main menu, before any client persistence or scene load), or at startup
+// in the launcher's developer client mode - the redirect and guards are installed and ARMED. Once armed it stays armed.
+// Arming: seed the sandbox (read-only copy of the real folder), switch the redirect, re-run the original
+// InitializePrefs.Reinitialize so FBPP (which caches its folder in FBPPConfig.SaveFilePath) reloads from the sandbox,
+// then verify that every save target resolves inside the sandbox. Any failure => caller fails closed.
+// Primary: every game method that reads Application.persistentDataPath is transpiled to SandboxPath().
+// Defense in depth (armed only): guarded FBPP writes, File.* writes into the real save folder / game folder blocked,
+//          PlayerPrefs (registry) writes, graphics ini writes and Steam achievement writes blocked.
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
@@ -19,44 +22,110 @@ namespace TS2MP.Plugin
     internal static class SaveGuard
     {
         internal static string SandboxDir, RealDir, GameDir;
+        internal static volatile bool Armed;
+        internal static bool Available { get; private set; }   // precheck passed (Join allowed)
+        static bool _installed;
+        static Harmony _harmony;
         static InstanceLog _log;
         static readonly HashSet<string> _logged = new HashSet<string>();
         static readonly Dictionary<MethodBase, int[]> _filePathArgs = new Dictionary<MethodBase, int[]>();
         static int _blockedCount;
 
-        public static string SandboxPath() { return SandboxDir; } // replacement for Application.persistentDataPath
+        // Replacement for Application.persistentDataPath in the 13 redirected callers.
+        public static string SandboxPath() { return Armed ? SandboxDir : Application.persistentDataPath; }
 
+        // Launcher developer mode (client role fixed at startup): precheck + install + arm at once.
         public static bool Install(Harmony harmony, LaunchArgs args, InstanceLog log)
         {
-            _log = log;
+            string why;
+            if (!Precheck(harmony, args.DataDir, log)) return false;
+            if (!Arm(out why)) { log.Error("SAVE_GUARD arm failed: " + why); return false; }
+            return true;
+        }
+
+        // Read-only: folder layout and the original types/methods the protection relies on. No patch is applied.
+        public static bool Precheck(Harmony harmony, string dataDir, InstanceLog log)
+        {
+            _log = log; _harmony = harmony;
             try
             {
-                RealDir = Norm(Application.persistentDataPath); // read before patching
-                GameDir = Norm(Path.GetDirectoryName(Application.dataPath));
-                SandboxDir = Norm(Path.Combine(args.DataDir, "client-sandbox"));
+                RealDir = SaveIsolation.Norm(Application.persistentDataPath);   // the original value, nothing is redirected yet
+                GameDir = SaveIsolation.Norm(Path.GetDirectoryName(Application.dataPath));
+                SandboxDir = SaveIsolation.Norm(Path.Combine(dataDir, "client-sandbox"));
                 log.Info("SAVE_GUARD real=" + RealDir + " sandbox=" + SandboxDir + " game=" + GameDir);
-                if (IsUnder(SandboxDir, RealDir) || IsUnder(SandboxDir, GameDir) || IsUnder(RealDir, SandboxDir))
-                {
-                    log.Error("SAVE_GUARD sandbox overlaps real save folder or game folder");
-                    return false;
-                }
-                Directory.CreateDirectory(SandboxDir);
-                SeedSandbox();
-
-                if (!PatchRedirects(harmony)) return false;
-                if (!VerifyRedirect()) return false;
-                InstallGuards(harmony);
-                log.Info("SAVE_GUARD_ACTIVE client persistence redirected to sandbox; guards installed; blocked so far=" + _blockedCount);
+                string layout = SaveIsolation.LayoutError(SandboxDir, RealDir, GameDir);
+                if (layout != null) { log.Error("SAVE_GUARD " + layout); return false; }
+                var fbpp = AccessTools.TypeByName("FBPP"); var cfg = AccessTools.TypeByName("FBPPConfig"); var ip = AccessTools.TypeByName("InitializePrefs");
+                if (fbpp == null || cfg == null || ip == null || AccessTools.Field(fbpp, "_config") == null || AccessTools.Method(ip, "Reinitialize") == null
+                    || AccessTools.Method(cfg, "GetSaveFilePath") == null || AccessTools.Method(fbpp, "WriteToSaveFile") == null)
+                { log.Error("SAVE_GUARD original save API not found (FBPP / FBPPConfig / InitializePrefs)"); return false; }
+                Available = true;
+                log.Info("SAVE_GUARD precheck ok (no patch applied until this process becomes Player 2)");
                 return true;
             }
             catch (Exception ex)
             {
-                log.Error("SAVE_GUARD install exception", ex);
+                log.Error("SAVE_GUARD precheck exception", ex);
                 return false;
             }
         }
 
-        // Copies the host's current save files into the sandbox (read-only access to the real folder).
+        // Main thread only; outside a gameplay scene (main menu) or before any scene (developer mode).
+        public static bool Arm(out string why)
+        {
+            why = null;
+            if (Armed) { why = RuntimeCheck() ? null : "active save target outside the sandbox"; return why == null; }
+            if (!Available) { why = "save protection precheck failed"; return false; }
+            try
+            {
+                if (!_installed)
+                {
+                    if (!PatchRedirects(_harmony)) { why = "save-path redirect could not be applied"; return false; }
+                    InstallGuards(_harmony);
+                    _installed = true;
+                    _log.Info("SAVE_GUARD_INSTALLED redirect + guards (inactive until armed)");
+                }
+                Directory.CreateDirectory(SandboxDir);
+                SeedSandbox();
+                Armed = true;   // from here on every guard is active and the redirect points at the sandbox
+                _log.Info("SAVE_GUARD_ARMED redirect -> sandbox, guards active");
+                var fbpp = AccessTools.TypeByName("FBPP");
+                bool fbppStarted = AccessTools.Field(fbpp, "_config").GetValue(null) != null;
+                if (fbppStarted)
+                {
+                    // The original keeps the folder in FBPPConfig.SaveFilePath: re-run its own initialisation (now redirected).
+                    if (!ReinitializePrefs(out why)) return false;
+                    _log.Info("SAVE_GUARD FBPP re-initialised from the sandbox (InitializePrefs.Reinitialize)");
+                }
+                if (!VerifyRedirect(out why)) return false;
+                _log.Info("SAVE_GUARD_ACTIVE client persistence redirected to sandbox; verified; blocked so far=" + _blockedCount);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _log.Error("SAVE_GUARD arm exception", ex);
+                why = ex.Message;
+                return false;
+            }
+        }
+
+        static bool ReinitializePrefs(out string why)
+        {
+            why = null;
+            var t = AccessTools.TypeByName("InitializePrefs");
+            var m = t != null ? AccessTools.Method(t, "Reinitialize") : null;
+            if (m == null) { why = "InitializePrefs.Reinitialize not found"; return false; }
+            var inst = UnityEngine.Object.FindObjectOfType(t);   // once, at arming time (main menu)
+            if (inst != null) { m.Invoke(inst, null); return true; }
+            // No instance in the scene: the method never reads 'this' (IL verified), call it with a null receiver.
+            var dm = new DynamicMethod("TS2MP_Reinit", typeof(void), Type.EmptyTypes, typeof(SaveGuard), true);
+            var il = dm.GetILGenerator();
+            il.Emit(OpCodes.Ldnull); il.Emit(OpCodes.Call, m); il.Emit(OpCodes.Ret);
+            ((Action)dm.CreateDelegate(typeof(Action)))();
+            return true;
+        }
+
+        // Copies the real save files into the sandbox (read-only access to the real folder).
         static void SeedSandbox()
         {
             if (!Directory.Exists(RealDir)) { _log.Info("SEED real save folder does not exist yet; client sandbox starts empty"); return; }
@@ -83,28 +152,28 @@ namespace TS2MP.Plugin
             return patched != null;
         }
 
-        static bool VerifyRedirect()
+        static bool VerifyRedirect(out string why)
         {
+            why = null;
             var cfgType = AccessTools.TypeByName("FBPPConfig");
             var cfg = Activator.CreateInstance(cfgType);
             string p = (string)AccessTools.Method(cfgType, "GetSaveFilePath").Invoke(cfg, null);
-            bool ok = p != null && IsUnder(Norm(p), SandboxDir);
-            if (ok) _log.Info("VERIFY FBPPConfig.GetSaveFilePath() -> " + p + " (inside sandbox)");
-            else _log.Error("VERIFY FAILED FBPPConfig.GetSaveFilePath() -> " + p + " (not inside sandbox)");
-            return ok && RuntimeCheck();
+            if (p == null || !SaveIsolation.IsUnder(SaveIsolation.Norm(p), SandboxDir)) { why = "FBPPConfig.GetSaveFilePath() -> " + p; _log.Error("VERIFY FAILED " + why + " (not inside sandbox)"); return false; }
+            _log.Info("VERIFY FBPPConfig.GetSaveFilePath() -> " + p + " (inside sandbox)");
+            if (!RuntimeCheck()) { why = "active FBPP save target outside the sandbox"; return false; }
+            return true;
         }
 
-        // Detects the case where the game initialised FBPP with the real path before our patches existed.
-        // Called at install and periodically by NetRunner. Returns false if the active save target is outside the sandbox.
+        // Returns false if the active save target is outside the sandbox. Armed processes are checked every 2 s.
         public static bool RuntimeCheck()
         {
             try
             {
                 var fbpp = AccessTools.TypeByName("FBPP");
                 var cfg = AccessTools.Field(fbpp, "_config").GetValue(null);
-                if (cfg == null) return true; // not initialised yet; initialisation will go through the patched Reinitialize
+                if (cfg == null) return true; // not initialised yet; initialisation will go through the redirected Reinitialize
                 string p = (string)AccessTools.Method(cfg.GetType(), "GetSaveFilePath").Invoke(cfg, null);
-                if (p != null && IsUnder(Norm(p), SandboxDir)) return true;
+                if (p != null && SaveIsolation.IsUnder(SaveIsolation.Norm(p), SandboxDir)) return true;
                 _log.Error("RUNTIME_CHECK FBPP active save file is outside the sandbox: " + p);
                 return false;
             }
@@ -157,21 +226,24 @@ namespace TS2MP.Plugin
             TryPrefix(h, target, prefix, "File." + target.Name + "(" + target.GetParameters().Length + ")");
         }
 
-        // ---- prefixes (return false = skip original) ----
+        // ---- prefixes (return false = skip original); all pass through while disarmed ----
         static bool BlockCall(MethodBase __originalMethod)
         {
+            if (!Armed) return true;
             Blocked(__originalMethod.DeclaringType.Name + "." + __originalMethod.Name, null);
             return false;
         }
 
         static bool BlockPrefs(MethodBase __originalMethod, string key)
         {
+            if (!Armed) return true;
             Blocked("PlayerPrefs." + __originalMethod.Name, key);
             return false;
         }
 
         static bool GuardFbppWrite()
         {
+            if (!Armed) return true;
             string p = null;
             try
             {
@@ -179,13 +251,14 @@ namespace TS2MP.Plugin
                 p = (string)AccessTools.Method(fbpp, "GetSaveFilePath").Invoke(null, null);
             }
             catch (Exception ex) { _log.Error("FBPP guard could not resolve target path; blocking", ex); }
-            if (p != null && IsUnder(Norm(p), SandboxDir)) return true;
+            if (p != null && SaveIsolation.IsUnder(SaveIsolation.Norm(p), SandboxDir)) return true;
             Blocked("FBPP.WriteToSaveFile", p);
             return false;
         }
 
         static bool GuardFile(MethodBase __originalMethod, object[] __args)
         {
+            if (!Armed) return true;
             int[] idx;
             if (!_filePathArgs.TryGetValue(__originalMethod, out idx)) return true;
             foreach (var i in idx)
@@ -193,8 +266,8 @@ namespace TS2MP.Plugin
                 var p = i < __args.Length ? __args[i] as string : null;
                 if (p == null) continue;
                 string full;
-                try { full = Norm(p); } catch { continue; }
-                if (IsUnder(full, RealDir) || (IsUnder(full, GameDir) && !IsUnder(full, Path.Combine(GameDir, "BepInEx"))))
+                try { full = SaveIsolation.Norm(p); } catch { continue; }
+                if (SaveIsolation.IsProtectedWrite(full, RealDir, GameDir))
                 {
                     Blocked("File." + __originalMethod.Name, full);
                     return false;
@@ -211,16 +284,6 @@ namespace TS2MP.Plugin
             lock (_logged) first = _logged.Add(key);
             if (first || _blockedCount % 100 == 0)
                 _log.Warn("BLOCKED_WRITE " + what + (detail != null ? " target=" + detail : "") + " (total blocked=" + _blockedCount + ")");
-        }
-
-        static string Norm(string p) { return Path.GetFullPath(p).TrimEnd('\\', '/'); }
-
-        static bool IsUnder(string path, string root)
-        {
-            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(root)) return false;
-            return path.Equals(root, StringComparison.OrdinalIgnoreCase)
-                || path.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
-                || path.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

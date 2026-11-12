@@ -1,0 +1,463 @@
+// N1.2 in-game F8 multiplayer menu (Unity IMGUI, drawn only while the player has it open) and the session glue that
+// feeds real game state into the Unity-free Lifecycle (src/Shared/MultiplayerLifecycle.cs) and executes its actions.
+//  Host Game : only in a loaded, playable world. Starts a SessionNode (UDP, 0.0.0.0:<port>, new join code) and the
+//              sync systems; new joins are refused (HostNotReady) while HostReadiness reports a reason.
+//  Join Game : only in the original main menu (MainMenuNew). Connect + authenticate; after Welcome the save isolation is
+//              installed, armed and verified (SaveGuard.Arm), then the client systems are built and ClientReady is sent;
+//              once the host's world snapshot arrived the original MainMenu.Continue() loads the (sandboxed) save.
+// Input while open in the world: the original player motor/camera behaviours and the Rewired player are switched off
+// and cursorLock cleared (the original PlayerScript.Update then frees the cursor); exactly the saved values are
+// restored on close. No text input is used in the world (port via buttons), so typing never reaches the game there.
+// The join code is shown only inside this window and never written to a log.
+using System;
+using System.Reflection;
+using HarmonyLib;
+using TS2MP.Shared;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+namespace TS2MP.Plugin
+{
+    internal sealed class MultiplayerMenu : IDisposable
+    {
+        const string MenuScene = "MainMenuNew", WorldScene = "MainScene";
+        readonly NetRunner _runner; readonly InstanceLog _log; readonly SessionSettings _settings; readonly Harmony _saveHarmony;
+        readonly Lifecycle _lc = new Lifecycle();
+        readonly bool _legacy;
+        bool _isolationAvailable;
+        SessionNode _pendingClient;   // client node until it is attached to the runner (ticked here)
+        string _hostCode;             // formatted join code of the running host session (memory only)
+        int _port;
+        string _joinHost = "", _joinPort, _joinCode = "";
+        string _hostGateReason = "Host startet";
+        string _hint;
+        // Developer test hook (not used by players): TS2MP_DEV_AUTOJOIN="host|port|code" in this process's environment
+        // performs one Join from the main menu without UI input. Read and cleared at startup; the code is never logged.
+        string _devJoin; float _devJoinAt;
+
+        // game context
+        bool _menuSceneLoaded, _worldSceneLoaded;
+        float _lastSceneLoad;
+        object _gm; float _nextGmProbe;
+        Type _gmType, _psType, _menuType;
+        Func<object, bool> _gmLoaded; Func<object, object> _gmPs;
+        Func<object, object> _psPmb, _psPcb, _psRewired; Func<object, bool> _psCursorLock, _psLockpicking; Action<object, bool> _setCursorLock;
+        PropertyInfo _rewiredPlaying;
+        FieldInfo _fbppConfig; MethodInfo _fbppExists;
+
+        // window + input lock
+        bool _open; Rect _rect; GUIStyle _title, _text, _big, _err, _btn, _field; Vector2 _scroll;
+        object _lockedPs; bool _savedPmb, _savedPcb, _savedCursorLock, _savedPlaying, _lockedRewired;
+
+        public MultiplayerMenu(NetRunner runner, InstanceLog log, SessionSettings settings, Harmony saveHarmony, bool legacy)
+        {
+            _runner = runner; _log = log; _settings = settings; _saveHarmony = saveHarmony; _legacy = legacy;
+            _lc.Legacy = legacy;
+            _port = settings.HostPort; _joinPort = NetConfig.DefaultPort.ToString();
+            ResolveTypes();
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
+            for (int i = 0; i < SceneManager.sceneCount; i++) Mark(SceneManager.GetSceneAt(i).name, true);
+            if (!legacy) _isolationAvailable = SaveGuard.Precheck(saveHarmony, settings.DataDir, log);
+            if (!legacy)
+            {
+                _devJoin = Environment.GetEnvironmentVariable("TS2MP_DEV_AUTOJOIN");
+                if (_devJoin != null) { try { Environment.SetEnvironmentVariable("TS2MP_DEV_AUTOJOIN", null); } catch { } log.Info("DEV_AUTOJOIN test hook armed (one join from the main menu)"); }
+            }
+            log.Info("MENU ready key=" + settings.MenuKey + (legacy ? " (launcher mode: status only)" : " isolationAvailable=" + _isolationAvailable));
+        }
+
+        void ResolveTypes()
+        {
+            _gmType = AccessTools.TypeByName("GameManager"); _psType = AccessTools.TypeByName("PlayerScript"); _menuType = AccessTools.TypeByName("MainMenu");
+            _gmLoaded = Fast.Getter<bool>(_gmType, "loadedMap"); _gmPs = Fast.Getter<object>(_gmType, "PS");
+            _psPmb = Fast.Getter<object>(_psType, "PMB"); _psPcb = Fast.Getter<object>(_psType, "PCB"); _psRewired = Fast.Getter<object>(_psType, "rewiredPlayer");
+            _psCursorLock = Fast.Getter<bool>(_psType, "cursorLock"); _setCursorLock = Fast.Setter<bool>(_psType, "cursorLock"); _psLockpicking = Fast.Getter<bool>(_psType, "isLockpicking");
+            var rp = AccessTools.TypeByName("Rewired.Player"); _rewiredPlaying = rp != null ? rp.GetProperty("isPlaying") : null;
+            var fbpp = AccessTools.TypeByName("FBPP"); _fbppConfig = fbpp != null ? AccessTools.Field(fbpp, "_config") : null; _fbppExists = fbpp != null ? AccessTools.Method(fbpp, "DoesSaveFileExist") : null;
+        }
+
+        // ---------------------------------------------------------------- game context
+        void Mark(string name, bool loaded)
+        {
+            if (name == MenuScene) _menuSceneLoaded = loaded;
+            else if (name == WorldScene) { _worldSceneLoaded = loaded; _gm = null; _nextGmProbe = 0; }
+        }
+
+        void OnSceneLoaded(Scene s, LoadSceneMode mode)
+        {
+            if (mode == LoadSceneMode.Single) { _menuSceneLoaded = false; _worldSceneLoaded = false; _gm = null; }
+            Mark(s.name, true);
+            _lastSceneLoad = Time.realtimeSinceStartup;
+            if (_open && _lockedPs != null) CloseMenu("scene change");
+        }
+
+        void OnSceneUnloaded(Scene s) { Mark(s.name, false); }
+
+        GameContext Context()
+        {
+            if (_menuSceneLoaded && !_worldSceneLoaded) return GameContext.MainMenu;
+            if (!_worldSceneLoaded || _gmType == null) return GameContext.Loading;
+            if (_gm == null || (_gm is UnityEngine.Object && !(UnityEngine.Object)_gm))
+            {
+                _gm = null;
+                if (Time.realtimeSinceStartup < _nextGmProbe) return GameContext.Loading;
+                _nextGmProbe = Time.realtimeSinceStartup + 0.5f;   // at most twice per second, only while loading
+                _gm = UnityEngine.Object.FindObjectOfType(_gmType);
+                if (_gm == null) return GameContext.Loading;
+            }
+            return _gmLoaded != null && _gmPs != null && _gmLoaded(_gm) && Alive(_gmPs(_gm)) ? GameContext.InWorld : GameContext.Loading;
+        }
+
+        static bool Alive(object o) { var u = o as UnityEngine.Object; return u != null && u; }
+
+        HostFacts Facts(GameContext ctx)
+        {
+            var f = new HostFacts { Context = ctx, SecondsSinceSceneLoad = Time.realtimeSinceStartup - _lastSceneLoad };
+            if (ctx == GameContext.InWorld) { f.LoadedMap = true; f.PlayerPresent = true; }
+            int profile = PlayerPrefs.GetInt("Profile", 0);
+            f.ProfileValid = profile >= 0 && profile <= 4 && _fbppConfig != null && _fbppConfig.GetValue(null) != null;
+            var w = _runner.World; var p2 = _runner.P2;
+            f.SystemsReady = w != null && p2 != null && p2.Ready;
+            f.RegionKnown = w != null && w.RegionKnown;
+            f.PersistenceReady = p2 != null && p2.HostBookReady;
+            return f;
+        }
+
+        // ---------------------------------------------------------------- per frame
+        public void Update()
+        {
+            if (Input.GetKeyDown(_settings.MenuKey)) { if (_open) CloseMenu("key"); else OpenMenu(); }
+            if (_open && _lockedPs != null && !Alive(_lockedPs)) { _lockedPs = null; _open = false; }
+            if (_open && _lockedPs != null && _psCursorLock(_lockedPs)) _setCursorLock(_lockedPs, false);   // the original may re-lock
+
+            double now = Time.realtimeSinceStartup;
+            if (_legacy) return;
+            if (_pendingClient != null) _pendingClient.Tick();
+            if (_devJoin != null && !_lc.Busy() && Context() == GameContext.MainMenu)
+            {
+                if (_devJoinAt == 0) _devJoinAt = Time.realtimeSinceStartup + 5f;
+                else if (Time.realtimeSinceStartup >= _devJoinAt)
+                {
+                    var parts = _devJoin.Split('|'); _devJoin = null;
+                    if (parts.Length == 3)
+                    {
+                        _log.Info("DEV_AUTOJOIN joining " + parts[0] + ":" + parts[1]);
+                        _joinHost = parts[0]; _joinPort = parts[1]; _joinCode = parts[2];
+                        StartJoin();
+                    }
+                    else _log.Warn("DEV_AUTOJOIN malformed (expected host|port|code)");
+                }
+            }
+            if (!_lc.Busy()) return;
+            var ctx = Context();
+            if (_lc.IsHostState || (_lc.State == MpState.Connected && _hostCode != null)) HostFrame(ctx, now);
+            else ClientFrame(ctx, now);
+        }
+
+        void HostFrame(GameContext ctx, double now)
+        {
+            var node = _runner.Node;
+            if (node == null) { _lc.Fail("Host-Sitzung nicht vorhanden", now); _hostCode = null; return; }
+            _hostGateReason = HostReadiness.Check(Facts(ctx));
+            if (_lc.HostTick(ctx, _hostGateReason, node.IsConnected, now)) StopSession("host returned to the main menu");
+        }
+
+        void ClientFrame(GameContext ctx, double now)
+        {
+            var node = _pendingClient ?? _runner.Node;
+            if (node == null) { _lc.Fail("Client-Sitzung nicht vorhanden", now); return; }
+            var w = _runner.World;
+            var action = _lc.ClientTick(ctx, node.State, node.LastReject, node.FatalReason, node.HostWaitReason, w != null && w.Synced, now);
+            switch (action)
+            {
+                case ClientAction.ArmIsolation: Prepare(node, ctx, now); break;
+                case ClientAction.ContinueGame: ContinueOriginal(); break;
+                case ClientAction.Abort: node.AbortPreparation("aborted"); EndClient("aborted: " + _lc.Error); break;
+                case ClientAction.GiveUp: EndClient("connection ended: " + _lc.Error); break;
+            }
+        }
+
+        // Authenticated + welcomed by a gameplay-ready host, still in the main menu: arm the isolation BEFORE anything
+        // client-side touches persistence or loads a scene, then build the client systems and confirm.
+        void Prepare(SessionNode node, GameContext ctx, double now)
+        {
+            if (ctx != GameContext.MainMenu) { node.AbortPreparation("left the main menu"); _lc.Fail("Hauptmenü wurde verlassen", now); EndClient("left main menu"); return; }
+            string why;
+            bool wasArmed = SaveGuard.Armed;
+            if (!SaveGuard.Arm(out why))
+            {
+                _log.Error("JOIN save isolation could not be verified: " + why);
+                node.AbortPreparation("save isolation not verified");
+                _lc.IsolationFailed(why, now);
+                EndClient("isolation failed");
+                if (SaveGuard.Armed || wasArmed) _runner.RequestQuit("SAVE_GUARD_FAILED after arming: quitting to protect the real saves (fail closed).");
+                return;
+            }
+            _lc.IsolationArmed(now);
+            _log.Info("JOIN save isolation armed and verified; building client systems");
+            _pendingClient = null;
+            if (!_runner.AttachSession(node))
+            {
+                node.AbortPreparation("client systems failed");
+                _lc.Fail("Mehrspieler-Systeme konnten nicht gestartet werden (siehe Log)", now);
+                EndClient("systems failed");
+                return;
+            }
+            node.ConfirmReady();
+            _lc.SystemsConfirmed(now);
+        }
+
+        void ContinueOriginal()
+        {
+            bool hasSave = false;
+            try { hasSave = _fbppExists != null && (bool)_fbppExists.Invoke(null, null); } catch { }
+            if (!hasSave)
+            {
+                _hint = "Kein Spielstand im Spieler-2-Bereich gefunden. Wähle im Hauptmenü „Neues Spiel“ (wird nur im geschützten Bereich gespeichert).";
+                _log.Info("JOIN no sandbox save for this profile: waiting for the player to start a game from the original main menu");
+                return;
+            }
+            var mm = _menuType != null ? UnityEngine.Object.FindObjectOfType(_menuType) : null;   // once
+            var cont = _menuType != null ? AccessTools.Method(_menuType, "Continue") : null;
+            if (mm == null || cont == null) { _hint = "Bitte im Hauptmenü auf „Fortsetzen“ klicken."; _log.Warn("JOIN MainMenu.Continue not found; the player continues manually"); return; }
+            CloseMenu("continue");
+            _log.Info("JOIN host world synchronized: loading the save through the original MainMenu.Continue()");
+            try { cont.Invoke(mm, null); }
+            catch (Exception ex) { _log.Error("JOIN MainMenu.Continue failed", ex); _hint = "Bitte im Hauptmenü auf „Fortsetzen“ klicken."; }
+        }
+
+        void EndClient(string why)
+        {
+            if (_pendingClient != null) { _pendingClient.Dispose(); _pendingClient = null; }
+            else _runner.DetachSession(why);
+        }
+
+        void StopSession(string why)
+        {
+            _lc.BeginStop(Time.realtimeSinceStartup);
+            if (_pendingClient != null) { _pendingClient.Dispose(); _pendingClient = null; }
+            _runner.DetachSession(why);
+            _hostCode = null; _hint = null;
+            _lc.Stopped(Time.realtimeSinceStartup);
+        }
+
+        // ---------------------------------------------------------------- actions
+        void StartHost()
+        {
+            double now = Time.realtimeSinceStartup;
+            var ctx = Context();
+            string deny = _lc.RequestHost(ctx, _port, now);
+            if (deny != null) { _hint = deny; return; }
+            string code = JoinAuth.NewCode();
+            var node = new SessionNode(Role.Host, RandomHex(6), RandomHex(4), Application.version, _port, _log);
+            node.BindAddress = "0.0.0.0";
+            node.JoinKey = JoinAuth.DeriveKey(code);
+            node.HostGate = () => _hostGateReason;
+            _hostGateReason = "Host startet";
+            if (!node.Start())
+            {
+                node.Dispose();
+                _lc.HostStarted(false, "UDP-Port " + _port + " ist belegt oder blockiert – anderen Port wählen", now);
+                return;
+            }
+            if (!_runner.AttachSession(node))
+            {
+                _runner.DetachSession("host systems failed");
+                _lc.HostStarted(false, "Mehrspieler-Systeme konnten nicht gestartet werden (siehe Log)", now);
+                return;
+            }
+            _hostCode = JoinAuth.Format(code);
+            _hint = null;
+            _lc.HostStarted(true, null, now);
+            _log.Info("HOST started from the F8 menu: UDP 0.0.0.0:" + _port + " (join code shown in the menu only)");
+        }
+
+        void StartJoin()
+        {
+            double now = Time.realtimeSinceStartup;
+            JoinRequest req;
+            string deny = _lc.RequestJoin(Context(), _isolationAvailable, _joinHost, _joinPort, _joinCode, out req, now);
+            if (deny != null) { _hint = deny; return; }
+            var node = new SessionNode(Role.Client, "join", RandomHex(4), Application.version, req.Port, _log);
+            node.ConnectAddress = req.Host;
+            node.JoinKey = JoinAuth.DeriveKey(req.Code);
+            node.AutoReady = SaveGuard.Armed;   // already isolated earlier in this process: no new preparation needed
+            if (!node.Start()) { node.Dispose(); _lc.Fail("Netzwerk konnte nicht gestartet werden", now); return; }
+            _joinCode = "";   // the code is not kept in the field after use
+            _hint = null;
+            if (node.AutoReady)
+            {
+                // Isolation already active: attach the systems now so they see the connection from the start.
+                if (!_runner.AttachSession(node)) { _runner.DetachSession("client systems failed"); _lc.Fail("Mehrspieler-Systeme konnten nicht gestartet werden", now); return; }
+                _lc.IsolationArmed(now);
+            }
+            else _pendingClient = node;
+            _log.Info("JOIN started from the F8 menu -> " + req.Host + ":" + req.Port + (node.AutoReady ? " (isolation already armed)" : ""));
+        }
+
+        // ---------------------------------------------------------------- window
+        void OpenMenu()
+        {
+            var ctx = Context();
+            if (ctx == GameContext.InWorld && !LockPlayer()) { _log.Info("MENU not opened: the player is busy (inventory, minigame or menu open)"); return; }
+            _open = true;
+            _hint = null;
+            _rect = new Rect((Screen.width - 560) / 2f, (Screen.height - 470) / 2f, 560, 470);
+        }
+
+        void CloseMenu(string why)
+        {
+            _open = false;
+            UnlockPlayer();
+            GUIUtility.keyboardControl = 0;
+        }
+
+        bool LockPlayer()
+        {
+            if (_gm == null || _gmPs == null || _psPmb == null || _psPcb == null || _psCursorLock == null || _setCursorLock == null) return false;
+            var ps = _gmPs(_gm);
+            if (!Alive(ps)) return false;
+            var pmb = _psPmb(ps) as Behaviour; var pcb = _psPcb(ps) as Behaviour;
+            if (pmb == null || pcb == null) return false;
+            if (!_psCursorLock(ps) || !pmb.enabled || (_psLockpicking != null && _psLockpicking(ps))) return false;   // player not in free movement
+            _savedPmb = pmb.enabled; _savedPcb = pcb.enabled; _savedCursorLock = _psCursorLock(ps);
+            pmb.enabled = false; pcb.enabled = false; _setCursorLock(ps, false);
+            _lockedRewired = false;
+            var rw = _psRewired != null ? _psRewired(ps) : null;
+            if (rw != null && _rewiredPlaying != null)
+            {
+                try { _savedPlaying = (bool)_rewiredPlaying.GetValue(rw, null); _rewiredPlaying.SetValue(rw, false, null); _lockedRewired = true; }
+                catch (Exception ex) { _log.Warn("MENU could not pause Rewired input: " + ex.Message); }
+            }
+            _lockedPs = ps;
+            return true;
+        }
+
+        void UnlockPlayer()
+        {
+            var ps = _lockedPs; _lockedPs = null;
+            if (!Alive(ps)) return;
+            var pmb = _psPmb(ps) as Behaviour; var pcb = _psPcb(ps) as Behaviour;
+            if (pmb != null) pmb.enabled = _savedPmb;
+            if (pcb != null) pcb.enabled = _savedPcb;
+            _setCursorLock(ps, _savedCursorLock);
+            if (_lockedRewired) { try { _rewiredPlaying.SetValue(_psRewired(ps), _savedPlaying, null); } catch { } }
+        }
+
+        public void OnGUI()
+        {
+            if (!_open) return;
+            if (_title == null)
+            {
+                _title = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold, wordWrap = true };
+                _text = new GUIStyle(GUI.skin.label) { fontSize = 15, wordWrap = true };
+                _big = new GUIStyle(GUI.skin.label) { fontSize = 24, fontStyle = FontStyle.Bold };
+                _err = new GUIStyle(_text); _err.normal.textColor = new Color(1f, 0.55f, 0.5f);
+                _btn = new GUIStyle(GUI.skin.button) { fontSize = 15 };
+                _field = new GUIStyle(GUI.skin.textField) { fontSize = 16 };
+            }
+            _rect = GUI.Window(0x7532, _rect, DrawWindow, "");
+        }
+
+        void DrawWindow(int id)
+        {
+            var ctx = Context();
+            GUILayout.Label("Mehrspieler – TS2-Multiplayer " + ProtocolInfo.ModVersion, _title);
+            _scroll = GUILayout.BeginScrollView(_scroll);
+            GUILayout.Label("Status: " + (_legacy ? LegacyStatus() : _lc.Status), _text);
+            if (_lc.State == MpState.Error && _lc.Error != null) GUILayout.Label(_lc.Error, _err);
+            GUILayout.Space(8);
+
+            if (_legacy) GUILayout.Label(MenuRules.LegacyText, _text);
+            else if (_hostCode != null && (_lc.IsHostState || _lc.State == MpState.Connected)) DrawHosting();
+            else if (_lc.Busy() && !_lc.IsHostState) DrawClient();
+            else
+            {
+                DrawHostSection(ctx);
+                GUILayout.Space(10);
+                DrawJoinSection(ctx);
+            }
+            if (_hint != null) { GUILayout.Space(6); GUILayout.Label(_hint, _err); }
+            GUILayout.EndScrollView();
+            if (GUILayout.Button("Schließen (" + _settings.MenuKey + ")", _btn)) CloseMenu("button");
+            GUI.DragWindow(new Rect(0, 0, 10000, 30));
+        }
+
+        string LegacyStatus()
+        {
+            var n = _runner.Node;
+            return n == null ? "kein Netzwerk" : (n.Role == Role.Host ? "Host" : "Spieler 2") + " – " + n.State;
+        }
+
+        void DrawHostSection(GameContext ctx)
+        {
+            GUILayout.Label("Spiel hosten (du bist Spieler 1)", _title);
+            var a = MenuRules.Host(ctx, _lc.State, _legacy, _lc.ClientModeSticky);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("UDP-Port: " + _port, _text, GUILayout.Width(170));
+            GUI.enabled = a.Enabled;
+            if (GUILayout.Button("−100", _btn)) _port = Clamp(_port - 100);
+            if (GUILayout.Button("−1", _btn)) _port = Clamp(_port - 1);
+            if (GUILayout.Button("+1", _btn)) _port = Clamp(_port + 1);
+            if (GUILayout.Button("+100", _btn)) _port = Clamp(_port + 100);
+            if (GUILayout.Button("Standard", _btn)) _port = NetConfig.DefaultPort;
+            GUILayout.EndHorizontal();
+            if (GUILayout.Button("Hosten starten", _btn)) StartHost();
+            GUI.enabled = true;
+            if (!a.Enabled) GUILayout.Label(a.Reason, _text);
+            else GUILayout.Label("Der Router muss UDP " + _port + " an diesen PC weiterleiten. Der Spielverkehr ist nicht verschlüsselt.", _text);
+        }
+
+        void DrawJoinSection(GameContext ctx)
+        {
+            GUILayout.Label("Spiel beitreten (du bist Spieler 2)", _title);
+            var a = MenuRules.Join(ctx, _lc.State, _legacy, _isolationAvailable);
+            if (!a.Enabled) { GUILayout.Label(a.Reason, _text); return; }
+            GUILayout.Label("Adresse des Hosts (öffentliche IPv4 oder DNS-Name):", _text);
+            _joinHost = GUILayout.TextField(_joinHost ?? "", 253, _field);
+            GUILayout.Label("UDP-Port:", _text);
+            _joinPort = GUILayout.TextField(_joinPort ?? "", 5, _field);
+            GUILayout.Label("Beitrittscode:", _text);
+            _joinCode = GUILayout.TextField(_joinCode ?? "", 40, _field);
+            if (GUILayout.Button("Verbinden", _btn)) StartJoin();
+            GUILayout.Label("Deine eigenen Einzelspieler-Spielstände bleiben unverändert (Spieler 2 nutzt einen geschützten Bereich).", _text);
+        }
+
+        void DrawHosting()
+        {
+            var node = _runner.Node;
+            GUILayout.Label("Du hostest (Spieler 1) auf UDP " + _port, _text);
+            GUILayout.Label("Beitrittscode:", _text);
+            GUILayout.Label(_hostCode, _big);
+            if (GUILayout.Button("Code in die Zwischenablage kopieren", _btn)) { GUIUtility.systemCopyBuffer = _hostCode; _hint = "Code kopiert."; }
+            GUILayout.Label("Spieler 2: " + (node != null && node.IsConnected ? "verbunden" : "nicht verbunden"), _text);
+            GUILayout.Label("Gib deinem Mitspieler deine öffentliche IPv4-Adresse (Router) oder deinen DynDNS-Namen, den Port und den Code. Der Code gilt nur für diese Sitzung.", _text);
+            if (GUILayout.Button("Hosten beenden", _btn)) StopSession("stopped by the player");
+        }
+
+        void DrawClient()
+        {
+            GUILayout.Label("Rolle: Spieler 2", _text);
+            if (GUILayout.Button(_lc.State == MpState.Connected ? "Verbindung trennen" : "Abbrechen", _btn)) StopSession("disconnected by the player");
+            if (_lc.ClientModeSticky) GUILayout.Label("Hinweis: Für Einzelspieler oder Hosten muss das Spiel danach neu gestartet werden.", _text);
+        }
+
+        static int Clamp(int p) { return Math.Max(1024, Math.Min(65535, p)); }
+
+        static string RandomHex(int bytes)
+        {
+            var b = new byte[bytes];
+            using (var r = System.Security.Cryptography.RandomNumberGenerator.Create()) r.GetBytes(b);
+            return BitConverter.ToString(b).Replace("-", "").ToLowerInvariant();
+        }
+
+        public void Dispose()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            SceneManager.sceneUnloaded -= OnSceneUnloaded;
+            if (_open) CloseMenu("shutdown");
+            if (_pendingClient != null) { _pendingClient.Dispose(); _pendingClient = null; }
+        }
+    }
+}

@@ -1,4 +1,7 @@
-﻿// BepInEx 5 plugin entry. Inert unless the game was started by TS2-Multiplayer-Launcher (-ts2mp-role argument).
+﻿// BepInEx 5 plugin entry.
+// N1.2: a normally started game (Steam) runs in F8 mode: no patch and no network until the player opens the F8 menu and
+// hosts (from a loaded world) or joins (from the main menu); see MultiplayerMenu.cs. The developer launcher
+// (-ts2mp-role argument) keeps the fixed-role mode used for local two-instance tests.
 using System;
 using System.IO;
 using BepInEx;
@@ -20,22 +23,67 @@ namespace TS2MP.Plugin
             Log = Logger;
             LaunchArgs args;
             string parseError;
-            // N1: the join code arrives in this process's environment only (never on the command line). Take it and
-            // remove it immediately so no child process inherits it; only the derived HMAC key stays in memory.
+            // N1: in launcher mode the join code arrives in this process's environment only (never on the command line).
+            // Take it and remove it immediately so no child process inherits it; only the derived HMAC key stays in memory.
             string joinCodeRaw = Environment.GetEnvironmentVariable(JoinAuth.EnvVar);
             if (joinCodeRaw != null) { try { Environment.SetEnvironmentVariable(JoinAuth.EnvVar, null); } catch { } }
-            if (!LaunchArgs.TryParse(Environment.GetCommandLineArgs(), out args, out parseError))
+            bool legacy = LaunchArgs.TryParse(Environment.GetCommandLineArgs(), out args, out parseError);
+
+            // Read-only per-machine tuning (BepInEx/config/com.ts2mp.multiplayer.cfg, created with defaults on first run).
+            var settings = new SessionSettings();
+            settings.Sync = new SyncSettings
             {
-                Log.LogInfo("TS2MP inactive: game not started by the multiplayer launcher (" + parseError + "). No patches applied.");
+                SendRateHz = Mathf.Clamp(Config.Bind("Sync", "SendRateHz", 20, "Movement snapshots per second (10-30).").Value, 10, 30),
+                InterpolationDelayMs = Mathf.Clamp(Config.Bind("Sync", "InterpolationDelayMs", 100, "Remote rendering delay used for interpolation (50-300 ms).").Value, 50, 300),
+                YawOffset = Config.Bind("Avatar", "YawOffsetDegrees", 0f, "Rotation correction if the remote model faces the wrong way.").Value,
+                ShowNameTag = Config.Bind("Avatar", "ShowNameTag", true, "Show a label above the remote player (diagnostics; only with Debug.ShowOverlay = true).").Value
+            };
+            settings.World = new WorldSettings
+            {
+                ClockRefreshSeconds = Mathf.Clamp(Config.Bind("World", "ClockRefreshSeconds", 10f, "Max seconds between region clock re-anchors while the clock runs normally (5-60). Changes are sent immediately.").Value, 5f, 60f),
+                IdentityCensus = Config.Bind("World", "IdentityCensus", true, "M5 W1: once per scene load, record stable ids of world objects (diagnostic log WORLD_CENSUS; no gameplay effect). Off only for performance comparison.").Value,
+                CensusExport = Config.Bind("World", "CensusExport", false, "Diagnostics: write every census identity (id, kind, category, hierarchy path) to census-*.tsv in the instance log folder.").Value,
+                KeyMirror = Config.Bind("World", "KeyMirror", true, "M5 W2: the host's world keys (loot respawn days, daily events, hot item, day count) are mirrored to the client. Must be the same on both instances; off only for performance comparison.").Value,
+                SharedLoot = Config.Bind("World", "SharedLoot", true, "M5 W4.1: pre-placed world loot (Madison Street subset) is host-authoritative and shared. Must be the same on both instances; needs World.IdentityCensus.").Value
+            };
+            KeyCode travelKey, menuKey;
+            var keyName = Config.Bind("Vehicles", "TravelMenuKey", "F7", "Opens the original travel menu on foot in the hideout / Auto Shop when you have no car there (another player simulates it or it is parked elsewhere).").Value;
+            try { travelKey = (KeyCode)Enum.Parse(typeof(KeyCode), keyName, true); } catch { travelKey = KeyCode.F7; }
+            var seatAdjust = Config.Bind("Vehicles", "DriverSeatAdjust", "", "Manual correction of the remote driver's seat in car-local metres, format carNr:dx,dy,dz;... (0 = Ranger, 1 = Shadowhawk), each value within +-0.5. Empty = automatic anchor from the car's own seat transforms.").Value;
+            var passengerAdjust = Config.Bind("Vehicles", "PassengerSeatAdjust", "", "Manual correction of YOUR first-person passenger seat (player root, car-local metres), format carNr:dx,dy,dz;... (0 = Ranger, 1 = Shadowhawk), each within +-0.5. Empty = derived from the car's original companion seat (associateSitPos).").Value;
+            settings.Vehicles = new VehicleSettings { TravelMenuKey = travelKey, DriverSeatAdjust = seatAdjust ?? "", PassengerSeatAdjust = passengerAdjust ?? "", InteractDebug = Config.Bind("Vehicles", "InteractDebug", false, "Diagnostics: on each E press near another player's car (max 1/s) log what the original interaction ray hits.").Value };
+            var menuKeyName = Config.Bind("Network", "MenuKey", "F8", "Opens / closes the multiplayer menu (Host Game in a loaded world, Join Game in the main menu).").Value;
+            try { menuKey = (KeyCode)Enum.Parse(typeof(KeyCode), menuKeyName, true); } catch { menuKey = KeyCode.F8; }
+            settings.MenuKey = menuKey;
+            int hostPort;
+            settings.HostPort = NetConfig.TryParsePort(Config.Bind("Network", "HostPort", NetConfig.DefaultPort, "Default UDP port for Host Game (forward exactly this UDP port in the router). Can also be changed in the F8 menu.").Value.ToString(), out hostPort) ? hostPort : NetConfig.DefaultPort;
+            settings.DataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TS2MP");
+
+            var go = new GameObject("TS2MP_Runner");
+            go.hideFlags = HideFlags.HideAndDontSave;
+            DontDestroyOnLoad(go);
+            var runner = go.AddComponent<NetRunner>();
+            // M4.3.2a permanent rule: no mod text in the gameplay UI by default. The status lines and the name tag above the other
+            // player are diagnostics, shown only when this is switched on (BepInEx log has the same information). The F8 menu
+            // (N1.2) is drawn only while the player has opened it.
+            runner.PerfStats = Config.Bind("Debug", "PerfStats", false, "Diagnostics: log frame-time statistics (avg FPS, P50/P95/P99, 1% low), mod main-thread cost, GC and network rates as PERF lines in plugin.log.").Value;
+            runner.PerfIntervalSeconds = Mathf.Clamp(Config.Bind("Debug", "PerfIntervalSeconds", 30, "Seconds per PERF report window (10-300).").Value, 10, 300);
+            runner.ShowDebugOverlay = Config.Bind("Debug", "ShowOverlay", false, "Diagnostics only: draw the TS2MP status lines and the name tag above the other player (Avatar.ShowNameTag) on screen. Off = the game looks unmodified; everything is in the BepInEx log.").Value;
+
+            if (!legacy)
+            {
+                string logDir = Path.Combine(settings.DataDir, "logs", DateTime.Now.ToString("yyyyMMdd-HHmmss") + "_game_" + System.Diagnostics.Process.GetCurrentProcess().Id);
+                var flog = NewLog(logDir, "GAME", "-", "-");
+                flog.Info("PLUGIN_INIT mode=F8 mod=" + ProtocolInfo.ModVersion + " protocol=" + ProtocolInfo.ProtocolVersion + " game=" + Application.version
+                    + " unity=" + Application.unityVersion + " pid=" + System.Diagnostics.Process.GetCurrentProcess().Id
+                    + " bepinex=" + typeof(BaseUnityPlugin).Assembly.GetName().Version + " logDir=" + logDir + " (no patch, no network until F8 Host/Join)");
+                settings.LogDir = logDir;
+                runner.InitMenu(flog, settings, new Harmony(Guid + ".saveguard"));
                 return;
             }
 
-            var log = new InstanceLog(Path.Combine(args.LogDir, "plugin.log"), args.Role.ToString().ToUpperInvariant(), args.InstanceId, args.SessionId);
-            log.Mirror = delegate(string level, string msg)
-            {
-                if (level == "ERROR") Log.LogError(msg); else if (level == "WARN") Log.LogWarning(msg); else Log.LogInfo(msg);
-            };
-            log.Info("PLUGIN_INIT mod=" + ProtocolInfo.ModVersion + " protocol=" + ProtocolInfo.ProtocolVersion + " game=" + Application.version
+            var log = NewLog(args.LogDir, args.Role.ToString().ToUpperInvariant(), args.InstanceId, args.SessionId);
+            log.Info("PLUGIN_INIT mode=launcher mod=" + ProtocolInfo.ModVersion + " protocol=" + ProtocolInfo.ProtocolVersion + " game=" + Application.version
                 + " unity=" + Application.unityVersion + " pid=" + System.Diagnostics.Process.GetCurrentProcess().Id
                 + " bepinex=" + typeof(BaseUnityPlugin).Assembly.GetName().Version + " port=" + args.Port + " logDir=" + args.LogDir);
             if (joinCodeRaw != null)
@@ -47,50 +95,28 @@ namespace TS2MP.Plugin
             else log.Info("JOIN_CODE none (only a loopback host may run without one)");
 
             bool saveSafe = true;
-            if (args.Role == Role.Client)
-            {
-                var harmony = new Harmony(Guid + ".saveguard");
-                saveSafe = SaveGuard.Install(harmony, args, log);
-            }
-            else
-            {
-                log.Info("SAVE_OWNER: host keeps normal game persistence (real save folder). No save patches applied.");
-            }
-
-            // Read-only per-machine tuning (BepInEx/config/com.ts2mp.multiplayer.cfg, created with defaults on first run).
-            var sync = new SyncSettings
-            {
-                SendRateHz = Mathf.Clamp(Config.Bind("Sync", "SendRateHz", 20, "Movement snapshots per second (10-30).").Value, 10, 30),
-                InterpolationDelayMs = Mathf.Clamp(Config.Bind("Sync", "InterpolationDelayMs", 100, "Remote rendering delay used for interpolation (50-300 ms).").Value, 50, 300),
-                YawOffset = Config.Bind("Avatar", "YawOffsetDegrees", 0f, "Rotation correction if the remote model faces the wrong way.").Value,
-                ShowNameTag = Config.Bind("Avatar", "ShowNameTag", true, "Show a label above the remote player (diagnostics; only with Debug.ShowOverlay = true).").Value
-            };
-            var world = new WorldSettings
-            {
-                ClockRefreshSeconds = Mathf.Clamp(Config.Bind("World", "ClockRefreshSeconds", 10f, "Max seconds between region clock re-anchors while the clock runs normally (5-60). Changes are sent immediately.").Value, 5f, 60f),
-                IdentityCensus = Config.Bind("World", "IdentityCensus", true, "M5 W1: once per scene load, record stable ids of world objects (diagnostic log WORLD_CENSUS; no gameplay effect). Off only for performance comparison.").Value,
-                CensusExport = Config.Bind("World", "CensusExport", false, "Diagnostics: write every census identity (id, kind, category, hierarchy path) to census-*.tsv in the instance log folder.").Value,
-                KeyMirror = Config.Bind("World", "KeyMirror", true, "M5 W2: the host's world keys (loot respawn days, daily events, hot item, day count) are mirrored to the client. Must be the same on both instances; off only for performance comparison.").Value,
-                SharedLoot = Config.Bind("World", "SharedLoot", true, "M5 W4.1: pre-placed world loot (Madison Street subset) is host-authoritative and shared. Must be the same on both instances; needs World.IdentityCensus.").Value
-            };
-
-            var go = new GameObject("TS2MP_Runner");
-            go.hideFlags = HideFlags.HideAndDontSave;
-            DontDestroyOnLoad(go);
-            var runner = go.AddComponent<NetRunner>();
-            KeyCode travelKey;
-            var keyName = Config.Bind("Vehicles", "TravelMenuKey", "F7", "Opens the original travel menu on foot in the hideout / Auto Shop when you have no car there (another player simulates it or it is parked elsewhere).").Value;
-            try { travelKey = (KeyCode)Enum.Parse(typeof(KeyCode), keyName, true); } catch { travelKey = KeyCode.F7; }
-            var seatAdjust = Config.Bind("Vehicles", "DriverSeatAdjust", "", "Manual correction of the remote driver's seat in car-local metres, format carNr:dx,dy,dz;... (0 = Ranger, 1 = Shadowhawk), each value within +-0.5. Empty = automatic anchor from the car's own seat transforms.").Value;
-            var passengerAdjust = Config.Bind("Vehicles", "PassengerSeatAdjust", "", "Manual correction of YOUR first-person passenger seat (player root, car-local metres), format carNr:dx,dy,dz;... (0 = Ranger, 1 = Shadowhawk), each within +-0.5. Empty = derived from the car's original companion seat (associateSitPos).").Value;
-            var vehicles = new VehicleSettings { TravelMenuKey = travelKey, DriverSeatAdjust = seatAdjust ?? "", PassengerSeatAdjust = passengerAdjust ?? "", InteractDebug = Config.Bind("Vehicles", "InteractDebug", false, "Diagnostics: on each E press near another player's car (max 1/s) log what the original interaction ray hits.").Value };
-            // M4.3.2a permanent rule: no mod text in the gameplay UI by default. The status lines and the name tag above the other
-            // player are diagnostics, shown only when this is switched on (BepInEx log has the same information).
-            runner.PerfStats = Config.Bind("Debug", "PerfStats", false, "Diagnostics: log frame-time statistics (avg FPS, P50/P95/P99, 1% low), mod main-thread cost, GC and network rates as PERF lines in plugin.log.").Value;
-            runner.PerfIntervalSeconds = Mathf.Clamp(Config.Bind("Debug", "PerfIntervalSeconds", 30, "Seconds per PERF report window (10-300).").Value, 10, 300);
-            runner.ShowDebugOverlay = Config.Bind("Debug", "ShowOverlay", false, "Diagnostics only: draw the TS2MP status lines and the name tag above the other player (Avatar.ShowNameTag) on screen. Off = the game looks unmodified; everything is in the BepInEx log.").Value;
-            runner.Init(args, log, saveSafe, sync, world, vehicles);
+            if (args.Role == Role.Client) saveSafe = SaveGuard.Install(new Harmony(Guid + ".saveguard"), args, log);
+            else log.Info("SAVE_OWNER: host keeps normal game persistence (real save folder). No save patches applied.");
+            settings.DataDir = args.DataDir; settings.LogDir = args.LogDir;
+            runner.Init(args, log, saveSafe, settings);
         }
+
+        static InstanceLog NewLog(string dir, string role, string inst, string session)
+        {
+            var log = new InstanceLog(Path.Combine(dir, "plugin.log"), role, inst, session);
+            log.Mirror = delegate(string level, string msg)
+            {
+                if (level == "ERROR") Log.LogError(msg); else if (level == "WARN") Log.LogWarning(msg); else Log.LogInfo(msg);
+            };
+            return log;
+        }
+    }
+
+    public sealed class SessionSettings
+    {
+        public SyncSettings Sync; public WorldSettings World; public VehicleSettings Vehicles;
+        public KeyCode MenuKey = KeyCode.F8; public int HostPort = NetConfig.DefaultPort;
+        public string DataDir, LogDir;
     }
 
     public sealed class LaunchArgs
@@ -147,6 +173,7 @@ namespace TS2MP.Plugin
     {
         LaunchArgs _args;
         InstanceLog _log;
+        SessionSettings _settings;
         SessionNode _node;
         PlayerSync _sync;
         WorldSync _world;
@@ -157,6 +184,7 @@ namespace TS2MP.Plugin
         WorldCensus _census;
         WorldKeyMirror _mirror;
         WorldLootSync _loot;
+        MultiplayerMenu _menu;
         bool _quitRequested, _shutdown;
         // M5 performance instrumentation (Debug.PerfStats; off = one null check per frame)
         public bool PerfStats; public int PerfIntervalSeconds = 30;
@@ -164,10 +192,17 @@ namespace TS2MP.Plugin
         int _gc0, _gc1, _gc2; long _netOut0, _netIn0; long _frameTicks;
         GUIStyle _style, _tagStyle;
 
-        public void Init(LaunchArgs args, InstanceLog log, bool saveSafe, SyncSettings sync, WorldSettings world, VehicleSettings vehicles)
+        internal SessionNode Node { get { return _node; } }
+        internal WorldSync World { get { return _world; } }
+        internal Player2Sync P2 { get { return _p2; } }
+        internal InstanceLog Log { get { return _log; } }
+
+        // Launcher developer mode: role fixed at startup (M1-N1 behaviour).
+        public void Init(LaunchArgs args, InstanceLog log, bool saveSafe, SessionSettings settings)
         {
             _args = args;
             _log = log;
+            _settings = settings;
             if (!saveSafe)
             {
                 _log.Error("SAVE_GUARD_FAILED: client save protection could not be verified. Quitting this instance to protect the real saves.");
@@ -179,50 +214,104 @@ namespace TS2MP.Plugin
                 _log.Error("ARGS_INVALID: networking disabled (save protection is active). Start the game via TS2-Multiplayer-Launcher.exe.");
                 return;
             }
-            _node = new SessionNode(args.Role, args.SessionId, args.InstanceId, Application.version, args.Port, log);
-            _node.BindAddress = args.BindAddress;
-            _node.ConnectAddress = args.ConnectAddress;
-            _node.JoinKey = args.JoinKey;
-            log.StateProvider = delegate { return _node.StateText; };
-            if (_node.Start())
+            var node = new SessionNode(args.Role, args.SessionId, args.InstanceId, Application.version, args.Port, log);
+            node.BindAddress = args.BindAddress;
+            node.ConnectAddress = args.ConnectAddress;
+            node.JoinKey = args.JoinKey;
+            _node = node;
+            log.StateProvider = delegate { return _node != null ? _node.StateText : "state -"; };
+            if (node.Start()) BuildSystems(node);
+            _menu = new MultiplayerMenu(this, log, settings, null, true);
+            StartPerf();
+        }
+
+        // N1.2 F8 mode: nothing runs until the player hosts or joins from the menu.
+        public void InitMenu(InstanceLog log, SessionSettings settings, Harmony saveGuardHarmony)
+        {
+            _log = log;
+            _settings = settings;
+            log.StateProvider = delegate { return _node != null ? _node.StateText : "state -"; };
+            _menu = new MultiplayerMenu(this, log, settings, saveGuardHarmony, false);
+            StartPerf();
+        }
+
+        void StartPerf()
+        {
+            if (!PerfStats) return;
+            _frameStats = new FrameStats(8192);
+            _nextPerf = Time.realtimeSinceStartup + PerfIntervalSeconds;
+            _gc0 = GC.CollectionCount(0); _gc1 = GC.CollectionCount(1); _gc2 = GC.CollectionCount(2);
+            _log.Info("PERF stats ON: window " + PerfIntervalSeconds + " s; 1% low = mean of the slowest 1% frame times; mod cost = TS2MP Update+LateUpdate+FixedUpdate main-thread time only (not game/GPU time)");
+        }
+
+        // N1.2: attach a started session node and construct every sync system for its role. False = core systems missing.
+        internal bool AttachSession(SessionNode node)
+        {
+            if (_node != null && _node != node) { _log.Error("SESSION attach refused: another session is active"); return false; }
+            _node = node;
+            BuildSystems(node);
+            return _sync != null && _world != null;
+        }
+
+        void BuildSystems(SessionNode node)
+        {
+            var log = _log; var world = _settings.World;
+            try { _sync = new PlayerSync(node, log, _settings.Sync); }
+            catch (Exception ex) { log.Error("SYNC init failed", ex); _sync = null; }
+            try { _world = new WorldSync(node, log, world); }
+            catch (Exception ex) { log.Error("WORLD init failed", ex); _world = null; }
+            if (_world == null) return;
+            try { _vehicles = new VehicleSync(node, log, _world, _sync, _settings.DataDir, _settings.Vehicles); }
+            catch (Exception ex) { log.Error("VEHICLE init failed (vehicle sync disabled)", ex); _vehicles = null; }
+            try { _p2 = new Player2Sync(node, log, _world, _settings.DataDir); }
+            catch (Exception ex) { log.Error("P2INV init failed (Player-2 persistence disabled)", ex); _p2 = null; }
+            try { _carbox = new CarBoxSync(node, log, _world); }
+            catch (Exception ex) { log.Error("CARBOX init failed (shared car storage disabled)", ex); _carbox = null; }
+            try { _items = new WorldItemSync(node, log, _world); }
+            catch (Exception ex) { log.Error("WITEM init failed (shared dropped items disabled)", ex); _items = null; }
+            if (world.KeyMirror)
             {
-                _sync = new PlayerSync(_node, log, sync);
-                _world = new WorldSync(_node, log, world);
-                try { _vehicles = new VehicleSync(_node, log, _world, _sync, args.DataDir, vehicles); }
-                catch (Exception ex) { log.Error("VEHICLE init failed (vehicle sync disabled)", ex); _vehicles = null; }
-                try { _p2 = new Player2Sync(_node, log, _world, args.DataDir); }
-                catch (Exception ex) { log.Error("P2INV init failed (Player-2 persistence disabled)", ex); _p2 = null; }
-                try { _carbox = new CarBoxSync(_node, log, _world); }
-                catch (Exception ex) { log.Error("CARBOX init failed (shared car storage disabled)", ex); _carbox = null; }
-                try { _items = new WorldItemSync(_node, log, _world); }
-                catch (Exception ex) { log.Error("WITEM init failed (shared dropped items disabled)", ex); _items = null; }
-                if (world.KeyMirror)
-                {
-                    try { _mirror = new WorldKeyMirror(_node, log, _world); if (!_mirror.Ready) { _mirror.Dispose(); _mirror = null; } }
-                    catch (Exception ex) { log.Error("MIRROR init failed (world-key mirror disabled)", ex); _mirror = null; }
-                }
-                else log.Info("MIRROR disabled by config (World.KeyMirror = false)");
+                try { _mirror = new WorldKeyMirror(node, log, _world); if (!_mirror.Ready) { _mirror.Dispose(); _mirror = null; } }
+                catch (Exception ex) { log.Error("MIRROR init failed (world-key mirror disabled)", ex); _mirror = null; }
             }
+            else log.Info("MIRROR disabled by config (World.KeyMirror = false)");
             if (world.IdentityCensus)
             {
-                try { _census = new WorldCensus(log, args.LogDir, world.CensusExport); }
+                try { _census = new WorldCensus(log, _settings.LogDir, world.CensusExport); }
                 catch (Exception ex) { log.Error("CENSUS init failed (identity census disabled)", ex); _census = null; }
             }
             else log.Info("CENSUS disabled by config (World.IdentityCensus = false)");
-            if (_world != null && _census != null && world.SharedLoot)
+            if (_census != null && world.SharedLoot)
             {
-                try { _loot = new WorldLootSync(_node, log, _world); }
+                try { _loot = new WorldLootSync(node, log, _world); }
                 catch (Exception ex) { log.Error("WLOOT init failed (shared world loot disabled)", ex); _loot = null; }
             }
-            else if (_world != null) log.Info("WLOOT disabled (" + (!world.SharedLoot ? "World.SharedLoot = false" : "no identity census") + "): original local loot pickups");
-            if (PerfStats)
-            {
-                _frameStats = new FrameStats(8192);
-                _nextPerf = Time.realtimeSinceStartup + PerfIntervalSeconds;
-                _gc0 = GC.CollectionCount(0); _gc1 = GC.CollectionCount(1); _gc2 = GC.CollectionCount(2);
-                log.Info("PERF stats ON: window " + PerfIntervalSeconds + " s; 1% low = mean of the slowest 1% frame times; mod cost = TS2MP Update+LateUpdate+FixedUpdate main-thread time only (not game/GPU time)");
-            }
+            else log.Info("WLOOT disabled (" + (!world.SharedLoot ? "World.SharedLoot = false" : "no identity census") + "): original local loot pickups");
         }
+
+        // N1.2: end the session: final writes (fleet, Player-2 record) happen in the systems' Dispose, then the network stops.
+        internal void DetachSession(string why)
+        {
+            if (_node == null && _world == null) return;
+            _log.Info("SESSION_END (" + why + ")");
+            DisposeSystems();
+            if (_node != null) { _node.Dispose(); _node = null; }
+        }
+
+        void DisposeSystems()
+        {
+            if (_loot != null) { try { _loot.Dispose(); } catch { } _loot = null; }
+            if (_mirror != null) { try { _mirror.Dispose(); } catch { } _mirror = null; }
+            if (_census != null) { try { _census.Dispose(); } catch { } _census = null; }
+            if (_items != null) { try { _items.Dispose(); } catch { } _items = null; }
+            if (_carbox != null) { try { _carbox.Dispose(); } catch { } _carbox = null; }
+            if (_p2 != null) { try { _p2.Dispose(); } catch { } _p2 = null; }
+            if (_vehicles != null) { try { _vehicles.Dispose(); } catch { } _vehicles = null; }
+            if (_world != null) { try { _world.Dispose(); } catch { } _world = null; }
+            if (_sync != null) { try { _sync.Dispose(); } catch { } _sync = null; }
+        }
+
+        internal void RequestQuit(string why) { _log.Error(why); _quitRequested = true; }
 
         float _nextSaveCheck;
 
@@ -258,7 +347,8 @@ namespace TS2MP.Plugin
         void UpdateBody()
         {
             if (_quitRequested) { _quitRequested = false; Application.Quit(); return; }
-            if (_args.Role == Role.Client && Time.unscaledTime >= _nextSaveCheck)
+            if (_menu != null) _menu.Update();
+            if (SaveGuard.Armed && Time.unscaledTime >= _nextSaveCheck)
             {
                 _nextSaveCheck = Time.unscaledTime + 2f;
                 if (!SaveGuard.RuntimeCheck())
@@ -354,9 +444,10 @@ namespace TS2MP.Plugin
 
         void OnGUI()
         {
-            if (_args == null || !ShowDebugOverlay) return;
+            if (_menu != null) _menu.OnGUI();
+            if (_node == null || !ShowDebugOverlay) return;
             if (_style == null) { _style = new GUIStyle(GUI.skin.label); _style.fontSize = 12; }
-            string s = "TS2MP " + _args.Role.ToString().ToUpperInvariant() + " " + _args.InstanceId + " | "
+            string s = "TS2MP " + _node.Role.ToString().ToUpperInvariant() + " " + _node.InstanceId + " | "
                 + (_node != null ? _node.State.ToString() + (_node.RemoteInstanceId != null ? " <-> " + _node.RemoteInstanceId : "") : "network off")
                 + (_sync != null ? " | " + _sync.StatusLine : "");
             GUI.Label(new Rect(6, 2, 1400, 20), s, _style);
@@ -385,15 +476,8 @@ namespace TS2MP.Plugin
             _shutdown = true;
             if (_log == null) return;
             _log.Info("PLUGIN_SHUTDOWN (" + why + ")");
-            if (_loot != null) { try { _loot.Dispose(); } catch { } _loot = null; }
-            if (_mirror != null) { try { _mirror.Dispose(); } catch { } _mirror = null; }
-            if (_census != null) { try { _census.Dispose(); } catch { } _census = null; }
-            if (_items != null) { try { _items.Dispose(); } catch { } _items = null; }
-            if (_carbox != null) { try { _carbox.Dispose(); } catch { } _carbox = null; }
-            if (_p2 != null) { try { _p2.Dispose(); } catch { } _p2 = null; }
-            if (_vehicles != null) { try { _vehicles.Dispose(); } catch { } _vehicles = null; }
-            if (_world != null) { try { _world.Dispose(); } catch { } _world = null; }
-            if (_sync != null) { try { _sync.Dispose(); } catch { } _sync = null; }
+            if (_menu != null) { try { _menu.Dispose(); } catch { } }
+            DisposeSystems();
             if (_node != null) { _node.Dispose(); _node = null; }
             _log.Dispose();
         }

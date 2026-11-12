@@ -782,6 +782,7 @@ namespace TS2MP.Plugin
         internal byte LocalSlot { get { return _localSlot; } }
         internal byte RemoteSlot { get { return _remoteSlot; } }
         internal bool Synced { get { return _host || (_node.IsConnected && _reg.HasSnapshot); } }
+        internal bool RegionKnown { get { return _region != Regions.None; } }   // N1.2 host readiness
         internal double Clock { get { return Now; } }
 
         // M4.2 client proposals from VehicleSync share the per-instance increasing proposal id (ProposalGate order).

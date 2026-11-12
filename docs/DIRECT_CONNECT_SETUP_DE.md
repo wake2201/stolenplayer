@@ -1,4 +1,4 @@
-# Direktverbindung über das Internet einrichten (TS2-Multiplayer 0.11.1)
+# Direktverbindung über das Internet einrichten (TS2-Multiplayer 0.12.0)
 
 Diese Anleitung richtet sich an den **Host** (Spieler 1). Der Mitspieler (Spieler 2) braucht keine Router-Einstellungen.
 
@@ -10,8 +10,8 @@ UPnP, DMZ ("Exposed Host"), VPN, Relay-Server oder Port-Bereiche werden **nicht*
 | Angabe | Woher |
 | --- | --- |
 | Adresse | öffentliche IPv4-Adresse des Host-Anschlusses (Router-Übersichtsseite) oder ein DynDNS-Name |
-| Port | 27960 (oder der in den Launcher-Einstellungen gewählte Port), UDP |
-| Beitrittscode | wird beim Klick auf **Host Game** im Launcher angezeigt (Format `XXXXX-XXXXX-XXXXX-XXXXX-XXXXX`) |
+| Port | 27960 (oder der im F8-Menü gewählte Port), UDP |
+| Beitrittscode | wird nach **F8 → Hosten starten** im Menü angezeigt (Format `XXXXX-XXXXX-XXXXX-XXXXX-XXXXX`) |
 
 Der Beitrittscode ist **bei jedem Host-Start neu** und gilt nur für diese Sitzung. Er gehört nicht in öffentliche
 Chats oder Screenshots. Es kann immer nur **ein** Mitspieler beitreten; weitere Verbindungsversuche werden abgelehnt.
@@ -26,8 +26,7 @@ nie übertragen.
 Die Portweiterleitung zeigt auf eine lokale Adresse (z. B. `192.168.178.20`). Damit sie nach einem Neustart gleich
 bleibt, im Router eine **DHCP-Reservierung** anlegen:
 
-1. Lokale Adresse herausfinden: Der Launcher zeigt sie unter **Host Game** an ("This PC's LAN address"), alternativ
-   `ipconfig` in der Eingabeaufforderung (IPv4-Adresse des aktiven Adapters).
+1. Lokale Adresse herausfinden: `ipconfig` in der Eingabeaufforderung (IPv4-Adresse des aktiven Adapters).
 2. Im Router (z. B. FRITZ!Box: *Heimnetz → Netzwerk → Gerät bearbeiten → "Diesem Netzwerkgerät immer die gleiche
    IPv4-Adresse zuweisen"*; andere Router: "DHCP-Reservierung" / "Statische Zuordnung") den Host-PC fest zuordnen.
 
@@ -46,12 +45,12 @@ FRITZ!Box: *Internet → Freigaben → Portfreigaben → Gerät für Freigaben h
 Protokoll UDP, Port 27960*. Andere Router nennen das "Port Forwarding", "Virtueller Server" oder "NAT-Regel".
 Keine Port-Bereiche, kein "Exposed Host", kein UPnP einschalten.
 
-Wurde im Launcher (Settings → Host port) ein anderer Port gewählt, genau diesen Port weiterleiten und dem Mitspieler
-mitteilen.
+Wurde im F8-Menü (oder in `BepInEx\config\com.ts2mp.multiplayer.cfg`, `Network.HostPort`) ein anderer Port gewählt,
+genau diesen Port weiterleiten und dem Mitspieler mitteilen.
 
 ## Schritt 3: Windows-Firewall
 
-Beim ersten **Host Game** fragt Windows meist, ob "Thief Simulator 2" im Netzwerk kommunizieren darf.
+Beim ersten **Hosten** fragt Windows meist, ob "Thief Simulator 2" im Netzwerk kommunizieren darf.
 Für **private Netzwerke** zulassen. Wurde die Abfrage weggeklickt:
 
 *Windows-Sicherheit → Firewall- & Netzwerkschutz → Zugriff von App durch Firewall zulassen → Einstellungen ändern →
@@ -87,10 +86,10 @@ Geräten eingerichtet werden – oder das vordere Gerät in den Bridge-Modus ver
 
 ## Schritt 5: Spielen
 
-1. Host: Launcher → **Host Game**. Adresse, Port und Beitrittscode an den Mitspieler schicken
-   (`C` kopiert den Code in die Zwischenablage).
-2. Mitspieler: Launcher → **Join Game** → Adresse, Port, Beitrittscode eingeben.
-3. Beide müssen dieselbe Mod-Version installiert haben (Launcher → Install / Update aus demselben ZIP).
+1. Host: eigenen Spielstand laden, in der Welt **F8 → Hosten starten**. Adresse, Port und Beitrittscode an den
+   Mitspieler schicken ("Code kopieren" legt ihn in die Zwischenablage).
+2. Mitspieler: im **Hauptmenü** F8 → Adresse, Port, Beitrittscode eingeben → **Verbinden**.
+3. Beide müssen dieselbe Mod-Version installiert haben (dasselbe Release-ZIP).
 
 Im selben Heimnetz kann der Mitspieler statt der öffentlichen Adresse direkt die **lokale Adresse** des Host-PCs
 verwenden (dann ist keine Portweiterleitung nötig).
@@ -100,25 +99,26 @@ muss auf die aktuelle öffentliche IPv4 zeigen.
 
 ## Fehlerbehebung
 
-Die Protokolle liegen in `%LOCALAPPDATA%\TS2MP\logs\` (ein Ordner pro Spielstart, Datei `plugin.log`; der Launcher
-schreibt nach `launcher.log`). Der Beitrittscode steht in keinem Protokoll.
+Die Protokolle liegen in `%LOCALAPPDATA%\TS2MP\logs\` (ein Ordner pro Spielstart, Datei `plugin.log`). Der
+Beitrittscode steht in keinem Protokoll. Das F8-Menü zeigt die meisten Fehler direkt an.
 
 | Symptom | Wahrscheinliche Ursache | Lösung |
 | --- | --- | --- |
-| Launcher: "UDP port 27960 is already in use" | anderes Programm/Spiel nutzt den Port, oder ein Host läuft noch | Programm schließen; oder in Settings einen anderen Port wählen und diesen weiterleiten |
-| Launcher: "That is not a valid join code" | Tippfehler (der Code enthält zwei Prüfzeichen) | Code erneut vom Host-Bildschirm abschreiben oder kopieren |
-| Launcher: "Host name ... cannot be resolved" | DynDNS-Name falsch geschrieben oder kein Internet | Schreibweise prüfen, IPv4-Adresse direkt verwenden |
+| F8: "UDP-Port 27960 ist belegt oder blockiert" | anderes Programm/Spiel nutzt den Port | Programm schließen; oder im F8-Menü einen anderen Port wählen und diesen weiterleiten |
+| F8: "Ungültiger Beitrittscode" | Tippfehler (der Code enthält zwei Prüfzeichen) | Code erneut vom Host-Bildschirm abschreiben oder kopieren |
+| F8: "Zeitüberschreitung – Host nicht erreichbar" | falsche Adresse/Port, Portweiterleitung fehlt, DynDNS-Name falsch, CGNAT/DS-Lite | Schritte 2–4 prüfen, IPv4-Adresse direkt verwenden |
+| F8: "Host ist noch nicht bereit" | der Host lädt gerade (Spielstand, Reise) | warten – es wird automatisch erneut versucht |
+| F8: Beitreten ausgegraut, "…zuerst zum Hauptmenü zurückkehren" | du bist in einem laufenden Spiel | ins Hauptmenü wechseln, dann F8 |
+| F8: Hosten ausgegraut | Hauptmenü, Spielstand noch nicht geladen, oder das Spiel lief schon als Spieler 2 | Spielstand laden; nach einer Spieler-2-Sitzung das Spiel neu starten |
 | Spieler 2 verbindet sich nie, `plugin.log` zeigt nur `CONNECT attempt ...` | Portweiterleitung fehlt/falsch, falsches Protokoll (TCP statt UDP), Firewall, CGNAT/DS-Lite, falsche Adresse | Schritte 2–4 prüfen; im selben Netz zuerst mit der lokalen Adresse testen |
-| `CONNECT_FAILED_FATAL: host rejected the connection with AuthFailed` | falscher oder alter Beitrittscode (Host wurde neu gestartet) | aktuellen Code vom Host-Bildschirm verwenden, Join Game neu starten |
+| `CONNECT_FAILED_FATAL: host rejected the connection with AuthFailed` | falscher oder alter Beitrittscode (Host wurde neu gestartet) | aktuellen Code vom Host verwenden, im Hauptmenü erneut F8 → Verbinden |
 | `... with RateLimited` | zu viele Fehlversuche von dieser Adresse | 2 Minuten warten, dann mit dem richtigen Code erneut versuchen |
 | `... with SessionFull` | es ist bereits ein Mitspieler verbunden (oder ein Beitritt läuft gerade) | nur ein Mitspieler möglich; ggf. nach einigen Sekunden erneut |
-| `... with ModVersionMismatch` / `ProtocolMismatch` | unterschiedliche Mod-Versionen | beide installieren dieselbe ZIP-Version (Launcher → Install / Update) |
+| `... with ModVersionMismatch` / `ProtocolMismatch` | unterschiedliche Mod-Versionen | beide installieren dasselbe Release-ZIP |
 | `... with GameVersionMismatch` | unterschiedliche Spielversionen | beide aktualisieren das Spiel auf dieselbe Version |
-| `AUTH_REQUIRED` | Spieler 2 hat das Spiel nicht über **Join Game** gestartet | Spiel schließen, Launcher → Join Game |
 | `HOST_NOT_AUTHENTICATED` | an der Adresse läuft ein anderer Host (oder ein Host ohne diesen Code) | Adresse und Port prüfen |
-| Host: `NET_START_REFUSED ... no join code` | Spiel nicht über **Host Game** gestartet | Spiel schließen, Launcher → Host Game |
-| Verbindung bricht nach einiger Zeit ab, `DISCONNECT ... Timeout` | Internet-Unterbrechung, WLAN-Aussetzer, Router-Neustart | Spieler 2 verbindet sich automatisch neu, solange der Host läuft; sonst Join Game erneut |
+| Verbindung bricht nach einiger Zeit ab, `DISCONNECT ... Timeout` | Internet-Unterbrechung, WLAN-Aussetzer, Router-Neustart | Spieler 2 verbindet sich automatisch neu, solange der Host läuft; sonst im Hauptmenü erneut F8 → Verbinden |
 | Funktioniert im Heimnetz, aber nicht von außen | Portweiterleitung, CGNAT/DS-Lite oder Doppel-NAT | Schritt 2 und Schritt 4 |
 
-Hinweis: Diese Version wurde lokal (zwei Spiele bzw. Prozesse auf einem PC) getestet. Ein Test über das Internet
-zwischen zwei getrennten PCs steht noch aus.
+Hinweis: Diese Version wurde nur automatisiert auf einem PC getestet. Ein Test über das Internet zwischen zwei
+getrennten PCs steht noch aus.

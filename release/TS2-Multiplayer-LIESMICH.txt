@@ -1,0 +1,57 @@
+TS2-Multiplayer 0.12.0 - Koop-Mod für Thief Simulator 2 (2 Spieler, Direktverbindung)
+========================================================================================
+
+INSTALLATION
+1. Den Spielordner öffnen: Steam -> Rechtsklick auf Thief Simulator 2 -> Verwalten -> Lokale Dateien durchsuchen.
+2. Den kompletten Inhalt dieses ZIPs in diesen Ordner kopieren (dorthin, wo "Thief Simulator 2.exe" liegt).
+   Danach liegen dort zusätzlich: winhttp.dll, doorstop_config.ini, .doorstop_version und der Ordner BepInEx.
+3. Das Spiel ganz normal über Steam starten. Der erste Start dauert etwas länger (BepInEx richtet sich ein).
+Beide Spieler brauchen dieselbe Spielversion und dieselbe Version dieses Mods.
+
+Schon BepInEx 5 für andere Mods installiert? Dann nur den Ordner BepInEx\plugins\TS2MP kopieren und vorhandene
+Dateien nicht überschreiben (getestet ist BepInEx 5.4.23.5).
+
+SPIELEN - Taste F8 öffnet und schließt das Mehrspieler-Menü
+Host (Spieler 1):
+  - Einmalig im Router UDP-Port 27960 an den eigenen PC weiterleiten
+    (Anleitung: BepInEx\plugins\TS2MP\DIRECT_CONNECT_SETUP_DE.md).
+  - Den eigenen Spielstand laden und warten, bis du in der Welt stehst.
+  - F8 -> "Hosten starten". Das Menü zeigt den Beitrittscode ("Code kopieren" legt ihn in die Zwischenablage).
+  - Dem Mitspieler schicken: öffentliche IPv4-Adresse (Router-Übersicht) oder DynDNS-Name, Port 27960, Beitrittscode.
+  - Hosten ist im Hauptmenü nicht möglich. Zurück ins Hauptmenü beendet die Sitzung.
+Mitspieler (Spieler 2):
+  - Spiel starten und im HAUPTMENÜ bleiben.
+  - F8 -> Adresse, Port und Beitrittscode eintragen -> "Verbinden".
+  - Nach erfolgreicher Verbindung lädt das Spiel automatisch; das Inventar von Spieler 2 kommt vom Host.
+  - Aus einem laufenden Einzelspieler-Spiel kann man nicht beitreten: erst zurück ins Hauptmenü.
+
+DEINE SPIELSTÄNDE
+- Spieler 2 spielt in einem geschützten Speicherbereich (%LOCALAPPDATA%\TS2MP\client-sandbox). Die eigenen
+  Einzelspieler-Spielstände werden dabei nicht verändert.
+- Nach einer Sitzung als Spieler 2 bleibt dieser Schutz bis zum Spielende aktiv: für Einzelspieler oder Hosten das
+  Spiel einmal neu starten.
+- Der Host besitzt die gemeinsame Welt, den Fortschritt und das Inventar von Spieler 2 (gespeichert auf dem Host-PC).
+
+SICHERHEIT
+- Der Beitrittscode ist bei jedem Hosten neu, gilt nur für diese Sitzung und hält Fremde fern. Nicht öffentlich posten.
+- Es kann nur EIN Mitspieler beitreten.
+- Der Spielverkehr selbst ist NICHT verschlüsselt.
+- Kein UPnP, keine DMZ, kein VPN nötig - nur die eine UDP-Portweiterleitung beim Host.
+- CGNAT / DS-Lite-Anschlüsse haben keine eigene öffentliche IPv4: dann kann dieser Anschluss nicht hosten
+  (Erklärung und Lösungen in DIRECT_CONNECT_SETUP_DE.md).
+
+DEINSTALLATION
+Spiel beenden und im Spielordner löschen: BepInEx\plugins\TS2MP. Wer BepInEx nur für diesen Mod hatte, löscht zusätzlich
+winhttp.dll, doorstop_config.ini, .doorstop_version und den Ordner BepInEx. Spieldateien und Spielstände bleiben unberührt.
+
+BEKANNTE EINSCHRÄNKUNGEN
+- Die Verbindung zwischen zwei getrennten PCs über das Internet ist noch nicht getestet.
+- Geteilte Welt-Beute (nur Madison Street) ist noch nicht im Spiel abgenommen; in der Region, in der das Hosten
+  gestartet wurde, wird sie erst nach erneutem Betreten aktiv.
+- Spieler 2 kann Beute in einer Region, die der Host in dieser Sitzung noch nicht geladen hat, nicht aufheben.
+- Gemeinsame Erfahrungspunkte und Story-Fortschritt sind noch nicht umgesetzt (Spieler 2 nutzt eine Kopie seines
+  eigenen Spielstands als Welt-Grundlage; ohne eigenen Spielstand muss er im Hauptmenü ein neues Spiel beginnen).
+- Einige ungespeicherte Erwerbungen von Spieler 1 haben eine Einschränkung bei der Dauerhaftigkeit.
+
+Protokolle: %LOCALAPPDATA%\TS2MP\logs (der Beitrittscode steht in keinem Protokoll).
+Lizenzen: BepInEx\plugins\TS2MP\THIRD-PARTY-NOTICES.txt und licenses\. Das Spiel selbst ist nicht enthalten.

@@ -34,16 +34,16 @@ The project is being developed and tested incrementally; a feature isn't conside
 
 StolenPlayer is a **BepInEx 5 / Harmony** mod for the Unity Mono version of Thief Simulator 2. Networking uses **LiteNetLib**, with a host coordinating shared state and vehicle ownership.
 
-The current development setup uses two local game instances on Windows. Remote play and general-purpose installation have not been validated as release-ready.
+Players install a drag-and-drop ZIP into the game folder, start the game normally and press **F8**: Player 1 hosts from a loaded single-player world (direct IP, UDP 27960, per-session join code), Player 2 joins from the main menu and plays in an isolated save sandbox. Internet play between two PCs has not been validated yet.
 
 **Tested game target:** Thief Simulator 2 v1.27c  
-**Current development build:** 0.7.1 · protocol 14 (pending in-game QA)
+**Current development build:** 0.12.0 · protocol 22 (pending two-PC manual QA)
 
 Both instances need the same mod version and protocol.
 
 ## Building and testing
 
-There is no packaged public release yet. This repository currently documents the development build and test workflow rather than a one-click installation.
+`tools/build.ps1 -Package` produces the release `build/release/TS2-Multiplayer-<version>.zip` (BepInEx 5.4.23.5 bootstrap + core, the plugin, LiteNetLib, licenses, German README and setup guide `docs/DIRECT_CONNECT_SETUP_DE.md`). It is a pre-release until the two-PC QA in `docs/TESTING.md` §27 has passed. `TS2-Multiplayer-Launcher.exe` is a developer tool for local two-instance tests only.
 
 The project includes:
 

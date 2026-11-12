@@ -1,4 +1,4 @@
-// M4.3.1 offline tests: passenger E resolver (original interaction first, passenger request only next to the car with no
+﻿// M4.3.1 offline tests: passenger E resolver (original interaction first, passenger request only next to the car with no
 // original target, obstacles), seated E (storage bridge / medkit out of reach / exit), seat authority regressions,
 // local passenger body visibility rule, car storage authority rule, slow car-door state machine (protocol 11).
 // Pure logic only: no Unity physics, raycasts, cameras, rendering, animation or inventory UI is exercised here - the
@@ -335,6 +335,11 @@ static class InteractionTests
                 var l = lines[n];
                 string where = System.IO.Path.GetFileName(f) + ":" + (n + 1);
                 Expect(l.IndexOf("SpawnNormalText", StringComparison.Ordinal) < 0, where + " uses the game's free-text spawner");
+                // N1.2: own IMGUI drawing only in the player-opened F8 menu and the opt-in debug overlay (Plugin.cs)
+                string fn = System.IO.Path.GetFileName(f);
+                if (fn != "MultiplayerMenu.cs" && fn != "Plugin.cs")
+                    Expect(l.IndexOf("GUI.Label(", StringComparison.Ordinal) < 0 && l.IndexOf("GUILayout.", StringComparison.Ordinal) < 0 && l.IndexOf("GUI.Window(", StringComparison.Ordinal) < 0 && l.IndexOf("GUI.Box(", StringComparison.Ordinal) < 0,
+                        where + " draws its own UI outside the F8 menu / debug overlay");
                 Expect(l.IndexOf("ShowText(", StringComparison.Ordinal) < 0, where + " still calls ShowText");
                 int w = l.IndexOf("_warn(", StringComparison.Ordinal);
                 if (w >= 0 && l.IndexOf("Fast.Call", StringComparison.Ordinal) < 0)

@@ -1,4 +1,4 @@
-// M5 W3B shared dropped items on the ORIGINAL drop / pickup code (design + verified IL: src/Shared/WorldItems.cs).
+﻿// M5 W3B shared dropped items on the ORIGINAL drop / pickup code (design + verified IL: src/Shared/WorldItems.cs).
 // Harmony (narrow, verified IL):
 //   Inventory.DropItemNewSystem()                  prefix/postfix: a backpack drop becomes a host transaction; the original
 //                                                  method runs exactly once (host: at once; client: after the host committed the
@@ -6,6 +6,7 @@
 //   Pickupable.PickUp()                            prefix: a registered dropped item is claimed from the host first (one winner);
 //                                                  the original pickup coroutine runs only for the winner.
 //   ItemID.Item_Picked(string,float,bool,bool)     postfix (host): Player 1 received an item Player 2 dropped -> host journal.
+//   (W4.1: the same PickUp prefix hands every non-dropped object to WorldLootSync.AllowPick - pre-placed world loot.)
 //   GameManager.TryToMoveDroppedItemsToStorage()   prefix: the original dropped-item -> hideout-locker conversion (SaveGameNewSystem
 //                                                  in Hillville) runs on the HOST locker for registered items (client: host request).
 // Presentation: every instance shows the registry items of its own region with the item's original drop_object prefab
@@ -157,7 +158,7 @@ namespace TS2MP.Plugin
                 else { List<WorldItem> cur; var ce = _world.Registry.Get(StateScope.Region, region, WorldKeys.WorldItems); if (ce != null && WorldItemList.TryParse(ce.Value, out cur)) count = cur.Count; }
             }
             var p2 = Player2Sync.Instance; var cb = CarBoxSync.Instance;
-            bool busy = _txn != null || _awaitItem != null || (cb != null && cb.TransferPending);
+            bool busy = _txn != null || _awaitItem != null || (cb != null && cb.TransferPending) || (WorldLootSync.Instance != null && WorldLootSync.Instance.TxnPending);
             string why;
             // W3.1: a drop that cannot become a shared item is refused BEFORE the original changes the inventory (nothing
             // happens, like any refused original interaction); never an untracked extra object
@@ -282,7 +283,11 @@ namespace TS2MP.Plugin
             if (pick == null) return true;
             if (ReferenceEquals(_resumePick, pick)) { _resumePick = null; return true; }   // our confirmed client pickup
             uint wid;
-            if (!_byObject.TryGetValue(pick.gameObject.GetInstanceID(), out wid)) return true;   // not a shared item: original
+            if (!_byObject.TryGetValue(pick.gameObject.GetInstanceID(), out wid))
+            {
+                var loot = WorldLootSync.Instance;                                  // W4.1: pre-placed world loot
+                return loot == null || loot.AllowPick(pick);
+            }
             Bound b; _bound.TryGetValue(wid, out b);
             if (b == null || b.Claiming) return false;
             int region = _world.LocalRegion;
@@ -300,7 +305,7 @@ namespace TS2MP.Plugin
             }
             if (!Live) return false;
             var p2 = Player2Sync.Instance; var cb = CarBoxSync.Instance;
-            if (_txn != null || _awaitItem != null || (cb != null && cb.TransferPending) || p2 == null || !p2.Restored) return false;
+            if (_txn != null || _awaitItem != null || (cb != null && cb.TransferPending) || (WorldLootSync.Instance != null && WorldLootSync.Instance.TxnPending) || p2 == null || !p2.Restored) return false;
             if (!p2.PrepareTransfer()) return false;
             uint txn = p2.AppliedTxn + 1;
             var req = new ItemTxnRequest { Op = ItemOp.Pickup, Txn = txn, WorldId = wid, ItemId = b.ItemId, Region = region };

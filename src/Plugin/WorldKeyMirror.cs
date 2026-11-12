@@ -126,6 +126,13 @@ namespace TS2MP.Plugin
             catch (Exception ex) { self._log.Warn("MIRROR respawn hook: " + ex.Message); }
         }
 
+        // W4.1: a mirrored key written by the mod on the host (Player-2 world take, replay) -> next delta (no audit wait).
+        public void HostKeyChanged(string key)
+        {
+            if (!_host || key == null || KeyPolicy.MirroredFamily(key) == 0) return;
+            _dirtyKeys.Add(key);
+        }
+
         static void DailyPostfix() { var s = Instance; if (s != null) { s._hookCalls++; s._dirtyFams |= Bit(KeyPolicy.FamDailyEvent) | Bit(KeyPolicy.FamEventDay) | Bit(KeyPolicy.FamGeneratedEvents); } }
         static void HotPostfix() { var s = Instance; if (s != null) { s._hookCalls++; s._dirtyFams |= Bit(KeyPolicy.FamHotItem) | Bit(KeyPolicy.FamHotItemDay); } }
         static int Bit(byte fam) { return 1 << fam; }

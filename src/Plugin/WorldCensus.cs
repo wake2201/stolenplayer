@@ -1,10 +1,13 @@
-// M5 W1: world object identity census (design + rules: src/Shared/WorldIdentity.cs). Read-only observer of the original scene:
+﻿// M5 W1: world object identity census (design + rules: src/Shared/WorldIdentity.cs). Read-only observer of the original scene:
 // it never enables, moves, renames or destroys anything. Runs once per loaded scene instance inside
 // SceneManager.sceneLoaded (after Awake/OnEnable, before any Start of that scene, so the hierarchy is the pristine serialized
 // asset on every instance). Work: one GetComponentsInChildren(type, includeInactive) per census kind and scene root, one
 // name read per visited transform (memoized), no per-frame code, no network traffic. The registry keeps 32-bit ids and
 // component references per namespace; tables are dropped on scene unload / single scene load; references to destroyed
 // objects are released on lookup. Optional full export (World.CensusExport) is written on a worker thread.
+// W4.1: for every Pickupable the census also reads its serialized loot flags (before any Start) into a LootCatalog per
+// namespace (src/Shared/WorldLoot.cs); RandomFileCabinet contents are marked (random per instance). Catalog metadata is kept
+// after the scene unloads (the host validates a Player-2 pickup against it); live component references are released.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,6 +29,12 @@ namespace TS2MP.Plugin
         readonly CensusGate _gate = new CensusGate();
         readonly Type[] _types = new Type[ObjectKinds.All.Length];
         Func<object, bool> _wasDropped;
+        // W4.1 loot flags (serialized Pickupable fields)
+        Func<object, int> _pItem; Func<object, string> _pStory;
+        readonly List<KeyValuePair<LootFlags, Func<object, bool>>> _pFlags = new List<KeyValuePair<LootFlags, Func<object, bool>>>();
+        Func<object, bool> _pAnyXp; Type _cabinetT;
+        readonly Dictionary<int, LootCatalog> _loot = new Dictionary<int, LootCatalog>();
+        readonly HashSet<Transform> _cabinet = new HashSet<Transform>();
         readonly Func<object, bool> _alive = o => (o as UnityEngine.Object) != null;
 
         // census-scoped scratch (cleared after each run)
@@ -49,6 +58,7 @@ namespace TS2MP.Plugin
             }
             var pick = AccessTools.TypeByName("Pickupable");
             _wasDropped = pick != null ? Fast.Getter<bool>(pick, "wasDropped") : null;
+            if (pick != null) InitLootFlags(pick);
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             Instance = this;
@@ -59,20 +69,67 @@ namespace TS2MP.Plugin
         {
             try
             {
-                if (mode == LoadSceneMode.Single) _registry.Clear();   // every other scene was unloaded
+                if (mode == LoadSceneMode.Single) { _registry.Clear(); foreach (var c in _loot.Values) c.ReleaseTargets(); }   // every other scene was unloaded
                 int ns = IdentityNamespace.ForScene(s.name);
                 if (!_gate.TryBegin(s.handle, ns)) return;
                 Run(s, ns);
             }
             catch (Exception ex) { _log.Error("CENSUS failed for scene " + s.name + " (no gameplay effect)", ex); }
-            finally { _roots.Clear(); _paths.Clear(); _siblings.Clear(); _occurrence.Clear(); _rootNames = null; }
+            finally { _roots.Clear(); _paths.Clear(); _siblings.Clear(); _occurrence.Clear(); _rootNames = null; _cabinet.Clear(); }
         }
 
         void OnSceneUnloaded(Scene s)
         {
             _gate.Unloaded(s.handle);
             int ns = IdentityNamespace.ForScene(s.name);
-            if (ns != IdentityNamespace.None) _registry.Remove(ns);
+            if (ns != IdentityNamespace.None) { _registry.Remove(ns); LootCatalog c; if (_loot.TryGetValue(ns, out c)) c.ReleaseTargets(); }
+        }
+
+        void InitLootFlags(Type pick)
+        {
+            _pItem = Fast.Getter<int>(pick, "item_ID"); _pStory = Fast.Getter<string>(pick, "story_name"); _pAnyXp = Fast.Getter<bool>(pick, "add_any_XP");
+            Flag(pick, "is_heavy_item", LootFlags.Heavy); Flag(pick, "is_money", LootFlags.Money); Flag(pick, "destroy_if_was_picked", LootFlags.DestroyIfPicked);
+            Flag(pick, "deleteIfPref", LootFlags.DeleteIfPref); Flag(pick, "lock_parcel_after_pickup", LootFlags.Parcel); Flag(pick, "advance_story_if_picked", LootFlags.StoryPick);
+            Flag(pick, "advance_story_if_placed_car", LootFlags.StoryCar); Flag(pick, "isContractItem", LootFlags.Contract); Flag(pick, "never_destroy", LootFlags.NeverDestroy);
+            Flag(pick, "dontDestroyDays", LootFlags.NoDays); Flag(pick, "cant_pick_reason", LootFlags.CantPick);
+            _cabinetT = AccessTools.TypeByName("RandomFileCabinet");
+            if (_pItem == null || _pStory == null || _pAnyXp == null || _pFlags.Count != 11) { _log.Warn("CENSUS loot flag fields incomplete: shared world loot disabled (no catalog)"); _pItem = null; }
+        }
+        void Flag(Type t, string field, LootFlags f) { var g = Fast.Getter<bool>(t, field); if (g != null) _pFlags.Add(new KeyValuePair<LootFlags, Func<object, bool>>(f, g)); }
+
+        // W4.1: retained loot catalog of a namespace (null = never censused in this process or flags unavailable).
+        public LootCatalog Loot(int ns) { LootCatalog c; return _loot.TryGetValue(ns, out c) ? c : null; }
+
+        LootFlags FlagsOf(Component comp, bool dropped)
+        {
+            var f = LootFlags.None;
+            for (int i = 0; i < _pFlags.Count; i++) if (_pFlags[i].Value(comp)) f |= _pFlags[i].Key;
+            if (!string.IsNullOrEmpty(_pStory(comp))) f |= LootFlags.StoryName;
+            if (!_pAnyXp(comp)) f |= LootFlags.NoXp;
+            if (dropped) f |= LootFlags.Dropped;
+            for (var t = comp.transform; t != null; t = t.parent) if (_cabinet.Contains(t)) { f |= LootFlags.RandomCabinet; break; }
+            return f;
+        }
+
+        // RandomFileCabinet.Start activates random child objects per instance: its own transform and every GameObject it
+        // references (firstCabinetRandom, ...) are marked; loot below them is not the same on both instances.
+        void MarkCabinets()
+        {
+            _cabinet.Clear();
+            if (_cabinetT == null) return;
+            var fields = _cabinetT.GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+            for (int r = 0; r < _roots.Count; r++)
+                foreach (var c in _roots[r].GetComponentsInChildren(_cabinetT, true))
+                {
+                    _cabinet.Add(c.transform);
+                    foreach (var f in fields)
+                    {
+                        object v = f.GetValue(c);
+                        var go = v as GameObject; if (go != null) { _cabinet.Add(go.transform); continue; }
+                        var list = v as System.Collections.IEnumerable;
+                        if (list != null && !(v is string)) foreach (var o in list) { var g = o as GameObject; if (g != null) _cabinet.Add(g.transform); }
+                    }
+                }
         }
 
         void Run(Scene scene, int ns)
@@ -84,6 +141,8 @@ namespace TS2MP.Plugin
             _rootNames = new SiblingNames();
             for (int i = 0; i < _roots.Count; i++) _rootNames.Add(_roots[i].name);
             var loot = new NameCensus();
+            LootCatalog catalog = _pItem != null ? new LootCatalog(ns) : null;
+            if (catalog != null) MarkCabinets();
             List<string> lines = _export ? new List<string>(4096) : null;
             int visitedComponents = 0;
 
@@ -113,11 +172,23 @@ namespace TS2MP.Plugin
                         }
                         uint hash = IdentityHash.ForObject(scene.name, path, info.Kind);
                         var res = table.Add(hash, path, info.Kind, cat, comp);
+                        if (info.Kind == ObjectKind.Pickupable && catalog != null)
+                        {
+                            string lname = t.name;
+                            catalog.Add(hash, lname, _pItem(comp), FlagsOf(comp, cat == IdentityCategory.Dynamic), comp, comp.GetInstanceID());
+                        }
                         if (lines != null) lines.Add(hash.ToString("X8") + "\t" + info.Kind + "\t" + cat + "\t" + res + "\t" + path);
                     }
                 }
             }
             var stable = _registry.Finish(table);
+            if (catalog != null)
+            {
+                IdentityCategory ic;
+                catalog.Seal(h => !table.TryCategory(h, out ic) || ic == IdentityCategory.Unsupported);
+                catalog.Digest = table.Digest;
+                _loot[ns] = catalog;
+            }
             double ms = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
             long alloc = GC.GetTotalMemory(false) - mem0; int gcs = GC.CollectionCount(0) - gc0;
             _runs++; _totalMs += ms; if (ms > _maxMs) _maxMs = ms;
@@ -135,8 +206,21 @@ namespace TS2MP.Plugin
             _log.Info(perKind.ToString());
             foreach (var d in table.Diagnostics) _log.Info("WORLD_CENSUS_DIAG " + IdentityNamespace.Name(ns) + " " + d);
             if (loot.SharedNames > 0) _log.Info("WORLD_CENSUS_LOOT_NAMES " + IdentityNamespace.Name(ns) + " examples: " + string.Join(", ", loot.Examples(8).ToArray()));
+            if (catalog != null && catalog.Count > 0) LogLoot(catalog);
             if (stable == false) _log.Warn("WORLD_CENSUS " + IdentityNamespace.Name(ns) + " digest differs from the previous load of this namespace in this process");
             if (lines != null) Export(ns, scene.name, lines);
+        }
+
+        // W4.1: one line per census with the flag distribution (which loot is in the supported subset and why the rest is not).
+        void LogLoot(LootCatalog c)
+        {
+            var counts = new Dictionary<LootFlags, int>();
+            foreach (var e in c.Entries)
+                for (int b = 0; b < 32; b++) { var x = (LootFlags)(1u << b); if ((e.Flags & x) != 0) { int n; counts.TryGetValue(x, out n); counts[x] = n + 1; } }
+            var sb = new StringBuilder("WORLD_LOOT_FLAGS ").Append(IdentityNamespace.Name(c.Namespace)).Append(" objects=").Append(c.Count)
+                .Append(" flagFree=").Append(c.Eligible).Append(" supportedRegion=").Append(LootRules.SupportedNamespace(c.Namespace) ? "yes" : "no");
+            foreach (var kv in counts) sb.Append(' ').Append(kv.Key).Append('=').Append(kv.Value);
+            _log.Info(sb.ToString());
         }
 
         // Scene-relative hierarchy path; a sibling index only where siblings share the name. Memoized per transform.

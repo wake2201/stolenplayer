@@ -1,4 +1,4 @@
-// BepInEx 5 plugin entry. Inert unless the game was started by TS2-Multiplayer-Launcher (-ts2mp-role argument).
+﻿// BepInEx 5 plugin entry. Inert unless the game was started by TS2-Multiplayer-Launcher (-ts2mp-role argument).
 using System;
 using System.IO;
 using BepInEx;
@@ -20,6 +20,10 @@ namespace TS2MP.Plugin
             Log = Logger;
             LaunchArgs args;
             string parseError;
+            // N1: the join code arrives in this process's environment only (never on the command line). Take it and
+            // remove it immediately so no child process inherits it; only the derived HMAC key stays in memory.
+            string joinCodeRaw = Environment.GetEnvironmentVariable(JoinAuth.EnvVar);
+            if (joinCodeRaw != null) { try { Environment.SetEnvironmentVariable(JoinAuth.EnvVar, null); } catch { } }
             if (!LaunchArgs.TryParse(Environment.GetCommandLineArgs(), out args, out parseError))
             {
                 Log.LogInfo("TS2MP inactive: game not started by the multiplayer launcher (" + parseError + "). No patches applied.");
@@ -34,6 +38,13 @@ namespace TS2MP.Plugin
             log.Info("PLUGIN_INIT mod=" + ProtocolInfo.ModVersion + " protocol=" + ProtocolInfo.ProtocolVersion + " game=" + Application.version
                 + " unity=" + Application.unityVersion + " pid=" + System.Diagnostics.Process.GetCurrentProcess().Id
                 + " bepinex=" + typeof(BaseUnityPlugin).Assembly.GetName().Version + " port=" + args.Port + " logDir=" + args.LogDir);
+            if (joinCodeRaw != null)
+            {
+                string code = JoinAuth.Normalize(joinCodeRaw);
+                if (code != null) { args.JoinKey = JoinAuth.DeriveKey(code); log.Info("JOIN_CODE received from the launcher (join-code authentication on)"); }
+                else log.Error("JOIN_CODE_INVALID: the join code passed by the launcher is malformed; authentication cannot be used");
+            }
+            else log.Info("JOIN_CODE none (only a loopback host may run without one)");
 
             bool saveSafe = true;
             if (args.Role == Role.Client)
@@ -59,7 +70,8 @@ namespace TS2MP.Plugin
                 ClockRefreshSeconds = Mathf.Clamp(Config.Bind("World", "ClockRefreshSeconds", 10f, "Max seconds between region clock re-anchors while the clock runs normally (5-60). Changes are sent immediately.").Value, 5f, 60f),
                 IdentityCensus = Config.Bind("World", "IdentityCensus", true, "M5 W1: once per scene load, record stable ids of world objects (diagnostic log WORLD_CENSUS; no gameplay effect). Off only for performance comparison.").Value,
                 CensusExport = Config.Bind("World", "CensusExport", false, "Diagnostics: write every census identity (id, kind, category, hierarchy path) to census-*.tsv in the instance log folder.").Value,
-                KeyMirror = Config.Bind("World", "KeyMirror", true, "M5 W2: the host's world keys (loot respawn days, daily events, hot item, day count) are mirrored to the client. Must be the same on both instances; off only for performance comparison.").Value
+                KeyMirror = Config.Bind("World", "KeyMirror", true, "M5 W2: the host's world keys (loot respawn days, daily events, hot item, day count) are mirrored to the client. Must be the same on both instances; off only for performance comparison.").Value,
+                SharedLoot = Config.Bind("World", "SharedLoot", true, "M5 W4.1: pre-placed world loot (Madison Street subset) is host-authoritative and shared. Must be the same on both instances; needs World.IdentityCensus.").Value
             };
 
             var go = new GameObject("TS2MP_Runner");
@@ -87,6 +99,7 @@ namespace TS2MP.Plugin
         public string SessionId, InstanceId, LogDir, DataDir;
         public string BindAddress = "127.0.0.1", ConnectAddress = "127.0.0.1";
         public int Port;
+        public byte[] JoinKey;   // N1: from the environment, never from argv
 
         public static bool TryParse(string[] argv, out LaunchArgs a, out string error)
         {
@@ -143,6 +156,7 @@ namespace TS2MP.Plugin
         Player2Sync _p2;
         WorldCensus _census;
         WorldKeyMirror _mirror;
+        WorldLootSync _loot;
         bool _quitRequested, _shutdown;
         // M5 performance instrumentation (Debug.PerfStats; off = one null check per frame)
         public bool PerfStats; public int PerfIntervalSeconds = 30;
@@ -168,6 +182,7 @@ namespace TS2MP.Plugin
             _node = new SessionNode(args.Role, args.SessionId, args.InstanceId, Application.version, args.Port, log);
             _node.BindAddress = args.BindAddress;
             _node.ConnectAddress = args.ConnectAddress;
+            _node.JoinKey = args.JoinKey;
             log.StateProvider = delegate { return _node.StateText; };
             if (_node.Start())
             {
@@ -194,6 +209,12 @@ namespace TS2MP.Plugin
                 catch (Exception ex) { log.Error("CENSUS init failed (identity census disabled)", ex); _census = null; }
             }
             else log.Info("CENSUS disabled by config (World.IdentityCensus = false)");
+            if (_world != null && _census != null && world.SharedLoot)
+            {
+                try { _loot = new WorldLootSync(_node, log, _world); }
+                catch (Exception ex) { log.Error("WLOOT init failed (shared world loot disabled)", ex); _loot = null; }
+            }
+            else if (_world != null) log.Info("WLOOT disabled (" + (!world.SharedLoot ? "World.SharedLoot = false" : "no identity census") + "): original local loot pickups");
             if (PerfStats)
             {
                 _frameStats = new FrameStats(8192);
@@ -287,6 +308,11 @@ namespace TS2MP.Plugin
                 try { _mirror.Update(); }
                 catch (Exception ex) { _log.Error("MIRROR update exception (world-key mirror disabled)", ex); _mirror.Dispose(); _mirror = null; }
             }
+            if (_loot != null && _world != null)
+            {
+                try { _loot.Update(); }
+                catch (Exception ex) { _log.Error("WLOOT update exception (shared world loot disabled)", ex); _loot.Dispose(); _loot = null; }
+            }
         }
 
         // M5.0: observed cars are kinematic bodies moved in the physics step.
@@ -359,6 +385,7 @@ namespace TS2MP.Plugin
             _shutdown = true;
             if (_log == null) return;
             _log.Info("PLUGIN_SHUTDOWN (" + why + ")");
+            if (_loot != null) { try { _loot.Dispose(); } catch { } _loot = null; }
             if (_mirror != null) { try { _mirror.Dispose(); } catch { } _mirror = null; }
             if (_census != null) { try { _census.Dispose(); } catch { } _census = null; }
             if (_items != null) { try { _items.Dispose(); } catch { } _items = null; }

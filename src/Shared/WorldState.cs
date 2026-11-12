@@ -1,4 +1,4 @@
-// M3: host-authoritative shared world state. Unity-free (unit-testable).
+﻿// M3: host-authoritative shared world state. Unity-free (unit-testable).
 // One registry per instance. Only the host commits; the client mirrors it via snapshot + ordered deltas and
 // proposes changes (StateProposal) that the host validates, commits and acknowledges (ProposalResult).
 using System;
@@ -237,6 +237,8 @@ namespace TS2MP.Shared
         public const string CarBoxItems = "carboxItems"; // Session scope (arg = storage kind): committed host storage contents (CarBoxItems)
         public const string CarBoxReq = "carboxReq";     // Session scope (arg = storage kind): client proposal {op, session}
         public const string WorldItems = "witems";       // Region scope (arg = region): committed dropped items of that region (WorldItemList, W3, protocol 17)
+        public const string LootTxn = "lootTxn";         // Session scope (arg 0): client proposal, Player 2 picks up one verified world object (LootTxnRequest, W4.1, protocol 20)
+        // W4.1: taken world loot = Region scope (arg = namespace = region id), keys LootBook.Keys "wloot0".."wloot3" (hash chunks)
         public const string ItemTxn = "itemTxn";         // Session scope (arg 0): client proposal, one dropped-item transaction (ItemTxnRequest, W3)
         public const string VehicleDoor = "vdoor";      // Session scope (arg = vehicle id): committed 1-byte door mask (+ slow bits, M4.3.1); client proposal {door, open, mode} (M5.0 protocol 9, mode protocol 11)
         public const string VehiclePark = "vpark";      // Session scope (arg = vehicle id): ParkRecord, host-committed (M4.2)

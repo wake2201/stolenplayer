@@ -1,0 +1,48 @@
+TS2-Multiplayer 0.11.1 - Koop-Mod für Thief Simulator 2 (2 Spieler, Direktverbindung)
+=========================================================================================
+
+VORAUSSETZUNGEN
+- Beide Spieler besitzen Thief Simulator 2 in derselben Version (getestet mit 1.27c).
+- Windows 10/11 mit .NET Framework 4.7.2 oder neuer (bei Windows 10/11 normalerweise vorhanden).
+- Beide verwenden dieselbe Version dieses Pakets.
+
+1. ENTPACKEN
+   Das ZIP vollständig in einen eigenen Ordner entpacken (nicht in den Spielordner, nicht direkt aus dem ZIP starten).
+
+2. INSTALLIEREN (beide Spieler)
+   TS2-Multiplayer-Launcher.exe starten -> 3 "Install / Update".
+   Der Spielordner wird automatisch gesucht; sonst unter 6 "Settings" -> 1 eintragen.
+   Installiert werden nur BepInEx 5.4.23.5 und das Multiplayer-Plugin. Alle Dateien werden per SHA-256 geprüft,
+   ersetzte Dateien vorher gesichert (%LOCALAPPDATA%\TS2MP\backups). Spieldateien und Spielstände bleiben unberührt.
+
+3. HOST (Spieler 1)
+   Einmalig: Router-Portweiterleitung UDP 27960 auf den eigenen PC einrichten -> DIRECT_CONNECT_SETUP_DE.md.
+   Launcher -> 1 "Host Game". Angezeigt werden Port und Beitrittscode (C = Code kopieren).
+   Dem Mitspieler schicken: öffentliche IPv4-Adresse (Router-Übersicht) oder DynDNS-Name, Port, Beitrittscode.
+   Der Code ist bei jedem Host-Start neu. Vor jedem Start werden die Spielstände gesichert.
+
+4. MITSPIELER (Spieler 2)
+   Launcher -> 2 "Join Game" -> Adresse, Port (Enter = 27960) und Beitrittscode eingeben.
+   Spieler 2 spielt in einer eigenen Sandbox: die eigenen Spielstände auf seinem PC werden nicht benutzt oder verändert.
+
+5. DEINSTALLIEREN
+   Launcher -> 5 "Uninstall". Entfernt nur Dateien, die der Launcher installiert hat (vorher gesichert).
+
+WICHTIG
+- Das Spiel immer über den Launcher starten (Host Game / Join Game). Ein normal gestartetes Spiel ist Einzelspieler.
+- Der Beitrittscode hält Fremde fern. Der Spielverkehr ist aber NICHT verschlüsselt.
+- Es kann nur EIN Mitspieler beitreten.
+- Kein UPnP, keine DMZ, kein VPN nötig - nur die eine UDP-Portweiterleitung beim Host.
+- CGNAT / DS-Lite-Anschlüsse haben keine eigene öffentliche IPv4: dann funktioniert Hosten nicht
+  (Erklärung und Lösungen in DIRECT_CONNECT_SETUP_DE.md).
+- Probleme? Tabelle "Fehlerbehebung" in DIRECT_CONNECT_SETUP_DE.md, Protokolle in %LOCALAPPDATA%\TS2MP\logs.
+
+BEKANNTE EINSCHRÄNKUNGEN DIESER VERSION
+- Geteilte Welt-Beute (W4.1) ist noch nicht im Spiel abgenommen.
+- Spieler 2 kann Beute in einer Region, die der Host in dieser Sitzung noch nicht geladen hat, nicht aufheben.
+- Gemeinsame Erfahrungspunkte und Story-Fortschritt sind noch nicht umgesetzt.
+- Einige ungespeicherte Erwerbungen von Spieler 1 haben eine Einschränkung bei der Dauerhaftigkeit.
+- Das Beenden ohne Speichern (W3.4) ist noch nicht getestet.
+- Die Internet-Verbindung zwischen zwei getrennten PCs ist noch nicht getestet (nur lokal auf einem PC).
+
+Lizenzen: THIRD-PARTY-NOTICES.txt und Ordner licenses\. Das Spiel selbst ist nicht enthalten.

@@ -1,4 +1,4 @@
-// M5 W3.4 offline tests: CarBox / hideout-locker durability against a host quit without the original save.
+﻿// M5 W3.4 offline tests: CarBox / hideout-locker durability against a host quit without the original save.
 // The model mirrors the host exactly as the plugin drives it (src/Plugin/Player2Sync.cs HostTransfer / HostBind /
 // SavePrefix+SavePostfix / DepositPostfix / GameSavePrefix), on the pure pieces it uses (P2Book.HostTransfer, ReplayAll,
 // HostDepositLedger, Serialize/TryDeserialize):
@@ -30,7 +30,7 @@ static class DurabilityTests
         Run("F  multiple quantities: saved stock first, then P1 deposits, partial returns, mid-session save", CaseF);
         Run("G  interrupted persistence: failed write, crash before/after write, duplicate retry, reconnect", CaseG);
         Run("H  watermarks: stray FBPP write, save then reload, profile reload twice, unattributed unit refused", CaseH);
-        Run("I  p2inv migration v1/v2 -> v3: record, money, bank, journal, host sequence, watermarks preserved", CaseI);
+        Run("I  p2inv migration v1/v2 -> v4: record, money, bank, journal, host sequence, watermarks preserved", CaseI);
         Run("J  interplay with the W3 dropped-item host journal and both storages in one session", CaseJ);
         Console.WriteLine();
         Console.WriteLine("RESULT: " + _passed + " passed, " + _failed + " failed");
@@ -313,10 +313,10 @@ static class DurabilityTests
     static void CheckRoundTrip(P2Book b, string from)
     {
         var data = b.Serialize(0); P2Book back; string err;
-        Expect(data[8] == 3, from + " re-written as v3");
-        Expect(P2Book.TryDeserialize(data, 0, out back, out err), from + " -> v3 loads: " + err);
+        Expect(data[8] == 4, from + " re-written as v4 (W4.1: + world-take list)");
+        Expect(P2Book.TryDeserialize(data, 0, out back, out err), from + " -> v4 loads: " + err);
         Expect(back.Rec.SameContent(b.Rec) && back.Rec.Id == b.Rec.Id && back.Rec.AppliedTxn == b.Rec.AppliedTxn && back.Rec.Rev == b.Rec.Rev && back.HostSeq == b.HostSeq && back.LastSavedHost == b.LastSavedHost
-               && back.LastSavedTxn == b.LastSavedTxn && back.HistoryId == b.HistoryId && back.HistoryConfirmed == b.HistoryConfirmed && back.Journal.Count == b.Journal.Count, from + " -> v3: nothing lost");
+               && back.LastSavedTxn == b.LastSavedTxn && back.HistoryId == b.HistoryId && back.HistoryConfirmed == b.HistoryConfirmed && back.Journal.Count == b.Journal.Count, from + " -> v4: nothing lost");
         for (int i = 0; i < b.Journal.Count; i++) Expect(back.Journal[i].Txn == b.Journal[i].Txn && back.Journal[i].Kind == b.Journal[i].Kind && back.Journal[i].StorageDelta == b.Journal[i].StorageDelta && back.Journal[i].ItemId == b.Journal[i].ItemId, from + " journal order kept");
     }
 

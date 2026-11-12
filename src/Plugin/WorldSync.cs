@@ -1,4 +1,4 @@
-// M3.1: shared world state glue with per-region clocks (Unity main thread only; SessionNode raises events from
+﻿// M3.1: shared world state glue with per-region clocks (Unity main thread only; SessionNode raises events from
 // Tick() in NetRunner.Update). Host: WorldHost (registry, region clocks, proposals). Client: registry mirror.
 // Region time rules: CODEBASE_MAP §7. Hot path is allocation-free (compiled accessors, cached objects, no per-frame
 // logging/strings); global searches only on scene changes, at most once per second while a reference is missing.
@@ -17,7 +17,7 @@ namespace TS2MP.Plugin
     public sealed class WorldSettings
     {
         public double ClockRefreshSeconds = 10;
-        public bool IdentityCensus = true, CensusExport, KeyMirror = true;   // M5 W1/W2 (switchable for A/B performance comparison)
+        public bool IdentityCensus = true, CensusExport, KeyMirror = true, SharedLoot = true;   // M5 W1/W2 (switchable for A/B performance comparison)
     }
 
     internal sealed class WorldSync : IDisposable
@@ -716,6 +716,7 @@ namespace TS2MP.Plugin
                 if (ProposalResultHook2 != null && ProposalResultHook2(id, code)) return; // M4.3.2b shared car storage
                 if (ProposalResultHook3 != null && ProposalResultHook3(id, code)) return; // M4.3.3 Player-2 inventory reports
                 if (ProposalResultHook4 != null && ProposalResultHook4(id, code)) return; // M5 W3 dropped-item transactions
+                if (ProposalResultHook5 != null && ProposalResultHook5(id, code)) return; // M5 W4.1 world-loot pickups
                 if (_sleep.IsStart(id))
                 {
                     _sleep.StartResult(ok);
@@ -788,6 +789,7 @@ namespace TS2MP.Plugin
         internal Func<uint, ProposalCode, bool> ProposalResultHook2;
         internal Func<uint, ProposalCode, bool> ProposalResultHook3;
         internal Func<uint, ProposalCode, bool> ProposalResultHook4;   // M5 W3 WorldItemSync
+        internal Func<uint, ProposalCode, bool> ProposalResultHook5;   // M5 W4.1 WorldLootSync
         // M4.3.3 hotfix: bounded recovery when an expected entry (Player-2 record) is missing on the client.
         internal void RequestResync(string why)
         {

@@ -1,4 +1,4 @@
-// M5 W3 / W3.1 offline tests: shared hideout locker (lease, transfers, journal, isolation from the car storage), shared dropped
+﻿// M5 W3 / W3.1 offline tests: shared hideout locker (lease, transfers, journal, isolation from the car storage), shared dropped
 // items (registry, single-winner claims, exactly-once Player-2 ownership, cross-player host journal, region lifetime,
 // original Hillville conversion, persistence/replay), and the W3C/W3D gear fields of the player snapshot.
 // Pure logic only (WorldHost + P2Book + a simulated host plugin hook). Unity objects, Harmony hooks, the original UI,
@@ -709,7 +709,7 @@ static class W3Tests
         Expect(!WorldItemList.TryParse(bad, out back), "invalid sim slot refused even with the settled bit");
         var full = new List<WorldItem>(); for (int i = 1; i <= WorldItemList.MaxPerRegion; i++) full.Add(new WorldItem { Id = (uint)i, ItemId = 1, Origin = 1, Rot = Quat16.From(0, 0, 0, 1), Sim = 1, Settled = i % 2 == 0 });
         Expect(WorldItemList.Encode(full).Length <= StateEntry.MaxValueBytes, "30 items still fit one registry value");
-        Expect(ProtocolInfo.ProtocolVersion == 19, "wire change -> protocol 19");
+        Expect(ProtocolInfo.ProtocolVersion >= 19, "W3.2 wire change -> protocol 19 or later (W4.1: 20)");
     }
 
     static void GearW32()

@@ -1,4 +1,4 @@
-// M4.3.3 durable Player-2 inventory (design: src/Shared/Player2Inventory.cs). Host: owns the record per save profile
+﻿// M4.3.3 durable Player-2 inventory (design: src/Shared/Player2Inventory.cs). Host: owns the record per save profile
 // (p2inv-<profile>.dat next to the fleet file), executes CarBox transfers of Player 2 against its real storage counters,
 // keeps a transfer watermark + save history id inside the host save and replays journal entries above the watermark after
 // a load; a client report is written durably BEFORE it is acknowledged (0.7.1). Client (lifecycle: src/Shared/Player2Client.cs):
@@ -9,6 +9,10 @@
 // ItemID.Move_To_Storage(int) / Move_Out_Of_Storage(int) feed the unsaved Player-1 deposit ledger; SaveGame.SaveGameNewSystem
 // prefix + finalizer mark the original save whose FBPP write clears it. Player-2 withdrawals that need such a deposit journal
 // it first (HostItem -1 + HostCar/HostLocker +1) in the same durable write; keys always hold the recoverable counts.
+// W4.1 world loot (design: src/Shared/WorldLoot.cs): HostLootTake commits a Player-2 world pickup (record +1 + durable world
+// take, one atomic p2inv write) and writes the original keys; HostBind replays world takes above the host watermark. The
+// LootProvenance ledger attributes every durable Player-1 loss (P2 picked up P1's drop / withdrew P1's unsaved deposit):
+// when Player 1's recoverable count cannot cover it, the unsaved world pickup it came from is journaled in the same write.
 // Harmony (narrow, verified IL): FBPP.Save / FBPP.SaveToMainProfile (host: journal compaction, history confirmation),
 // BlackBay_Object.SellIt (prefix guard: a sale may only consume items the seller really owns), client only:
 // SaveGame.LoseGame (empty body; called by GameManager.LoadMenu IL_0011, Inventory.QuitGame IL_001f, SaveGame.OnApplicationQuit
@@ -50,6 +54,10 @@ namespace TS2MP.Plugin
         // wrote the live counts into the keys; the following FBPP write puts them on disk)
         readonly HostDepositLedger _ledger = new HostDepositLedger(); bool _ledgerOn; int _gameSaveDepth; bool _gameSaveDiskWrite;
         long _prereqs, _refusedUnsaved, _ledgerClears;
+        // W4.1 (host): world takes + provenance of Player-1 units that Player 2 durably receives
+        readonly LootProvenance _prov = new LootProvenance(); long _lootTakes, _lootReplayed, _provTakes, _provUnattributed;
+        sealed class Keys : IKeyStore { public Player2Sync S; public int Get(string k) { return S._get(k); } public void Set(string k, int v) { S._set(k, v); var m = WorldKeyMirror.Instance; if (m != null) m.HostKeyChanged(k); } }
+        Keys _keys;
         // ---- client ----
         P2ClientSync _sync; object _sceneGm; string _pendingPath; readonly Dictionary<int, int> _unknown = new Dictionary<int, int>();
         long _bbBlocked, _pendingWrites; double _pendingWriteMaxMs, _captureMaxMs;
@@ -185,6 +193,7 @@ namespace TS2MP.Plugin
             // W3.4: the live counts of this scene come from the keys (ItemID.Start): unsaved Player-1 deposits of a previous scene
             // are gone with the reload (travel saved them first) -> nothing left to attribute
             if (_ledger.Entries > 0) { _ledger.Clear(); _ledgerClears++; }
+            if (_keys == null) _keys = new Keys { S = this };
             // W3: host-side effects of cross-player item transfers; W3.4: replayed together with the Player-2 transfers in
             // journal (= commit) order, so a prerequisite Player-1 deposit is applied before the withdrawal that depends on it
             uint hmark = (uint)Math.Max(0, _get(HostMarkKey));
@@ -198,6 +207,17 @@ namespace TS2MP.Plugin
                 if (maxHost > hmark) _set(HostMarkKey, (int)maxHost);
                 _book.Replayed += list.Count;
             }
+            // W4.1: durable world takes not in the loaded save (ItemDay_ never moved backwards, Item_<name> = 1)
+            uint maxWorld;
+            var wl = _book.ReplayWorld(hmark, out maxWorld);
+            if (wl.Count > 0)
+            {
+                foreach (var w in wl) LootKeys.Apply(_keys, w.Take);
+                if (maxWorld > (uint)Math.Max(0, _get(HostMarkKey))) _set(HostMarkKey, (int)maxWorld);
+                _lootReplayed += wl.Count;
+                _log.Info("P2INV replay of " + wl.Count + " world take(s) not contained in the loaded save (host watermark " + hmark + "): " + wl[0].Take + (wl.Count > 1 ? " ..." : ""));
+            }
+            _prov.Reset();                                                   // the loaded save + replays = the recoverable state
             _world.Host.CommitP2(_book.Rec); _world.FlushOutbox();
             _log.Info("P2INV host book profile " + profile + " watermark " + mark + " host watermark " + hmark + ": " + _book.Rec + ", journal " + _book.Journal.Count);
         }
@@ -249,7 +269,7 @@ namespace TS2MP.Plugin
             var i = Instance; if (i == null || !i._host) return;
             // W3.4: only a disk write inside the original game save carries the live storage/backpack counts (Save_Item_Amount
             // ran just before): every Player-1 deposit is now on disk. Postfix = the write returned without an exception.
-            if (i._gameSaveDepth > 0) { i._gameSaveDiskWrite = true; if (i._ledger.Entries > 0) { i._ledger.Clear(); i._ledgerClears++; } }
+            if (i._gameSaveDepth > 0) { i._gameSaveDiskWrite = true; if (i._ledger.Entries > 0) { i._ledger.Clear(); i._ledgerClears++; } i._prov.Reset(); }
             if (i._book == null || i._savingTxn < 0) return;
             try
             {
@@ -347,6 +367,13 @@ namespace TS2MP.Plugin
             var mark = _book.Mark();
             StoragePlan plan;
             var code = _book.HostTransfer(t.Txn, t.Kind, t.ItemId, t.Withdraw, count, stoKeyBefore, itemKeyBefore, deposits, depositFits, withdrawFits, out plan);
+            // W4.1: the prerequisite is a durable Player-1 loss: attribute it (saved unit first, else the unsaved world pickup)
+            var attr = Attribution.SavedUnit; LootTake take = default(LootTake); uint takeSeq = 0;
+            if (code == ProposalCode.Accepted && plan.Prerequisite)
+            {
+                attr = _prov.P1Lost(t.ItemId, itemKeyBefore, out take);
+                if (attr == Attribution.WorldTake) { takeSeq = _book.NextHostSeq(); if (!_book.AddWorldTake(takeSeq, take)) { _prov.UndoLost(t.ItemId, attr, take); attr = Attribution.Unattributed; takeSeq = 0; } }
+            }
             if (code != ProposalCode.Accepted)
             {
                 if (plan.Why != null) _refusedUnsaved++;
@@ -361,18 +388,19 @@ namespace TS2MP.Plugin
             {
                 _ledger.Consume(t.Kind, t.ItemId);
                 _set(itemKey, plan.NewItemKey);                                 // the prerequisite effect only (never unrelated live changes)
-                _set(HostMarkKey, (int)plan.PrereqSeq);
+                _set(HostMarkKey, (int)(takeSeq != 0 ? takeSeq : plan.PrereqSeq));   // W4.1: the world take's keys are in memory since Player 1's original pickup
             }
             if (!WriteNow())
             {
                 SetLive(item, t.Kind, count);
                 _set(stoKey, stoKeyBefore); _set(WatermarkKey, prevMark);
-                if (plan.Prerequisite) { _ledger.Restore(t.Kind, t.ItemId); _set(itemKey, itemKeyBefore); _set(HostMarkKey, prevHost); }
+                if (plan.Prerequisite) { _ledger.Restore(t.Kind, t.ItemId); _set(itemKey, itemKeyBefore); _set(HostMarkKey, prevHost); _prov.UndoLost(t.ItemId, attr, take); }
                 _book.Restore(mark);
                 _log.Warn("P2INV transfer #" + t.Txn + " not committed (durable write failed): Busy, nothing changed");
                 return ProposalCode.Busy;
             }
             if (plan.Prerequisite) _prereqs++;
+            NoteAttribution(attr, take, t.ItemId, "withdrawal #" + t.Txn + " of an unsaved Player-1 deposit");
             _world.Host.CommitP2(_book.Rec);
             _log.Info("P2INV transfer #" + t.Txn + " item " + t.ItemId + (t.Withdraw ? " " + StorageKind.Name(t.Kind) + " -> Player 2" : " Player 2 -> " + StorageKind.Name(t.Kind)) + ": storage " + count + " -> " + (count + delta)
                 + " (recoverable " + stoKeyBefore + " -> " + plan.NewStorageKey + ")" + (plan.Prerequisite ? ", unsaved Player-1 deposit journaled first (host seq " + plan.PrereqSeq + ": Player 1 Item_ " + itemKeyBefore + " -> " + plan.NewItemKey + ")" : "")
@@ -410,16 +438,28 @@ namespace TS2MP.Plugin
         public ProposalCode HostP2ItemTxn(ItemOp op, uint txn, int itemId, byte origin, uint originTxn)
         {
             if (_book == null) return ProposalCode.Busy;
-            var before = _book.Rec; int jn = _book.Journal.Count; uint seqBefore = _book.HostSeq;
+            var mark = _book.Mark();
             var code = _book.ItemTxn(txn, itemId, op == ItemOp.Drop ? -1 : +1);
             if (code != ProposalCode.Accepted) { _log.Info("P2INV item txn #" + txn + " " + op + " item " + itemId + " -> " + code); return code; }
+            var attr = Attribution.SavedUnit; LootTake take = default(LootTake); uint takeSeq = 0; int prevHost = _get(HostMarkKey);
+            bool p1Loss = op == ItemOp.Pickup && origin == 1 && originTxn != 0 && originTxn > _book.LastSavedHost;   // a save after the drop already lacks the unit
             if (op == ItemOp.Pickup && origin == 1 && originTxn != 0) _book.AddHostEntry(originTxn, JournalKind.HostItem, itemId, -1);
+            if (p1Loss)
+            {
+                // W4.1: Player 2 now durably owns a unit of Player 1: attribute it (Player 1's recoverable base was captured
+                // before HostDropMark changed the key)
+                attr = _prov.P1Lost(itemId, _get("Item_" + itemId), out take);
+                if (attr == Attribution.WorldTake) { takeSeq = _book.NextHostSeq(); if (!_book.AddWorldTake(takeSeq, take)) { _prov.UndoLost(itemId, attr, take); attr = Attribution.Unattributed; takeSeq = 0; } }
+            }
             if (!WriteNow())
             {
-                _book.Rec = before; if (_book.Journal.Count > jn) _book.Journal.RemoveRange(jn, _book.Journal.Count - jn); _book.HostSeq = seqBefore; _book.ItemTxns--;
+                _book.Restore(mark);
+                if (p1Loss) _prov.UndoLost(itemId, attr, take);
                 _log.Warn("P2INV item txn #" + txn + " not committed (durable write failed): Busy");
                 return ProposalCode.Busy;
             }
+            if (takeSeq != 0 && takeSeq > (uint)Math.Max(0, prevHost)) _set(HostMarkKey, (int)takeSeq);
+            if (p1Loss) NoteAttribution(attr, take, itemId, "pickup #" + txn + " of a Player-1 drop");
             _dirtyFile = false;
             _world.Host.CommitP2(_book.Rec);
             _log.Info("P2INV item txn #" + txn + " " + op + " item " + itemId + " committed: P2 now " + _book.Rec.CountOf(itemId) + (op == ItemOp.Pickup && origin == 1 ? " (dropped by Player 1, host journal seq " + originTxn + ")" : ""));
@@ -433,6 +473,7 @@ namespace TS2MP.Plugin
             if (_book == null) return 0;
             uint seq = _book.NextHostSeq();
             _set(HostMarkKey, (int)seq);
+            _prov.EnsureBase(itemId, _get("Item_" + itemId));               // W4.1: Player 1's recoverable base before the key changes
             if (itemObj != null) _set("Item_" + itemId, _amt(itemObj));
             _dirtyFile = true;                                             // HostSeq persisted with the next background write
             return seq;
@@ -445,6 +486,7 @@ namespace TS2MP.Plugin
             if (_book == null) return false;
             uint seq = _book.NextHostSeq();
             if (!_book.AddHostEntry(seq, kind, itemId, +1)) { _log.Warn("P2INV host journal full: " + why + " not journaled"); return false; }
+            if (kind == JournalKind.HostItem) _prov.P1Gained(itemId, _get("Item_" + itemId));   // W4.1: before the key changes
             _set(HostMarkKey, (int)seq);
             // W3.4: the locker key stays the recoverable count (key + 1), never the live count (which may contain unsaved
             // Player-1 deposits); the backpack key keeps the W3 behaviour
@@ -455,6 +497,41 @@ namespace TS2MP.Plugin
             if (!ok) _dirtyFile = true;
             return ok;
         }
+
+        // ======================================================================== W4.1 world loot (host)
+        void NoteAttribution(Attribution a, LootTake take, int itemId, string what)
+        {
+            if (a == Attribution.WorldTake) { _provTakes++; _log.Info("P2INV " + what + ": the unit was Player 1's unsaved world pickup " + take + " -> world take journaled with it"); }
+            else if (a == Attribution.Unattributed) { _provUnattributed++; _log.Warn("P2INV " + what + ": item " + itemId + " is an unsaved Player-1 acquisition that is not a tracked world pickup (shop / pickpocket / untracked): an unsaved host quit returns its origin (documented limitation)"); }
+        }
+
+        // Player 1's original pickup reached SetDayRespawn (unsaved world acquisition, original rollback semantics).
+        public void NoteP1Pick(LootTake t) { if (_host && _ok) _prov.P1Picked(t); }
+
+        // A validated Player-2 world pickup: record +1 (exactly-once txn) + world take, ONE atomic p2inv write, then the original
+        // keys (ItemDay_<name>, Item_<name>) and the host watermark in the save memory. Failure: nothing changed (Busy).
+        public ProposalCode HostLootTake(uint txn, LootTake take, out string why)
+        {
+            why = null;
+            if (_book == null || _keys == null) { why = "no Player-2 book yet"; return ProposalCode.Busy; }
+            if (_book.WorldFull) { why = "world journal full (host never saved)"; return ProposalCode.Busy; }
+            var mark = _book.Mark();
+            var code = _book.ItemTxn(txn, take.ItemId, +1);
+            if (code != ProposalCode.Accepted) { why = "record " + code; return code; }
+            uint seq = _book.NextHostSeq();
+            if (!_book.AddWorldTake(seq, take)) { _book.Restore(mark); why = "world take refused"; return ProposalCode.Busy; }
+            if (!WriteNow()) { _book.Restore(mark); why = "durable write failed"; _log.Warn("P2INV world pickup #" + txn + " not committed (durable write failed): Busy, nothing changed"); return ProposalCode.Busy; }
+            LootKeys.Apply(_keys, take);
+            _set(HostMarkKey, (int)seq);
+            _dirtyFile = false; _lootTakes++;
+            _world.Host.CommitP2(_book.Rec);
+            _log.Info("P2INV world pickup #" + txn + " committed: " + take + " -> Player 2 now " + _book.Rec.CountOf(take.ItemId) + " (host seq " + seq + ", world journal " + _book.World.Count + ")");
+            return ProposalCode.Accepted;
+        }
+
+        public int P2Count(int itemId) { return _book != null ? _book.Rec.CountOf(itemId) : 0; }
+        public uint P2AppliedTxn { get { return _book != null ? _book.Rec.AppliedTxn : 0; } }
+        public bool HostBookReady { get { return _host && _book != null && _keys != null; } }
 
         public byte LeaseOwner { get { return _host && _world.Host != null ? _world.Host.CarBoxState.Owner : (byte)0; } }
         public byte LockerLeaseOwner { get { return _host && _world.Host != null ? _world.Host.Locker.State.Owner : (byte)0; } }
@@ -484,10 +561,11 @@ namespace TS2MP.Plugin
             bool live = Live;
             P2Inventory rec = null; bool invalid = false;
             if (live) TryRecord(out rec, out invalid);
-            var cb = CarBoxSync.Instance; var wi = WorldItemSync.Instance;
-            bool pending = (cb != null && cb.TransferPending) || (wi != null && wi.TxnPending);
+            var cb = CarBoxSync.Instance; var wi = WorldItemSync.Instance; var wl = WorldLootSync.Instance;
+            bool pending = (cb != null && cb.TransferPending) || (wi != null && wi.TxnPending) || (wl != null && wl.TxnPending);
             if (rec != null && !pending && cb != null && cb.HasLostTransfer) cb.ResolvePending(rec);   // committed -> applied now; not committed -> dropped
             if (rec != null && !pending && wi != null && wi.HasLostTxn) wi.ResolvePending(rec);         // W3: same for a drop / pickup
+            if (rec != null && !pending && wl != null && wl.HasLostTxn) wl.ResolvePending(rec);         // W4.1: same for a world pickup
             bool localReady = loaded && LocalReady();
             _sync.Tick(Now, live, rec, invalid, localReady, pending);
         }
@@ -606,7 +684,7 @@ namespace TS2MP.Plugin
         }
 
         // W3: a dropped-item transaction of Player 2 is in flight (shares the Player-2 transaction id sequence with storage transfers).
-        public bool ItemTxnPending { get { var w = WorldItemSync.Instance; return w != null && w.TxnPending; } }
+        public bool ItemTxnPending { get { var w = WorldItemSync.Instance; var l = WorldLootSync.Instance; return (w != null && w.TxnPending) || (l != null && l.TxnPending); } }
 
         // ---- BlackBay_Object.SellIt guard (both roles): the original pays first, then removes each required item from the
         // backpack, else the locker, else the car storage (ItemID.Remove_Item_Blackbay). Client: only its own backpack is real
@@ -651,6 +729,7 @@ namespace TS2MP.Plugin
                     + " syncWrites " + _syncWrites + " max " + _syncWriteMaxMs.ToString("0.0") + "ms bgWrites " + (_writer != null ? _writer.Writes + "/" + _writer.Failures : "-") : "no book")
                     + " clientSynced " + _clientSynced + " syncs " + _hostSyncs
                     + " durability ledger " + (_ledgerOn ? _ledger.Entries + " type(s)" : "OFF") + " prerequisites " + _prereqs + " refusedUnsaved " + _refusedUnsaved + " ledgerClears " + _ledgerClears
+                    + " worldTakes " + _lootTakes + " worldReplayed " + _lootReplayed + " worldJournal " + (_book != null ? _book.World.Count : 0) + " provenance tracked " + _prov.Tracked + " attributed " + _provTakes + " unattributed " + _provUnattributed
                     : (_sync != null ? _sync.Stats : "no lifecycle") + " pendingWrites " + _pendingWrites + " max " + _pendingWriteMaxMs.ToString("0.0") + "ms captureMax " + _captureMaxMs.ToString("0.00") + "ms") + " blackbayBlocked " + _bbBlocked;
             }
         }

@@ -219,6 +219,10 @@ namespace TS2MP.Shared
         public const int MaxJournal = 4096;
         public P2Inventory Rec;
         public readonly List<JournalEntry> Journal = new List<JournalEntry>();
+        // W4.1 (p2inv v4): durable world acquisitions the host save must contain (original keys ItemDay_<name> / Item_<name>),
+        // host sequence numbers (watermark "TS2MP_HostTxn"), replayed after a load whose watermark predates them.
+        public readonly List<WorldTakeEntry> World = new List<WorldTakeEntry>();
+        public const int MaxWorld = 4096;
         public uint LastSavedTxn;  // watermark of the last host save known to have reached the disk
         public int HistoryId;      // random id written into the host save (SPrefs "TS2MP_P2History") when this record was created
         public bool HistoryConfirmed;   // that id is known to be in a save on disk (set after the first completed FBPP write)
@@ -320,11 +324,12 @@ namespace TS2MP.Shared
         public long Prerequisites;
 
         // Undo point for a failed durable write (journal tail, record, host sequence, counters).
-        public struct BookMark { public P2Inventory Rec; public int Journal; public uint HostSeq; public long Transfers, Prerequisites, ItemTxns; }
-        public BookMark Mark() { return new BookMark { Rec = Rec, Journal = Journal.Count, HostSeq = HostSeq, Transfers = Transfers, Prerequisites = Prerequisites, ItemTxns = ItemTxns }; }
+        public struct BookMark { public P2Inventory Rec; public int Journal, World; public uint HostSeq; public long Transfers, Prerequisites, ItemTxns; }
+        public BookMark Mark() { return new BookMark { Rec = Rec, Journal = Journal.Count, World = World.Count, HostSeq = HostSeq, Transfers = Transfers, Prerequisites = Prerequisites, ItemTxns = ItemTxns }; }
         public void Restore(BookMark m)
         {
             Rec = m.Rec; if (Journal.Count > m.Journal) Journal.RemoveRange(m.Journal, Journal.Count - m.Journal);
+            if (World.Count > m.World) World.RemoveRange(m.World, World.Count - m.World);
             HostSeq = m.HostSeq; Transfers = m.Transfers; Prerequisites = m.Prerequisites; ItemTxns = m.ItemTxns;
         }
 
@@ -392,6 +397,26 @@ namespace TS2MP.Shared
             return l;
         }
 
+        // W4.1: one durable world take with its own host sequence (the caller writes the original keys + "TS2MP_HostTxn" = seq
+        // into the save memory after the atomic p2inv write succeeded).
+        public bool AddWorldTake(uint seq, LootTake t)
+        {
+            if (seq == 0 || World.Count >= MaxWorld || string.IsNullOrEmpty(t.Name)) return false;
+            if (seq > HostSeq) HostSeq = seq;
+            World.Add(new WorldTakeEntry { Seq = seq, Take = t });
+            return true;
+        }
+        public bool WorldFull { get { return World.Count >= MaxWorld; } }
+
+        // W4.1: world takes not contained in the loaded save (seq above the host watermark), in sequence order.
+        public List<WorldTakeEntry> ReplayWorld(uint hostWatermark, out uint maxHost)
+        {
+            var l = new List<WorldTakeEntry>(); maxHost = hostWatermark;
+            foreach (var e in World) if (e.Seq > hostWatermark) { l.Add(e); if (e.Seq > maxHost) maxHost = e.Seq; }
+            l.Sort((a, b) => a.Seq.CompareTo(b.Seq));
+            return l;
+        }
+
         // After an FBPP disk write with this watermark: every entry up to it is contained in the save on disk.
         public void SaveCompleted(uint savedTxn) { SaveCompleted(savedTxn, 0); }
         public void SaveCompleted(uint savedTxn, uint savedHost)
@@ -399,6 +424,7 @@ namespace TS2MP.Shared
             if (savedTxn > LastSavedTxn) LastSavedTxn = savedTxn;
             if (savedHost > LastSavedHost) LastSavedHost = savedHost;
             Journal.RemoveAll(e => JournalKind.IsHost(e.Kind) ? e.Txn <= savedHost : e.Txn <= savedTxn);
+            World.RemoveAll(e => e.Seq <= savedHost);
         }
 
         // A save whose watermark is LOWER than one this file already saw on disk belongs to another history (new game / free
@@ -419,13 +445,16 @@ namespace TS2MP.Shared
         public byte[] Serialize(int profile)
         {
             // v2 (W3): + HostSeq, LastSavedHost, a kind byte per journal entry. v3 (W3.4): same layout, journal kind HostCar
-            // allowed (a v2 reader would misread it, so the version says so). v1 / v2 files stay readable (migrated on write).
+            // allowed (a v2 reader would misread it, so the version says so). v4 (W4.1): + world-take list after the journal.
+            // v1 / v2 / v3 files stay readable (migrated on write).
             var w = new NetDataWriter();
-            w.Put((uint)0x32504D54); w.Put((byte)3); w.Put(profile); w.Put(LastSavedTxn); w.Put(HistoryId); w.Put(HistoryConfirmed);
+            w.Put((uint)0x32504D54); w.Put((byte)4); w.Put(profile); w.Put(LastSavedTxn); w.Put(HistoryId); w.Put(HistoryConfirmed);
             w.Put(HostSeq); w.Put(LastSavedHost);
             Rec.Write(w);
             w.Put(Journal.Count);
             foreach (var e in Journal) { w.Put(e.Txn); w.Put(e.ItemId); w.Put(e.StorageDelta); w.Put(e.Kind); }
+            w.Put(World.Count);
+            foreach (var e in World) { w.Put(e.Seq); e.Take.Write(w); }
             var body = w.CopyData();
             var o = new NetDataWriter(); o.Put(body.Length); o.Put(body); o.Put(Fnv(body));
             return o.CopyData();
@@ -444,7 +473,7 @@ namespace TS2MP.Shared
                 var b = new NetDataReader(body);
                 if (b.GetUInt() != 0x32504D54) { err = "not a p2inv file"; return false; }
                 byte ver = b.GetByte();
-                if (ver < 1 || ver > 3) { err = "unknown p2inv version " + ver; return false; }
+                if (ver < 1 || ver > 4) { err = "unknown p2inv version " + ver; return false; }
                 if (b.GetInt() != profile) { err = "other profile"; return false; }
                 uint seen = b.GetUInt(); int hist = b.GetInt(); bool conf = b.GetBool();
                 uint hostSeq = 0, hostSaved = 0;
@@ -462,6 +491,17 @@ namespace TS2MP.Shared
                     if (ver >= 2) e.Kind = b.GetByte();
                     if ((e.StorageDelta != 1 && e.StorageDelta != -1) || e.Kind > maxKind) { err = "journal entry"; return false; }
                     bk.Journal.Add(e);
+                }
+                if (ver >= 4)
+                {
+                    int m = b.GetInt();
+                    if (m < 0 || m > MaxWorld) { err = "world list size"; return false; }
+                    for (int i = 0; i < m; i++)
+                    {
+                        uint seq = b.GetUInt(); LootTake t;
+                        if (seq == 0 || !LootTake.TryRead(b, out t)) { err = "world take"; return false; }
+                        bk.World.Add(new WorldTakeEntry { Seq = seq, Take = t });
+                    }
                 }
                 if (b.AvailableBytes != 0) { err = "trailing data"; return false; }
                 book = bk; return true;

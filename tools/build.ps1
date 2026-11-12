@@ -1,8 +1,9 @@
-# Builds launcher, plugin and tests with the .NET Framework C# compiler (no .NET SDK needed).
-#   tools\build.ps1 [-GamePath <folder>] [-Deploy] [-Test]
-#   -Deploy  copies plugin + LiteNetLib into <game>\BepInEx\plugins\TS2MP\ (requires BepInEx installed)
-#   -Test    runs the offline protocol tests and launcher tests afterwards
-param([string]$GamePath, [switch]$Deploy, [switch]$Test)
+﻿# Builds launcher, plugin and tests with the .NET Framework C# compiler (no .NET SDK needed).
+#   tools\build.ps1 [-GamePath <folder>] [-Deploy] [-Test] [-Package]
+#   -Deploy   copies plugin + LiteNetLib into <game>\BepInEx\plugins\TS2MP\ (requires BepInEx installed)
+#   -Package  stages build\release\TS2-Multiplayer-<ver>-Windows\ and writes the verified release ZIP (tools\package.ps1)
+#   -Test     runs all offline suites (implies -Package: the installer / package tests use the staged release)
+param([string]$GamePath, [switch]$Deploy, [switch]$Test, [switch]$Package)
 . "$PSScriptRoot\common.ps1"
 
 $game    = Resolve-GamePath $GamePath
@@ -35,27 +36,37 @@ Invoke-Csc 'TS2MP.Plugin.dll' (@('/target:library', '/noconfig', '/nostdlib+', "
     "/r:$core\BepInEx.dll", "/r:$core\0Harmony.dll", "/r:$lnl") + $shared + @(Get-ChildItem "$src\Plugin\*.cs" | ForEach-Object FullName))
 Copy-Item $lnl $outPlugin -Force
 
-# Launcher: plain .NET Framework 4.x console exe.
-Invoke-Csc 'TS2-Multiplayer-Launcher.exe' @('/target:exe', '/platform:anycpu', "/out:$BuildDir\TS2-Multiplayer-Launcher.exe", "$src\Launcher\Launcher.cs")
+# Launcher: plain .NET Framework 4.x console exe. N1: shares join-code / address validation with the plugin
+# (src\Shared\JoinAuth.cs has no LiteNetLib dependency).
+Invoke-Csc 'TS2-Multiplayer-Launcher.exe' @('/target:exe', '/platform:anycpu', "/out:$BuildDir\TS2-Multiplayer-Launcher.exe",
+    "$src\Launcher\Launcher.cs", "$src\Launcher\Installer.cs", "$src\Shared\JoinAuth.cs")
 
-# Tests (offline)
-Invoke-Csc 'TS2MP.ProtocolTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.ProtocolTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\ProtocolTests.cs"))
+# Tests (offline). Each entry: exe name, test source.
+$suites = @(
+    @('TS2MP.ProtocolTests', 'ProtocolTests.cs', 'protocol tests'),
+    @('TS2MP.SyncTests', 'SyncTests.cs', 'sync tests'),
+    @('TS2MP.WorldTests', 'WorldTests.cs', 'world tests'),
+    @('TS2MP.VehicleTests', 'VehicleTests.cs', 'vehicle tests'),
+    @('TS2MP.TravelTests', 'TravelTests.cs', 'travel tests'),
+    @('TS2MP.HandoffTests', 'HandoffTests.cs', 'handoff tests (M4.2.2)'),
+    @('TS2MP.PassengerTests', 'PassengerTests.cs', 'passenger tests (M4.3)'),
+    @('TS2MP.InteractionTests', 'InteractionTests.cs', 'interaction tests (M4.3.1)'),
+    @('TS2MP.CarBoxTests', 'CarBoxTests.cs', 'carbox tests (M4.3.2b)'),
+    @('TS2MP.Player2Tests', 'Player2Tests.cs', 'player2 tests (M4.3.3)'),
+    @('TS2MP.Player2LifecycleTests', 'Player2LifecycleTests.cs', 'player2 lifecycle integration tests (M4.3.3 hotfix, message sequencing)'),
+    @('TS2MP.JointTravelTests', 'JointTravelTests.cs', 'joint travel tests (M4.3 Phase B)'),
+    @('TS2MP.WorldIdentityTests', 'WorldIdentityTests.cs', 'world identity tests (M5 W1)'),
+    @('TS2MP.WorldMirrorTests', 'WorldMirrorTests.cs', 'world-key mirror tests (M5 W2)'),
+    @('TS2MP.W3Tests', 'W3Tests.cs', 'shared locker / dropped items / gear tests (M5 W3)'),
+    @('TS2MP.DurabilityTests', 'DurabilityTests.cs', 'storage durability tests (M5 W3.4)'),
+    @('TS2MP.WorldLootTests', 'WorldLootTests.cs', 'shared world loot tests (M5 W4.1)'),
+    @('TS2MP.NetAuthTests', 'NetAuthTests.cs', 'direct connect / join-code auth tests (N1)')
+)
+foreach ($s in $suites) {
+    Invoke-Csc "$($s[0]).exe" (@('/target:exe', "/out:$outTests\$($s[0]).exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\$($s[1])"))
+}
 Copy-Item $lnl $outTests -Force
-Invoke-Csc 'TS2MP.SyncTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.SyncTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\SyncTests.cs"))
-Invoke-Csc 'TS2MP.WorldTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.WorldTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\WorldTests.cs"))
-Invoke-Csc 'TS2MP.VehicleTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.VehicleTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\VehicleTests.cs"))
-Invoke-Csc 'TS2MP.TravelTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.TravelTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\TravelTests.cs"))
-Invoke-Csc 'TS2MP.HandoffTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.HandoffTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\HandoffTests.cs"))
-Invoke-Csc 'TS2MP.PassengerTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.PassengerTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\PassengerTests.cs"))
-Invoke-Csc 'TS2MP.InteractionTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.InteractionTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\InteractionTests.cs"))
-Invoke-Csc 'TS2MP.CarBoxTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.CarBoxTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\CarBoxTests.cs"))
-Invoke-Csc 'TS2MP.Player2Tests.exe' (@('/target:exe', "/out:$outTests\TS2MP.Player2Tests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\Player2Tests.cs"))
-Invoke-Csc 'TS2MP.Player2LifecycleTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.Player2LifecycleTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\Player2LifecycleTests.cs"))
-Invoke-Csc 'TS2MP.JointTravelTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.JointTravelTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\JointTravelTests.cs"))
-Invoke-Csc 'TS2MP.WorldIdentityTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.WorldIdentityTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\WorldIdentityTests.cs"))
-Invoke-Csc 'TS2MP.WorldMirrorTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.WorldMirrorTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\WorldMirrorTests.cs"))
-Invoke-Csc 'TS2MP.W3Tests.exe' (@('/target:exe', "/out:$outTests\TS2MP.W3Tests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\W3Tests.cs"))
-Invoke-Csc 'TS2MP.DurabilityTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.DurabilityTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\DurabilityTests.cs"))
+Invoke-Csc 'TS2MP.NetSmoke.exe' (@('/target:exe', "/out:$outTests\TS2MP.NetSmoke.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\NetSmoke.cs"))
 Invoke-Csc 'FakeGame.exe' @('/target:exe', "/out:$outTests\FakeGame.exe", "$RepoRoot\tests\FakeGame.cs")
 Invoke-Csc 'TS2MP.RedirectTest.exe' (@('/target:exe', '/platform:x64', "/out:$outTests\TS2MP.RedirectTest.exe", "/r:$core\0Harmony.dll", "/r:$lnl") + $shared + @("$src\Plugin\PathRedirect.cs", "$RepoRoot\tests\RedirectTest.cs"))
 Copy-Item "$core\*.dll" $outTests -Force
@@ -64,6 +75,11 @@ $ini = Join-Path $BuildDir 'TS2-Multiplayer-Launcher.ini'
 if (-not (Test-Path $ini)) {
     Set-Content -Encoding ASCII $ini "; TS2 Multiplayer launcher settings`r`n; Folder that contains 'Thief Simulator 2.exe'`r`nGamePath=$game`r`n; Logs, backups, session state, client save sandbox`r`nDataDir=%LOCALAPPDATA%\TS2MP`r`n; First UDP port tried on 127.0.0.1`r`nBasePort=27960"
     Write-Host "Created $ini"
+}
+
+if ($Package -or $Test) {
+    & "$PSScriptRoot\package.ps1"
+    if ($LASTEXITCODE -ne 0) { throw "release packaging failed" }
 }
 
 if ($Deploy) {
@@ -75,58 +91,22 @@ if ($Deploy) {
 }
 
 if ($Test) {
-    Write-Host "== protocol tests"
-    & "$outTests\TS2MP.ProtocolTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "protocol tests failed" }
-    Write-Host "== sync tests"
-    & "$outTests\TS2MP.SyncTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "sync tests failed" }
-    Write-Host "== world tests"
-    & "$outTests\TS2MP.WorldTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "world tests failed" }
-    Write-Host "== vehicle tests"
-    & "$outTests\TS2MP.VehicleTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "vehicle tests failed" }
-    Write-Host "== travel tests"
-    & "$outTests\TS2MP.TravelTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "travel tests failed" }
-    Write-Host "== handoff tests (M4.2.2)"
-    & "$outTests\TS2MP.HandoffTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "handoff tests failed" }
-    Write-Host "== passenger tests (M4.3)"
-    & "$outTests\TS2MP.PassengerTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "passenger tests failed" }
-    Write-Host "== interaction tests (M4.3.1)"
-    & "$outTests\TS2MP.InteractionTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "interaction tests failed" }
-    Write-Host "== carbox tests (M4.3.2b)"
-    & "$outTests\TS2MP.CarBoxTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "carbox tests failed" }
-    Write-Host "== player2 tests (M4.3.3)"
-    & "$outTests\TS2MP.Player2Tests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "player2 tests failed" }
-    Write-Host "== player2 lifecycle integration tests (M4.3.3 hotfix, message sequencing)"
-    & "$outTests\TS2MP.Player2LifecycleTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "player2 lifecycle tests failed" }
-    Write-Host "== joint travel tests (M4.3 Phase B)"
-    & "$outTests\TS2MP.JointTravelTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "joint travel tests failed" }
-    Write-Host "== world identity tests (M5 W1)"
-    & "$outTests\TS2MP.WorldIdentityTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "world identity tests failed" }
-    Write-Host "== world-key mirror tests (M5 W2)"
-    & "$outTests\TS2MP.WorldMirrorTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "world mirror tests failed" }
-    Write-Host "== shared locker / dropped items / gear tests (M5 W3)"
-    & "$outTests\TS2MP.W3Tests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "W3 tests failed" }
-    Write-Host "== storage durability tests (M5 W3.4)"
-    & "$outTests\TS2MP.DurabilityTests.exe"
-    if ($LASTEXITCODE -ne 0) { throw "durability tests failed" }
+    $ran = 0
+    foreach ($s in $suites) {
+        Write-Host "== $($s[2])"
+        & "$outTests\$($s[0]).exe"
+        if ($LASTEXITCODE -ne 0) { throw "$($s[2]) failed" }
+        $ran++
+    }
     Write-Host "== save redirect test (real game IL, outside Unity)"
     & "$outTests\TS2MP.RedirectTest.exe" $managed
     if ($LASTEXITCODE -ne 0) { throw "redirect test failed" }
-    Write-Host "== launcher tests"
-    & powershell -NoProfile -ExecutionPolicy Bypass -File "$RepoRoot\tests\launcher-test.ps1"
-    if ($LASTEXITCODE -ne 0) { throw "launcher tests failed" }
+    $ran++
+    foreach ($t in @(@('launcher-test.ps1', 'launcher tests'), @('installer-test.ps1', 'installer / host-join launcher / package tests (N1)'), @('n1-smoke.ps1', 'two-process join-code smoke test (N1)'))) {
+        Write-Host "== $($t[1])"
+        & powershell -NoProfile -ExecutionPolicy Bypass -File "$RepoRoot\tests\$($t[0])"
+        if ($LASTEXITCODE -ne 0) { throw "$($t[1]) failed" }
+        $ran++
+    }
+    Write-Host "ALL $ran SUITES PASSED"
 }

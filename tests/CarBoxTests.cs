@@ -1,4 +1,4 @@
-// M4.3.2b offline tests: shared CarBox lease (host-authoritative, exclusive, sessions, stale protection, concurrency,
+﻿// M4.3.2b offline tests: shared CarBox lease (host-authoritative, exclusive, sessions, stale protection, concurrency,
 // release on close / disconnect / region change / expiry), host contents snapshot (codec, commit order before the lease and
 // the result), access from every role (host/client, driver/passenger/on foot - the lease does not depend on seats), and the
 // client move block rule. Pure logic only: the original storage UI, Harmony hooks and item counters run only in game.
@@ -210,7 +210,7 @@ static class CarBoxTests
         Expect(wh.HandleProposal("cli", 2, ++_pid, new StateEntry { Scope = StateScope.Session, ScopeArg = 5, Key = WorldKeys.CarBoxReq, Value = CarBoxRequest.Encode(CarBoxOp.Open, 0) }, 1, out rev, out sr, out sh) == ProposalCode.Invalid, "wrong scope arg");
         Expect(wh.HandleProposal("cli", 2, ++_pid, new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.CarBox, Value = new CarBoxLeaseState { Owner = 2, Session = 1 }.ToBytes() }, 1, out rev, out sr, out sh) == ProposalCode.NotAuthorized, "the client can never write the lease itself");
         Expect(wh.HandleProposal("cli", 2, ++_pid, new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.CarBoxItems, Value = new byte[6] }, 1, out rev, out sr, out sh) == ProposalCode.NotAuthorized, "the client can never write storage contents");
-        Expect(ProtocolInfo.ProtocolVersion == 19 && ProtocolInfo.ModVersion == "0.10.4", "protocol 19 / mod 0.10.4");
+        Expect(ProtocolInfo.ProtocolVersion == 21 && ProtocolInfo.ModVersion == "0.11.1", "protocol 21 / mod 0.11.1");
     }
 
     static void SnapshotLimits()

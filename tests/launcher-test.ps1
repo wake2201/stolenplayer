@@ -68,22 +68,21 @@ try {
     Check 'two simultaneous launches -> exactly one host + one client' ($a1.ExitCode -eq 0 -and $a2.ExitCode -eq 0 -and ($roles -join ',') -eq 'client,host')
     Fakes | Stop-Process -Force; Start-Sleep -Milliseconds 500
 
-    # M2: addressing / LAN configuration (all local; nothing listens beyond loopback)
+    # N1: Local Test stays loopback-only without a join code; the M2 LAN keys are refused with a pointer to Host/Join
     function LaunchIni($ini) { Set-Content -Encoding ASCII "$root\test.ini" $ini; $p = Start-Process -FilePath $launcher -ArgumentList @('--no-pause', '--config', "`"$root\test.ini`"", '--game', "`"$game`"", '--data-dir', "`"$data`"") -PassThru -WindowStyle Hidden; $p.WaitForExit(); return $p.ExitCode }
+    function EnvLines { if (Test-Path "$game\fakegame-env.txt") { @(Get-Content "$game\fakegame-env.txt") } else { @() } }
     $before = (ArgLines).Count
-    $c = LaunchIni "BindAddress=192.168.1.50"
-    Check 'LAN address without SessionKey -> refused (exit 2)' ($c -eq 2 -and (ArgLines).Count -eq $before)
     $c = LaunchIni "Role=banana"
-    Check 'invalid Role -> refused (exit 2)' ($c -eq 2)
-    $c = LaunchIni "HostAddress=not-an-ip"
-    Check 'invalid address -> refused (exit 2)' ($c -eq 2)
-    $c = LaunchIni "Role=client`r`nHostAddress=127.0.0.1"
-    Check 'Role=client without host and without SessionKey -> refused (exit 2)' ($c -eq 2)
-    $c = LaunchIni "SessionKey=test-key"; $l = @(ArgLines)
-    $sha = [Security.Cryptography.SHA256]::Create(); $exp = (-join ($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes('TS2MP:test-key')) | ForEach-Object { $_.ToString('x2') })).Substring(0, 16)
-    Check 'SessionKey -> deterministic session id, bind/connect args passed' ($c -eq 0 -and $l[-1] -match "-ts2mp-session $exp " -and $l[-1] -match '-ts2mp-bind 127\.0\.0\.1 -ts2mp-connect 127\.0\.0\.1')
-    $c = LaunchIni "SessionKey=test-key"; $l = @(ArgLines)
-    Check 'second keyed launch -> client with same keyed session' ($c -eq 0 -and (RoleOf $l[-1]) -eq 'client' -and $l[-1] -match "-ts2mp-session $exp ")
+    Check 'legacy Role key -> refused (exit 2), nothing started' ($c -eq 2 -and (ArgLines).Count -eq $before)
+    $c = LaunchIni "HostAddress=10.0.0.5"
+    Check 'legacy HostAddress key -> refused (exit 2)' ($c -eq 2 -and (ArgLines).Count -eq $before)
+    $c = LaunchIni "SessionKey=test-key"
+    Check 'legacy SessionKey -> refused (exit 2)' ($c -eq 2 -and (ArgLines).Count -eq $before)
+    $c = LaunchIni "BindAddress=192.168.1.50"; $l = @(ArgLines); $e = @(EnvLines)
+    Check 'Local Test ignores the Host Game bind address: loopback bind/connect' ($c -eq 0 -and $l[-1] -match '-ts2mp-bind 127\.0\.0\.1 -ts2mp-connect 127\.0\.0\.1')
+    Check 'Local Test passes no join code to the game' ($e.Count -gt 0 -and $e[-1] -match ' none$')
+    $c = LaunchIni "BindAddress=192.168.1.50"; $l = @(ArgLines)
+    Check 'second Local Test launch -> client, same session' ($c -eq 0 -and (RoleOf $l[-1]) -eq 'client' -and (RoleOf $l[-2]) -eq 'host')
     Fakes | Stop-Process -Force; Start-Sleep -Milliseconds 500
 
     $p = Start-Process -FilePath $launcher -ArgumentList @('--no-pause', '--game', "`"$root\nope`"", '--data-dir', "`"$data`"") -PassThru -WindowStyle Hidden; $p.WaitForExit()

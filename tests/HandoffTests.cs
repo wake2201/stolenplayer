@@ -1,4 +1,4 @@
-// M4.2.2 offline tests: driver seat vs simulation holder, host-authoritative driver handoff, E interaction priority,
+﻿// M4.2.2 offline tests: driver seat vs simulation holder, host-authoritative driver handoff, E interaction priority,
 // seated remote driver rules, local collision modes, stay handover on travel, stale snapshots after holder/region changes.
 // Pure logic only: no Unity physics, animation or rendering is exercised here.
 using System;
@@ -463,7 +463,7 @@ static class HandoffTests
 
     static void Regressions()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 19 && ProtocolInfo.ModVersion == "0.10.4", "protocol 19 / mod 0.10.4");
+        Expect(ProtocolInfo.ProtocolVersion == 21 && ProtocolInfo.ModVersion == "0.11.1", "protocol 21 / mod 0.11.1");
         var s = Snap(Ranger, 5, Madison); s.Flags = VehicleStateFlags.Moving | VehicleStateFlags.Driven | VehicleStateFlags.EngineOn;
         var w = new NetDataWriter(); s.Write(w);
         Expect(w.Length == VehicleSnapshot.WireSize && w.Length == 39, "39 bytes (M5.0 steer)");

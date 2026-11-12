@@ -1,4 +1,4 @@
-// M3.1: per-region time of day. Game facts (CODEBASE_MAP §3.12): Enviro keeps time as EnviroCore.internalHour (0..24),
+﻿// M3.1: per-region time of day. Game facts (CODEBASE_MAP §3.12): Enviro keeps time as EnviroCore.internalHour (0..24),
 // advanced by deltaTime / GameTime.cycleLengthInMinutes (28 min per day normally, 0.2 while PassTime sleeps);
 // EnviroCore.SetInternalTimeOfDay(float) is the game's own setter (SaveGame.LoadGame). DayNightTime.Update runs one
 // hourly tick (rent, abilities, day/week rollover, bank interest) whenever the hour index changes.
@@ -433,6 +433,9 @@ namespace TS2MP.Shared
         public Func<byte[]> LockerSnapshot;                          // W3 host plugin: encoded CarBoxItems of the host's real locker counts
         public readonly WorldItemBook Items = new WorldItemBook();   // W3: shared dropped items (host-authoritative registry)
         public Func<byte, ItemTxnRequest, ProposalCode> ItemTxnHook; // W3 host plugin: Player-2 record / host journal side of an item transaction
+        public readonly LootBook Loot = new LootBook();              // W4.1: taken pre-placed world loot (host-authoritative)
+        public delegate ProposalCode LootTxnFn(byte slot, LootTxnRequest t, bool inRegion, out string why);
+        public LootTxnFn LootTxnHook;                                // W4.1 host plugin: validation against the host catalog + durable Player-2 side
         public CarBoxLease Lease(byte kind) { return kind == StorageKind.Locker ? Locker : CarBox; }
         // M4.3.3: host plugin hooks (they touch the host's ItemID counters and the p2inv file); null = feature unavailable
         public Func<P2Inventory, ProposalCode> P2ReportHook;
@@ -705,6 +708,21 @@ namespace TS2MP.Shared
             return ProposalCode.Accepted;
         }
 
+        // ---- W4.1 shared world loot ----
+        // Player 2 picks up one verified pre-placed object. The plugin hook decides (LootDecision) and commits the Player-2 record +
+        // durable world take BEFORE the registry commit; an accepted result means both are committed.
+        public ProposalCode LootTransaction(byte slot, LootTxnRequest t, double now, out string why)
+        {
+            why = null;
+            if (slot != 2) { why = "only Player 2 proposes (Player 1 = the original pickup on the host)"; return ProposalCode.NotAuthorized; }
+            if (LootTxnHook == null) { why = "shared world loot unavailable on the host"; return ProposalCode.NotAuthorized; }
+            var code = LootTxnHook(slot, t, RegionOfSlot(slot) == t.Ns, out why);
+            if (code != ProposalCode.Accepted) return code;
+            var c = Loot.Commit(t.Ns, t.Hash, Reg, Outbox);
+            if (c == ProposalCode.Busy) why = "registry chunk full after the durable commit (should not happen: room checked first)";
+            return ProposalCode.Accepted;
+        }
+
         // ---- M4.3 passenger seat: op 1 = reserve, 2 = seated (confirm), 0 = leave. Host in place or client proposal.
         public ProposalCode Ride(byte slot, ushort id, byte op, double now, out string why)
         {
@@ -752,7 +770,10 @@ namespace TS2MP.Shared
             if (Locker.Release(slot)) CommitLease(StorageKind.Locker);    // W3: same for the hideout locker
             Items.ReleaseSim(slot, Reg, Outbox);                          // W3: its original item objects are gone with its scene
             if (exists && prev != region && prev != Regions.None && !RegionDirectory.Occupants(Reg).ContainsKey(prev))
+            {
                 Items.ClearRegion(prev, Reg, Outbox);                     // W3: region emptied = the original scene reload destroys its dropped items
+                Loot.ClearRegion(prev, Reg, Outbox);                      // W4.1: the reload re-creates the loot; the original ItemDay_ keys decide
+            }
             _now = now;
             Joint.OnRegion(slot, region, now, Outbox);                    // M4.3 Phase B: before any seat release (may end the trip)
             // disconnect / menu: no lease survives - except the joint passenger's seat during its scene load
@@ -861,6 +882,13 @@ namespace TS2MP.Shared
                 if (p.ScopeArg != 0 || !ItemTxnRequest.TryParse(p.Value, out t)) code = ProposalCode.Invalid;
                 else code = ItemTransaction(senderSlot, t, now, out why);
                 LastNote = "itemTxn " + t.Op + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
+            }
+            else if (p.Scope == StateScope.Session && p.Key == WorldKeys.LootTxn)
+            {
+                LootTxnRequest t = default(LootTxnRequest); string why = null;
+                if (p.ScopeArg != 0 || !LootTxnRequest.TryParse(p.Value, out t)) code = ProposalCode.Invalid;
+                else code = LootTransaction(senderSlot, t, now, out why);
+                LastNote = "lootTxn #" + t.Txn + " " + IdentityNamespace.Name(t.Ns) + ":" + t.Hash.ToString("X8") + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
             }
             else if (p.Scope == StateScope.Player && p.Key == WorldKeys.TravelCancel)
             {

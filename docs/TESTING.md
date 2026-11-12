@@ -21,7 +21,7 @@ Results use PASS / FAIL / NOT TESTED. Only the user's actual in-game results can
 | `TS2MP.RedirectTest.exe` | 3/3 PASS | IL scan + rewrite of the 13 save-path methods on the real game IL — does not prove Harmony applies under Mono |
 | `tests/launcher-test.ps1` | 15/15 PASS | Role assignment, refusals, rapid double launch, backup verification — with a fake game exe |
 
-Current totals (M4.3.3 hotfix 0.7.1, 2026-11-11): build 0/0; same as below plus **Player2LifecycleTests 18/18** (integration: message sequencing, restore/ack, menu exit, rejoin, restarts, pending recovery, CarBox, stale reports, new game, write failure). Previous totals (M4.3.3, 2026-11-11): build 0/0; ProtocolTests 19/19, SyncTests 18/18, WorldTests 51/51, VehicleTests 14/14, TravelTests 33/33, HandoffTests 37/37, PassengerTests 19/19, InteractionTests 16/16, CarBoxTests 12/12, **Player2Tests 19/19**, RedirectTest 3/3, launcher 21/21. Previous (M4.3.2b): no Player2Tests. Previous (M4.3.2a): InteractionTests 15/15, no CarBoxTests. Previous (M4.3.1): InteractionTests 13/13, rest identical. Previous (M4.3 Phase A, 2026-11-11): build 0/0; ProtocolTests 19/19, SyncTests 18/18, WorldTests 51/51, VehicleTests 14/14, TravelTests 33/33, HandoffTests 37/37, PassengerTests 19/19, RedirectTest 3/3, launcher 21/21. Previous (M5.0, 2026-11-11): build 0/0; ProtocolTests 19/19, SyncTests 18/18, WorldTests 51/51, VehicleTests 14/14, TravelTests 33/33, HandoffTests 37/37 (36/37 = M5.0 door sync/rules, replacing the M4.2.4 shell cases), RedirectTest 3/3, launcher 21/21. Previous (M4.2.3, 2026-11-10): build 0 errors / 0 warnings; ProtocolTests 19/19, SyncTests 18/18, WorldTests 51/51, VehicleTests 14/14, TravelTests 33/33, **HandoffTests 37/37** (M4.2.4: shell selection + trigger gating; M4.2.3: 9 cases, case 22 on-foot variant), RedirectTest pass, launcher 21/21. M4.2.2: HandoffTests 26/26. M4.2.1: same without HandoffTests. Earlier (M3.1): ProtocolTests 17/17, SyncTests 18/18, **WorldTests 30/30** (registry, revisions, duplicates, late join, reconnect, proposals, regions, per-region clocks, sleep requests, hourly-tick accounting), RedirectTest 3/3, launcher 21/21. None of these run inside Unity.
+Current totals (M4.3 Phase B 0.8.0, 2026-11-11): build 0/0; ProtocolTests 19/19, SyncTests 18/18, WorldTests 51/51, VehicleTests 14/14, TravelTests 33/33, HandoffTests 37/37, PassengerTests 19/19 (case 15 now the Phase B rule), InteractionTests 16/16, CarBoxTests 12/12, Player2Tests 19/19, Player2LifecycleTests 18/18, **JointTravelTests 33/33** (new: host trip state machine, both driver roles, both cars, async arrival orders, duplicates/stale ids, CarBox/inventory, disconnects, timeouts, wrong scene, reconnect, solo/on-foot/different-region regressions, clocks/sleep, replication, cost), RedirectTest pass, launcher 21/21. Previous (M4.3.3 hotfix 0.7.1, 2026-11-11): build 0/0; same as below plus **Player2LifecycleTests 18/18** (integration: message sequencing, restore/ack, menu exit, rejoin, restarts, pending recovery, CarBox, stale reports, new game, write failure). Previous totals (M4.3.3, 2026-11-11): build 0/0; ProtocolTests 19/19, SyncTests 18/18, WorldTests 51/51, VehicleTests 14/14, TravelTests 33/33, HandoffTests 37/37, PassengerTests 19/19, InteractionTests 16/16, CarBoxTests 12/12, **Player2Tests 19/19**, RedirectTest 3/3, launcher 21/21. Previous (M4.3.2b): no Player2Tests. Previous (M4.3.2a): InteractionTests 15/15, no CarBoxTests. Previous (M4.3.1): InteractionTests 13/13, rest identical. Previous (M4.3 Phase A, 2026-11-11): build 0/0; ProtocolTests 19/19, SyncTests 18/18, WorldTests 51/51, VehicleTests 14/14, TravelTests 33/33, HandoffTests 37/37, PassengerTests 19/19, RedirectTest 3/3, launcher 21/21. Previous (M5.0, 2026-11-11): build 0/0; ProtocolTests 19/19, SyncTests 18/18, WorldTests 51/51, VehicleTests 14/14, TravelTests 33/33, HandoffTests 37/37 (36/37 = M5.0 door sync/rules, replacing the M4.2.4 shell cases), RedirectTest 3/3, launcher 21/21. Previous (M4.2.3, 2026-11-10): build 0 errors / 0 warnings; ProtocolTests 19/19, SyncTests 18/18, WorldTests 51/51, VehicleTests 14/14, TravelTests 33/33, **HandoffTests 37/37** (M4.2.4: shell selection + trigger gating; M4.2.3: 9 cases, case 22 on-foot variant), RedirectTest pass, launcher 21/21. M4.2.2: HandoffTests 26/26. M4.2.1: same without HandoffTests. Earlier (M3.1): ProtocolTests 17/17, SyncTests 18/18, **WorldTests 30/30** (registry, revisions, duplicates, late join, reconnect, proposals, regions, per-region clocks, sleep requests, hourly-tick accounting), RedirectTest 3/3, launcher 21/21. None of these run inside Unity.
 
 ## 2. Save-collision risks (two instances, one Windows account)
 Both processes resolve the same `persistentDataPath` and the same registry key:
@@ -150,6 +150,143 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 | 17 | Logs | No `ERROR`/exceptions; `WORLD_STATS` shows `rejected=0` (or explained), `gaps=0`, `stepFallbacks=0`; on the **host**: rent/day/bank do not jump when it adopts a region time (only legitimate sleep/elapsed hours); note `update avg/max us` and `bytes out/in` | NOT TESTED |
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
+
+## 24. M5 W3.4 checklist — storage durability (plugin 0.10.4 / protocol 19 on BOTH) — all NOT TESTED
+Backup: `%LOCALAPPDATA%\TS2MP\backups\pre-0.10.4-20261112-041838`. **Steps 4–5 only on a disposable profile:** in the main menu pick an unused profile slot, start a new game, play a few minutes, make one normal save. Use cheap items (e.g. a watch). **Never quit without saving on your real profile.**
+Counting: for the test item X, total = P1 backpack + CarBox + locker (host: open each) + P2 backpack (client). Note the total before each step; it must be the same after. Host log: `P2INV transfer #…` lines name `recoverable` counts and `unsaved Player-1 deposit journaled first`; `P2INV_STATS … prerequisites N`.
+| # | Step | Expected | Result |
+|---|---|---|---|
+| 1 | P1 deposits X into the CarBox, P2 withdraws it, P2 deposits it back, P1 withdraws it | each move once, totals unchanged | NOT TESTED |
+| 2 | Same with the hideout locker | as 1 | NOT TESTED |
+| 3 | P2 quits to the menu and reconnects | P2 backpack restored exactly | NOT TESTED |
+| 4 | (disposable) P1 deposits X, P2 withdraws it, host saves normally (sleep / travel / save), host quits, reload | P1 0, storage 0, P2 has X; host log: no `replay` of these entries | NOT TESTED |
+| 5 | (disposable) after a fresh normal save: P1 deposits X, P2 withdraws it (log `unsaved Player-1 deposit journaled first`), host quits to the main menu WITHOUT saving, reload the same save | exactly one X, in P2's backpack; P1 backpack without it; storage without it. For the strongest test, close the host game completely (not only the menu) before reloading; host log then shows `replay of N journal entr(ies) in commit order` | NOT TESTED |
+| 6 | One dropped-item pickup each way, one car travel together | unchanged behaviour | NOT TESTED |
+
+## 23. M5 W3.3 checklist (plugin 0.10.3 / protocol 19 on BOTH) — all NOT TESTED
+Backup: `%LOCALAPPDATA%\TS2MP\backups\pre-0.10.3-20261112-035156`. W3.2 results (user): A, B, C, D, locker, P2 restart = PASS; E (chest lamp) = FAIL (magenta triangle) → removed.
+| # | Step | Expected | Result |
+|---|---|---|---|
+| A | Each player owns a flashlight, toggles it ON/OFF several times; look at the other player from front and side | no flashlight/triangle/glow on the remote character in any state | NOT TESTED |
+| B | Each player's own flashlight | lights the own surroundings exactly as before | NOT TESTED |
+| C | Remote crowbar: hold, walk, swing once | same as 0.10.2 | NOT TESTED |
+| D | One drop + pickup each way, one locker transfer, one region change / car entry | unchanged; no leftover objects on the remote character after the transition | NOT TESTED |
+
+## 22. M5 W3.2 checklist (plugin 0.10.2 / protocol 19 on BOTH) — all NOT TESTED
+Backup: `%LOCALAPPDATA%\TS2MP\backups\pre-0.10.2-20261112-031056`. For G set `Debug.PerfStats = true` in `BepInEx\config\com.ts2mp.multiplayer.cfg`. Logs to send: both `plugin.log` (`WITEM_DIAG`, `WITEM_STATS`, `AVATAR_GEAR`, `PERF`).
+| # | Step | Expected | Result |
+|---|---|---|---|
+| A | P1 drops an item, keeps the menu open ~5 s, closes it | P2 sees it at once on the floor below the drop point; after P1 closes, both see it at the same rest spot (`WITEM_DIAG … settled`, client `updated (settled…)`) | NOT TESTED |
+| B | P2 drops an item (same), P1 picks it up | as A in the other direction; P1's backpack +1 | NOT TESTED |
+| C | Press Drop and stay in the inventory | backpack −1 at once; the other player sees the item at once; the dropper's own item falls when the menu closes (original pause) | NOT TESTED |
+| D | Walk around / over a dropped item on both screens; drop one onto a table | never hanging in the air, no invisible obstacle; on the table both see it on the table | NOT TESTED |
+| E | Remote flashlight ON / OFF, front and side | small police torch on the left chest, lens forward; ON = only the lens glows; OFF = dark lens; no white triangle | NOT TESTED |
+| F | Remote crowbar: idle, walk, run, crouch, front/side/back; swing once | shaft runs through the palm with its middle at the hand, not hanging below; swing as in 0.10.1 | NOT TESTED |
+| G | One locker transfer, one region change, P2 inventory check; compare frame times | unchanged behaviour; `PERF` lines on host and client | NOT TESTED |
+
+## 21. M5 W3.1 hotfix checklist (plugin 0.10.1 / protocol 18 on BOTH) — all NOT TESTED
+Backup: `%LOCALAPPDATA%\TS2MP\backups\pre-0.10.1-20261112-023459`. Use cheap items. Set `Debug.PerfStats = true` for G. Log lines: `WITEM host dropped item … as #…`, `WITEM drop #… requested`, `WITEM pickup …`, `WITEM drop refused before the original ran …`, `AVATAR_GEAR held tool … gripped`, `AVATAR_GEAR chest lamp from …`; any `WITEM original drop … produced no capturable object` = FAIL.
+
+| # | Test | Expected | Result |
+|---|---|---|---|
+| A | P1 drops a cheap item | lands on the ground for both; P2 picks it up with E: P2 +1, P1 −1 once, gone for both | NOT TESTED |
+| B | P2 drops (take an item out of the locker first), P1 picks up | same in reverse | NOT TESTED |
+| C | P1 holds the crowbar: look from front, side, behind; walk, crouch; swing (left click) | crowbar held in the hand pointing forward-down, follows the arm; one arm swing per click; nothing else happens on P2's side | NOT TESTED |
+| D | Both toggle the flashlight | the other player sees a small lamp on the chest, glowing when on, dark when off; no extra light on walls/floor | NOT TESTED |
+| E | P2 deposits one item into the locker and withdraws it | as in 0.10.0 | NOT TESTED |
+| F | Restart P2, rejoin | inventory and locker unchanged; no leftover crowbar/lamp/dropped-item ghosts | NOT TESTED |
+| G | Both walking, crowbar held, both lamps on | PERF lines of host and client (avg FPS, 1 % low, P95/P99, GC) | NOT TESTED |
+
+## 20. M5 W3 manual checklist — shared locker, dropped items, held/carried objects, flashlight (plugin 0.10.0 / protocol 17 on BOTH) — all NOT TESTED
+Backup made before deployment: `%LOCALAPPDATA%\TS2MP\backups\pre-0.10.0-20261112-002336`. For H set `Debug.PerfStats = true` in `BepInEx\config\com.ts2mp.multiplayer.cfg`. Both logs must show `CARBOX shared car storage + hideout locker ready` and `WITEM shared dropped items ready`. Useful log lines: `CARBOX … locker …`, `P2INV transfer #… (locker)`, `WITEM drop/pickup …`, `P2INV item txn #…`, `P2INV host journal seq …`, `AVATAR_GEAR …`, `WITEM_STATS`, `CARBOX_STATS`, `SYNC_STATS … gear …`.
+
+| # | Test | Expected | Result |
+|---|---|---|---|
+| A1 | Both in the hideout. P1 puts an item into the locker, closes it. P2 opens the locker | P2 sees the item with the same count; takes it out; P2 inventory +1, locker −1 | NOT TESTED |
+| A2 | Reverse: P2 deposits, P1 withdraws | counts match on both; nobody keeps a copy | NOT TESTED |
+| A3 | P1 has the locker open, P2 presses E on it (and reverse) | nothing opens for the second player (no text); opens after the first closes | NOT TESTED |
+| A4 | P2 deposits, P2 restarts its game and rejoins, opens the locker | item still in the locker, not back in P2's backpack | NOT TESTED |
+| B1 | Same region (e.g. Madison). P1 drops an item from the inventory | P2 sees it at the same spot (after it lands); P2 picks it up with E: P2 +1, P1 does not have it, gone for both | NOT TESTED |
+| B2 | Reverse: P2 drops, P1 picks up | same | NOT TESTED |
+| B3 | Each player picks up their own drop | works, count back | NOT TESTED |
+| B4 | Both press E on the same dropped item at the same moment | exactly one gets it, the other gets nothing | NOT TESTED |
+| B5 | P2 drops an item, P1 leaves the region and comes back | item still there for both; then both leave → item gone (original: drops are not saved) | NOT TESTED |
+| B6 | Hillville: P2 drops an item, P2 travels away (save) | the item is in the HOST locker at the hideout (original Hillville conversion), not lost, not duplicated | NOT TESTED |
+| C1 | P1 holds crowbar / baton / phone / brick (switch between them) | P2 sees the matching original model in P1's right hand; previous model disappears | NOT TESTED |
+| C2 | Reverse (P2 holds tools) | same on P1 | NOT TESTED |
+| C3 | Walk, run, crouch while holding; enter a car as driver / passenger | tool stays in the hand while on foot; hidden while seated; back after exit | NOT TESTED |
+| D1 | Carry a heavy object (e.g. TV), walk and stand | other player sees the CarryRun pose and the object in front of the carrier; known: the observer's own copy of that world object stays at its place (W4) | NOT TESTED |
+| E1 | P1 toggles the flashlight on/off | P2 sees P1's beam on/off, pointing where P1 looks (also up/down) | NOT TESTED |
+| E2 | Reverse (P2) | same on P1 | NOT TESTED |
+| E3 | Both flashlights on, walk/crouch; one player enters a car | both beams correct; the beam turns off in the car (original rule) | NOT TESTED |
+| E4 | NPC near the local player while the other player's beam shines on them | no extra detection caused by the remote beam (NPCs still react only to the local player) | NOT TESTED |
+| F1 | Normal travel, return to the hideout, check locker + both inventories; restart P2 and rejoin | confirmed items in the right inventory/storage, nothing duplicated | NOT TESTED |
+| G1 | Regression: driving, passenger seat, joint travel, arrest → Load, CarBox, sleep | unchanged | NOT TESTED |
+| H1 | PerfStats on both: walking, both flashlights on, several dropped items, held tools, locker use, travel | note avg FPS / 1 % low / P95 / P99 / GC per instance from the PERF lines; compare flashlight off vs both on | NOT TESTED |
+
+Send back both `plugin.log` files (host + client) and the PERF lines of H1.
+
+## 19. M5 hotfix 0.9.1 — caught-screen Load / Continue spawn (plugin 0.9.1 on BOTH) — all NOT TESTED
+Back up saves first. Client log lines: `CAUGHT …`, `LOAD GameManager.LoadCheckpoint …`, `ARRIVAL_DIAG load without travel grant (…)`, `ARRIVAL MadisonSt (load without travel): placed near …`; any `FALL_RECOVERY` means the guard had to rescue (note it); `FALL_RECOVERY gave up` = FAIL.
+
+| # | Test | Expected | Result |
+|---|---|---|---|
+| L1 | P2 drives the Ranger in Madison, gets caught by the police, chooses Load | loading screen, P2 stands on the street near the leave point / the car / P1 — never falls; P1 unaffected | NOT TESTED |
+| L2 | Same with P2 on foot (P1 holds the car) | same | NOT TESTED |
+| L3 | After L1: P2 to main menu → Continue | P2 placed on foot in Madison, no fall | NOT TESTED |
+| L4 | Close P2's game and restart it (host stays) | P2 loads playable (hideout or placed on foot in Madison/Hillville) | NOT TESTED |
+| L5 | After L1–L4: P2 inventory/money, CarBox, driving the Ranger again, passenger seat, travel | as before the arrest; no stuck seat / lease | NOT TESTED |
+| L6 | Hillville: repeat L1 | same as Madison | NOT TESTED |
+| L7 | Normal play 10 min incl. jumping off a roof | no `FALL_RECOVERY` lines | NOT TESTED |
+
+## 18. M5 W1 + W2 manual checklist — world identity census + world-key mirror (plugin 0.9.0 / protocol 16 on BOTH) — all NOT TESTED
+**Before testing:** back up `%USERPROFILE%\AppData\LocalLow\CookieDev\Thief Simulator 2` and `%LOCALAPPDATA%\TS2MP` (a pre-deployment copy exists: `%LOCALAPPDATA%\TS2MP\backups\pre-0.9.0-20261111-200632`). For section H set `Debug.PerfStats = true` in `BepInEx\config\com.ts2mp.multiplayer.cfg` (one file serves both instances; the default is false). Both logs must show `MIRROR ready (host…` / `(client…` and `CENSUS ready: 25/25 kinds`. Client log on connect: `MIRROR_SNAPSHOT received … keys=N`; host: `MIRROR_SNAPSHOT sent … bytes=…`. Any `ERROR`, `MIRROR_SNAPSHOT rejected`, `MIRROR_AUDIT` (missing writer hook) or `stable=NO` = note it.
+
+| # | Test | Expected | Result |
+|---|---|---|---|
+| A1 | Start host + client with the launcher, load the game on both | both load and connect; movement, camera and the other player's avatar as in 0.8.0 | NOT TESTED |
+| A2 | Walk around 1 min each | no new stutter; logs show no per-frame `MIRROR`/`CENSUS` lines | NOT TESTED |
+| B1 | Load Hideout, Madison Street, Hillville (on both instances) | per scene one `WORLD_CENSUS <region> … time=…ms` line per instance; note `objects`, `dupPaths`, `hashCollisions`, `lootSharedNames`, `time`, `digest`; no visible hitch beyond the normal loading | NOT TESTED |
+| B2 | Compare the `digest=` of the same region in the host log and the client log | identical digest for the same region scene (and for `MainScene`) | NOT TESTED |
+| B3 | Travel away and back to the same region | second census of that region logs `stable=yes` | NOT TESTED |
+| B4 | Check `WORLD_CENSUS_DIAG` lines | list of duplicate paths / collisions (if any); these ids are ambiguous by design — report the count | NOT TESTED |
+| C1 | Host and client in Madison. **Host** picks a cheap loose loot item (not a story/unique item); note its name | host log: `MIRROR_DELTA sent … changes=1`; client log `MIRROR_DELTA applied`. The item may still be visible on the client right now (live object sync = W3) | NOT TESTED |
+| C2 | Client travels away and back into Madison (individually) | client log `MIRROR_APPLY scene load …`; the item the host picked is **gone** on the client | NOT TESTED |
+| C3 | Host returns to the main menu **without saving**, presses Continue, goes to Madison; client re-enters Madison | host log `MIRROR_BASE … gen=N+1`, client `MIRROR_SNAPSHOT received … (new host history)`; the item is back on **both** (original: unsaved change lost) | NOT TESTED |
+| C4 | Repeat C1, then the host saves (travel or quicksave), restart both games, enter Madison | item stays gone on both until its respawn day | NOT TESTED |
+| C5 | **Client** picks a cheap loot item, travels away and back | client log `MIRROR local loot marker …`; item stays gone for the client (no re-pick); the host still sees it (expected until W3) | NOT TESTED |
+| C6 | Sleep through midnight (or wait) in the host's region | host `MIRROR_DELTA` with the new day count; client `MIRROR day count a -> b (host)`; no repeated jumps | NOT TESTED |
+| D1 | Give P2 a disposable item and some money; do C1–C3 and travel between regions | P2 keeps its own items and money (never P1's backpack); P1 inventory unchanged | NOT TESTED |
+| E1 | Both use the CarBox (exclusive lock); transfer a disposable item; restart both | storage and inventories correct after restart; mirror never logs `Storage_`/`Locker_` keys | NOT TESTED |
+| F1 | Host drives, client passenger; client drives, host passenger; joint travel; individual travel; driver handoff | as in 0.8.0; cameras correct for driver and passenger | NOT TESTED |
+| G1 | Players in different regions: clocks independent; same region: native sleep time-lapse | as in 0.8.0; no extra time jumps; `CALENDAR` lines as before | NOT TESTED |
+| H1 | With `Debug.PerfStats = true`: 60 s each — standing in the Hideout, walking Madison, driving the Ranger, both in one car, players in different regions, joint travel, returning to a visited region. Note which window had focus | `PERF frames= avgFps= p95= low1%=` per 30 s window on each instance; `mod n= avg= max=` (TS2MP main-thread time only); `gc0+`, `heap`, `net out/in` (steady state should be ≈ 0.8.0 rates) | NOT TESTED |
+| H2 | A/B: set `World.IdentityCensus = false` and `World.KeyMirror = false`, repeat two H1 scenes with the same window focus/graphics | compare avg FPS / P95: investigate if > ~5 % FPS or > ~10 % P95 worse with the features on | NOT TESTED |
+
+Unfocused windows are throttled by the game/OS: compare host-with-host and client-with-client under the same focus (`focus=` is logged in every PERF line). Send back both `plugin.log` files (`%LOCALAPPDATA%\TS2MP\logs\<stamp>_host|client_*`).
+
+## 17. M4.3 Phase B manual checklist — joint vehicle travel (plugin 0.8.0 / protocol 15 on BOTH) — all NOT TESTED
+**Before testing:** back up `%USERPROFILE%\AppData\LocalLow\CookieDev\Thief Simulator 2` and `%LOCALAPPDATA%\TS2MP`; use a throwaway host profile. Both instances must show `VEHICLE_INIT … jointTravel=5 destinations, passengerMenuGuard=on` (a 0.7.1 instance is refused at the handshake). Host log lines: `TRAVEL JOINT trip#N … authorized`, `… Authorized -> Travelling`, `… Travelling -> Arrived`, `… Committed after X s`. Passenger instance: `JOINT … holds`, `JOINT … starting the original Select…`, `JOINT … passenger arrived … s after departure`, `JOINT … passenger re-seated … s after arrival`. Any `JOINT … forward recovery` in a normal run = FAIL (note what happened). Madison/Hillville seat the driver on arrival (original); Hideout/Auto Shop/Verwood put the driver on foot at the garage (original), so there the passenger arrives on foot too.
+
+| # | Test | Expected | Result |
+|---|---|---|---|
+| A1 | P1 drives the Ranger, P2 on the rear bench; P1 drives to a map border and picks Hillville | P2 does not get a travel menu; both games show the original loading screen; nobody must press anything on P2 | NOT TESTED |
+| A2 | Watch both windows until both finished loading | one Ranger at the Hillville arrival point; P1 at the wheel (original arrival), P2 back on the rear bench in first person (or TPP if P1 is in TPP); P2 never walks around, never under/through the car, no duplicate car or character | NOT TESTED |
+| A3 | Drive off at once, brake, steer; then exit and re-enter (P1 driver, P2 passenger) | normal driving on P1, smooth car on P2, passenger exit beside the seat, re-entry with E works | NOT TESTED |
+| A4 | Continue travelling together at once (Hillville → Madison) | second joint journey works the same | NOT TESTED |
+| B1 | Reverse roles: P2 drives, P1 rides; P2 picks the destination | as A1–A2 with roles swapped; host log trip `P2 drives, P1 rides`; car simulated by P2 (`VEHICLE … now simulated here` on the client only) | NOT TESTED |
+| B2 | After arrival: P2 drives, brakes, exits | P2 remains the physics authority (P1 sees the car follow smoothly, no jump to the host), P1 can exit beside the seat | NOT TESTED |
+| C | Routes: Hideout → Madison, Madison → Hillville, Hillville → Hideout, reverse where the original menu offers them | each arrives together; at the Hideout both arrive on foot by the garage (original driver behaviour) and the car is in the garage | NOT TESTED |
+| C2 | Shadowhawk GT (if bought): P2 at `Associate Sit`, travel Hideout → Madison | P2 re-seated in the front passenger seat | NOT TESTED |
+| D | Switch FPS/TPP before travelling, check after arrival; switch again | passenger camera follows the driver's mode after arrival; correct seats, no duplicate model, no roof clipping; switching keeps working | NOT TESTED |
+| E | Give P2 a disposable item, travel jointly, check P2's inventory; open the CarBox after arrival (P1 and P2 one after the other); repeat after returning to the Hideout | item still with P2 (not reset, not P1's items); CarBox contents unchanged and exclusive | NOT TESTED |
+| E2 | P2 keeps the CarBox open while P1 picks a destination | nothing happens (menu stays open, no message); after P2 closes it, the click works | NOT TESTED |
+| F | Regression: driver alone with the car; on-foot travel; players in different regions travelling independently; hideout travel proxy (E on a car that is elsewhere) | all as in 0.7.1 | NOT TESTED |
+| G1 | (backed-up save) Close the passenger's game while it is on the loading screen | driver arrives and drives normally, no stuck seat; host log `JOINT … Failed … disconnected`; passenger reconnects later on foot | NOT TESTED |
+| G2 | (backed-up save) Close the driver's game (P2 driving) during loading | host passenger arrives on foot at the destination after a short wait, controls work; the car stays at the origin (or at the destination if P2 had already arrived), nobody drives it; P2 reconnects normally | NOT TESTED |
+| H | General regression: doors (incl. slow), wheels, collision, handoff, passenger entry prompt, avatars, camera modes, P2 inventory persistence, CarBox transfers, sleep time-lapse, region clocks, launcher, FPS | as in 0.7.1 | NOT TESTED |
+
+Collect `BepInEx\LogOutput.log` of both instances and the TS2MP plugin logs (`%LOCALAPPDATA%\TS2MP\logs`). `VEHICLE_STATS` shows `joint holds/departures/…/seated/onFoot/recovered`, `loadMax`, `readyMax` and (host) `trips started/committed/cancelled/failed/refused`.
 
 ## 16. M4.3.3 hotfix manual checklist (plugin 0.7.1 / protocol 14 on BOTH) — all NOT TESTED
 **Before testing:** back up `%USERPROFILE%\AppData\LocalLow\CookieDev\Thief Simulator 2` and `%LOCALAPPDATA%\TS2MP`; disposable items only. Do **not** use a separate save on the client. Log lines to look for: client `P2INV state … -> Ready (restore acknowledged …)`, host `P2INV client synchronized`, `P2INV report committed`, `P2INV_STATS` (client: `state Ready … committed N`; host: `reports N … syncWrites N`). Any `P2INV_FAIL` = FAIL.

@@ -231,16 +231,19 @@ namespace TS2MP.Shared
         public const string VehicleRide = "vehicleRide"; // Session scope (arg = vehicle id): 1 byte 1 = reserve passenger seat, 2 = seated (confirm), 0 = leave (M4.3, protocol 10)
         public const string P2Inv = "p2inv";             // Session scope (arg 2): committed Player-2 inventory (P2Inventory), host-owned (M4.3.3, protocol 13)
         public const string P2Report = "p2report";       // Session scope (arg 2): client proposal, Player-2 inventory after local changes (base = AppliedTxn)
-        public const string StorageTxn = "storageTxn";   // Session scope (arg 0): client proposal, one CarBox transfer (StorageTxnRequest)
+        public const string StorageTxn = "storageTxn";   // Session scope (arg 0): client proposal, one storage transfer (StorageTxnRequest; 14 B = with storage kind, W3)
         public const string SleepShow = "sleepShow";     // Region scope (arg = region): committed co-op sleep presentation event (SleepShowState)
-        public const string CarBox = "carbox";           // Session scope (arg 0): committed CarBoxLeaseState {owner, session} (M4.3.2b, protocol 12)
-        public const string CarBoxItems = "carboxItems"; // Session scope (arg 0): committed host car-storage contents (CarBoxItems)
-        public const string CarBoxReq = "carboxReq";     // Session scope (arg 0): client proposal {op, session}
+        public const string CarBox = "carbox";           // Session scope (arg = storage kind: 0 car storage, 1 hideout locker W3): committed CarBoxLeaseState {owner, session} (M4.3.2b, protocol 12)
+        public const string CarBoxItems = "carboxItems"; // Session scope (arg = storage kind): committed host storage contents (CarBoxItems)
+        public const string CarBoxReq = "carboxReq";     // Session scope (arg = storage kind): client proposal {op, session}
+        public const string WorldItems = "witems";       // Region scope (arg = region): committed dropped items of that region (WorldItemList, W3, protocol 17)
+        public const string ItemTxn = "itemTxn";         // Session scope (arg 0): client proposal, one dropped-item transaction (ItemTxnRequest, W3)
         public const string VehicleDoor = "vdoor";      // Session scope (arg = vehicle id): committed 1-byte door mask (+ slow bits, M4.3.1); client proposal {door, open, mode} (M5.0 protocol 9, mode protocol 11)
         public const string VehiclePark = "vpark";      // Session scope (arg = vehicle id): ParkRecord, host-committed (M4.2)
         public const string Travel = "travel";          // Player scope (arg = sender slot): TravelRequest proposal, never stored (M4.2)
         public const string TravelCancel = "travelCancel"; // Player scope: u32 request id proposal, never stored (M4.2)
         public const string TravelGrant = "travelGrant";   // Player scope (arg = slot): TravelGrant, host-committed (M4.2)
+        public const string JointTrip = "jointTrip";       // Session scope (arg 0): JointTrip 18 B, host-committed only (M4.3 Phase B, protocol 15)
         public const string SleepStart = "sleepStart";  // Region scope: SleepStart proposal (client -> host, protocol 5), never stored
         public const string Calendar = "calendar";      // Session scope, host-only (Calendar: day/week)
         public const string Region = "region";          // Player scope (arg = slot): int region id, proposed by its owner

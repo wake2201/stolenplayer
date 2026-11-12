@@ -56,7 +56,10 @@ namespace TS2MP.Plugin
             };
             var world = new WorldSettings
             {
-                ClockRefreshSeconds = Mathf.Clamp(Config.Bind("World", "ClockRefreshSeconds", 10f, "Max seconds between region clock re-anchors while the clock runs normally (5-60). Changes are sent immediately.").Value, 5f, 60f)
+                ClockRefreshSeconds = Mathf.Clamp(Config.Bind("World", "ClockRefreshSeconds", 10f, "Max seconds between region clock re-anchors while the clock runs normally (5-60). Changes are sent immediately.").Value, 5f, 60f),
+                IdentityCensus = Config.Bind("World", "IdentityCensus", true, "M5 W1: once per scene load, record stable ids of world objects (diagnostic log WORLD_CENSUS; no gameplay effect). Off only for performance comparison.").Value,
+                CensusExport = Config.Bind("World", "CensusExport", false, "Diagnostics: write every census identity (id, kind, category, hierarchy path) to census-*.tsv in the instance log folder.").Value,
+                KeyMirror = Config.Bind("World", "KeyMirror", true, "M5 W2: the host's world keys (loot respawn days, daily events, hot item, day count) are mirrored to the client. Must be the same on both instances; off only for performance comparison.").Value
             };
 
             var go = new GameObject("TS2MP_Runner");
@@ -71,6 +74,8 @@ namespace TS2MP.Plugin
             var vehicles = new VehicleSettings { TravelMenuKey = travelKey, DriverSeatAdjust = seatAdjust ?? "", PassengerSeatAdjust = passengerAdjust ?? "", InteractDebug = Config.Bind("Vehicles", "InteractDebug", false, "Diagnostics: on each E press near another player's car (max 1/s) log what the original interaction ray hits.").Value };
             // M4.3.2a permanent rule: no mod text in the gameplay UI by default. The status lines and the name tag above the other
             // player are diagnostics, shown only when this is switched on (BepInEx log has the same information).
+            runner.PerfStats = Config.Bind("Debug", "PerfStats", false, "Diagnostics: log frame-time statistics (avg FPS, P50/P95/P99, 1% low), mod main-thread cost, GC and network rates as PERF lines in plugin.log.").Value;
+            runner.PerfIntervalSeconds = Mathf.Clamp(Config.Bind("Debug", "PerfIntervalSeconds", 30, "Seconds per PERF report window (10-300).").Value, 10, 300);
             runner.ShowDebugOverlay = Config.Bind("Debug", "ShowOverlay", false, "Diagnostics only: draw the TS2MP status lines and the name tag above the other player (Avatar.ShowNameTag) on screen. Off = the game looks unmodified; everything is in the BepInEx log.").Value;
             runner.Init(args, log, saveSafe, sync, world, vehicles);
         }
@@ -134,8 +139,15 @@ namespace TS2MP.Plugin
         WorldSync _world;
         VehicleSync _vehicles;
         CarBoxSync _carbox;
+        WorldItemSync _items;
         Player2Sync _p2;
+        WorldCensus _census;
+        WorldKeyMirror _mirror;
         bool _quitRequested, _shutdown;
+        // M5 performance instrumentation (Debug.PerfStats; off = one null check per frame)
+        public bool PerfStats; public int PerfIntervalSeconds = 30;
+        FrameStats _frameStats; readonly CostMeter _modCost = new CostMeter(); double _nextPerf;
+        int _gc0, _gc1, _gc2; long _netOut0, _netIn0; long _frameTicks;
         GUIStyle _style, _tagStyle;
 
         public void Init(LaunchArgs args, InstanceLog log, bool saveSafe, SyncSettings sync, WorldSettings world, VehicleSettings vehicles)
@@ -167,12 +179,62 @@ namespace TS2MP.Plugin
                 catch (Exception ex) { log.Error("P2INV init failed (Player-2 persistence disabled)", ex); _p2 = null; }
                 try { _carbox = new CarBoxSync(_node, log, _world); }
                 catch (Exception ex) { log.Error("CARBOX init failed (shared car storage disabled)", ex); _carbox = null; }
+                try { _items = new WorldItemSync(_node, log, _world); }
+                catch (Exception ex) { log.Error("WITEM init failed (shared dropped items disabled)", ex); _items = null; }
+                if (world.KeyMirror)
+                {
+                    try { _mirror = new WorldKeyMirror(_node, log, _world); if (!_mirror.Ready) { _mirror.Dispose(); _mirror = null; } }
+                    catch (Exception ex) { log.Error("MIRROR init failed (world-key mirror disabled)", ex); _mirror = null; }
+                }
+                else log.Info("MIRROR disabled by config (World.KeyMirror = false)");
+            }
+            if (world.IdentityCensus)
+            {
+                try { _census = new WorldCensus(log, args.LogDir, world.CensusExport); }
+                catch (Exception ex) { log.Error("CENSUS init failed (identity census disabled)", ex); _census = null; }
+            }
+            else log.Info("CENSUS disabled by config (World.IdentityCensus = false)");
+            if (PerfStats)
+            {
+                _frameStats = new FrameStats(8192);
+                _nextPerf = Time.realtimeSinceStartup + PerfIntervalSeconds;
+                _gc0 = GC.CollectionCount(0); _gc1 = GC.CollectionCount(1); _gc2 = GC.CollectionCount(2);
+                log.Info("PERF stats ON: window " + PerfIntervalSeconds + " s; 1% low = mean of the slowest 1% frame times; mod cost = TS2MP Update+LateUpdate+FixedUpdate main-thread time only (not game/GPU time)");
             }
         }
 
         float _nextSaveCheck;
 
         void Update()
+        {
+            if (_frameStats == null) { UpdateBody(); return; }
+            _frameStats.Add(Time.unscaledDeltaTime);
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            UpdateBody();
+            _frameTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+            _modCost.Add(_frameTicks); _frameTicks = 0;   // per frame: this Update + the previous frame's LateUpdate/FixedUpdate
+            if (Time.realtimeSinceStartup >= _nextPerf) PerfReport();
+        }
+
+        void PerfReport()
+        {
+            float now = Time.realtimeSinceStartup;
+            _nextPerf = now + PerfIntervalSeconds;
+            var r = _frameStats.Compute(); _frameStats.Reset();
+            long f = System.Diagnostics.Stopwatch.Frequency;
+            int g0 = GC.CollectionCount(0), g1 = GC.CollectionCount(1), g2 = GC.CollectionCount(2);
+            long outB = _node != null ? _node.BytesSent : 0, inB = _node != null ? _node.BytesReceived : 0;
+            double secs = Math.Max(1, r.Seconds);
+            _log.Info("PERF " + r + " | mod " + _modCost.Text(f) + " | gc0+" + (g0 - _gc0) + " gc1+" + (g1 - _gc1) + " gc2+" + (g2 - _gc2)
+                + " heap=" + (GC.GetTotalMemory(false) / (1024 * 1024)) + "MB | net out=" + ((outB - _netOut0) / secs).ToString("0") + "B/s in=" + ((inB - _netIn0) / secs).ToString("0")
+                + "B/s | focus=" + Application.isFocused + " vsync=" + QualitySettings.vSyncCount + " targetFps=" + Application.targetFrameRate + " res=" + Screen.width + "x" + Screen.height
+                + " scenes=" + UnityEngine.SceneManagement.SceneManager.sceneCount);
+            if (_census != null) _log.Info("PERF " + _census.Stats);
+            if (_mirror != null) _log.Info("PERF " + _mirror.Stats);
+            _modCost.Reset(); _gc0 = g0; _gc1 = g1; _gc2 = g2; _netOut0 = outB; _netIn0 = inB;
+        }
+
+        void UpdateBody()
         {
             if (_quitRequested) { _quitRequested = false; Application.Quit(); return; }
             if (_args.Role == Role.Client && Time.unscaledTime >= _nextSaveCheck)
@@ -215,26 +277,50 @@ namespace TS2MP.Plugin
                 try { _carbox.Update(); }
                 catch (Exception ex) { _log.Error("CARBOX update exception (shared car storage disabled)", ex); _carbox.Dispose(); _carbox = null; }
             }
+            if (_items != null && _world != null)
+            {
+                try { _items.Update(); }
+                catch (Exception ex) { _log.Error("WITEM update exception (shared dropped items disabled)", ex); _items.Dispose(); _items = null; }
+            }
+            if (_mirror != null && _world != null)
+            {
+                try { _mirror.Update(); }
+                catch (Exception ex) { _log.Error("MIRROR update exception (world-key mirror disabled)", ex); _mirror.Dispose(); _mirror = null; }
+            }
         }
 
         // M5.0: observed cars are kinematic bodies moved in the physics step.
         void FixedUpdate()
         {
             if (_vehicles == null) return;
+            long t0 = _frameStats != null ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
             try { _vehicles.FixedStep(); }
             catch (Exception ex) { _log.Error("VEHICLE fixed step exception (vehicle sync disabled)", ex); _vehicles.Dispose(); _vehicles = null; }
+            if (_frameStats != null) _frameTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0;
         }
 
         // M4.2: client proposals are applied here, after this frame's UI events (host's own travel click wins a same-frame tie).
         void LateUpdate()
         {
             if (_world == null) return;
+            long t0 = _frameStats != null ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+            LateBody();
+            if (_frameStats != null) _frameTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+        }
+
+        void LateBody()
+        {
             try { _world.LateUpdate(); }
             catch (Exception ex) { _log.Error("WORLD late update exception", ex); }
             if (_vehicles != null)
             {
                 try { _vehicles.LateUpdate(); }
                 catch (Exception ex) { _log.Error("VEHICLE late update exception (vehicle sync disabled)", ex); _vehicles.Dispose(); _vehicles = null; }
+            }
+            if (_sync != null)
+            {
+                try { _sync.LateUpdate(); }                         // W3.1: remote arm pose (after the legacy Animation posed the avatar)
+                catch (Exception ex) { _log.Error("SYNC late update exception", ex); }
             }
         }
 
@@ -273,6 +359,9 @@ namespace TS2MP.Plugin
             _shutdown = true;
             if (_log == null) return;
             _log.Info("PLUGIN_SHUTDOWN (" + why + ")");
+            if (_mirror != null) { try { _mirror.Dispose(); } catch { } _mirror = null; }
+            if (_census != null) { try { _census.Dispose(); } catch { } _census = null; }
+            if (_items != null) { try { _items.Dispose(); } catch { } _items = null; }
             if (_carbox != null) { try { _carbox.Dispose(); } catch { } _carbox = null; }
             if (_p2 != null) { try { _p2.Dispose(); } catch { } _p2 = null; }
             if (_vehicles != null) { try { _vehicles.Dispose(); } catch { } _vehicles = null; }

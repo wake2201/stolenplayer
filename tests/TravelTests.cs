@@ -46,6 +46,7 @@ static class TravelTests
         Run("31 M4.2.1 sender sequence restart after reload/handoff is accepted after a record change (Bug B root cause)", SequenceRestart);
         Run("32 M4.2.1 many transitions, reconnect and reload rebuild the presentation from the registry only", ManyTransitions);
         Run("33 M4.2.1 invalid/delayed fleet state and refused authorization never move or duplicate a car", InvalidAndRefused);
+        Run("34 M5 hotfix fall rule: lost only after a long fall far below ground; bounded recoveries", FallRule);
         Console.WriteLine();
         Console.WriteLine("RESULT: " + _passed + " passed, " + _failed + " failed");
         return _failed == 0 ? 0 : 1;
@@ -57,6 +58,18 @@ static class TravelTests
         catch (Exception ex) { _failed++; Console.WriteLine("FAIL  " + name + " :: " + ex.Message); }
     }
     static void Expect(bool c, string m) { if (!c) throw new Exception(m); }
+
+    static void FallRule()
+    {
+        // the reported case: Madison ground ~50 m, player at y = -50026 after a long fall
+        Expect(FallRules.IsLost(30, -50026f, true, 50f) && FallRules.IsLost(30, -50026f, false, 0f), "deep fall lost (with or without a grounded reference)");
+        Expect(!FallRules.IsLost(1.0, -50026f, true, 50f), "not before 3 s airborne");
+        Expect(!FallRules.IsLost(10, 30f, true, 50f), "a 20 m drop (roof) is a legitimate fall");
+        Expect(!FallRules.IsLost(10, -9f, true, 50f) && FallRules.IsLost(10, -11f, true, 50f), "60 m below the last ground");
+        Expect(!FallRules.IsLost(10, -400f, false, 0f) && FallRules.IsLost(10, -501f, false, 0f), "absolute floor without a reference");
+        Expect(FallRules.IsLost(0, float.NaN, true, 50f), "NaN position is always lost");
+        Expect(FallRules.MayRecover(0, 100) && !FallRules.MayRecover(1, 5) && FallRules.MayRecover(2, 10) && !FallRules.MayRecover(3, 100), "max 3 per region, 10 s apart (no loop)");
+    }
 
     const int Hideout = 0, Hillville = 97, Madison = 99, Museum = 96, Jail = 93;
     static readonly ushort Ranger = VehicleIds.FromCarNr(0), GT = VehicleIds.FromCarNr(1);

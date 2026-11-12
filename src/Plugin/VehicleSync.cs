@@ -77,6 +77,7 @@ namespace TS2MP.Plugin
         Func<object, UnityEngine.Object> _carMainCam, _carTppCam, _carLeave, _tppCamObj, _gmMinimap, _psPCB, _psHand, _psPMB, _psCamAnim, _psLight;
         Action<object, Transform> _tppSetNewCar; Action<object> _tppDisable, _hideWeapons, _pmbHeight; Action<object, GameObject> _mmSetTarget;
         Action<object, bool> _setCanInteract, _pmbSetCanMove, _pmbSetCrouch, _setTorch; Func<object, bool> _psTorch;
+        Action<object, float> _pmbSetVelY;   // M5 hotfix: PlayerMotorBehavior.velocityY reset after a recovery placement
         Action<object, float> _interactDelayed, _pcbEnterRot, _pcbExitRot;
         Func<object, bool> _interact;   // PlayerScript.rewiredPlayer.GetButtonDown("interact"): the original exit action
         // M4.3.1 interaction resolver: the gates of the original E ray branch (PlayerScript.Update IL_46a3..IL_4760), its prompt,
@@ -184,10 +185,13 @@ namespace TS2MP.Plugin
         object _pendingGm; MethodBase _pendingMethod;
         uint _hostTravelId;
         readonly HashSet<uint> _ownIds = new HashSet<uint>();   // claim / cancel proposals (results only logged)
-        sealed class Arrival { public int Dest; public TravelOutcome Outcome; public ushort Car; public double At; public bool Offline; }
+        sealed class Arrival { public int Dest; public TravelOutcome Outcome; public ushort Car; public double At; public bool Offline; public bool Recovery; }
         Arrival _ctx;                      // set when a travel resumes; consumed by the next arrival in Dest
         int _initWanted = -1;              // carNr InitiateMainCar may activate (-1 none, int.MinValue = hideout: untouched)
         bool _placed; double _regionAt; string _travelStatus = "-";
+        // M5 hotfix: fall guard (last grounded position per region, bounded recoveries) + arrival diagnostics
+        Vector3 _safeFeet; int _safeRegion = Regions.None; double _airSince = -1, _nextFallCheck, _lastFallRecovery = -100; int _fallRecoveriesHere; bool _fallGaveUp;
+        long _fallRecoveries, _loadPlacements;
 
         // ---- M4.2.2 driver handoff (requester side) ----
         sealed class Take { public ushort Id; public LocalCar Car; public uint ProposalId; public double At; public bool Granted; }
@@ -217,14 +221,15 @@ namespace TS2MP.Plugin
                 string err;
                 try { err = TravelHooks.Install("com.ts2mp.multiplayer.travel"); } catch (Exception ex) { err = ex.Message; }
                 _hooks = err == null;
-                if (_hooks) TravelHooks.Handler = this;
+                if (_hooks) { TravelHooks.Handler = this; TravelHooks.Log = delegate(string m) { _log.Info(m); }; }
                 else _log.Error("TRAVEL hooks not installed (" + err + "): travel stays original, region car rule NOT enforced");
             }
             world.ProposalResultHook = OnProposalResult;
             SleepPresenter.PassengerSeated = () => _ride != null && _ride.Stage == RideStage.Seated;   // M4.3.3 sleep presentation context
             if (_host && world.Host != null) world.Host.LivePark = LivePark;
             _log.Info("VEHICLE_INIT role=" + node.Role + " api=" + (_ok ? "ok" : "MISSING") + " travelHooks=" + (_hooks ? TravelHooks.Patched + " methods" : "off")
-                + " carFields=" + string.Join(",", _vmCars.Select(k => k.Key).ToArray()) + " travelMenuKey=" + _cfg.TravelMenuKey);
+                + " carFields=" + string.Join(",", _vmCars.Select(k => k.Key).ToArray()) + " travelMenuKey=" + _cfg.TravelMenuKey
+                + " jointTravel=" + (_hooks ? TravelHooks.SelectByDest.Count + " destinations, passengerMenuGuard=" + (TravelHooks.TownSelectionPatched ? "on" : "OFF") : "off"));
         }
 
         double Now { get { return _clock.Elapsed.TotalSeconds; } }
@@ -304,6 +309,7 @@ namespace TS2MP.Plugin
                 _psTorch = Fast.Getter<bool>(ps, "torch"); _setTorch = Fast.Setter<bool>(ps, "torch");
                 _setCanInteract = Fast.Setter<bool>(ps, "canInteract"); _interactDelayed = Fast.Call<float>(ps, "InteractDelayed"); _hideWeapons = Fast.Call0(ps, "HideWeapons");
                 var pmbT = AccessTools.TypeByName("PlayerMotorBehavior"); var pcbT = AccessTools.TypeByName("PlayerCameraBehavior");
+                _pmbSetVelY = Fast.Setter<float>(pmbT, "velocityY");
                 _pmbSetCanMove = Fast.Setter<bool>(pmbT, "canMove"); _pmbSetCrouch = Fast.Setter<bool>(pmbT, "isCrouching"); _pmbHeight = Fast.Call0(pmbT, "SetControllerHeightToDefault");
                 _pcbEnterRot = Fast.Call<float>(pcbT, "CarEnterRot"); _pcbExitRot = Fast.Call<float>(pcbT, "CarExitRot");
                 _psCanInteract = Fast.Getter<bool>(ps, "canInteract"); _psCarrying = Fast.Getter<bool>(ps, "isCarrying"); _psHiding = Fast.Getter<bool>(ps, "isHiding");
@@ -416,6 +422,7 @@ namespace TS2MP.Plugin
             int region = _world.LocalRegion;
             if (region != _region) OnRegionChanged(region, now);
             EnsureView();
+            JointFrame(now, gm, region);   // M4.3 Phase B: before Reconcile (a held passenger's car must keep its presentation)
             if (_host) HostFleetFrame(now);
             else if (_gate.CheckTimeout(now))
             {
@@ -436,11 +443,12 @@ namespace TS2MP.Plugin
                     t2 = Stopwatch.GetTimestamp();
                     FuelFrame(ps);
                     if (_take != null && _take.Granted) EnterFrame(now, ps);
-                    if (_ride != null) { long r0 = Stopwatch.GetTimestamp(); RideFrame(now, ps, region); _rideTicksFrame = Stopwatch.GetTimestamp() - r0; }
+                    if (_ride != null && _jStage != JStage.Departing) { long r0 = Stopwatch.GetTimestamp(); RideFrame(now, ps, region); _rideTicksFrame = Stopwatch.GetTimestamp() - r0; }
                     long tr0 = Stopwatch.GetTimestamp();
-                    if (_ride == null && _take == null) { FootFrame(now, ps); footRan = true; }
+                    if (_ride == null && _take == null && _jStage == JStage.None) { FootFrame(now, ps); footRan = true; }
                     _rideFootTicks += Stopwatch.GetTimestamp() - tr0 + _rideTicksFrame; _rideTicksFrame = 0;
-                    if (!_placed && ps != null) TryPlace(now, gm, ps, region);
+                    if (!_placed && ps != null && !JointWaiting) TryPlace(now, gm, ps, region);
+                    if (_placed && ps != null && _ride == null && _take == null && _jStage == JStage.None) FallGuard(now, gm, ps, region);
                     t3 = Stopwatch.GetTimestamp();
                     if (Input.GetKeyDown(_cfg.TravelMenuKey)) TravelMenuKey(ps, region);
                 }
@@ -489,12 +497,36 @@ namespace TS2MP.Plugin
             }
         }
 
+        // M4.3 Phase B: the departing joint passenger's scene is being replaced - the seated player object goes with it; the
+        // seat stays assigned on the host (no exit, no placement, no release).
+        bool JointDropRide(string why)
+        {
+            if (_jStage != JStage.Departing || _ride == null) return false;
+            _ride = null; HideSelfBody();
+            _log.Info("JOINT trip#" + _jId + " passenger scene unloading (" + why + "): seat kept on the host");
+            return true;
+        }
+
         void OnRegionChanged(int region, double now)
         {
+            if (_jStage == JStage.Departing && region != _region)
+            {
+                JointDropRide("region " + Regions.Name(_region) + " -> " + Regions.Name(region));
+                _jStage = JStage.Waiting; _jFrozenPs = null;
+            }
+            if (_jStage == JStage.Waiting && _hasTrip && region == _trip.Dest)
+            {
+                _jArriveAt = now;
+                double load = now - _jAt;
+                if (load > _jLoadMax) _jLoadMax = load;
+                _log.Info("JOINT trip#" + _jId + " passenger arrived in " + Regions.Name(region) + " " + load.ToString("0.0") + " s after departure (waiting for the car to be live here)");
+            }
+            if (_jStage == JStage.Holding && region != _region) { _jStage = JStage.None; _jCar = 0; }
             if (_ride != null) ForceExitRide("region changed", false);
             foreach (var lc in _local) if (lc.Observed) ExitObserved(lc);
             _observedBodies.Clear(); _filter.Clear();
             _region = region; _regionAt = now; _placed = false; _reconcile = true;
+            _fallRecoveriesHere = 0; _fallGaveUp = false; _airSince = -1;   // _safeFeet is only used while _safeRegion == region
             foreach (var lc in _local) { lc.Mine = false; lc.FuelLoaded = false; lc.Policy.Reset(); lc.Park.Reset(); lc.Follow.Clear(); lc.FollowRecv = -100; lc.Latch.Reset(); lc.Remote.Clear(); }
             _fuelCar = null;
             if (_take != null) EndTake("region changed", false);
@@ -506,6 +538,7 @@ namespace TS2MP.Plugin
         // Once per GameManager instance (every scene load): discover the cars on VehiclesManager.
         void Bind(UnityEngine.Object gm, double now)
         {
+            JointDropRide("scene reloaded");
             if (_ride != null) ForceExitRide("scene reloaded", false);
             _local.Clear(); _fuelCar = null; _observedBodies.Clear();
             var vm = _gmVM(gm);
@@ -540,6 +573,7 @@ namespace TS2MP.Plugin
             if (reg.HeadRev == _viewRev) return;
             _viewRev = reg.HeadRev;
             _view.Refresh(reg);
+            ReadTrip(reg);
             _reconcile = true;
             foreach (var lc in _local)
             {
@@ -704,7 +738,15 @@ namespace TS2MP.Plugin
             if (_host)
             {
                 _travels++;
-                var g = _world.Host.HostTravel(++_hostTravelId, req, Now);
+                string refused;
+                var g = _world.Host.HostTravel(++_hostTravelId, req, _world.Clock, out refused);   // host clock: the same one WorldHost.Tick expires with
+                if (refused != null)
+                {
+                    _denied++; _travelStatus = "refused (" + refused + ")";
+                    _log.Info("TRAVEL " + method.Name + " -> " + Regions.Name(dest) + " refused by the host rules: " + refused + " (travel menu stays open)");
+                    _world.DrainTravelNotes();
+                    return false;
+                }
                 _world.FlushOutbox();
                 SetContext(g, false);
                 FlushFleet(false);
@@ -905,6 +947,23 @@ namespace TS2MP.Plugin
             var c = car as Component;
             bool allow = _ctx != null && _ctx.Outcome == TravelOutcome.Carry && c != null && c.gameObject.activeInHierarchy && VehicleIds.FromCarNr(_carNr(c)) == _ctx.Car;
             if (!allow) _log.Info("ARRIVAL driver seating skipped (" + (_ctx == null ? "no travel grant" : _ctx.Outcome.ToString()) + "): the player arrives on foot");
+            if (!allow && _ctx == null)
+            {
+                // M5 hotfix (verified IL GameManager.Start IL_03f4-043a Madison / IL_049b-04d1 Hillville): with Story > 3 and
+                // Saved_Pos == 0 (every travel save, SaveGameNewSystem IL_0156) IsStartingCar() is the ONLY placement of the player.
+                // A load without a travel grant (caught screen Load = GameManager.LoadCheckpoint -> LoadLevel("MainScene"),
+                // menu Continue, client restart) that skips the seating left the player at MainScene's default position,
+                // which has no ground in these maps -> endless fall. Same checked on-foot placement as a Join arrival instead.
+                int loc = Pref("CurrentLocation");
+                ushort carId = _initWanted >= 0 ? VehicleIds.FromCarNr(_initWanted) : VehicleIds.None;
+                _ctx = new Arrival { Dest = loc, Outcome = TravelOutcome.Join, Car = carId, At = Now, Recovery = true };
+                var gm = _world.GameManagerObject; var ps = gm != null ? _gmPS(gm) as Component : null; var cc = ps != null ? _psCC(ps) as CharacterController : null;
+                _log.Info("ARRIVAL_DIAG load without travel grant (" + (TravelHooks.LastLoadReason ?? "continue / restart / scripted") + "): region " + Regions.Name(loc)
+                    + " Saved_Pos=" + Pref("Saved_Pos") + " Story=" + Pref("Story") + " player at " + (ps != null ? Fmt(ps.transform.position) : "?")
+                    + " cc=" + (cc != null ? (cc.enabled ? "on" : "off") : "?") + " car=" + (carId != VehicleIds.None ? CarName(carId) : "none")
+                    + ": checked on-foot placement (other player / region car / original leave point) once the region is ready");
+                TravelHooks.LastLoadReason = null;
+            }
             return allow;
         }
 
@@ -943,11 +1002,12 @@ namespace TS2MP.Plugin
         void Reconcile(UnityEngine.Object gm, UnityEngine.Object ps, int region)
         {
             if (!_world.Synced) return;
-            if (_ride != null && _ride.Stage == RideStage.Seated && !RideStillValid(_ride, region)) ForceExitRide("the car is no longer presented as another player's car here", true);   // before any presentation change: the player is parented to the car
+            if (_ride != null && _ride.Stage == RideStage.Seated && !JointHolds(_ride.Id) && !RideStillValid(_ride, region)) ForceExitRide("the car is no longer presented as another player's car here", true);   // before any presentation change: the player is parented to the car
             var cur = ps != null ? _psVehicle(ps) as Component : null;
             foreach (var lc in _local)
             {
                 if (lc.Go == null) continue;
+                if (JointHolds(lc.Id)) continue;   // M4.3 Phase B: the held passenger sits in it until its own scene unloads
                 VehicleRecord r;
                 if (!Rec(lc.Id, out r)) continue;
                 bool mine = r.Holder == _me && r.Region == region;
@@ -1631,11 +1691,183 @@ namespace TS2MP.Plugin
         public const double RideGrantSeconds = 4.0, RideExitSeconds = 0.6;
         long _rideRequests, _rideGranted, _rideDenied, _rideSeated, _rideExits, _rideForced, _camSwitches;
 
+        // M4.3 Phase B: a seated passenger never chooses a destination (the original companion seat has no travel action); a
+        // driver with a passenger aboard travels jointly (the host decides, WorldHost.TravelCheck).
         string SeatTravelBlock()
         {
-            if (_ride != null) return "you are a passenger: get out first (joint travel comes in the next stage)";
-            foreach (var kv in _view.All) if (kv.Value.Driver == _me && kv.Value.Passenger != 0) return "passenger aboard: joint travel comes in the next stage, let them get out first";
+            if (_ride != null || _jStage != JStage.None) return "passenger: only the driver chooses the destination";
             return null;
+        }
+
+        // ======================================================================== M4.3 Phase B joint travel (passenger side)
+        // The host records one JointTrip (registry "jointTrip"). This instance, when it is the trip's passenger:
+        //   Hold    - seated in the origin until the host saw the driver leave: the car keeps its presentation (its record
+        //             already names the destination), the seat is kept, exit/storage/menu are frozen;
+        //   Depart  - starts its OWN original GameManager.Select<Dest> once (save + loading screen + MainScene reload);
+        //   Wait    - at the destination the original spawns an on-foot player (IsStartingCar is skipped: Join context);
+        //             it is kept frozen (no movement, no interaction) and reported as seated until the car is live;
+        //   Seat    - the established passenger seat path (EnterSeat: seat anchor, first-person seat camera, camera mode from
+        //             the current record, confirm to the host) - no second seat request, the host kept the seat;
+        //   Recover - forward recovery: complete on-foot player, checked placement near the car, seat released.
+        // The driver's side is the unchanged M4.2 Carry travel (IsStartingCar seats it and it claims its normal lease).
+        enum JStage { None, Holding, Departing, Waiting }
+        JStage _jStage = JStage.None;
+        JointTrip _trip; bool _hasTrip;
+        uint _jId; ushort _jCar; double _jAt, _jArriveAt; UnityEngine.Object _jFrozenPs;
+        uint _jLastDeparted;    // trip id already departed for (a stale or repeated entry never starts a second travel)
+        long _jHolds, _jDepartures, _jDepartFailed, _jSeated, _jRecovered, _jOnFoot, _jTownBlocked;
+        double _jLoadMax, _jReadyMax;
+
+        bool JointHolds(ushort id) { return _jStage == JStage.Holding && _jCar == id || _jStage == JStage.Departing && _jCar == id; }
+        bool JointWaiting { get { return _jStage == JStage.Waiting; } }
+
+        void ReadTrip(StateRegistry reg)
+        {
+            var e = reg.Get(StateScope.Session, 0, WorldKeys.JointTrip);
+            JointTrip t;
+            _hasTrip = e != null && JointTrip.TryParse(e.Value, out t) && (_trip = t).Id != 0;
+        }
+
+        void JointFrame(double now, UnityEngine.Object gm, int region)
+        {
+            if (_jStage == JStage.None && (!_hasTrip || _trip.Passenger != _me || !_trip.Active)) return;   // nothing to do (common case)
+            var ps = gm != null ? _gmPS(gm) : null;
+            bool seated = _ride != null && _ride.Stage == RideStage.Seated && _hasTrip && _ride.Id == _trip.Car;
+            bool departed = _jStage == JStage.Departing || _jStage == JStage.Waiting;
+            bool synced = _node.IsConnected && _world.Synced;
+            bool timedOut = false, ready = false;
+            LocalCar lc = null;
+            if (departed)
+            {
+                if (_jStage == JStage.Departing) timedOut = now - _jAt > JointRules.DepartStuckSeconds;
+                else timedOut = _jArriveAt >= 0 && now - _jArriveAt > JointRules.PassengerWaitSeconds;
+                if (!synced) timedOut = true;                        // the host already ended the trip for a lost connection
+                if (_jStage == JStage.Waiting && region == _trip.Dest && gm != null && _gmLoaded(gm))
+                {
+                    foreach (var l in _local) if (l.Id == _jCar) lc = l;
+                    VehicleRecord r;
+                    if (lc != null && Rec(_jCar, out r))
+                    {
+                        bool presented = lc.Car != null && lc.Observed && lc.Active;
+                        bool anchor = lc.HasPassengerRoot && lc.PassengerSeat.Valid;
+                        bool fresh = lc.Follow.Count > 0 && lc.FollowRecv > _jArriveAt;
+                        ready = JointRules.ReadyToSeat(r, _trip, _me, region, presented, anchor, fresh) && ps != null;
+                    }
+                }
+            }
+            var step = JointRules.Passenger(_hasTrip && _trip.Id == (departed ? _jId : _trip.Id), _trip, _me, region, seated, departed, ready, timedOut);
+            switch (step)
+            {
+                case JointStep.None:
+                    if (_jStage == JStage.Holding) { _log.Info("JOINT trip#" + _jId + " hold ended (" + (_hasTrip ? _trip.Phase.ToString() : "no trip") + "): normal seat rules"); _jStage = JStage.None; _jCar = 0; _reconcile = true; }
+                    return;
+                case JointStep.Hold:
+                    if (_jStage != JStage.Holding)
+                    {
+                        _jStage = JStage.Holding; _jId = _trip.Id; _jCar = _trip.Car; _jAt = now; _jHolds++;
+                        _log.Info("JOINT " + _trip + ": seated passenger holds in " + Regions.Name(region) + " until the driver leaves (exit, storage and menu frozen)");
+                    }
+                    return;
+                case JointStep.Depart:
+                    if (_trip.Id == _jLastDeparted) return;
+                    JointDepart(now, gm, region);
+                    return;
+                case JointStep.Wait:
+                    if (_jStage == JStage.Waiting && ps != null && region == _trip.Dest) JointFreeze(ps);
+                    return;
+                case JointStep.Seat:
+                    JointSeat(now, ps, lc);
+                    return;
+                case JointStep.Recover:
+                {
+                    bool onFoot = _hasTrip && _trip.Id == _jId && region == _trip.Dest && !TravelRules.SeatsOnArrival(_trip.Dest) && _trip.Phase != JointPhase.Failed && _trip.Phase != JointPhase.Cancelled && !timedOut;
+                    JointRecover(now, ps, region, onFoot ? "original arrival on foot at " + Regions.Name(region) : timedOut ? (synced ? "timed out" : "disconnected") : _hasTrip ? "trip " + _trip.Phase : "no trip", synced && timedOut, onFoot);
+                    return;
+                }
+            }
+        }
+
+        void JointDepart(double now, UnityEngine.Object gm, int region)
+        {
+            MethodInfo m;
+            var t = _trip;
+            _jLastDeparted = t.Id; _jId = t.Id; _jCar = t.Car;
+            if (gm == null || !TravelHooks.SelectByDest.TryGetValue(t.Dest, out m))
+            {
+                _jDepartFailed++;
+                _log.Error("JOINT " + t + ": no original travel method for " + Regions.Name(t.Dest) + ": leaving the seat (driver travels alone)");
+                _jStage = JStage.None; _jCar = 0;
+                ForceExitRide("joint departure impossible", true);
+                return;
+            }
+            _jStage = JStage.Departing; _jAt = now; _jArriveAt = -1; _jDepartures++;
+            _ctx = new Arrival { Dest = t.Dest, Outcome = TravelOutcome.Join, Car = t.Car, At = now };   // InitiateMainCar: no car of ours; IsStartingCar: skipped
+            _travelStatus = "joint journey to " + Regions.Name(t.Dest);
+            _log.Info("JOINT " + t + ": driver left - starting the original " + m.Name + " on this instance (passenger, no second travel command)");
+            _resume.Arm(m);
+            try { m.Invoke(gm, null); }
+            catch (Exception ex)
+            {
+                _jDepartFailed++;
+                _log.Error("JOINT original " + m.Name + " failed: leaving the seat (driver travels alone)", ex);
+                _ctx = null; _jStage = JStage.None; _jCar = 0;
+                ForceExitRide("joint departure failed", true);
+            }
+            finally { if (_resume.Armed) { _resume.Disarm(); _log.Error("JOINT continuation guard was not consumed (original not re-entered)"); } }
+        }
+
+        // The on-foot player the original creates at the destination stays where it spawned: no movement, no interaction
+        // (re-applied every waiting frame: the original's own post-load code may re-enable them), shown to the other player
+        // as seated in the car (the host still records this player as its passenger).
+        void JointFreeze(UnityEngine.Object ps)
+        {
+            var pmb = _psPMB(ps);
+            if (pmb != null) _pmbSetCanMove(pmb, false);
+            _setCanInteract(ps, false);
+            if (_players != null) _players.LocalSeated = true;
+            if (!ReferenceEquals(_jFrozenPs, ps)) { _jFrozenPs = ps; _log.Info("JOINT trip#" + _jId + " arrived in " + Regions.Name(_trip.Dest) + ": on-foot player frozen until the car is live here"); }
+        }
+
+        void JointSeat(double now, UnityEngine.Object ps, LocalCar lc)
+        {
+            double readyIn = _jArriveAt >= 0 ? now - _jArriveAt : -1;
+            _jStage = JStage.None; _jFrozenPs = null;
+            _placed = true; _ctx = null;                           // no on-foot placement: the player goes straight into the seat
+            var t = new Ride { Id = lc.Id, Car = lc, At = now, Stage = RideStage.Granted, ViaDoor = false };
+            _ride = t;
+            EnterSeat(t, ps);
+            if (_ride == t && t.Stage == RideStage.Seated)
+            {
+                _jSeated++;
+                if (readyIn > _jReadyMax) _jReadyMax = readyIn;
+                _log.Info("JOINT trip#" + _jId + " passenger re-seated in " + CarName(lc.Id) + " " + readyIn.ToString("0.0") + " s after arrival (car simulated by P" + _trip.Driver + ", camera mode follows the driver)");
+            }
+        }
+
+        void JointRecover(double now, UnityEngine.Object ps, int region, string why, bool releaseSeat, bool onFoot)
+        {
+            var stage = _jStage;
+            ushort car = _jCar;
+            _jStage = JStage.None; _jCar = 0;
+            if (onFoot) _jOnFoot++; else _jRecovered++;
+            if (stage == JStage.Departing && _ride != null) { ForceExitRide("joint journey ended before the scene changed (" + why + ")", true); _jFrozenPs = null; return; }
+            if (releaseSeat && car != VehicleIds.None) { VehicleRecord r; if (Rec(car, out r) && r.Passenger == _me) ReleaseSeat(car); }
+            if (ps != null && ReferenceEquals(_jFrozenPs, ps)) RestoreOnFoot(ps);
+            _jFrozenPs = null;
+            if (_players != null && _ride == null) _players.LocalSeated = false;
+            if (_ctx != null && _ctx.Dest == region) _placed = false;   // checked on-foot placement near the car (TryPlace, Join context)
+            if (onFoot) _log.Info("JOINT trip#" + _jId + " passenger arrived with the car (" + why + ", like the driver): placed on foot near it");
+            else _log.Warn("JOINT trip#" + _jId + " forward recovery in " + Regions.Name(region) + " (" + why + "): on-foot controls restored" + (releaseSeat ? ", seat released" : ""));
+        }
+
+        // TravelHooks: a seated passenger's own "Trigger Map" child entering a MapBorder (or any other opener) must not open the
+        // menu on the passenger's instance - in the original game the companion in that seat never travels by itself.
+        public bool AllowTownSelection(object ps)
+        {
+            if ((_ride == null || _ride.Stage != RideStage.Seated) && _jStage == JStage.None) return true;   // on foot (also with a seat request in flight)
+            _jTownBlocked++;
+            if (_jTownBlocked <= 3 || _jTownBlocked % 50 == 0) _log.Info("TRAVEL menu not opened on the passenger's instance (only the driver travels) x" + _jTownBlocked);
+            return false;
         }
 
         uint SendRide(ushort id, byte op)
@@ -1728,7 +1960,7 @@ namespace TS2MP.Plugin
                 }
                 case RideStage.Seated:
                 {
-                    if (!RideStillValid(t, region) || psc == null) { ForceExitRide("seat or car no longer valid", true); return; }
+                    if ((!RideStillValid(t, region) && !JointHolds(t.Id)) || psc == null) { ForceExitRide("seat or car no longer valid", true); return; }
                     var tr = psc.transform;
                     if (tr.parent != t.Seat) { ForceExitRide("the player was moved out of the seat by the game", true); return; }
                     tr.localPosition = Vector3.Lerp(tr.localPosition, Vector3.zero, Time.deltaTime * 3f);   // CarController.Update seat lerp (dt x 3)
@@ -1840,6 +2072,7 @@ namespace TS2MP.Plugin
         void TryExitRide(Ride t, UnityEngine.Object ps)
         {
             var psc = (Component)ps; var lc = t.Car;
+            if (JointHolds(t.Id)) { _exitBlocked++; Quiet("passenger exit: joint journey in progress (stays seated)"); return; }   // M4.3 Phase B freeze
             if (!lc.Remote.Stopped(Now)) { _exitBlocked++; Quiet("passenger exit: the car is moving (stays seated)"); return; }
             Vector3 feet; int spot;
             if (!FindExitSpot(lc, psc.transform, out feet, out spot)) { _exitBlocked++; Quiet("passenger exit: no free spot beside the seat (stays seated)"); return; }
@@ -2600,9 +2833,9 @@ namespace TS2MP.Plugin
                     tested++;
                     Vector3 feet;
                     if (!IsSafe(new Vector3(_cand[i].X, _cand[i].Y, _cand[i].Z), a.Value, playerT, avoid, avoidCar, out feet)) continue;
-                    Teleport(playerT, cc, feet);
-                    _placements++;
-                    _log.Info("ARRIVAL " + Regions.Name(region) + " (" + ctx.Outcome + "): placed near " + a.Key + " at " + Fmt(feet) + " after " + tested + " candidate(s) in "
+                    Place(playerT, cc, feet, ps);
+                    _placements++; if (ctx.Recovery) _loadPlacements++;
+                    _log.Info("ARRIVAL " + Regions.Name(region) + " (" + (ctx.Recovery ? "load without travel" : ctx.Outcome.ToString()) + "): placed near " + a.Key + " at " + Fmt(feet) + " after " + tested + " candidate(s) in "
                         + ((Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency).ToString("0.00") + " ms");
                     return;
                 }
@@ -2611,7 +2844,7 @@ namespace TS2MP.Plugin
             if (!fixedSpawn && leave != null)
             {
                 Vector3 feet;
-                if (GroundAt(leave.Value, playerT, out feet)) { Teleport(playerT, cc, feet); _log.Warn("ARRIVAL " + Regions.Name(region) + ": no checked position found (" + tested + " tested); placed at the leave point " + Fmt(feet)); return; }
+                if (GroundAt(leave.Value, playerT, out feet)) { Place(playerT, cc, feet, ps); if (ctx.Recovery) _loadPlacements++; _log.Warn("ARRIVAL " + Regions.Name(region) + ": no checked position found (" + tested + " tested); placed at the leave point " + Fmt(feet)); return; }
             }
             _log.Warn("ARRIVAL " + Regions.Name(region) + ": no safe position found (" + tested + " tested); original position kept");
         }
@@ -2703,6 +2936,58 @@ namespace TS2MP.Plugin
             catch { _astar = null; }
         }
 
+        // Teleport + reset the original fall speed (PlayerMotorBehavior.velocityY) so a player recovered from a long fall
+        // does not keep its downward velocity into the first CharacterController.Move.
+        void Place(Transform player, CharacterController cc, Vector3 feet, UnityEngine.Object ps)
+        {
+            Teleport(player, cc, feet);
+            var pmb = ps != null ? _psPMB(ps) : null;
+            if (pmb != null && _pmbSetVelY != null) _pmbSetVelY(pmb, 0f);
+            _airSince = -1;
+        }
+
+        // M5 hotfix: a player that keeps falling far below its last grounded position (or below FallRules.AbsoluteFloor
+        // without one) is returned to verified ground: the last grounded position in this region, else the region's original
+        // leave point, else the other player. At most FallRules.MaxPerRegion recoveries per region visit, FallRules.MinInterval
+        // apart; then it gives up (logged) - never a teleport loop, never a valid player (grounded / small jumps / in a car).
+        void FallGuard(double now, UnityEngine.Object gm, UnityEngine.Object ps, int region)
+        {
+            if (now < _nextFallCheck) return;
+            _nextFallCheck = now + 0.5;
+            var psc = ps as Component; var cc = _psCC(ps) as CharacterController;
+            if (psc == null || cc == null || !cc.enabled || _psInVehicle(ps)) { _airSince = -1; return; }
+            var t = psc.transform;
+            var feet = new Vector3(t.position.x, cc.bounds.min.y, t.position.z);
+            if (cc.isGrounded) { _safeFeet = feet; _safeRegion = region; _airSince = -1; return; }
+            if (_airSince < 0) { _airSince = now; return; }
+            bool hasSafe = _safeRegion == region;
+            if (!FallRules.IsLost(now - _airSince, feet.y, hasSafe, _safeFeet.y)) return;
+            if (_fallGaveUp) return;
+            if (!FallRules.MayRecover(_fallRecoveriesHere, now - _lastFallRecovery))
+            {
+                if (_fallRecoveriesHere >= FallRules.MaxPerRegion) { _fallGaveUp = true; _log.Error("FALL_RECOVERY gave up in " + Regions.Name(region) + " after " + _fallRecoveriesHere + " recoveries (player at " + Fmt(feet) + "): reload the region (travel) to recover"); }
+                return;
+            }
+            Vector3 dest; string from = null;
+            if (hasSafe && GroundAt(_safeFeet, t, out dest)) from = "last grounded position";
+            else
+            {
+                dest = Vector3.zero;
+                Vector3? leave = LeavePoint(gm, region);
+                Vector3 rf = Vector3.zero; bool rc = false; float rs = 0f;
+                bool remote = RegionDirectory.RegionOf(_world.Registry, _other) == region && _players != null && _players.TryGetRemote(out rf, out rc, out rs) && !rc;
+                if (leave != null && GroundAt(leave.Value, t, out dest)) from = "original leave point";
+                else if (remote && GroundAt(rf, t, out dest)) from = "other player";
+            }
+            _lastFallRecovery = now; _fallRecoveriesHere++;
+            if (from == null) { _log.Warn("FALL_RECOVERY " + Regions.Name(region) + ": player lost at " + Fmt(feet) + " (" + (now - _airSince).ToString("0.0") + " s airborne) but no verified ground found (attempt " + _fallRecoveriesHere + ")"); return; }
+            float airborne = (float)(now - _airSince);
+            Place(t, cc, dest, ps);
+            _fallRecoveries++;
+            _log.Warn("FALL_RECOVERY " + Regions.Name(region) + ": player was falling at " + Fmt(feet) + " for " + airborne.ToString("0.0") + " s -> placed at the " + from + " " + Fmt(dest)
+                + " (recovery " + _fallRecoveriesHere + "/" + FallRules.MaxPerRegion + " in this region)");
+        }
+
         static void Teleport(Transform player, CharacterController cc, Vector3 feet)
         {
             bool en = cc != null && cc.enabled;
@@ -2757,7 +3042,7 @@ namespace TS2MP.Plugin
                 + " stale=" + _stale + " unknown=" + _unknown + " notOwner=" + _notOwner + " wrongRegion=" + _wrongRegion + " tooMany=" + _tooMany + " malformed=" + _malformed
                 + " observeEnter=" + _observeEnter + " pushOuts=" + _pushOuts + " doors rep/applied/refused=" + _doorReports + "/" + _doorApplies + "/" + _doorRefused + " commits=" + _commits + " act/deact=" + _activations + "/" + _deactivations
                 + " | travel clicks=" + _travels + " held=" + _held + " resumed=" + _resumed + " denied=" + _denied + " cancelled=" + _cancelled + " phoneBlocked=" + _phoneBlocked
-                + " proxyMenus=" + _proxyMenus + " placed=" + _placements + " placeFallbacks=" + _placeFallbacks
+                + " proxyMenus=" + _proxyMenus + " placed=" + _placements + " placeFallbacks=" + _placeFallbacks + " loadPlacements=" + _loadPlacements + " fallRecoveries=" + _fallRecoveries
                 + " | passenger req/granted/denied/seated/exits/forced=" + _rideRequests + "/" + _rideGranted + "/" + _rideDenied + "/" + _rideSeated + "/" + _rideExits + "/" + _rideForced + " camSwitches=" + _camSwitches
                 + " footEntries=" + _footEntries + " storage open/refused=" + _storageOpens + "/" + _storageRefused + " medkitRefused=" + _medkitRefused + " selfBodyShown=" + _selfShown
                 + " slowDoors rep/applied/fastFinish=" + _slowReports + "/" + _slowApplies + "/" + _fastFinishes
@@ -2766,6 +3051,10 @@ namespace TS2MP.Plugin
                 + " | handoff req/granted/denied/entered=" + _takeRequests + "/" + _takeGranted + "/" + _takeDenied + "/" + _takeEntered + " solidSwitches=" + _solidSwitches + " seatFrames=" + _seatPosed
                 + (_host ? " fleetWrites=" + _fleetWrites + "/" + (_writer != null ? _writer.Writes + " fail=" + _writer.Failures : "-") + " reservations=" + _world.Host.Travel.Pending
                     + " decisions/commits/rollbacks=" + _world.Host.Travel.Decisions + "/" + _world.Host.Travel.Commits + "/" + _world.Host.Travel.Rollbacks : "")
+                + " | joint holds/departures/departFailed/seated/onFoot/recovered/menuBlocked=" + _jHolds + "/" + _jDepartures + "/" + _jDepartFailed + "/" + _jSeated + "/" + _jOnFoot + "/" + _jRecovered + "/" + _jTownBlocked
+                + " loadMax=" + _jLoadMax.ToString("0.0") + "s readyMax=" + _jReadyMax.ToString("0.0") + "s"
+                + (_host ? " trips started/committed/cancelled/failed/refused=" + _world.Host.Joint.Started + "/" + _world.Host.Joint.Committed + "/" + _world.Host.Joint.Cancelled + "/" + _world.Host.Joint.Failed + "/" + _world.Host.Joint.Refused
+                    + " lastTrip=" + _world.Host.Joint.LastDuration.ToString("0.0") + "s" : "")
                 + " | update avg=" + avgUs.ToString("0.0") + "us max=" + maxUs.ToString("0") + "us frames=" + _frames);
             _costTicks = 0; _costMax = 0; _frames = 0; _rideFootTicks = 0;
         }

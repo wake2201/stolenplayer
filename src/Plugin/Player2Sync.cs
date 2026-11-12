@@ -5,6 +5,10 @@
 // restores the record into its sandbox (SPrefs + live ItemID/PlayerScript fields) in EVERY loaded scene, acknowledges it,
 // reports its Player-2 state when it changed (2 s check, before every transfer, at every scene exit), keeps unconfirmed exit
 // state in a small pending file until the host committed it, never shows the host's car storage / locker copies.
+// W3.4 storage durability (design + IL: src/Shared/Player2Inventory.cs "W3.4 durability model"): host-only postfixes on
+// ItemID.Move_To_Storage(int) / Move_Out_Of_Storage(int) feed the unsaved Player-1 deposit ledger; SaveGame.SaveGameNewSystem
+// prefix + finalizer mark the original save whose FBPP write clears it. Player-2 withdrawals that need such a deposit journal
+// it first (HostItem -1 + HostCar/HostLocker +1) in the same durable write; keys always hold the recoverable counts.
 // Harmony (narrow, verified IL): FBPP.Save / FBPP.SaveToMainProfile (host: journal compaction, history confirmation),
 // BlackBay_Object.SellIt (prefix guard: a sale may only consume items the seller really owns), client only:
 // SaveGame.LoseGame (empty body; called by GameManager.LoadMenu IL_0011, Inventory.QuitGame IL_001f, SaveGame.OnApplicationQuit
@@ -26,21 +30,26 @@ namespace TS2MP.Plugin
         public static Player2Sync Instance;
         public const string WatermarkKey = "TS2MP_StorageTxn";   // last Player-2 transfer contained in the Storage_Item_ counts (host SPrefs)
         public const string HistoryKey = "TS2MP_P2History";      // id of the Player-2 record that belongs to this save history (host SPrefs)
+        public const string HostMarkKey = "TS2MP_HostTxn";       // W3: last host-journal sequence contained in the host save (Item_/Locker_Item_ counts)
 
         readonly SessionNode _node; readonly InstanceLog _log; readonly WorldSync _world; readonly bool _host; readonly string _dataDir;
         Harmony _h; bool _ok;
         // accessors (compiled once)
         Func<object, object> _gmPs, _psItems, _psInv, _bbHolder; Func<object, bool> _gmLoaded;
-        Func<object, int> _id, _amt, _sto, _lock, _maxAmt, _money, _baton, _crowbar, _maxStorage; Func<object, float> _w, _curW, _maxW;
+        Func<object, int> _id, _amt, _sto, _lock, _maxAmt, _money, _baton, _crowbar, _maxStorage, _maxLocker; Func<object, float> _w, _curW, _maxW;
         Func<object, bool> _heavy, _story, _invStorageOpen;
         Action<object, int> _setAmt, _setSto, _setLock, _setMoney, _setBaton, _setCrowbar; Action<object, float> _setCurW, _setStoCap, _setLockCap;
         Func<string, int> _get; Action<string, int> _set;
         Func<object, object> _bbAssigned; Func<object, int> _bbRequired; Type _bbItemT;
 
         // ---- host ----
-        P2Book _book; int _profile = int.MinValue; FleetStore _store; FleetWriter _writer; object _bookGm; long _savingTxn = -1; bool _dirtyFile; double _nextWrite;
+        P2Book _book; int _profile = int.MinValue; FleetStore _store; FleetWriter _writer; object _bookGm; long _savingTxn = -1, _savingHost = -1; bool _dirtyFile; double _nextWrite;
         long _syncWrites; double _syncWriteMaxMs;
         bool _clientSynced; long _hostSyncs;
+        // W3.4 storage durability (host): unsaved Player-1 deposits + "an original game save is running" (Save_Item_Amount
+        // wrote the live counts into the keys; the following FBPP write puts them on disk)
+        readonly HostDepositLedger _ledger = new HostDepositLedger(); bool _ledgerOn; int _gameSaveDepth; bool _gameSaveDiskWrite;
+        long _prereqs, _refusedUnsaved, _ledgerClears;
         // ---- client ----
         P2ClientSync _sync; object _sceneGm; string _pendingPath; readonly Dictionary<int, int> _unknown = new Dictionary<int, int>();
         long _bbBlocked, _pendingWrites; double _pendingWriteMaxMs, _captureMaxMs;
@@ -70,6 +79,7 @@ namespace TS2MP.Plugin
                 _lock = Fast.Getter<int>(it, "item_amount_locker"); _setLock = Fast.Setter<int>(it, "item_amount_locker");
                 _w = Fast.Getter<float>(it, "item_weight"); _heavy = Fast.Getter<bool>(it, "is_heavy"); _maxAmt = Fast.Getter<int>(it, "max_amount"); _story = Fast.Getter<bool>(it, "isStoryItem");
                 _maxStorage = Fast.Getter<int>(inv, "max_storage_capacity"); _setStoCap = Fast.Setter<float>(inv, "current_storage_capacity"); _setLockCap = Fast.Setter<float>(inv, "current_locker_capacity");
+                _maxLocker = Fast.Getter<int>(inv, "max_locker_capacity");
                 _invStorageOpen = Fast.Getter<bool>(inv, "isStorage");
                 var gi = AccessTools.Method(sp, "GetInt", new[] { typeof(string) }); var si = AccessTools.Method(sp, "SetInt", new[] { typeof(string), typeof(int) });
                 if (gi != null) _get = (Func<string, int>)Delegate.CreateDelegate(typeof(Func<string, int>), gi);
@@ -78,7 +88,7 @@ namespace TS2MP.Plugin
                 _bbHolder = Fast.Getter<object>(bbo, "holder_of_items"); _bbAssigned = Fast.Getter<object>(_bbItemT, "assigned_itemID"); _bbRequired = Fast.Getter<int>(_bbItemT, "required_amount");
                 bool core = _gmPs != null && _gmLoaded != null && _psItems != null && _money != null && _setMoney != null && _baton != null && _crowbar != null && _setBaton != null && _setCrowbar != null
                     && _id != null && _amt != null && _setAmt != null && _sto != null && _setSto != null && _lock != null && _setLock != null && _w != null && _heavy != null
-                    && _curW != null && _setCurW != null && _get != null && _set != null && _maxStorage != null;
+                    && _curW != null && _setCurW != null && _get != null && _set != null && _maxStorage != null && _maxLocker != null && _maxAmt != null;
                 if (!core) { _log.Warn("P2INV game API incomplete: Player-2 inventory persistence and CarBox transfers disabled"); return; }
                 _h = new Harmony("com.ts2mp.multiplayer.p2inv");
                 if (_host)
@@ -90,6 +100,19 @@ namespace TS2MP.Plugin
                     var pre = new HarmonyMethod(AccessTools.Method(typeof(Player2Sync), "SavePrefix")); var post = new HarmonyMethod(AccessTools.Method(typeof(Player2Sync), "SavePostfix"));
                     _h.Patch(save, pre, post);
                     if (main != null) _h.Patch(main, pre, post);
+                    // W3.4: Player-1 deposits not yet in the disk save (ItemID.Move_To_Storage / Move_Out_Of_Storage, only
+                    // called by Inventory.MoveItemToStorage; the mod's Player-2 transfers never call them on the host) and
+                    // the original save boundary (SaveGame.SaveGameNewSystem = the only Save_Item_Amount caller).
+                    var mvIn = AccessTools.Method(it, "Move_To_Storage", new[] { typeof(int) }); var mvOut = AccessTools.Method(it, "Move_Out_Of_Storage", new[] { typeof(int) });
+                    var sg = AccessTools.TypeByName("SaveGame"); var gameSave = sg != null ? AccessTools.Method(sg, "SaveGameNewSystem", new[] { typeof(bool), typeof(float) }) : null;
+                    if (mvIn == null || mvOut == null || gameSave == null) _log.Warn("P2INV storage durability hooks missing (Move_To_Storage/Move_Out_Of_Storage/SaveGameNewSystem): Player-2 withdrawals of units not in the host save are refused");
+                    else
+                    {
+                        _h.Patch(mvIn, null, new HarmonyMethod(AccessTools.Method(typeof(Player2Sync), "DepositPostfix")));
+                        _h.Patch(mvOut, null, new HarmonyMethod(AccessTools.Method(typeof(Player2Sync), "WithdrawPostfix")));
+                        _h.Patch(gameSave, prefix: new HarmonyMethod(AccessTools.Method(typeof(Player2Sync), "GameSavePrefix")), finalizer: new HarmonyMethod(AccessTools.Method(typeof(Player2Sync), "GameSaveFinalizer")));
+                        _ledgerOn = true;
+                    }
                 }
                 else
                 {
@@ -159,15 +182,24 @@ namespace TS2MP.Plugin
             {
                 _book = LoadBook(profile, mark);                             // another save of this profile was loaded in this process
             }
-            var list = _book.ReplayFor(mark);
+            // W3.4: the live counts of this scene come from the keys (ItemID.Start): unsaved Player-1 deposits of a previous scene
+            // are gone with the reload (travel saved them first) -> nothing left to attribute
+            if (_ledger.Entries > 0) { _ledger.Clear(); _ledgerClears++; }
+            // W3: host-side effects of cross-player item transfers; W3.4: replayed together with the Player-2 transfers in
+            // journal (= commit) order, so a prerequisite Player-1 deposit is applied before the withdrawal that depends on it
+            uint hmark = (uint)Math.Max(0, _get(HostMarkKey));
+            if (hmark > _book.HostSeq) _book.HostSeq = hmark;                // sequence stays above anything a save already contains
+            uint maxTxn, maxHost;
+            var list = _book.ReplayAll(mark, hmark, out maxTxn, out maxHost);
             if (list.Count > 0)
             {
-                ApplyStorageDeltas(list, "replay of " + list.Count + " Player-2 CarBox transfer(s) not yet contained in the loaded storage counts (watermark " + mark + ")");
-                _set(WatermarkKey, (int)list[list.Count - 1].Txn);
+                ApplyStorageDeltas(list, "replay of " + list.Count + " journal entr(ies) in commit order not yet contained in the loaded save (watermark " + mark + ", host watermark " + hmark + ")");
+                if (maxTxn > mark) _set(WatermarkKey, (int)maxTxn);
+                if (maxHost > hmark) _set(HostMarkKey, (int)maxHost);
                 _book.Replayed += list.Count;
             }
             _world.Host.CommitP2(_book.Rec); _world.FlushOutbox();
-            _log.Info("P2INV host book profile " + profile + " watermark " + mark + ": " + _book.Rec + ", journal " + _book.Journal.Count);
+            _log.Info("P2INV host book profile " + profile + " watermark " + mark + " host watermark " + hmark + ": " + _book.Rec + ", journal " + _book.Journal.Count);
         }
 
         P2Book LoadBook(int profile, uint mark)
@@ -209,19 +241,46 @@ namespace TS2MP.Plugin
         static void SavePrefix()
         {
             var i = Instance; if (i == null || !i._host || i._book == null) return;
-            try { i._savingTxn = Math.Max(0, i._get(WatermarkKey)); } catch { i._savingTxn = -1; }
+            try { i._savingTxn = Math.Max(0, i._get(WatermarkKey)); i._savingHost = Math.Max(0, i._get(HostMarkKey)); } catch { i._savingTxn = -1; i._savingHost = -1; }
         }
 
         static void SavePostfix()
         {
-            var i = Instance; if (i == null || !i._host || i._book == null || i._savingTxn < 0) return;
+            var i = Instance; if (i == null || !i._host) return;
+            // W3.4: only a disk write inside the original game save carries the live storage/backpack counts (Save_Item_Amount
+            // ran just before): every Player-1 deposit is now on disk. Postfix = the write returned without an exception.
+            if (i._gameSaveDepth > 0) { i._gameSaveDiskWrite = true; if (i._ledger.Entries > 0) { i._ledger.Clear(); i._ledgerClears++; } }
+            if (i._book == null || i._savingTxn < 0) return;
             try
             {
-                i._book.SaveCompleted((uint)i._savingTxn); i._savingTxn = -1;
+                i._book.SaveCompleted((uint)i._savingTxn, (uint)Math.Max(0, i._savingHost)); i._savingTxn = -1; i._savingHost = -1;
                 if (!i._book.HistoryConfirmed && i._get(HistoryKey) == i._book.HistoryId) i._book.HistoryConfirmed = true;
                 i.QueueWrite();
             }
             catch (Exception ex) { i._log.Error("P2INV save completion failed", ex); }
+        }
+
+        // W3.4 ledger hooks (host). __0 = storage type (0 car, 1 locker), verified IL ItemID.Move_To_Storage(int) IL_0000.
+        static void DepositPostfix(object __instance, int __0)
+        {
+            var i = Instance; if (i == null || !i._host || !StorageKind.Valid(__0)) return;
+            try { i._ledger.Deposit((byte)__0, i._id(__instance)); } catch { }
+        }
+        static void WithdrawPostfix(object __instance, int __0)
+        {
+            var i = Instance; if (i == null || !i._host || !StorageKind.Valid(__0)) return;
+            try { i._ledger.Withdraw((byte)__0, i._id(__instance)); } catch { }
+        }
+        static void GameSavePrefix() { var i = Instance; if (i != null && i._host) { i._gameSaveDepth++; i._gameSaveDiskWrite = false; } }
+        static Exception GameSaveFinalizer(Exception __exception)
+        {
+            var i = Instance;
+            if (i != null && i._host && i._gameSaveDepth > 0)
+            {
+                i._gameSaveDepth--;
+                if (__exception != null) i._log.Warn("P2INV original save threw (" + __exception.GetType().Name + ")" + (i._gameSaveDiskWrite ? "" : " before its disk write: unsaved Player-1 deposits stay tracked"));
+            }
+            return __exception;                                            // never swallow the original's exception
         }
 
         void QueueWrite() { if (_book != null && _writer != null) _writer.Queue(_book.Serialize(_profile)); }
@@ -260,47 +319,70 @@ namespace TS2MP.Plugin
             return code;
         }
 
-        // One client CarBox transfer: validated against the host's real counters, applied to the record + journal + host
-        // storage, written durably BEFORE the result is sent. A failed write undoes everything (no acknowledgment).
+        // One client storage transfer (car storage or hideout locker): validated against the host's real counters (stock,
+        // original capacity, backpack max_amount), applied to the record + journal + host storage, written durably BEFORE the
+        // result is sent. A failed write undoes everything (no acknowledgment).
         ProposalCode HostTransfer(StorageTxnRequest t)
         {
             if (_book == null) return ProposalCode.Busy;
             var ps = Ps(); var items = Items(ps); var inv = ps != null ? _psInv(ps) : null;
             if (items == null || inv == null) return ProposalCode.Busy;
+            bool locker = t.Kind == StorageKind.Locker;
             object item = null; float stoWeight = 0f;
             foreach (var o in items)
             {
                 if (o == null) continue;
-                if (!_heavy(o)) stoWeight += _w(o) * _sto(o);
+                if (!_heavy(o)) stoWeight += _w(o) * (locker ? _lock(o) : _sto(o));
                 if (item == null && _id(o) == t.ItemId) item = o;
             }
             if (item == null || (_story != null && _story(item))) return ProposalCode.Invalid;
-            int count = _sto(item);
-            var before = _book.Rec; int jn = _book.Journal.Count;
-            int delta;
-            var code = _book.Transfer(t.Txn, t.ItemId, t.Withdraw, count, StorageRules.DepositFits(stoWeight, _w(item), _maxStorage(inv)), out delta);
-            if (code != ProposalCode.Accepted) { if (code != ProposalCode.Unchanged) _log.Info("P2INV transfer #" + t.Txn + " item " + t.ItemId + (t.Withdraw ? " withdraw" : " deposit") + " -> " + code); return code; }
-            int prevMark = _get(WatermarkKey);
-            SetStorage(item, t.ItemId, count + delta);
+            int count = locker ? _lock(item) : _sto(item);
+            bool depositFits = StorageRules.DepositFits(stoWeight, _w(item), locker ? _maxLocker(inv) : _maxStorage(inv));
+            int mx = _maxAmt(item);
+            bool withdrawFits = mx <= 0 || _book.Rec.CountOf(t.ItemId) + 1 <= mx;
+            // W3.4: keys hold the RECOVERABLE counts (disk + journaled deltas); live fields hold the game state
+            string stoKey = StorageKind.KeyPrefix(t.Kind) + t.ItemId, itemKey = "Item_" + t.ItemId;
+            int stoKeyBefore = _get(stoKey), itemKeyBefore = _get(itemKey), prevMark = _get(WatermarkKey), prevHost = _get(HostMarkKey);
+            int deposits = _ledgerOn ? _ledger.Count(t.Kind, t.ItemId) : 0;
+            var mark = _book.Mark();
+            StoragePlan plan;
+            var code = _book.HostTransfer(t.Txn, t.Kind, t.ItemId, t.Withdraw, count, stoKeyBefore, itemKeyBefore, deposits, depositFits, withdrawFits, out plan);
+            if (code != ProposalCode.Accepted)
+            {
+                if (plan.Why != null) _refusedUnsaved++;
+                if (code != ProposalCode.Unchanged) _log.Info("P2INV transfer #" + t.Txn + " (" + StorageKind.Name(t.Kind) + ") item " + t.ItemId + (t.Withdraw ? " withdraw" : " deposit") + " -> " + code + (plan.Why != null ? ": " + plan.Why + " (live " + count + ", recoverable " + stoKeyBefore + ", tracked Player-1 deposits " + deposits + ")" : ""));
+                return code;
+            }
+            int delta = plan.StorageDelta;
+            SetLive(item, t.Kind, count + delta);
+            _set(stoKey, plan.NewStorageKey);
             _set(WatermarkKey, (int)t.Txn);
+            if (plan.Prerequisite)
+            {
+                _ledger.Consume(t.Kind, t.ItemId);
+                _set(itemKey, plan.NewItemKey);                                 // the prerequisite effect only (never unrelated live changes)
+                _set(HostMarkKey, (int)plan.PrereqSeq);
+            }
             if (!WriteNow())
             {
-                SetStorage(item, t.ItemId, count);
-                _set(WatermarkKey, prevMark);
-                _book.Rec = before; if (_book.Journal.Count > jn) _book.Journal.RemoveRange(jn, _book.Journal.Count - jn); _book.Transfers--;
+                SetLive(item, t.Kind, count);
+                _set(stoKey, stoKeyBefore); _set(WatermarkKey, prevMark);
+                if (plan.Prerequisite) { _ledger.Restore(t.Kind, t.ItemId); _set(itemKey, itemKeyBefore); _set(HostMarkKey, prevHost); }
+                _book.Restore(mark);
+                _log.Warn("P2INV transfer #" + t.Txn + " not committed (durable write failed): Busy, nothing changed");
                 return ProposalCode.Busy;
             }
+            if (plan.Prerequisite) _prereqs++;
             _world.Host.CommitP2(_book.Rec);
-            _log.Info("P2INV transfer #" + t.Txn + " item " + t.ItemId + (t.Withdraw ? " CarBox -> Player 2" : " Player 2 -> CarBox") + ": storage " + count + " -> " + (count + delta) + ", P2 now " + _book.Rec.CountOf(t.ItemId) + " (journal " + _book.Journal.Count + ")");
+            _log.Info("P2INV transfer #" + t.Txn + " item " + t.ItemId + (t.Withdraw ? " " + StorageKind.Name(t.Kind) + " -> Player 2" : " Player 2 -> " + StorageKind.Name(t.Kind)) + ": storage " + count + " -> " + (count + delta)
+                + " (recoverable " + stoKeyBefore + " -> " + plan.NewStorageKey + ")" + (plan.Prerequisite ? ", unsaved Player-1 deposit journaled first (host seq " + plan.PrereqSeq + ": Player 1 Item_ " + itemKeyBefore + " -> " + plan.NewItemKey + ")" : "")
+                + ", P2 now " + _book.Rec.CountOf(t.ItemId) + " (journal " + _book.Journal.Count + ")");
             return ProposalCode.Accepted;
         }
 
-        void SetStorage(object item, int id, int value)
-        {
-            _setSto(item, value);
-            _set("Storage_Item_" + id, value);   // a scene reload before the next save reads the same value (ItemID.Start)
-        }
+        void SetLive(object item, byte kind, int value) { if (kind == StorageKind.Locker) _setLock(item, value); else _setSto(item, value); }
 
+        // Journal replay: storage (car / locker) and host backpack / host locker counts, key + live field.
         void ApplyStorageDeltas(List<JournalEntry> list, string why)
         {
             var ps = Ps(); var items = Items(ps);
@@ -308,14 +390,74 @@ namespace TS2MP.Plugin
             if (items != null) foreach (var o in items) if (o != null && !byId.ContainsKey(_id(o))) byId[_id(o)] = o;
             foreach (var e in list)
             {
-                int v = Math.Max(0, _get("Storage_Item_" + e.ItemId) + e.StorageDelta);
-                _set("Storage_Item_" + e.ItemId, v);
-                object o; if (byId.TryGetValue(e.ItemId, out o)) _setSto(o, v);
+                string key = JournalKind.KeyPrefix(e.Kind) + e.ItemId;
+                int v = Math.Max(0, _get(key) + e.StorageDelta);
+                _set(key, v);
+                object o;
+                if (!byId.TryGetValue(e.ItemId, out o)) continue;
+                if (JournalKind.IsLockerKey(e.Kind)) _setLock(o, v);
+                else if (e.Kind == JournalKind.HostItem) { _setAmt(o, v); if (!_heavy(o) && ps != null) _setCurW(ps, Math.Max(0f, _curW(ps) + _w(o) * e.StorageDelta)); }
+                else _setSto(o, v);
             }
             _log.Info("P2INV " + why);
         }
 
+        // ======================================================================== W3 dropped items (host)
+        // Player 2 side of an item transaction: drop (record -1) / pickup (record +1), written durably before the
+        // acknowledgment. A pickup of an item Player 1 dropped also journals Player 1 backpack loss (host journal entry with
+        // the drop's host sequence), so a host reload of a save that predates the drop cannot give the item back to Player 1
+        // while Player 2 keeps it.
+        public ProposalCode HostP2ItemTxn(ItemOp op, uint txn, int itemId, byte origin, uint originTxn)
+        {
+            if (_book == null) return ProposalCode.Busy;
+            var before = _book.Rec; int jn = _book.Journal.Count; uint seqBefore = _book.HostSeq;
+            var code = _book.ItemTxn(txn, itemId, op == ItemOp.Drop ? -1 : +1);
+            if (code != ProposalCode.Accepted) { _log.Info("P2INV item txn #" + txn + " " + op + " item " + itemId + " -> " + code); return code; }
+            if (op == ItemOp.Pickup && origin == 1 && originTxn != 0) _book.AddHostEntry(originTxn, JournalKind.HostItem, itemId, -1);
+            if (!WriteNow())
+            {
+                _book.Rec = before; if (_book.Journal.Count > jn) _book.Journal.RemoveRange(jn, _book.Journal.Count - jn); _book.HostSeq = seqBefore; _book.ItemTxns--;
+                _log.Warn("P2INV item txn #" + txn + " not committed (durable write failed): Busy");
+                return ProposalCode.Busy;
+            }
+            _dirtyFile = false;
+            _world.Host.CommitP2(_book.Rec);
+            _log.Info("P2INV item txn #" + txn + " " + op + " item " + itemId + " committed: P2 now " + _book.Rec.CountOf(itemId) + (op == ItemOp.Pickup && origin == 1 ? " (dropped by Player 1, host journal seq " + originTxn + ")" : ""));
+            return ProposalCode.Accepted;
+        }
+
+        // Host sequence for a Player-1 drop: the watermark and the current backpack count go into the save memory now, so any
+        // later FBPP write says "this save already lacks the dropped item".
+        public uint HostDropMark(object itemObj, int itemId)
+        {
+            if (_book == null) return 0;
+            uint seq = _book.NextHostSeq();
+            _set(HostMarkKey, (int)seq);
+            if (itemObj != null) _set("Item_" + itemId, _amt(itemObj));
+            _dirtyFile = true;                                             // HostSeq persisted with the next background write
+            return seq;
+        }
+
+        // Player 1 received an item Player 2 dropped (counted already by the original Item_Picked), or a Player-2 item was
+        // converted into the host locker: journal + watermark + key, durably.
+        public bool HostJournal(byte kind, int itemId, object itemObj, string why)
+        {
+            if (_book == null) return false;
+            uint seq = _book.NextHostSeq();
+            if (!_book.AddHostEntry(seq, kind, itemId, +1)) { _log.Warn("P2INV host journal full: " + why + " not journaled"); return false; }
+            _set(HostMarkKey, (int)seq);
+            // W3.4: the locker key stays the recoverable count (key + 1), never the live count (which may contain unsaved
+            // Player-1 deposits); the backpack key keeps the W3 behaviour
+            if (kind == JournalKind.HostLocker) _set(JournalKind.KeyPrefix(kind) + itemId, Math.Max(0, _get(JournalKind.KeyPrefix(kind) + itemId)) + 1);
+            else if (itemObj != null) _set(JournalKind.KeyPrefix(kind) + itemId, _amt(itemObj));
+            bool ok = WriteNow();
+            _log.Info("P2INV host journal seq " + seq + " " + why + (ok ? "" : " (durable write FAILED - kept in memory, retried by the background writer)"));
+            if (!ok) _dirtyFile = true;
+            return ok;
+        }
+
         public byte LeaseOwner { get { return _host && _world.Host != null ? _world.Host.CarBoxState.Owner : (byte)0; } }
+        public byte LockerLeaseOwner { get { return _host && _world.Host != null ? _world.Host.Locker.State.Owner : (byte)0; } }
 
         // ======================================================================== client
         void InitClientSync()
@@ -342,9 +484,10 @@ namespace TS2MP.Plugin
             bool live = Live;
             P2Inventory rec = null; bool invalid = false;
             if (live) TryRecord(out rec, out invalid);
-            var cb = CarBoxSync.Instance;
-            bool pending = cb != null && cb.TransferPending;
+            var cb = CarBoxSync.Instance; var wi = WorldItemSync.Instance;
+            bool pending = (cb != null && cb.TransferPending) || (wi != null && wi.TxnPending);
             if (rec != null && !pending && cb != null && cb.HasLostTransfer) cb.ResolvePending(rec);   // committed -> applied now; not committed -> dropped
+            if (rec != null && !pending && wi != null && wi.HasLostTxn) wi.ResolvePending(rec);         // W3: same for a drop / pickup
             bool localReady = loaded && LocalReady();
             _sync.Tick(Now, live, rec, invalid, localReady, pending);
         }
@@ -445,15 +588,25 @@ namespace TS2MP.Plugin
         // Before a CarBox transfer: newest Player-2 state first (same ordered channel); false = the transfer waits.
         public bool PrepareTransfer() { return !_host && _sync != null && _sync.PrepareTransfer(Now, CurrentRecord()); }
 
-        // The host's car storage values written into the client for an open CarBox session are cleared when it ends.
-        public void ClearStorageMirror()
+        // The host's storage values written into the client for an open session are cleared when it ends.
+        public void ClearStorageMirror(byte kind)
         {
             if (_host || !_ok) return;
             var ps = Ps(); var items = Items(ps);
             if (items == null) return;
-            foreach (var o in items) { if (o == null) continue; if (_sto(o) != 0) _setSto(o, 0); _set("Storage_Item_" + _id(o), 0); }
-            var inv = _psInv(ps); if (inv != null && _setStoCap != null) _setStoCap(inv, 0f);
+            bool locker = kind == StorageKind.Locker;
+            foreach (var o in items)
+            {
+                if (o == null) continue;
+                if (locker) { if (_lock(o) != 0) _setLock(o, 0); } else if (_sto(o) != 0) _setSto(o, 0);
+                _set(StorageKind.KeyPrefix(kind) + _id(o), 0);
+            }
+            var inv = _psInv(ps);
+            if (inv != null) { if (locker) { if (_setLockCap != null) _setLockCap(inv, 0f); } else if (_setStoCap != null) _setStoCap(inv, 0f); }
         }
+
+        // W3: a dropped-item transaction of Player 2 is in flight (shares the Player-2 transaction id sequence with storage transfers).
+        public bool ItemTxnPending { get { var w = WorldItemSync.Instance; return w != null && w.TxnPending; } }
 
         // ---- BlackBay_Object.SellIt guard (both roles): the original pays first, then removes each required item from the
         // backpack, else the locker, else the car storage (ItemID.Remove_Item_Blackbay). Client: only its own backpack is real
@@ -479,6 +632,7 @@ namespace TS2MP.Plugin
                 if (_host)
                 {
                     if (BlackbayRules.HostSaleBlocked(LeaseOwner, _amt(it), _lock(it), _sto(it), need)) { _bbBlocked++; _log.Info("P2INV Blackbay sale refused: it would take CarBox items while Player 2 uses the CarBox"); return false; }
+                    if (BlackbayRules.HostLockerSaleBlocked(LockerLeaseOwner, _amt(it), _lock(it), need)) { _bbBlocked++; _log.Info("P2INV Blackbay sale refused: it would take locker items while Player 2 uses the hideout locker"); return false; }
                 }
                 else if (!BlackbayRules.ClientSaleAllowed(_amt(it), need, cbOpen))
                 {
@@ -496,6 +650,7 @@ namespace TS2MP.Plugin
                     + " reports " + _book.Reports + " stale " + _book.ReportsStale + " transfers " + _book.Transfers + " refused " + _book.TransfersRefused + " replayed " + _book.Replayed
                     + " syncWrites " + _syncWrites + " max " + _syncWriteMaxMs.ToString("0.0") + "ms bgWrites " + (_writer != null ? _writer.Writes + "/" + _writer.Failures : "-") : "no book")
                     + " clientSynced " + _clientSynced + " syncs " + _hostSyncs
+                    + " durability ledger " + (_ledgerOn ? _ledger.Entries + " type(s)" : "OFF") + " prerequisites " + _prereqs + " refusedUnsaved " + _refusedUnsaved + " ledgerClears " + _ledgerClears
                     : (_sync != null ? _sync.Stats : "no lifecycle") + " pendingWrites " + _pendingWrites + " max " + _pendingWriteMaxMs.ToString("0.0") + "ms captureMax " + _captureMaxMs.ToString("0.00") + "ms") + " blackbayBlocked " + _bbBlocked;
             }
         }

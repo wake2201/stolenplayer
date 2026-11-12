@@ -329,7 +329,10 @@ namespace TS2MP.Shared
         }
 
         // Disconnect / menu: drop every lease/seat of that slot.
-        public int ReleaseAll(byte slot, List<StateEntry> outbox)
+        public int ReleaseAll(byte slot, List<StateEntry> outbox) { return ReleaseAll(slot, outbox, VehicleIds.None); }
+
+        // M4.3 Phase B: keepPassengerOf = the joint trip car whose passenger seat survives this slot's scene load.
+        public int ReleaseAll(byte slot, List<StateEntry> outbox, ushort keepPassengerOf)
         {
             int n = 0;
             var locks = new List<ushort>();
@@ -339,6 +342,7 @@ namespace TS2MP.Shared
             {
                 VehicleRecord r;
                 if (!TryGet(id, out r) || (r.Driver != slot && r.Passenger != slot)) continue;
+                if (id == keepPassengerOf && r.Passenger == slot && r.Driver != slot) continue;
                 if (r.Driver == slot) r.Driver = 0;
                 if (r.Passenger == slot) { r.Passenger = 0; r.Flags &= ~VehicleFlags.PassengerPending; _rideDeadline.Remove(id); }
                 if (Put(id, r, outbox)) n++;

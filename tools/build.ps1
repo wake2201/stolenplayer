@@ -51,6 +51,11 @@ Invoke-Csc 'TS2MP.InteractionTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.
 Invoke-Csc 'TS2MP.CarBoxTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.CarBoxTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\CarBoxTests.cs"))
 Invoke-Csc 'TS2MP.Player2Tests.exe' (@('/target:exe', "/out:$outTests\TS2MP.Player2Tests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\Player2Tests.cs"))
 Invoke-Csc 'TS2MP.Player2LifecycleTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.Player2LifecycleTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\Player2LifecycleTests.cs"))
+Invoke-Csc 'TS2MP.JointTravelTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.JointTravelTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\JointTravelTests.cs"))
+Invoke-Csc 'TS2MP.WorldIdentityTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.WorldIdentityTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\WorldIdentityTests.cs"))
+Invoke-Csc 'TS2MP.WorldMirrorTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.WorldMirrorTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\WorldMirrorTests.cs"))
+Invoke-Csc 'TS2MP.W3Tests.exe' (@('/target:exe', "/out:$outTests\TS2MP.W3Tests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\W3Tests.cs"))
+Invoke-Csc 'TS2MP.DurabilityTests.exe' (@('/target:exe', "/out:$outTests\TS2MP.DurabilityTests.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\DurabilityTests.cs"))
 Invoke-Csc 'FakeGame.exe' @('/target:exe', "/out:$outTests\FakeGame.exe", "$RepoRoot\tests\FakeGame.cs")
 Invoke-Csc 'TS2MP.RedirectTest.exe' (@('/target:exe', '/platform:x64', "/out:$outTests\TS2MP.RedirectTest.exe", "/r:$core\0Harmony.dll", "/r:$lnl") + $shared + @("$src\Plugin\PathRedirect.cs", "$RepoRoot\tests\RedirectTest.cs"))
 Copy-Item "$core\*.dll" $outTests -Force
@@ -103,6 +108,21 @@ if ($Test) {
     Write-Host "== player2 lifecycle integration tests (M4.3.3 hotfix, message sequencing)"
     & "$outTests\TS2MP.Player2LifecycleTests.exe"
     if ($LASTEXITCODE -ne 0) { throw "player2 lifecycle tests failed" }
+    Write-Host "== joint travel tests (M4.3 Phase B)"
+    & "$outTests\TS2MP.JointTravelTests.exe"
+    if ($LASTEXITCODE -ne 0) { throw "joint travel tests failed" }
+    Write-Host "== world identity tests (M5 W1)"
+    & "$outTests\TS2MP.WorldIdentityTests.exe"
+    if ($LASTEXITCODE -ne 0) { throw "world identity tests failed" }
+    Write-Host "== world-key mirror tests (M5 W2)"
+    & "$outTests\TS2MP.WorldMirrorTests.exe"
+    if ($LASTEXITCODE -ne 0) { throw "world mirror tests failed" }
+    Write-Host "== shared locker / dropped items / gear tests (M5 W3)"
+    & "$outTests\TS2MP.W3Tests.exe"
+    if ($LASTEXITCODE -ne 0) { throw "W3 tests failed" }
+    Write-Host "== storage durability tests (M5 W3.4)"
+    & "$outTests\TS2MP.DurabilityTests.exe"
+    if ($LASTEXITCODE -ne 0) { throw "durability tests failed" }
     Write-Host "== save redirect test (real game IL, outside Unity)"
     & "$outTests\TS2MP.RedirectTest.exe" $managed
     if ($LASTEXITCODE -ne 0) { throw "redirect test failed" }

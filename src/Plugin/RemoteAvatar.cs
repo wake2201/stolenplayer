@@ -21,7 +21,8 @@ namespace TS2MP.Plugin
 
         GameObject _go;
         Animation _anim;
-        string _idle, _walk, _run, _crouch, _sit, _current;
+        string _idle, _walk, _run, _crouch, _sit, _carry, _current;
+        public GameObject Root { get { return _go; } }
         float _smoothSpeed;
         public bool IsFallback { get; private set; }
         public Vector3 Position { get { return _go != null ? _go.transform.position : Vector3.zero; } }
@@ -163,7 +164,8 @@ namespace TS2MP.Plugin
             _run = names.Contains("Run") ? "Run" : (names.Contains("CarryRun") ? "CarryRun" : _walk);
             _crouch = names.Contains("Sneaking") ? "Sneaking" : null;
             _sit = names.Contains("Sitting") ? "Sitting" : null;   // original clip, also used by CodenameAI in cars
-            foreach (var n in new[] { _idle, _walk, _run, _crouch, _sit })
+            _carry = names.Contains("CarryRun") ? "CarryRun" : null; // W3C: original heavy-carry clip of the associate model
+            foreach (var n in new[] { _idle, _walk, _run, _crouch, _sit, _carry })
                 if (n != null) _anim[n].wrapMode = WrapMode.Loop;
             _anim.playAutomatically = false;
             _anim.cullingType = AnimationCullingType.AlwaysAnimate;
@@ -192,7 +194,9 @@ namespace TS2MP.Plugin
             bool running = (s.Flags & MoveFlags.Running) != 0;
 
             string clip; float speed = 1f;
-            if (crouch && _crouch != null) { clip = _crouch; speed = sp < 0.15f ? 0f : Mathf.Clamp(sp / crouchRef, 0.5f, 1.5f); }
+            // W3C heavy carry: the original CarryRun clip; standing still holds its carrying pose (clip paused)
+            if ((s.Gear & GearFlags.Carrying) != 0 && _carry != null) { clip = _carry; speed = sp < 0.2f ? 0f : Mathf.Clamp(sp / walkRef, 0.5f, 1.4f); }
+            else if (crouch && _crouch != null) { clip = _crouch; speed = sp < 0.15f ? 0f : Mathf.Clamp(sp / crouchRef, 0.5f, 1.5f); }
             else if (sp < 0.2f) clip = _idle ?? _walk;
             else if ((running && sp > walkRef * 1.15f) || sp > (walkRef + runRef) * 0.5f) { clip = _run; speed = Mathf.Clamp(sp / runRef, 0.6f, 1.5f); }
             else { clip = _walk; speed = Mathf.Clamp(sp / walkRef, 0.5f, 1.6f); }

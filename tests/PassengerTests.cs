@@ -30,7 +30,7 @@ static class PassengerTests
         Run("12 remote occupant presentation: driver and passenger anchors", Occupants);
         Run("13 E routing: passenger request vs driver handoff vs occupied", EnterRouting);
         Run("14 door rule: doors of a stopped occupied car open, moving car refused", DoorRule);
-        Run("15 Phase A travel guard: passenger or driver-with-passenger cannot travel", TravelGuard);
+        Run("15 travel guard (Phase B): passenger cannot choose a destination, driver with passenger travels jointly", TravelGuard);
         Run("16 holder leaves the region: seat stays logical, holder moves only to a present player", HolderLeaves);
         Run("17 codecs: record flags, proposal values, protocol 10", Codecs);
         Run("18 passenger seat geometry from the real SEAT_PROBE data", SeatGeometry);
@@ -316,7 +316,7 @@ static class PassengerTests
         var wh = Both(Madison);
         wh.Fleet.Claim(Ranger, 1, Madison, wh.Outbox);
         RideP(wh, Ranger, 1, 1); RideP(wh, Ranger, 2, 1.1);
-        Expect(wh.SeatTravelBlock(1) != null && wh.SeatTravelBlock(2) != null, "driver with passenger and the passenger are blocked");
+        Expect(wh.SeatTravelBlock(1) == null && wh.SeatTravelBlock(2) != null, "M4.3 Phase B: the passenger may not choose a destination, the driver may (joint travel)");
         uint rev; int sr; float sh;
         var p = new StateEntry { Scope = StateScope.Player, ScopeArg = 2, Key = WorldKeys.Travel, Value = new TravelRequest { Dest = Hideout, Car = VehicleIds.None, Pose = new ParkRecord { Region = Madison, Fuel = -1 } }.ToBytes() };
         Expect(wh.HandleProposal("cli", 2, ++_pid, p, 2, out rev, out sr, out sh) == ProposalCode.Busy, "client passenger travel refused by the host");
@@ -326,7 +326,8 @@ static class PassengerTests
         var c = ClientDriving(Madison);
         HostRide(c, Ranger, 1, 3); HostRide(c, Ranger, 2, 3.1);
         var q = new StateEntry { Scope = StateScope.Player, ScopeArg = 2, Key = WorldKeys.Travel, Value = new TravelRequest { Dest = Hillville, Car = Ranger, Pose = new ParkRecord { Region = Madison, Fuel = -1 } }.ToBytes() };
-        Expect(c.HandleProposal("cli", 2, ++_pid, q, 4, out rev, out sr, out sh) == ProposalCode.Busy && R(c, Ranger).Region == Madison, "client driver with the host aboard cannot leave with the car");
+        Expect(c.HandleProposal("cli", 2, ++_pid, q, 4, out rev, out sr, out sh) == ProposalCode.Accepted && R(c, Ranger).Region == Hillville && R(c, Ranger).Passenger == 1 && c.Joint.Active,
+            "M4.3 Phase B: the client driver with the host aboard leaves with the car as one joint journey (Phase A refused this)");
     }
 
     static void HolderLeaves()
@@ -347,7 +348,7 @@ static class PassengerTests
         Expect(VehicleRecord.TryParse(r.ToBytes(), out p) && p.PassengerPending && p.Tpp && p.Passenger == 2, "record round trip with the new flags");
         var b = r.ToBytes(); b[1] = 0x20;
         Expect(!VehicleRecord.TryParse(b, out p), "unknown record flag bits rejected");
-        Expect(ProtocolInfo.ProtocolVersion == 14 && ProtocolInfo.ModVersion == "0.7.1", "protocol 14 / mod 0.7.1");
+        Expect(ProtocolInfo.ProtocolVersion == 19 && ProtocolInfo.ModVersion == "0.10.4", "protocol 19 / mod 0.10.4");
         Expect(WorldKeys.VehicleRide == "vehicleRide", "key");
     }
 

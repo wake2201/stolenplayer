@@ -425,16 +425,29 @@ namespace TS2MP.Shared
 
         public readonly FleetBook Fleet;
         public readonly TravelDesk Travel;
+        public readonly JointTravel Joint;                           // M4.3 Phase B: driver + passenger journey
         public readonly VehicleMotion Motion = new VehicleMotion();   // M4.2.2: handoff only for settled cars
         public readonly CarBoxLease CarBox = new CarBoxLease();      // M4.3.2b: exclusive shared car storage
+        public readonly CarBoxLease Locker = new CarBoxLease();      // W3: exclusive shared hideout locker (same lease rules, registry arg 1)
         public Func<byte[]> CarBoxSnapshot;                          // host plugin: encoded CarBoxItems of the host's real storage, null if unavailable
+        public Func<byte[]> LockerSnapshot;                          // W3 host plugin: encoded CarBoxItems of the host's real locker counts
+        public readonly WorldItemBook Items = new WorldItemBook();   // W3: shared dropped items (host-authoritative registry)
+        public Func<byte, ItemTxnRequest, ProposalCode> ItemTxnHook; // W3 host plugin: Player-2 record / host journal side of an item transaction
+        public CarBoxLease Lease(byte kind) { return kind == StorageKind.Locker ? Locker : CarBox; }
         // M4.3.3: host plugin hooks (they touch the host's ItemID counters and the p2inv file); null = feature unavailable
         public Func<P2Inventory, ProposalCode> P2ReportHook;
         public Func<StorageTxnRequest, ProposalCode> StorageTxnHook;
         public delegate bool LiveParkFn(ushort id, out ParkRecord p);
         public LiveParkFn LivePark;   // M4.2.2: freshest pose/fuel known to the host plugin (own physics or last snapshot)
 
-        public WorldHost(uint epoch) { Reg = StateRegistry.CreateHost(epoch); Clocks = new RegionClockBook(Reg); Fleet = new FleetBook(Reg); Travel = new TravelDesk(Reg, Fleet); }
+        double _now;   // time of the call in progress (TravelDesk.Finished carries no time)
+
+        public WorldHost(uint epoch)
+        {
+            Reg = StateRegistry.CreateHost(epoch); Clocks = new RegionClockBook(Reg); Fleet = new FleetBook(Reg); Travel = new TravelDesk(Reg, Fleet);
+            Joint = new JointTravel(Reg, Fleet, Travel.Notes);
+            Travel.Finished = (slot, reqId, committed) => Joint.OnReservationEnded(slot, reqId, committed, _now, Outbox);
+        }
 
         int RegionOfSlot(byte s) { return RegionDirectory.RegionOf(Reg, s); }
 
@@ -494,11 +507,55 @@ namespace TS2MP.Shared
         }
 
         // M4.2: the host's own travel click, decided in place (same serialized path as client requests).
-        public TravelGrant HostTravel(uint id, TravelRequest req, double now)
+        public TravelGrant HostTravel(uint id, TravelRequest req, double now) { string refused; return HostTravel(id, req, now, out refused); }
+
+        // refused != null: nothing was decided or committed (the original menu stays open, like a refused client request).
+        public TravelGrant HostTravel(uint id, TravelRequest req, double now, out string refused)
         {
-            var g = Travel.Decide(HostSlot, id, req, RegionOfSlot(HostSlot), RegionOfSlot, now, Outbox);
+            _now = now;
+            bool joint;
+            refused = TravelCheck(HostSlot, req, out joint);
+            if (refused != null) { Joint.Refused++; return new TravelGrant { Id = id, Dest = req.Dest, Outcome = TravelOutcome.None }; }
+            return DecideTravel(HostSlot, id, req, joint, now);
+        }
+
+        TravelGrant DecideTravel(byte slot, uint id, TravelRequest req, bool joint, double now)
+        {
+            int origin = RegionOfSlot(slot);
+            byte passenger = 0;
+            if (joint) { VehicleRecord r; if (Fleet.TryGet(req.Car, out r)) passenger = r.Passenger; }
+            // The trip entry is committed BEFORE the car record moves to the destination: a client that applies the deltas
+            // over two frames must never see "car moved, no trip" (it would treat its passenger seat as invalid and leave it).
+            if (joint && passenger != 0) Joint.Begin(req.Car, slot, passenger, origin, req.Dest, id, now, Outbox);
+            var g = Travel.Decide(slot, id, req, origin, RegionOfSlot, now, Outbox);
+            if (joint && passenger != 0 && (g.Outcome != TravelOutcome.Carry || g.Car != req.Car))
+            {
+                LastNote = "joint travel expected Carry of car#" + req.Car + " but got " + g;   // TravelCheck mirrors Decide: not expected
+                Joint.Abort("the decision did not carry the car (" + g.Outcome + ")", now, Outbox);
+            }
             AfterFleetChange();
             return g;
+        }
+
+        // M4.3 Phase B (replaces the Phase A refusal): who may travel from a seat. A passenger never chooses the destination
+        // (the companion seat in the original game has no travel action); a driver with a confirmed passenger travels
+        // jointly when the car can be carried to the destination; otherwise the request is refused and nothing moves.
+        public string TravelCheck(byte slot, TravelRequest req, out bool joint)
+        {
+            joint = false;
+            if (Fleet.RiddenBy(slot) != VehicleIds.None) return "passenger: only the driver chooses the destination";
+            if (Joint.Blocks(slot)) return "joint journey " + Joint.Current.Id + " in progress";
+            var d = Fleet.DrivenBy(slot);
+            VehicleRecord r;
+            if (d == VehicleIds.None || !Fleet.TryGet(d, out r) || r.Passenger == 0) return null;   // solo travel: unchanged M4.2 rules
+            if (r.PassengerPending) return "passenger still getting in";
+            if (req.Car != d) return "request names car#" + req.Car + " but P" + slot + " drives car#" + d;
+            int origin = RegionOfSlot(slot);
+            if (origin == Regions.None || r.Region != origin || RegionOfSlot(r.Passenger) != origin) return "passenger not in the car's region";
+            if (CarBox.Owner == slot || CarBox.Owner == r.Passenger) return "car storage open by P" + CarBox.Owner;
+            if (!Travel.WouldCarry(slot, req, origin, RegionOfSlot)) return "car#" + d + " cannot be taken to " + Regions.Name(req.Dest) + " (destination car / special destination)";
+            joint = true;
+            return null;
         }
 
         // M4.2.2 driver handoff (client proposal "vehicleTake" or the host in place). The freshest pose/fuel is committed
@@ -518,6 +575,8 @@ namespace TS2MP.Shared
 
         public void PlayerDisconnected(byte slot, double now)
         {
+            _now = now;
+            Joint.OnDisconnect(slot, now, Outbox);
             Travel.Abort(slot, "P" + slot + " disconnected", Outbox);
             SetPlayerRegion(slot, Regions.None, now);
             AfterFleetChange();
@@ -525,17 +584,43 @@ namespace TS2MP.Shared
 
         public void Tick(double now)
         {
+            _now = now;
+            if (Joint.Active && Joint.Tick(now, Outbox)) AfterFleetChange();
             if (Travel.Pending > 0 && Travel.Expire(now, Outbox) > 0) AfterFleetChange();
             Fleet.ExpirePassengers(now, Outbox);
             if (CarBox.Expire(now)) CommitCarBox();
+            if (Locker.Expire(now)) CommitLease(StorageKind.Locker);
         }
 
         // ---- M4.3.2b shared car storage lease (host in place or client proposal "carboxReq") ----
         // A client grant first commits the host's current storage contents, then the lease; the proposal result follows both
         // (registry deltas precede results), so the client shows the host-authoritative contents in its original UI.
-        public ProposalCode CarBoxRequest(byte slot, CarBoxOp op, uint session, double now, out string why)
+        public ProposalCode CarBoxRequest(byte slot, CarBoxOp op, uint session, double now, out string why) { return StorageRequest(StorageKind.Car, slot, op, session, now, out why); }
+
+        // W3: the hideout locker uses the same exclusive lease and host-contents-before-grant rule; a client may open it only
+        // while it is in the hideout region (the original locker exists only in PlayerHideout).
+        public ProposalCode StorageRequest(byte kind, byte slot, CarBoxOp op, uint session, double now, out string why)
         {
             why = null;
+            if (kind == StorageKind.Locker)
+            {
+                if (op == CarBoxOp.Open && slot != HostSlot)
+                {
+                    if (RegionOfSlot(slot) != 0) { why = "requester is not in the hideout"; return ProposalCode.NotAuthorized; }
+                    if (Locker.Owner == 0)
+                    {
+                        var snap = LockerSnapshot != null ? LockerSnapshot() : null;
+                        if (snap == null) { why = "host locker contents unavailable"; return ProposalCode.Busy; }
+                        var ie = Reg.Commit(StateScope.Session, StorageKind.Locker, WorldKeys.CarBoxItems, snap);
+                        if (ie != null) Outbox.Add(ie);
+                    }
+                }
+                var lc = Locker.Request(slot, op, session, now);
+                if (lc == ProposalCode.Accepted) CommitLease(StorageKind.Locker);
+                if (lc == ProposalCode.Busy) why = "locker open by P" + Locker.Owner;
+                return lc;
+            }
+            if (op == CarBoxOp.Open && Joint.Blocks(slot)) { why = "joint journey in progress"; return ProposalCode.Busy; }   // M4.3 Phase B
             if (op == CarBoxOp.Open && slot != HostSlot)
             {
                 int region = RegionOfSlot(slot);
@@ -572,7 +657,7 @@ namespace TS2MP.Shared
         public ProposalCode StorageTransfer(byte slot, StorageTxnRequest t, double now)
         {
             if (slot != 2) return ProposalCode.NotAuthorized;
-            if (CarBox.Request(slot, CarBoxOp.Renew, t.Session, now) != ProposalCode.Unchanged) return ProposalCode.Stale;
+            if (Lease(t.Kind).Request(slot, CarBoxOp.Renew, t.Session, now) != ProposalCode.Unchanged) return ProposalCode.Stale;
             return StorageTxnHook != null ? StorageTxnHook(t) : ProposalCode.NotAuthorized;
         }
 
@@ -594,10 +679,30 @@ namespace TS2MP.Shared
         }
         static bool CarBox_TryParse(byte[] v, out CarBoxOp op, out uint session) { return TS2MP.Shared.CarBoxRequest.TryParse(v, out op, out session); }
 
-        void CommitCarBox()
+        void CommitCarBox() { CommitLease(StorageKind.Car); }
+        void CommitLease(byte kind)
         {
-            var e = Reg.Commit(StateScope.Session, 0, WorldKeys.CarBox, CarBox.State.ToBytes());
+            var e = Reg.Commit(StateScope.Session, kind, WorldKeys.CarBox, Lease(kind).State.ToBytes());
             if (e != null) Outbox.Add(e);
+        }
+
+        // ---- W3 shared dropped items ----
+        // One item transaction (host in place or client proposal "itemTxn"). The book decides validity (region, existence,
+        // single winner); the plugin hook applies the owner's inventory side (Player-2 record written durably, host journal)
+        // BEFORE the registry commit, so an accepted result means both sides are committed.
+        public ProposalCode ItemTransaction(byte slot, ItemTxnRequest t, double now, out string why)
+        {
+            why = null;
+            int region = RegionOfSlot(slot);
+            var code = Items.Check(slot, region, t, out why);
+            if (code != ProposalCode.Accepted) return code;
+            if (t.Op != ItemOp.Settle)
+            {
+                var h = ItemTxnHook != null ? ItemTxnHook(slot, t) : ProposalCode.NotAuthorized;
+                if (h != ProposalCode.Accepted) { why = "owner side " + h; return h; }
+            }
+            Items.Apply(slot, region, t, Reg, Outbox);
+            return ProposalCode.Accepted;
         }
 
         // ---- M4.3 passenger seat: op 1 = reserve, 2 = seated (confirm), 0 = leave. Host in place or client proposal.
@@ -607,21 +712,25 @@ namespace TS2MP.Shared
             switch (op)
             {
                 case 1: return Fleet.ReservePassenger(id, slot, RegionOfSlot(slot), Motion.Stopped(id, now), now, Outbox, out why);
-                case 2: { var c = Fleet.ConfirmPassenger(id, slot, Outbox); if (c == ProposalCode.NotAuthorized) why = "no reservation (expired or released)"; return c; }
-                case 0: return Fleet.ReleasePassenger(id, slot, Outbox);
+                case 2:
+                {
+                    var c = Fleet.ConfirmPassenger(id, slot, Outbox);
+                    if (c == ProposalCode.NotAuthorized) why = "no reservation (expired or released)";
+                    else if (Joint.Active && Joint.Current.Car == id && RegionOfSlot(slot) == Joint.Current.Dest) Joint.OnPassengerConfirmed(slot, now, Outbox);   // re-seated after a joint journey
+                    return c;
+                }
+                case 0:
+                    _now = now;
+                    if (Joint.Active && Joint.Current.Car == id) Joint.OnPassengerReleased(slot, now, Outbox);
+                    return Fleet.ReleasePassenger(id, slot, Outbox);
                 default: why = "unknown op"; return ProposalCode.Invalid;
             }
         }
 
-        // Phase A (M4.3): joint travel is not implemented yet. A passenger cannot travel alone while seated, and a driver with
-        // a passenger aboard cannot leave with the car; both are refused visibly instead of detaching or stranding anyone.
+        // Phase A name kept for diagnostics/tests: non-null while the slot may not choose a destination from its seat (passenger).
         public string SeatTravelBlock(byte slot)
         {
-            if (Fleet.RiddenBy(slot) != VehicleIds.None) return "you are a passenger: get out first (joint travel comes in the next stage)";
-            var d = Fleet.DrivenBy(slot);
-            VehicleRecord r;
-            if (d != VehicleIds.None && Fleet.TryGet(d, out r) && r.Passenger != 0) return "passenger aboard: joint travel comes in the next stage, let them get out first";
-            return null;
+            return Fleet.RiddenBy(slot) != VehicleIds.None ? "passenger: only the driver chooses the destination" : null;
         }
 
         public bool SetPlayerRegion(byte slot, int region, double now)
@@ -640,8 +749,15 @@ namespace TS2MP.Shared
             LastNote = Clocks.PlayerMoved(slot, exists ? prev : Regions.None, region, now, FallbackHours, Outbox);
             SleepOnMove(slot, region, now);
             if (CarBox.Release(slot)) CommitCarBox();                     // M4.3.2b: a storage session never survives a region change
-            if (region == Regions.None) Fleet.ReleaseAll(slot, Outbox);   // disconnect / menu: no lease survives
-            else Fleet.ReleasePassengerOutside(slot, region, Outbox);     // M4.3: a passenger is never seated in a car of another region
+            if (Locker.Release(slot)) CommitLease(StorageKind.Locker);    // W3: same for the hideout locker
+            Items.ReleaseSim(slot, Reg, Outbox);                          // W3: its original item objects are gone with its scene
+            if (exists && prev != region && prev != Regions.None && !RegionDirectory.Occupants(Reg).ContainsKey(prev))
+                Items.ClearRegion(prev, Reg, Outbox);                     // W3: region emptied = the original scene reload destroys its dropped items
+            _now = now;
+            Joint.OnRegion(slot, region, now, Outbox);                    // M4.3 Phase B: before any seat release (may end the trip)
+            // disconnect / menu: no lease survives - except the joint passenger's seat during its scene load
+            if (region == Regions.None) Fleet.ReleaseAll(slot, Outbox, Joint.KeepsSeat(slot) ? Joint.Current.Car : VehicleIds.None);
+            else Fleet.ReleasePassengerOutside(slot, region, Outbox);     // M4.3: never seated in a car of another region (a joint trip car is already at the destination)
             Travel.OnPlayerRegion(slot, region, Outbox);
             AfterFleetChange();
             return true;
@@ -709,12 +825,13 @@ namespace TS2MP.Shared
                 TravelRequest req;
                 if (p.ScopeArg != senderSlot) code = ProposalCode.NotAuthorized;
                 else if (!TravelRequest.TryParse(p.Value, out req) || !TravelRules.IsMenuDestination(req.Dest)) code = ProposalCode.Invalid;
-                else if (SeatTravelBlock(senderSlot) != null) { code = ProposalCode.Busy; LastNote = "travel P" + senderSlot + " refused: " + SeatTravelBlock(senderSlot); }
                 else
                 {
-                    Travel.Decide(senderSlot, id, req, RegionOfSlot(senderSlot), RegionOfSlot, now, Outbox);
-                    AfterFleetChange();
-                    code = ProposalCode.Accepted;
+                    _now = now;
+                    bool joint;
+                    string refused = TravelCheck(senderSlot, req, out joint);
+                    if (refused != null) { code = ProposalCode.Busy; Joint.Refused++; LastNote = "travel P" + senderSlot + " refused: " + refused; }
+                    else { DecideTravel(senderSlot, id, req, joint, now); code = ProposalCode.Accepted; }
                 }
             }
             else if (p.Scope == StateScope.Session && p.Key == WorldKeys.P2Report)
@@ -734,15 +851,22 @@ namespace TS2MP.Shared
             else if (p.Scope == StateScope.Session && p.Key == WorldKeys.CarBoxReq)
             {
                 CarBoxOp op; uint session; string why = null;
-                if (p.ScopeArg != 0 || !CarBox_TryParse(p.Value, out op, out session)) code = ProposalCode.Invalid;
-                else code = CarBoxRequest(senderSlot, op, session, now, out why);
-                LastNote = "carbox by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
+                if (!StorageKind.Valid(p.ScopeArg) || !CarBox_TryParse(p.Value, out op, out session)) code = ProposalCode.Invalid;
+                else code = StorageRequest((byte)p.ScopeArg, senderSlot, op, session, now, out why);
+                LastNote = StorageKind.Name(p.ScopeArg) + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
+            }
+            else if (p.Scope == StateScope.Session && p.Key == WorldKeys.ItemTxn)
+            {
+                ItemTxnRequest t = default(ItemTxnRequest); string why = null;
+                if (p.ScopeArg != 0 || !ItemTxnRequest.TryParse(p.Value, out t)) code = ProposalCode.Invalid;
+                else code = ItemTransaction(senderSlot, t, now, out why);
+                LastNote = "itemTxn " + t.Op + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
             }
             else if (p.Scope == StateScope.Player && p.Key == WorldKeys.TravelCancel)
             {
                 if (p.ScopeArg != senderSlot) code = ProposalCode.NotAuthorized;
                 else if (p.Value == null || p.Value.Length != 4) code = ProposalCode.Invalid;
-                else { code = Travel.Cancel(senderSlot, BitConverter.ToUInt32(p.Value, 0), Outbox); AfterFleetChange(); }
+                else { _now = now; code = Travel.Cancel(senderSlot, BitConverter.ToUInt32(p.Value, 0), Outbox); AfterFleetChange(); }
             }
             else if (p.Scope == StateScope.Region && p.Key == WorldKeys.SleepStart)
             {

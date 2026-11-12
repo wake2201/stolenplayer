@@ -424,9 +424,20 @@ namespace TS2MP.Shared
 
         public TravelDesk(StateRegistry reg, FleetBook fleet) { _reg = reg; _fleet = fleet; }
 
+        // M4.3 Phase B: reservation end (traveller slot, request id, true = committed at the destination, false = rolled back).
+        public Action<byte, uint, bool> Finished;
+
         void Note(string n) { if (Notes.Count < 32) Notes.Add(n); }
         public int Pending { get { return _res.Count; } }
         public bool HasReservation(byte slot) { return _res.ContainsKey(slot); }
+
+        // M4.3 Phase B: true when Decide would answer this request with Carry of req.Car (same rules, no side effects).
+        public bool WouldCarry(byte slot, TravelRequest req, int origin, Func<byte, int> regionOf)
+        {
+            if (!TravelRules.IsFleetRegion(req.Dest) || req.Dest == origin) return false;
+            if (TravelRules.OneCarRegion(req.Dest) && _fleet.AssignedTo(req.Dest) != VehicleIds.None) return false;
+            return Carriable(req.Car, slot, origin, regionOf);
+        }
 
         public bool Carriable(ushort car, byte slot, int origin, Func<byte, int> regionOf)
         {
@@ -542,6 +553,7 @@ namespace TS2MP.Shared
             if (_fleet.TryGet(r.Car, out v) && v.Reserved) { v.Flags &= ~VehicleFlags.Reserved; _fleet.Set(r.Car, v, outbox); }
             Commits++;
             Note("P" + r.Slot + " arrived in " + Regions.Name(r.Dest) + ": reservation #" + r.Id + " committed (" + r.Outcome + " car#" + r.Car + ")");
+            if (Finished != null) Finished(r.Slot, r.Id, true);
         }
 
         void Rollback(Res r, string why, List<StateEntry> outbox)
@@ -556,6 +568,7 @@ namespace TS2MP.Shared
             }
             Rollbacks++;
             Note("P" + r.Slot + " reservation #" + r.Id + " rolled back (" + why + "): car#" + r.Car + " stays in " + Regions.Name(r.Outcome == TravelOutcome.Carry ? r.PrevRegion : r.Dest));
+            if (Finished != null) Finished(r.Slot, r.Id, false);
         }
 
         public ProposalCode Cancel(byte slot, uint id, List<StateEntry> outbox)
@@ -581,6 +594,244 @@ namespace TS2MP.Shared
             if (old == null) return 0;
             foreach (var r in old) Rollback(r, "no arrival within " + TravelRules.ReservationTimeout + " s", outbox);
             return old.Count;
+        }
+    }
+
+    // ======================================================================== M4.3 Phase B joint travel
+    // One host-coordinated journey of one car with its driver and its seated passenger. The driver's original travel click
+    // is decided by the TravelDesk as a normal Carry (the driver's path is unchanged); the host then records the joint trip
+    // (registry "jointTrip", Session scope, arg 0). The passenger's instance starts its OWN original GameManager.Select<Dest>
+    // once the host has seen the driver leave the origin (phase Travelling), so a driver travel that is cancelled before
+    // departure never moves the passenger. Each instance loads at its own speed; the passenger is re-seated only when the
+    // car is live at the destination (driver arrived, seated, simulating it). The passenger seat stays assigned on the host
+    // through the scene loads (an unloaded scene is not an exit). Scene loads are not atomic across two processes: the trip
+    // is a recoverable logical transaction - rollback before the passenger departs, forward recovery (arrive on foot)
+    // after it. Invariants: one car identity, at most one driver, at most one passenger, no seat in a region nobody is in,
+    // no trip blocked forever (timeouts), terminal phases are never left (stale ids/messages cannot resurrect a trip).
+    public enum JointPhase : byte { None = 0, Authorized = 1, Travelling = 2, Arrived = 3, Committed = 4, Cancelled = 5, Failed = 6 }
+
+    [Flags]
+    public enum JointProgress : byte { None = 0, DriverLeft = 1, PassengerLeft = 2, DriverArrived = 4, PassengerArrived = 8, PassengerSeated = 16 }
+
+    // Registry value, 18 bytes, host-committed only.
+    public struct JointTrip
+    {
+        public uint Id;              // host-unique per host session (registry epoch)
+        public ushort Car;
+        public byte Driver, Passenger;
+        public int Origin, Dest;
+        public JointPhase Phase;
+        public JointProgress Progress;
+        public const int WireSize = 18;
+
+        public bool Active { get { return Phase == JointPhase.Authorized || Phase == JointPhase.Travelling || Phase == JointPhase.Arrived; } }
+        public bool Terminal { get { return Phase == JointPhase.Committed || Phase == JointPhase.Cancelled || Phase == JointPhase.Failed; } }
+        public bool Has(JointProgress p) { return (Progress & p) == p; }
+        public bool Involves(byte slot) { return slot != 0 && (slot == Driver || slot == Passenger); }
+
+        public byte[] ToBytes()
+        {
+            var w = new NetDataWriter();
+            w.Put(Id); w.Put(Car); w.Put(Driver); w.Put(Passenger); w.Put(Origin); w.Put(Dest); w.Put((byte)Phase); w.Put((byte)Progress);
+            return w.CopyData();
+        }
+
+        public static bool TryParse(byte[] b, out JointTrip t)
+        {
+            t = default(JointTrip);
+            if (b == null || b.Length != WireSize) return false;
+            t.Id = BitConverter.ToUInt32(b, 0); t.Car = BitConverter.ToUInt16(b, 4); t.Driver = b[6]; t.Passenger = b[7];
+            t.Origin = BitConverter.ToInt32(b, 8); t.Dest = BitConverter.ToInt32(b, 12); t.Phase = (JointPhase)b[16]; t.Progress = (JointProgress)b[17];
+            return t.Id != 0 && t.Car != VehicleIds.None && t.Driver >= 1 && t.Driver <= 2 && t.Passenger >= 1 && t.Passenger <= 2 && t.Driver != t.Passenger
+                && TravelRules.IsFleetRegion(t.Origin) && TravelRules.IsFleetRegion(t.Dest) && t.Origin != t.Dest
+                && t.Phase != JointPhase.None && (byte)t.Phase <= (byte)JointPhase.Failed && ((byte)t.Progress & 0xE0) == 0;
+        }
+
+        public override string ToString()
+        {
+            return "trip#" + Id + " car#" + Car + " P" + Driver + " drives, P" + Passenger + " rides, " + Regions.Name(Origin) + " -> " + Regions.Name(Dest) + " " + Phase + " (" + Progress + ")";
+        }
+    }
+
+    public enum JointStep : byte
+    {
+        None = 0,      // not a passenger of an active trip: normal behaviour
+        Hold = 1,      // seated in the origin, waiting for the driver to leave: keep seat + car presentation, freeze exit
+        Depart = 2,    // start the original Select<Dest> of this instance (once per trip id)
+        Wait = 3,      // loading / arrived: on-foot player kept frozen until the car is live at the destination
+        Seat = 4,      // ready: re-seat in the passenger seat (once), confirm to the host
+        Recover = 5    // forward recovery: complete on-foot player at the destination (seat released by the host)
+    }
+
+    public static class JointRules
+    {
+        public const double TripTimeout = 150;        // whole journey (both loads), below TravelRules.ReservationTimeout
+        public const double ArrivedTimeout = 30;      // both at the destination but the passenger not re-seated
+        public const double PassengerWaitSeconds = 40; // passenger side: arrived, car never became ready
+        public const double DepartStuckSeconds = 20;  // passenger side: Select invoked but the scene did not change
+
+        // Passenger-side decision (pure). departed = this instance already started its Select for t.Id.
+        public static JointStep Passenger(bool hasTrip, JointTrip t, byte me, int region, bool seatedInTripCar, bool departed, bool ready, bool timedOut)
+        {
+            if (!hasTrip || t.Passenger != me || me == 0) return departed ? JointStep.Recover : JointStep.None;
+            if (!departed)
+            {
+                if (!t.Active || region != t.Origin || !seatedInTripCar) return JointStep.None;   // in-origin failures: normal seat rules
+                return t.Has(JointProgress.DriverLeft) ? JointStep.Depart : JointStep.Hold;
+            }
+            if (region == Regions.None) return t.Terminal && t.Phase != JointPhase.Committed && timedOut ? JointStep.Recover : JointStep.Wait;
+            if (region != t.Dest) return region == t.Origin && !timedOut ? JointStep.Wait : JointStep.Recover;   // origin: scene not unloaded yet
+            if (t.Phase == JointPhase.Cancelled || t.Phase == JointPhase.Failed) return JointStep.Recover;
+            if (!TravelRules.SeatsOnArrival(t.Dest)) return JointStep.Recover;                   // hideout/Verwood/Auto Shop: the original arrives on foot
+            if (timedOut) return JointStep.Recover;
+            return ready ? JointStep.Seat : JointStep.Wait;
+        }
+
+        // The car is live at the destination exactly as the host records it: driver arrived, seated and simulating it, the
+        // passenger seat still assigned to this player, the local original object presented (observed) with its seat anchor,
+        // and a pose from the driver received after this instance arrived.
+        public static bool ReadyToSeat(VehicleRecord r, JointTrip t, byte me, int region, bool carPresented, bool anchor, bool freshPose)
+        {
+            return region == t.Dest && r.Region == t.Dest && !r.Reserved && r.Unlocked && r.Passenger == me && !r.PassengerPending
+                && r.Holder == t.Driver && r.Driver == t.Driver && carPresented && anchor && freshPose;
+        }
+    }
+
+    // Host-side joint trip bookkeeping (pure, host main thread, one trip at a time: there are two players).
+    public sealed class JointTravel
+    {
+        readonly StateRegistry _reg;
+        readonly FleetBook _fleet;
+        readonly List<string> _notes;
+        JointTrip _t; bool _has;
+        uint _reqId;   // the driver's travel request (TravelDesk reservation id) this trip belongs to
+        double _began, _arrivedAt, _travelAt;
+        uint _nextId;
+        public long Started, Committed, Cancelled, Failed, Refused;
+        public double LastDuration = -1;
+
+        public JointTravel(StateRegistry reg, FleetBook fleet, List<string> notes) { _reg = reg; _fleet = fleet; _notes = notes; }
+
+        void Note(string n) { if (_notes != null && _notes.Count < 32) _notes.Add(n); }
+        public bool Active { get { return _has && _t.Active; } }
+        public JointTrip Current { get { return _t; } }
+        public bool Blocks(byte slot) { return Active && _t.Involves(slot); }
+
+        // The passenger seat of the trip car stays assigned while that passenger loads (region None) or is at the destination.
+        public bool KeepsSeat(byte slot) { return Active && slot == _t.Passenger; }
+
+        void Commit(List<StateEntry> outbox)
+        {
+            var e = _reg.Commit(StateScope.Session, 0, WorldKeys.JointTrip, _t.ToBytes());
+            if (e != null && outbox != null) outbox.Add(e);
+        }
+
+        public JointTrip Begin(ushort car, byte driver, byte passenger, int origin, int dest, uint requestId, double now, List<StateEntry> outbox)
+        {
+            _reqId = requestId;
+            _t = new JointTrip { Id = ++_nextId, Car = car, Driver = driver, Passenger = passenger, Origin = origin, Dest = dest, Phase = JointPhase.Authorized };
+            _has = true; _began = now; _arrivedAt = -1; _travelAt = -1;
+            Started++;
+            Commit(outbox);
+            Note("JOINT " + _t + ": authorized (passenger departs when the driver leaves " + Regions.Name(origin) + ")");
+            return _t;
+        }
+
+        void End(JointPhase phase, string why, double now, List<StateEntry> outbox)
+        {
+            if (!Active) return;
+            bool releaseSeat = phase != JointPhase.Committed || !TravelRules.SeatsOnArrival(_t.Dest);
+            _t.Phase = phase;
+            if (phase == JointPhase.Committed) { Committed++; LastDuration = now - _began; }
+            else if (phase == JointPhase.Cancelled) Cancelled++;
+            else Failed++;
+            if (releaseSeat)
+            {
+                VehicleRecord r;
+                if (_fleet.TryGet(_t.Car, out r) && r.Passenger == _t.Passenger) _fleet.ReleasePassenger(_t.Car, _t.Passenger, outbox);
+            }
+            Commit(outbox);
+            Note("JOINT trip#" + _t.Id + " " + phase + " after " + (now - _began).ToString("0.0") + " s (" + why + ")" + (releaseSeat ? ": passenger seat released" : ": P" + _t.Passenger + " seated in car#" + _t.Car));
+        }
+
+        void Mark(JointProgress p) { _t.Progress |= p; }
+
+        void Advance(double now, List<StateEntry> outbox)
+        {
+            var before = _t.Phase;
+            if (_t.Phase == JointPhase.Authorized && _t.Has(JointProgress.DriverLeft)) { _t.Phase = JointPhase.Travelling; _travelAt = now; }
+            if (_t.Phase == JointPhase.Travelling && _t.Has(JointProgress.DriverArrived | JointProgress.PassengerArrived)) { _t.Phase = JointPhase.Arrived; _arrivedAt = now; }
+            if (_t.Phase == JointPhase.Arrived)
+            {
+                if (!TravelRules.SeatsOnArrival(_t.Dest)) { End(JointPhase.Committed, "both arrived; original arrival on foot at " + Regions.Name(_t.Dest), now, outbox); return; }
+                if (_t.Has(JointProgress.PassengerSeated)) { End(JointPhase.Committed, "both arrived, passenger re-seated", now, outbox); return; }
+            }
+            if (_t.Phase != before) Note("JOINT trip#" + _t.Id + " " + before + " -> " + _t.Phase + " at " + (now - _began).ToString("0.0") + " s (" + _t.Progress + ")");
+        }
+
+        // Called from WorldHost.SetPlayerRegion before any seat release for that region change.
+        public void OnRegion(byte slot, int region, double now, List<StateEntry> outbox)
+        {
+            if (!Active || !_t.Involves(slot)) return;
+            bool driver = slot == _t.Driver;
+            var left = driver ? JointProgress.DriverLeft : JointProgress.PassengerLeft;
+            var arrived = driver ? JointProgress.DriverArrived : JointProgress.PassengerArrived;
+            if (region == _t.Origin)
+            {
+                if (_t.Has(left)) End(JointPhase.Failed, "P" + slot + " returned to " + Regions.Name(region), now, outbox);
+                return;
+            }
+            if (region == Regions.None)
+            {
+                // the passenger departs only after the driver left: an earlier unload (main menu, quit) is not this journey
+                if (!driver && !_t.Has(JointProgress.DriverLeft)) { End(JointPhase.Cancelled, "P" + slot + " left before the driver departed", now, outbox); return; }
+                Mark(left); Advance(now, outbox); if (Active) Commit(outbox); return;
+            }
+            if (region == _t.Dest) { Mark(left | arrived); Advance(now, outbox); if (Active) Commit(outbox); return; }
+            End(JointPhase.Failed, "P" + slot + " arrived in " + Regions.Name(region) + " instead of " + Regions.Name(_t.Dest), now, outbox);
+        }
+
+        // The driver's TravelDesk reservation ended: a rollback (cancel, timeout, disconnect, wrong region) ends the trip.
+        public void OnReservationEnded(byte slot, uint requestId, bool committed, double now, List<StateEntry> outbox)
+        {
+            if (!Active || slot != _t.Driver || committed || requestId != _reqId) return;   // an older, superseded reservation is not this trip
+            End(_t.Has(JointProgress.PassengerLeft) ? JointPhase.Failed : JointPhase.Cancelled, "the driver's travel reservation was rolled back", now, outbox);
+        }
+
+        public void OnPassengerConfirmed(byte slot, double now, List<StateEntry> outbox)
+        {
+            if (!Active || slot != _t.Passenger || !_t.Has(JointProgress.PassengerArrived)) return;
+            Mark(JointProgress.PassengerSeated);
+            Advance(now, outbox);
+            if (Active) Commit(outbox);
+        }
+
+        // A seat release by the passenger always wins (it raced the decision, or its instance gave up waiting).
+        public void OnPassengerReleased(byte slot, double now, List<StateEntry> outbox)
+        {
+            if (!Active || slot != _t.Passenger) return;
+            End(_t.Has(JointProgress.PassengerLeft) ? JointPhase.Failed : JointPhase.Cancelled, "the passenger left the seat", now, outbox);
+        }
+
+        public void Abort(string why, double now, List<StateEntry> outbox)
+        {
+            if (!Active) return;
+            End(_t.Has(JointProgress.PassengerLeft) ? JointPhase.Failed : JointPhase.Cancelled, why, now, outbox);
+        }
+
+        public void OnDisconnect(byte slot, double now, List<StateEntry> outbox)
+        {
+            if (!Active || !_t.Involves(slot)) return;
+            bool beforeDeparture = !_t.Has(JointProgress.PassengerLeft) && slot == _t.Passenger;
+            End(beforeDeparture ? JointPhase.Cancelled : JointPhase.Failed, "P" + slot + " disconnected", now, outbox);
+        }
+
+        public bool Tick(double now, List<StateEntry> outbox)
+        {
+            if (!Active) return false;
+            if (now - _began > JointRules.TripTimeout) { End(JointPhase.Failed, "no arrival within " + JointRules.TripTimeout + " s", now, outbox); return true; }
+            if (_t.Phase == JointPhase.Arrived && _arrivedAt >= 0 && now - _arrivedAt > JointRules.ArrivedTimeout) { End(JointPhase.Failed, "passenger not re-seated within " + JointRules.ArrivedTimeout + " s of arrival", now, outbox); return true; }
+            return false;
         }
     }
 
@@ -809,6 +1060,28 @@ namespace TS2MP.Shared
     }
 
     // Candidate positions around an anchor for safe player placement (pure; the plugin applies the Unity checks).
+    // M5 hotfix: when an on-foot player counts as lost below the map (VehicleSync.FallGuard). Conservative: no legitimate
+    // movement in TS2 keeps a player airborne for 3 s while 60 m below where it last stood; without a grounded reference
+    // only far below every map. Bounded recoveries prevent a teleport loop.
+    public static class FallRules
+    {
+        public const double MinAirSeconds = 3.0, MinInterval = 10.0;
+        public const float MaxDrop = 60f, AbsoluteFloor = -500f;
+        public const int MaxPerRegion = 3;
+
+        public static bool IsLost(double airborneSeconds, float feetY, bool hasSafe, float safeY)
+        {
+            if (float.IsNaN(feetY) || float.IsInfinity(feetY)) return true;
+            if (airborneSeconds < MinAirSeconds) return false;
+            return hasSafe ? feetY < safeY - MaxDrop : feetY < AbsoluteFloor;
+        }
+
+        public static bool MayRecover(int recoveriesThisRegion, double sinceLastRecovery)
+        {
+            return recoveriesThisRegion < MaxPerRegion && sinceLastRecovery >= MinInterval;
+        }
+    }
+
     public static class SpawnPlanner
     {
         public static readonly float[] Radii = { 2.0f, 3.0f, 4.5f };

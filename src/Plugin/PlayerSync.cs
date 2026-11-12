@@ -38,6 +38,12 @@ namespace TS2MP.Plugin
         CharacterController _cc;
         FieldInfo _fCC, _fPMB, _fCam, _fInVehicle, _fHiding, _fGrounded, _fMoving, _fRunning, _fCrouching;
         float _walkRef = 2.5f, _runRef = 5f, _crouchRef = 1.5f;
+        // W3C/W3D local presentation state (compiled accessors, read at the send rate only)
+        Func<object, bool> _torch, _carrying; Func<object, int> _held, _pickItemId, _itemAmount; Func<object, object> _carryItem, _psItems2; Type _pickT;
+        static int _attacks;                    // W3.1: original attacks of the local player (PlayerScript.Attack postfix)
+        Harmony _h;
+        Transform _carryT; ushort _carryId;
+        RemoteGear _gear;
         float _nextProbe;
         bool _localPresent;
 
@@ -96,6 +102,18 @@ namespace TS2MP.Plugin
             _fMoving = AccessTools.Field(_pmbType, "isMoving");
             _fRunning = AccessTools.Field(_pmbType, "isRunning");
             _fCrouching = AccessTools.Field(_pmbType, "isCrouching");
+            _torch = Fast.Getter<bool>(_psType, "torch"); _carrying = Fast.Getter<bool>(_psType, "isCarrying"); _held = Fast.Getter<int>(_psType, "currentItem");
+            _carryItem = Fast.Getter<object>(_psType, "CarryItem"); _pickT = AccessTools.TypeByName("Pickupable"); _pickItemId = Fast.Getter<int>(_pickT, "item_ID");
+            if (_torch == null || _carrying == null || _held == null || _carryItem == null || _pickItemId == null) _log.Warn("SYNC gear fields not found (held tool / carry / flashlight presentation degraded)");
+            _psItems2 = Fast.Getter<object>(_psType, "item_IDs2"); _itemAmount = Fast.Getter<int>(AccessTools.TypeByName("ItemID"), "item_amount");
+            try
+            {
+                var atk = AccessTools.Method(_psType, "Attack", Type.EmptyTypes);   // IEnumerator factory, called once per original attack (PlayerScript.Update IL_3994)
+                if (atk != null) { _h = new Harmony("com.ts2mp.multiplayer.gear"); _h.Patch(atk, null, new HarmonyMethod(AccessTools.Method(typeof(PlayerSync), "AttackPostfix"))); }
+                else _log.Warn("SYNC PlayerScript.Attack not found: remote swing not shown");
+            }
+            catch (Exception ex) { _log.Error("SYNC attack hook failed (remote swing not shown)", ex); }
+            try { _gear = new RemoteGear(_log); } catch (Exception ex) { _log.Error("AVATAR_GEAR init failed (held/carried objects not shown)", ex); _gear = null; }
             var missing = new[] { "CC", "PMB", "MainCam", "is_in_vehicle", "isHiding", "isGrounded", "isMoving", "isRunning", "isCrouching" }
                 .Where((n, i) => new[] { _fCC, _fPMB, _fCam, _fInVehicle, _fHiding, _fGrounded, _fMoving, _fRunning, _fCrouching }[i] == null).ToArray();
             if (missing.Length > 0) _log.Warn("SYNC fields not found (state degraded): " + string.Join(",", missing));
@@ -122,7 +140,7 @@ namespace TS2MP.Plugin
                 _nextStats = Now + 30;
                 if (_node.IsConnected)
                     _log.Info("SYNC_STATS sent=" + _sent + " accepted=" + _accepted + " stale=" + (_stale + _buffer.StaleDropped) + " invalid=" + _invalid + " wrongSlot=" + _wrongSlot
-                        + " buffer=" + _buffer.Count + " view=" + _view + " clip=" + (_avatar != null ? _avatar.CurrentClip : "-") + " localScene=" + _sceneKey + " remoteScene=" + _remoteSceneKey);
+                        + " buffer=" + _buffer.Count + " view=" + _view + " clip=" + (_avatar != null ? _avatar.CurrentClip : "-") + " gear " + (_gear != null ? _gear.Status : "off") + " localScene=" + _sceneKey + " remoteScene=" + _remoteSceneKey);
             }
         }
 
@@ -225,11 +243,52 @@ namespace TS2MP.Plugin
                 s.Pos = new Vec3(feet.x, feet.y, feet.z);
                 s.Yaw = yaw;
                 s.Flags = flags;
+                ReadGear(ref s, cam);
             }
             _w.Reset();
             PlayerStateCodec.Write(_w, s);
             _node.Send(_w, DeliveryMethod.Sequenced, SessionNode.ChannelState);
             _sent++;
+        }
+
+        // W3C/W3D: flashlight (PlayerScript.torch), held tool (currentItem), heavy carry (isCarrying + CarryItem's
+        // Pickupable.item_ID, resolved once per carried object), camera pitch.
+        void ReadGear(ref PlayerSnapshot s, Camera cam)
+        {
+            try
+            {
+                if (cam != null) s.Pitch = PlayerStateCodec.QuantizePitch(cam.transform.eulerAngles.x);
+                var g = GearFlags.None;
+                if (_torch != null && _torch(_ps)) g |= GearFlags.Torch;
+                var items = _psItems2 != null ? _psItems2(_ps) as Array : null;   // item_IDs2[3] = flashlight (ownership, PlayerScript.Update IL_37c0)
+                if (items != null && items.Length > 3 && items.GetValue(3) != null && _itemAmount(items.GetValue(3)) > 0) g |= GearFlags.HasLight;
+                s.Swing = (byte)(_attacks & 0x0F);
+                if (_carrying != null && _carrying(_ps))
+                {
+                    g |= GearFlags.Carrying;
+                    var t = _carryItem != null ? _carryItem(_ps) as Transform : null;
+                    if (!ReferenceEquals(t, _carryT))
+                    {
+                        _carryT = t; _carryId = 0;
+                        var p = t != null ? t.GetComponent(_pickT) : null;
+                        if (p != null) { int id = _pickItemId(p); if (id >= 0 && id < ushort.MaxValue) _carryId = (ushort)(id + 1); }
+                    }
+                    s.CarryItem = _carryId;
+                }
+                s.Gear = g;
+                int held = _held != null ? _held(_ps) : 0;
+                s.Held = held >= 0 && held <= 255 ? (byte)held : (byte)0;
+            }
+            catch { }
+        }
+
+        static void AttackPostfix() { unchecked { _attacks++; } }
+
+        // W3.1: procedural arm pose of the remote avatar (after the legacy Animation evaluated this frame).
+        public void LateUpdate()
+        {
+            if (_gear == null || _avatar == null || !_avatar.Visible) return;
+            try { _gear.LateFrame(Time.deltaTime); } catch (Exception ex) { _log.Error("AVATAR_GEAR arm pose failed (disabled)", ex); _gear = null; }
         }
 
         // ---------------- receiving ----------------
@@ -317,6 +376,7 @@ namespace TS2MP.Plugin
             {
                 _avatar.Apply(sample, Time.unscaledDeltaTime, _cfg.YawOffset, _walkRef, _runRef, _crouchRef);
                 _avatar.SetVisible(true);
+                if (_gear != null && !_avatar.IsFallback) { try { _gear.Apply(_avatar.Root, sample, _ps); } catch (Exception ex) { _log.Error("AVATAR_GEAR presentation failed (disabled)", ex); _gear = null; } }
             }
         }
 
@@ -338,6 +398,7 @@ namespace TS2MP.Plugin
             }
             _avatar.ApplySeated(anchorPos, anchorRot, codenameRoot);
             _avatar.SetVisible(true);
+            if (_gear != null) { try { _gear.Seated(_avatar.Root); } catch (Exception ex) { _log.Error("AVATAR_GEAR seated presentation failed (disabled)", ex); _gear = null; } }
             _seatFrame = Time.frameCount;
         }
 
@@ -391,6 +452,7 @@ namespace TS2MP.Plugin
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
             DestroyAvatar("shutdown");
+            if (_h != null) { _h.UnpatchSelf(); _h = null; }
         }
     }
 }

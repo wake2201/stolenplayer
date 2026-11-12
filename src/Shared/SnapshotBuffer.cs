@@ -13,6 +13,11 @@ namespace TS2MP.Shared
         public float HorizontalSpeed; // m/s, derived from the bracketing snapshots
         public MoveFlags Flags;
         public bool Snapped;          // true when a teleport/gap was crossed (no interpolation)
+        public float Pitch;           // W3: camera pitch (degrees), from the same snapshot as Flags
+        public GearFlags Gear;        // W3: flashlight / heavy carry
+        public byte Held;             // W3: PlayerScript.currentItem
+        public ushort CarryItem;      // W3: item_ID + 1 of the carried heavy object
+        public byte Swing;            // W3.1: attack counter (one remote swing per change)
     }
 
     public sealed class SnapshotBuffer
@@ -115,6 +120,7 @@ namespace TS2MP.Shared
         static void Fill(ref RemoteSample r, PlayerSnapshot flagsFrom, Vec3 pos, float yaw, float speed, bool snapped)
         {
             r.Pos = pos; r.Yaw = yaw; r.HorizontalSpeed = speed; r.Flags = flagsFrom.Flags; r.Snapped = snapped;
+            r.Pitch = flagsFrom.Pitch; r.Gear = flagsFrom.Gear; r.Held = flagsFrom.Held; r.CarryItem = flagsFrom.CarryItem; r.Swing = flagsFrom.Swing;
         }
 
         // Shortest-path angle interpolation in degrees, result in [0,360).

@@ -1,6 +1,7 @@
-// W4.2B.1 developer test mode (manual two-instance QA only). Reachable ONLY from the developer launcher's "devtest"
-// command (-ts2mp-devtest argument, launcher mode, loopback host/client); the F8 mode of the release never parses it and the
-// release package contains no launcher. Never active otherwise.
+// W4.2B.1 developer test mode (manual QA only). Two explicit entry points, never active otherwise:
+//   - the developer launcher's "devtest" command (-ts2mp-devtest argument, launcher mode, loopback host/client);
+//   - W4.2B.2: the F8 menu's "multiplayer test campaign" (host: prepared in the main menu before loading, isolated save copy
+//     in <data>/testcampaign; Player 2: when the host's Welcome carries the test flag, test sandbox in <data>/testcampaign).
 //
 // Isolation (Plugin.Awake, before anything touches persistence):
 //   - every TS2MP data file (Player-2 record p2inv-*, p2spawn-*, fleet-*, client sandbox, logs) lives in <data>\devtest;
@@ -24,7 +25,7 @@ namespace TS2MP.Plugin
 {
     internal sealed class DevTestMode
     {
-        public const int MoneyFloor = 250000, MoneyTopUp = 1000000;
+        public const int MoneyFloor = 1000000, MoneyTopUp = 2000000;   // W4.2B.2: at least 1,000,000 test money
         internal static DevTestMode Instance;
 
         readonly InstanceLog _log;
@@ -43,7 +44,8 @@ namespace TS2MP.Plugin
             return a != null && NetConfig.IsLoopback(a.BindAddress) && NetConfig.IsLoopback(a.ConnectAddress) && a.JoinKey == null;
         }
 
-        public DevTestMode(InstanceLog log)
+        public DevTestMode(InstanceLog log) : this(log, "developer launcher") { }
+        public DevTestMode(InstanceLog log, string origin)
         {
             _log = log;
             _gmT = AccessTools.TypeByName("GameManager"); _psT = AccessTools.TypeByName("PlayerScript"); _smT = AccessTools.TypeByName("Skill_Manager");
@@ -68,7 +70,7 @@ namespace TS2MP.Plugin
                 catch (Exception ex) { skillsOk = false; _log.Error("DEVTEST Skill_Manager.Start hook failed", ex); }
             }
             _skillsOk = skillsOk;
-            _log.Warn("DEVTEST MODE ACTIVE (developer launcher only): isolated test saves, all skills " + (skillsOk ? "unlocked on every world load" : "NOT available (original skill API missing)")
+            _log.Warn("DEVTEST MODE ACTIVE (" + origin + "): isolated test saves, all skills " + (skillsOk ? "unlocked on every world load" : "NOT available (original skill API missing)")
                 + ", money kept >= " + MoneyFloor + (_money != null && _setMoney != null ? "" : " (NOT available: PlayerScript.moneyAm missing)") + ". Never use this for a real campaign.");
         }
 

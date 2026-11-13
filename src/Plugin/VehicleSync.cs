@@ -138,7 +138,7 @@ namespace TS2MP.Plugin
 
         // One original wheel transform (EVP.Wheel.wheelTransform) in car-local terms: rest rotation, axle and steering axis of
         // its wheel collider, rolling radius.
-        sealed class WheelVis { public Transform T; public Quaternion RestRel; public Vector3 AxleL, UpL; public float Radius, Spin; public bool Steers; }
+        sealed class WheelVis { public Transform T; public Quaternion RestRel; public Vector3 AxleL, UpL; public float Radius, Spin; public bool Steers; public WheelCollider Col; }
 
         // Observer-side movement memory of one remote car (from accepted snapshots).
         sealed class RemoteMotion
@@ -227,6 +227,7 @@ namespace TS2MP.Plugin
             world.ProposalResultHook = OnProposalResult;
             SleepPresenter.PassengerSeated = () => _ride != null && _ride.Stage == RideStage.Seated;   // M4.3.3 sleep presentation context
             if (_host && world.Host != null) world.Host.LivePark = LivePark;
+            InstallLegsHook();
             _log.Info("VEHICLE_INIT role=" + node.Role + " api=" + (_ok ? "ok" : "MISSING") + " travelHooks=" + (_hooks ? TravelHooks.Patched + " methods" : "off")
                 + " carFields=" + string.Join(",", _vmCars.Select(k => k.Key).ToArray()) + " travelMenuKey=" + _cfg.TravelMenuKey
                 + " jointTravel=" + (_hooks ? TravelHooks.SelectByDest.Count + " destinations, passengerMenuGuard=" + (TravelHooks.TownSelectionPatched ? "on" : "OFF") : "off"));
@@ -1279,7 +1280,7 @@ namespace TS2MP.Plugin
                     var ct = wc.transform;
                     float radius = wc.radius * Mathf.Abs(ct.lossyScale.y);
                     if (radius < 0.05f) continue;
-                    list.Add(new WheelVis { T = t, RestRel = inv * t.rotation, AxleL = inv * ct.right, UpL = inv * ct.up, Radius = radius, Steers = _wSteer != null && (bool)_wSteer.GetValue(w) });
+                    list.Add(new WheelVis { T = t, RestRel = inv * t.rotation, AxleL = inv * ct.right, UpL = inv * ct.up, Radius = radius, Steers = _wSteer != null && (bool)_wSteer.GetValue(w), Col = wc });
                 }
                 if (list.Count > 0) lc.Wheels = list.ToArray();
             }
@@ -1501,8 +1502,31 @@ namespace TS2MP.Plugin
                     if (w.T == null) continue;
                     w.Spin = (w.Spin + d / w.Radius * Mathf.Rad2Deg) % 360f;
                     w.T.rotation = rot * (Quaternion.AngleAxis(w.Steers ? lc.Steer : 0f, w.UpL) * Quaternion.AngleAxis(w.Spin, w.AxleL) * w.RestRel);
+                    if (w.Col != null) SuspensionPose(w);
                 }
             }
+        }
+
+        // W4.2B.2: wheel height of an observed car. The paused EVP.VehicleController no longer places wheelTransform, so the
+        // wheels kept the pose from the last time THIS instance simulated the car (or the prefab pose) while the body follows
+        // the driver's physics pose -> wheels off the road, the car looked lifted on the observer's screen. Mirror of EVP's
+        // own visual wheel placement (VehicleController.UpdateTransform IL_0127..IL_024a, origin from UpdateSuspension
+        // IL_0017..IL_002e): ray from collider.transform.TransformPoint(center) along -up, length suspensionDistance + radius,
+        // layer mask -5, triggers ignored; hit -> d = distance - 0.95 x radius, none -> d = suspensionDistance + 0.05 x radius;
+        // wheel position = collider.transform.position - up x d. Same geometry and ground as the driver's EVP, no offsets.
+        static void SuspensionPose(WheelVis w)
+        {
+            var wc = w.Col; var ct = wc.transform;
+            Vector3 up = ct.up, origin = ct.TransformPoint(wc.center);
+            float susp = wc.suspensionDistance, r = wc.radius, dist;
+            RaycastHit hit;
+            if (Physics.Raycast(origin, -up, out hit, susp + r, -5, QueryTriggerInteraction.Ignore))
+            {
+                if (Physics.GetIgnoreLayerCollision(wc.gameObject.layer, hit.collider.gameObject.layer)) return;   // EVP uses the physics compression here: keep the pose
+                dist = hit.distance - r * 0.95f;
+            }
+            else dist = susp + r * 0.05f;
+            w.T.position = ct.position - up * dist;
         }
 
         // ---- M5.0 car doors: original Door components, host-committed state ("vdoor") ----
@@ -3101,8 +3125,41 @@ namespace TS2MP.Plugin
             _costTicks = 0; _costMax = 0; _frames = 0; _rideFootTicks = 0;
         }
 
+        // ---- W4.2B.2 first-person legs of a seated passenger ----
+        // Original LegsController.Update (IL_0001..IL_0053) hides its legsObj only while PS.is_in_vehicle (set by the driver's
+        // CarController.EnterVehicle IL_00d4), a drone, hiding, or a disabled PlayerMotorBehavior; otherwise it re-activates the
+        // legs every frame. The passenger adapter must not set is_in_vehicle (it drives CarController exit / storage / input
+        // logic of the driver), so the original legs stayed visible below the passenger's first-person camera. Postfix: while
+        // the local player is seated as a passenger, apply the original in-vehicle outcome (legsObj inactive). Nothing else.
+        static VehicleSync _legsOwner;
+        static Func<object, GameObject> _legsObj;
+        static Harmony _legsHarmony;
+        void InstallLegsHook()
+        {
+            _legsOwner = this;
+            if (_legsHarmony != null) return;
+            try
+            {
+                var lt = AccessTools.TypeByName("LegsController");
+                var upd = lt != null ? AccessTools.Method(lt, "Update") : null;
+                _legsObj = lt != null ? Fast.Getter<GameObject>(lt, "legsObj") : null;
+                if (upd == null || _legsObj == null) { _log.Warn("PASSENGER LegsController.Update / legsObj not found: first-person legs of a seated passenger stay visible"); return; }
+                _legsHarmony = new Harmony("com.ts2mp.multiplayer.passengerlegs");
+                _legsHarmony.Patch(upd, postfix: new HarmonyMethod(AccessTools.Method(typeof(VehicleSync), "LegsPostfix")));
+            }
+            catch (Exception ex) { _log.Warn("PASSENGER legs hook failed: " + ex.Message); }
+        }
+        static void LegsPostfix(object __instance)
+        {
+            var o = _legsOwner;
+            if (o == null || o._ride == null || o._ride.Stage != RideStage.Seated) return;
+            var legs = _legsObj(__instance);
+            if (legs != null && legs.activeSelf) legs.SetActive(false);
+        }
+
         public void Dispose()
         {
+            if (ReferenceEquals(_legsOwner, this)) _legsOwner = null;   // the postfix becomes a no-op (vanilla legs)
             _node.MessageReceived -= OnMessage;
             _node.RemoteDisconnected -= OnRemoteDisconnected;
             _node.RemoteConnected -= OnRemoteConnected;

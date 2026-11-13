@@ -211,6 +211,23 @@ namespace TS2MP.Plugin
         int _gc0, _gc1, _gc2; long _netOut0, _netIn0; long _frameTicks;
         GUIStyle _style, _tagStyle;
 
+        // W4.2B.2 F8 multiplayer test campaign: every TS2MP record of this process (Player-2 record, spawn, fleet, client
+        // pending file) moves to <data>\testcampaign, and the test conveniences start. Called by the F8 menu after the save
+        // isolation is armed and BEFORE the session's systems are built; process-sticky.
+        internal void EnableTestCampaign(string testDataDir, string who)
+        {
+            _settings.DataDir = testDataDir;
+            if (_devTest == null)
+            {
+                try { _devTest = new DevTestMode(_log, "F8 multiplayer test campaign, " + who); }
+                catch (Exception ex) { _log.Error("DEVTEST init failed (test conveniences off; isolation stays active)", ex); _devTest = null; }
+            }
+            _testCampaign = true;
+            _log.Warn("TEST_CAMPAIGN active (" + who + "): records in " + testDataDir + "; genuine saves and normal multiplayer records are not used by this process");
+        }
+        bool _testCampaign;
+        internal bool TestCampaignActive { get { return _testCampaign; } }
+
         internal SessionNode Node { get { return _node; } }
         internal WorldSync World { get { return _world; } }
         internal Player2Sync P2 { get { return _p2; } }

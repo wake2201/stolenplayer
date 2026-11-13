@@ -55,6 +55,9 @@ namespace TS2MP.Shared
         // N1.2 host: null = gameplay-ready; otherwise the reason new joins are refused (RejectCode.HostNotReady, retryable).
         // Checked at the connection request and again right before Welcome. Null delegate = always ready (launcher dev mode).
         public Func<string> HostGate;
+        // W4.2B.2: host = this session plays the isolated multiplayer test campaign (sent in Welcome); client = the host said so.
+        public bool TestCampaign;
+        public bool HostTestCampaign { get; private set; }
         // N1.2 client: true = send ClientReady right after a valid Welcome (launcher dev mode, reconnects). False = stop in
         // ConnState.Preparing and raise Welcomed; the owner arms save isolation and then calls ConfirmReady() or AbortPreparation().
         public bool AutoReady = true;
@@ -378,7 +381,7 @@ namespace TS2MP.Shared
             }
             _joining = peer; _joiningInstance = clientInstance; _joiningSince = Now;
             var w = new NetDataWriter();
-            new Welcome { SessionId = SessionId, HostInstanceId = InstanceId, GameVersion = GameVersion, PlayerSlot = 2, HostProof = hostProof ?? new byte[0] }.Write(w);
+            new Welcome { SessionId = SessionId, HostInstanceId = InstanceId, GameVersion = GameVersion, PlayerSlot = 2, HostProof = hostProof ?? new byte[0], TestCampaign = TestCampaign }.Write(w);
             peer.Send(w, ChannelReliable, DeliveryMethod.ReliableOrdered);
             _log.Info("WELCOME sent to " + clientInstance + " (slot 2" + (hostProof != null ? ", join code verified" : "") + "), waiting for ClientReady");
         }
@@ -523,9 +526,10 @@ namespace TS2MP.Shared
             _serverNonce = null;
             RemoteInstanceId = wel.HostInstanceId;
             RemoteSessionId = wel.SessionId;
+            HostTestCampaign = wel.TestCampaign;
             HostWaitReason = null;
             ConnectAttempts = 0;
-            _log.Info("WELCOME client side: host=" + wel.HostInstanceId + " slot=" + wel.PlayerSlot + " mod=" + wel.HostModVersion + " game=" + wel.GameVersion + (JoinKey != null ? " (host proved the join code)" : ""));
+            _log.Info("WELCOME client side: host=" + wel.HostInstanceId + " slot=" + wel.PlayerSlot + " mod=" + wel.HostModVersion + " game=" + wel.GameVersion + (wel.TestCampaign ? " MULTIPLAYER TEST CAMPAIGN" : "") + (JoinKey != null ? " (host proved the join code)" : ""));
             if (AutoReady) { SendReady(); return; }
             SetState(ConnState.Preparing, "host " + wel.HostInstanceId + " welcomed us; preparing before ClientReady");
             if (Welcomed != null) Welcomed();

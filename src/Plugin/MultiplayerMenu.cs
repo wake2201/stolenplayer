@@ -11,6 +11,7 @@
 // restored on close. No text input is used in the world (port via buttons), so typing never reaches the game there.
 // The join code is shown only inside this window and never written to a log.
 using System;
+using System.IO;
 using System.Reflection;
 using HarmonyLib;
 using TS2MP.Shared;
@@ -73,6 +74,7 @@ namespace TS2MP.Plugin
             log.Info("MENU ready key=" + settings.MenuKey + (legacy ? " (launcher mode: status only)" : " isolationAvailable=" + _isolationAvailable));
         }
         bool _legacyHostGate; float _nextLegacyGate; string _loggedGate;
+        bool _testHost, _worldLoadedOnce, _mismatchChecked;   // W4.2B.2 multiplayer test campaign
 
         // Launcher host: readiness re-evaluated 4 times per second (only read at a join attempt); transitions are logged.
         void LegacyHostGate()
@@ -97,7 +99,7 @@ namespace TS2MP.Plugin
         void Mark(string name, bool loaded)
         {
             if (name == MenuScene) _menuSceneLoaded = loaded;
-            else if (name == WorldScene) { _worldSceneLoaded = loaded; _gm = null; _nextGmProbe = 0; }
+            else if (name == WorldScene) { _worldSceneLoaded = loaded; _gm = null; _nextGmProbe = 0; if (loaded) _worldLoadedOnce = true; }
         }
 
         void OnSceneLoaded(Scene s, LoadSceneMode mode)
@@ -183,6 +185,18 @@ namespace TS2MP.Plugin
         {
             var node = _pendingClient ?? _runner.Node;
             if (node == null) { _lc.Fail("Client-Sitzung nicht vorhanden", now); return; }
+            // W4.2B.2: a re-join in an already isolated process skips the preparation - the campaign type must still match.
+            if (_pendingClient == null && !_mismatchChecked && (node.State == ConnState.Connected || node.State == ConnState.Preparing))
+            {
+                _mismatchChecked = true;
+                if (SaveGuard.Armed && (SaveGuard.DevHost || SaveGuard.TestSandbox != node.HostTestCampaign))
+                {
+                    _log.Error("JOIN refused: host test campaign=" + node.HostTestCampaign + " but this process is isolated for " + (SaveGuard.TestSandbox ? "the test campaign" : "a normal campaign"));
+                    _lc.Fail("Andere Kampagnenart als zuvor in diesem Spiel – bitte das Spiel neu starten.", now);
+                    EndClient("campaign type mismatch");
+                    return;
+                }
+            }
             var w = _runner.World;
             var cb = _runner.Campaign;   // W4.2: the host's campaign must be written into the sandbox before the original Continue
             var action = _lc.ClientTick(ctx, node.State, node.LastReject, node.FatalReason, node.HostWaitReason, w != null && w.Synced && cb != null && cb.Applied, now);
@@ -202,6 +216,17 @@ namespace TS2MP.Plugin
             if (ctx != GameContext.MainMenu) { node.AbortPreparation("left the main menu"); _lc.Fail("Hauptmenü wurde verlassen", now); EndClient("left main menu"); return; }
             string why;
             bool wasArmed = SaveGuard.Armed;
+            // W4.2B.2: a test-campaign host -> test sandbox + test records; a normal host -> the normal sandbox. Fixed per process.
+            bool test = node.HostTestCampaign;
+            string dataDir = test ? SaveIsolation.TestCampaignDataDir(_settings.DataDir) : _settings.DataDir;
+            if (!SaveGuard.SelectClientSandbox(dataDir, test, out why))
+            {
+                _log.Error("JOIN refused: " + why);
+                node.AbortPreparation("campaign type differs from this process");
+                _lc.Fail(test ? "Der Host spielt die Testkampagne. Bitte das Spiel neu starten und erneut beitreten." : "Dieses Spiel lief bereits in der Testkampagne. Bitte das Spiel neu starten.", now);
+                EndClient("campaign type mismatch");
+                return;
+            }
             if (!SaveGuard.Arm(out why))
             {
                 _log.Error("JOIN save isolation could not be verified: " + why);
@@ -212,7 +237,8 @@ namespace TS2MP.Plugin
                 return;
             }
             _lc.IsolationArmed(now);
-            _log.Info("JOIN save isolation armed and verified; building client systems");
+            if (test) { try { Directory.CreateDirectory(dataDir); } catch { } _runner.EnableTestCampaign(dataDir, "Player 2"); }
+            _log.Info("JOIN save isolation armed and verified; building client systems" + (test ? " (multiplayer test campaign)" : ""));
             _pendingClient = null;
             if (!_runner.AttachSession(node))
             {
@@ -271,6 +297,7 @@ namespace TS2MP.Plugin
             node.BindAddress = "0.0.0.0";
             node.JoinKey = JoinAuth.DeriveKey(code);
             node.HostGate = () => _hostGateReason;
+            node.TestCampaign = _testHost && SaveGuard.DevHost && _runner.TestCampaignActive;   // W4.2B.2: told to Player 2 in Welcome
             _hostGateReason = "Host startet";
             if (!node.Start())
             {
@@ -287,19 +314,21 @@ namespace TS2MP.Plugin
             _hostCode = JoinAuth.Format(code);
             _hint = null;
             _lc.HostStarted(true, null, now);
-            _log.Info("HOST started from the F8 menu: UDP 0.0.0.0:" + _port + " (join code shown in the menu only)");
+            _log.Info("HOST started from the F8 menu: UDP 0.0.0.0:" + _port + " (join code shown in the menu only)" + (node.TestCampaign ? " - MULTIPLAYER TEST CAMPAIGN" : ""));
         }
 
         void StartJoin()
         {
             double now = Time.realtimeSinceStartup;
             JoinRequest req;
+            if (_testHost) { _hint = MenuRules.TestHostJoinText; return; }
             string deny = _lc.RequestJoin(Context(), _isolationAvailable, _joinHost, _joinPort, _joinCode, out req, now);
             if (deny != null) { _hint = deny; return; }
             var node = new SessionNode(Role.Client, "join", RandomHex(4), Application.version, req.Port, _log);
             node.ConnectAddress = req.Host;
             node.JoinKey = JoinAuth.DeriveKey(req.Code);
             node.AutoReady = SaveGuard.Armed;   // already isolated earlier in this process: no new preparation needed
+            _mismatchChecked = false;
             if (!node.Start()) { node.Dispose(); _lc.Fail("Netzwerk konnte nicht gestartet werden", now); return; }
             _joinCode = "";   // the code is not kept in the field after use
             _hint = null;
@@ -384,6 +413,7 @@ namespace TS2MP.Plugin
             _scroll = GUILayout.BeginScrollView(_scroll);
             GUILayout.Label("Status: " + (_legacy ? LegacyStatus() : _lc.Status), _text);
             if (_lc.State == MpState.Error && _lc.Error != null) GUILayout.Label(_lc.Error, _err);
+            if (_runner.TestCampaignActive) GUILayout.Label("TESTKAMPAGNE AKTIV – isolierter Test-Spielstand, alle Fähigkeiten, Testgeld. Deine echten Spielstände werden nicht benutzt.", _err);
             GUILayout.Space(8);
 
             if (_legacy) GUILayout.Label(MenuRules.LegacyText, _text);
@@ -392,6 +422,8 @@ namespace TS2MP.Plugin
             else
             {
                 DrawHostSection(ctx);
+                GUILayout.Space(10);
+                DrawTestSection(ctx);
                 GUILayout.Space(10);
                 DrawJoinSection(ctx);
             }
@@ -426,10 +458,62 @@ namespace TS2MP.Plugin
             else GUILayout.Label("Der Router muss UDP " + _port + " an diesen PC weiterleiten. Der Spielverkehr ist nicht verschlüsselt.", _text);
         }
 
+        // W4.2B.2 multiplayer test campaign (host). Explicit opt-in in the main menu; afterwards the original Continue loads the
+        // isolated copy, then F8 -> Host as usual. Player 2 needs no option: the host's Welcome tells its game.
+        void DrawTestSection(GameContext ctx)
+        {
+            if (_testHost)
+            {
+                GUILayout.Label("Mehrspieler-Testkampagne vorbereitet", _title);
+                GUILayout.Label(ctx == GameContext.MainMenu ? "Jetzt im Hauptmenü des Spiels „Fortsetzen“ wählen (ohne vorhandenen Spielstand: ein Spiel beginnen). Sobald du in der Welt stehst: F8 → Hosten starten." : "Testkampagne geladen. Hosten wie gewohnt; Spieler 2 tritt normal mit Adresse, Port und Code bei.", _text);
+                return;
+            }
+            if (ctx != GameContext.MainMenu) return;   // offered only in the main menu
+            var a = MenuRules.PrepareTest(ctx, _lc.State, _legacy, _lc.ClientModeSticky, _isolationAvailable, _testHost, _worldLoadedOnce);
+            GUILayout.Label("Mehrspieler-Testkampagne (nur zum Testen)", _title);
+            GUILayout.Label("Isolierte KOPIE deines Spielstands mit allen Fähigkeiten und Testgeld für beide Spieler. Dein echter Spielstand und deine normalen Mehrspieler-Daten werden nicht verändert. Für Einzelspieler danach das Spiel neu starten.", _text);
+            GUI.enabled = a.Enabled;
+            if (GUILayout.Button("Testkampagne vorbereiten", _btn)) PrepareTestCampaign();
+            GUI.enabled = true;
+            if (!a.Enabled) GUILayout.Label(a.Reason, _text);
+        }
+
+        void PrepareTestCampaign()
+        {
+            var a = MenuRules.PrepareTest(Context(), _lc.State, _legacy, _lc.ClientModeSticky, _isolationAvailable, _testHost, _worldLoadedOnce);
+            if (!a.Enabled) { _hint = a.Reason; return; }
+            string dir = SaveIsolation.TestCampaignDataDir(_settings.DataDir), why;
+            try { Directory.CreateDirectory(dir); } catch (Exception ex) { _hint = "Testordner konnte nicht angelegt werden: " + ex.Message; return; }
+            bool wasArmed = SaveGuard.Armed;
+            if (!SaveGuard.PrepareTestHostSave(dir, out why))
+            {
+                _log.Error("TEST_CAMPAIGN save isolation could not be verified: " + why);
+                _hint = "Testkampagne konnte nicht sicher vorbereitet werden (siehe Log).";
+                if (SaveGuard.Armed || wasArmed) _runner.RequestQuit("SAVE_GUARD_FAILED after arming the test campaign: quitting to protect the real saves (fail closed).");
+                return;
+            }
+            _runner.EnableTestCampaign(dir, "F8 host");
+            _testHost = true; _hint = null;
+            RefreshContinueText();
+            _log.Info("TEST_CAMPAIGN prepared in the main menu: the original Continue / New Game now loads the isolated copy; host with F8 once the world is loaded");
+        }
+
+        // The main menu's save info was read from the real folder; the original LoadContinueTxt re-reads it (now redirected).
+        void RefreshContinueText()
+        {
+            try
+            {
+                var mm = _menuType != null ? UnityEngine.Object.FindObjectOfType(_menuType) : null;   // once
+                var m = _menuType != null ? AccessTools.Method(_menuType, "LoadContinueTxt") : null;
+                if (mm != null && m != null && m.GetParameters().Length == 0) m.Invoke(mm, null);
+            }
+            catch (Exception ex) { _log.Warn("TEST_CAMPAIGN main-menu save info not refreshed: " + ex.Message); }
+        }
+
         void DrawJoinSection(GameContext ctx)
         {
             GUILayout.Label("Spiel beitreten (du bist Spieler 2)", _title);
-            var a = MenuRules.Join(ctx, _lc.State, _legacy, _isolationAvailable);
+            var a = MenuRules.Join(ctx, _lc.State, _legacy, _isolationAvailable, _testHost);
             if (!a.Enabled) { GUILayout.Label(a.Reason, _text); return; }
             GUILayout.Label("Adresse des Hosts (öffentliche IPv4 oder DNS-Name):", _text);
             _joinHost = GUILayout.TextField(_joinHost ?? "", 253, _field);

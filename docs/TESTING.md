@@ -151,6 +151,22 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 31. W4.2B.2 checklist — broken doors, passenger legs, observed car height, F8 multiplayer test campaign (release `TS2-Multiplayer-0.14.2.zip` on BOTH PCs, protocol 26)
+Input: two-PC internet run 2026-11-13 19:23 with 0.14.1 (this PC = Player 2, log `20261113-192322_game_20044`): crowbar door now shared (`Set Door -> 5`), hold-E proposals `-> 3` present; user findings: broken doors cannot be closed, passenger legs visible in first person, car slightly above the ground on the passenger's PC.
+
+| # | Step | Expected | Result |
+|---|---|---|---|
+| 1 | Host: start through Steam, stay in the main menu, F8 → "Testkampagne vorbereiten", then the game's "Fortsetzen" | Log `TEST_CAMPAIGN prepared`, `DEVTEST host save copy created/kept`, `DEVTEST MODE ACTIVE (F8 multiplayer test campaign, F8 host)`; the world of the COPY loads; F8 shows "TESTKAMPAGNE AKTIV" | NOT TESTED |
+| 2 | Host in the world → F8 → Hosten; Player 2 joins normally from the main menu | Host log `HOST started … MULTIPLAYER TEST CAMPAIGN`; client log `WELCOME … MULTIPLAYER TEST CAMPAIGN`, `SAVE_GUARD multiplayer test campaign (Player 2): sandbox …\testcampaign\client-sandbox`, `TEST_CAMPAIGN active (Player 2)` | NOT TESTED |
+| 3 | Both open the skill tree | All skills learned, extra skills at max (`DEVTEST skills …`); story / missions unchanged | NOT TESTED |
+| 4 | Both buy tools in shops until money < 1,000,000 | Money returns to 2,000,000 within 2 s (`DEVTEST money`); Player 2's own inventory keeps the tools after a rejoin; no duplicated money | NOT TESTED |
+| 5 | After the session: compare timestamps of the real save folder, `%LOCALAPPDATA%\TS2MP\p2inv-*.dat`, `p2spawn-*`, `fleet-*` | Unchanged; test records only in `%LOCALAPPDATA%\TS2MP\testcampaign\` | NOT TESTED |
+| 6 | Restart, normal F8 host / join (no test campaign) | Normal campaign, normal records, no `DEVTEST` lines | NOT TESTED |
+| 7 | A player crowbars a door, both try to close it | Neither can use it (vanilla: a broken hinge makes the door unusable until the region is reloaded); same pose on both PCs. Compare once in single player if in doubt | NOT TESTED |
+| 8 | Player 2 as passenger (Ranger rear bench, Shadowhawk front seat), first person; then swap roles (Player 1 passenger) | No own legs in the first-person view; third person still shows the own seated body; the driver still sees the passenger | NOT TESTED |
+| 9 | On the passenger's PC look at the car from outside (third person / stand next to it) while parked and while driving | Wheels touch the road (no visible gap); body height like on the driver's PC; doors, entry/exit, travel, collisions unchanged | NOT TESTED |
+| 10 | Optional `Debug.PerfStats = true` while driving with a passenger | Mod cost unchanged within noise (≤ 8 extra raycasts per frame for observed cars) | NOT TESTED |
+
 ## 30. W4.2B.1 checklist — regression fixes + developer test mode (plugin 0.14.1 / protocol 25 on BOTH; deployed by Claude in the local game folder)
 **User run 2026-11-13 17:34 (0.14.0, developer launcher, one PC; logs `20261113-173429_host_0c25492c`, `-173434_client_5c23c038`, `-173621_client_c8200056`):** driving camera FAIL (Player 2 drove in first person, Player 1 as passenger followed it), crowbar door FAIL (lock open on the remote, leaf did not swing), relock → unlock FAIL (one instance kept a permanently open door), slow hold-E doors FAIL (not visible remotely), first client accepted in the host's main menu FAIL (`CAMPAIGN snapshot NOT sent … Player-2 record not bound`, the client had to be restarted). Root causes: PROGRESS "W4.2B.1".
 

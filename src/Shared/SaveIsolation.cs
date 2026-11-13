@@ -55,6 +55,16 @@ namespace TS2MP.Shared
             return string.Equals(Path.GetFileName(trimmed), DevTestFolder, StringComparison.OrdinalIgnoreCase) ? trimmed : Path.Combine(trimmed, DevTestFolder);
         }
 
+        // W4.2B.2 F8 multiplayer TEST campaign: host save copy, test Player-2 records and the client's test sandbox live in a
+        // dedicated "testcampaign" sub-folder (separate from normal multiplayer records and from the launcher's "devtest").
+        public const string TestCampaignFolder = "testcampaign";
+        public static string TestCampaignDataDir(string dataDir)
+        {
+            if (string.IsNullOrEmpty(dataDir)) return null;
+            string trimmed = dataDir.TrimEnd('\\', '/');
+            return string.Equals(Path.GetFileName(trimmed), TestCampaignFolder, StringComparison.OrdinalIgnoreCase) ? trimmed : Path.Combine(trimmed, TestCampaignFolder);
+        }
+
         // Path the game's persistentDataPath callers see: the original while disarmed (solo / host), the sandbox while armed.
         public static string Effective(bool armed, string sandbox, Func<string> original) { return armed ? sandbox : original(); }
     }

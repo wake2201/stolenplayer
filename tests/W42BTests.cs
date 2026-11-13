@@ -41,6 +41,10 @@ static class W42BTests
         Run("20 W4.2B.1 hold-E doors: slow mark replayed, fast finish committed as a new version, original speed profile on the replica", SlowDoors);
         Run("21 W4.2B.1 driving camera: Player 2 without own TPP gets the original third-person default, never Player 1's value", DrivingCamera);
         Run("22 W4.2B.1 launcher host readiness gate, deferred campaign snapshot, developer test mode isolation", ReadinessAndDevTest);
+        Run("23 W4.2B.2 broken hinge = vanilla terminal state (never closable), identical on both instances", BrokenHingeVanilla);
+        Run("24 W4.2B.2 seated passenger: original first-person legs hidden like is_in_vehicle, nothing else touched", PassengerLegs);
+        Run("25 W4.2B.2 observed car: wheels placed by the EVP visual-suspension raycast (no floating, no fixed offset)", ObservedWheels);
+        Run("26 W4.2B.2 F8 multiplayer test campaign: Welcome flag, folders, menu rules, isolation order, test money", TestCampaign);
         Console.WriteLine();
         Console.WriteLine("RESULT: " + _passed + " passed, " + _failed + " failed.");
         return _failed == 0 ? 0 : 1;
@@ -565,7 +569,7 @@ static class W42BTests
     // ---------------------------------------------------------------- 17
     static void CodecsAndScans()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 25 && ProtocolInfo.ModVersion == "0.14.1", "protocol 25 / mod 0.14.1");
+        Expect(ProtocolInfo.ProtocolVersion == 26 && ProtocolInfo.ModVersion == "0.14.2", "protocol 26 / mod 0.14.2");
         var t = new ObjectTxnRequest { Txn = 5, Op = ObjectOp.Reserve, Kind = L, Ns = Madison, Hash = 7, State = 1, BaseVer = 3, Epoch = 9 }; ObjectTxnRequest t2;
         Expect(t.ToBytes().Length == ObjectTxnRequest.Bytes && ObjectTxnRequest.TryParse(t.ToBytes(), out t2) && t2.Op == ObjectOp.Reserve && t2.Epoch == 9 && t2.BaseVer == 3, "txn 19 B");
         var bad = t.ToBytes(); bad[4] = 9; Expect(!ObjectTxnRequest.TryParse(bad, out t2), "unknown op refused");
@@ -748,6 +752,99 @@ static class W42BTests
         Expect(pkg.Contains("No launcher"), "the player release contains no launcher (devtest unreachable for players)");
         var launcher = File.ReadAllText(Path.Combine(root, "src", "Launcher", "Launcher.cs"));
         Expect(launcher.Contains("(_devTest ? \" -ts2mp-devtest 1\" : \"\")") && launcher.Contains("_dataDir = on ? Path.Combine(_baseDataDir, \"devtest\") : _baseDataDir;"), "launcher devtest: argument + isolated data folder");
+    }
+
+    // ---------------------------------------------------------------- 23-26 (W4.2B.2)
+    static void BrokenHingeVanilla()
+    {
+        // Vanilla (IL): brokeHinge is written only by Door.OpenDestroyed and never cleared; PlayerScript.Update's door branch
+        // skips a door with brokeHinge (no prompt, no Use / slow use / relock). The shared state mirrors exactly that.
+        var wh = Host(Madison, Madison);
+        Scene(wh, 1, Madison, 1, Digest, 0); Init(wh, 1, Madison, new List<ObjectInitEntry>(), 0); Scene(wh, 2, Madison, 2, Digest, 0);
+        const uint X = 0xB0;
+        Expect(Txn(wh, 1, ObjectOp.Set, D, X, 5, 1.0) == ProposalCode.Accepted, "crowbar (P1)");
+        Expect(Txn(wh, 2, ObjectOp.Set, D, X, 0, 1.2) == ProposalCode.Invalid && Txn(wh, 1, ObjectOp.Set, D, X, 0, 1.4) == ProposalCode.Invalid, "neither player can close it (vanilla: unusable)");
+        Expect(Txn(wh, 2, ObjectOp.Set, D, X, 7, 1.6) == ProposalCode.Unchanged, "slow use of a broken door: no change");
+        Expect(WorldDoorRules.Decide(0, true, true, false, false, true, false) == DoorApply.Diverged, "a replica never closes a broken door");
+        var bridge = StripComments(Src("WorldObjectBridge.cs"));
+        Expect(!bridge.Contains("_setBroken(d, false)") && bridge.Contains("_setBroken(d, true)"), "the bridge never repairs a hinge");
+        var lifetime = ObjectStateRules.Lifetime(ObjectKind.Door);
+        Expect(lifetime == ObjectLifetime.RegionLife, "region reload restores the door (vanilla: scene asset rebuilt)");
+    }
+
+    static void PassengerLegs()
+    {
+        var v = Src("VehicleSync.cs"); var code = StripComments(v);
+        int i = code.IndexOf("static void LegsPostfix(", StringComparison.Ordinal);
+        Expect(i > 0, "LegsController.Update postfix exists");
+        string body = code.Substring(i, code.IndexOf("public void Dispose()", i, StringComparison.Ordinal) - i);
+        Expect(body.Contains("o._ride.Stage != RideStage.Seated) return;") && body.Contains("legs.SetActive(false)") && !body.Contains("SetActive(true)"), "only while seated as passenger, only hides");
+        Expect(code.Contains("AccessTools.TypeByName(\"LegsController\")") && code.Contains("Fast.Getter<GameObject>(lt, \"legsObj\")"), "original LegsController.legsObj");
+        Expect(!code.Contains("Setter<bool>(ps, \"is_in_vehicle\")"), "is_in_vehicle is still never set by the passenger adapter");
+        Expect(code.Contains("if (ReferenceEquals(_legsOwner, this)) _legsOwner = null;"), "session end restores vanilla legs");
+        Expect(PassengerInteraction.SelfBodyVisible(true, true, true) && !PassengerInteraction.SelfBodyVisible(true, false, true), "own body only in third person (unchanged)");
+    }
+
+    static void ObservedWheels()
+    {
+        var code = StripComments(Src("VehicleSync.cs"));
+        int i = code.IndexOf("static void SuspensionPose(", StringComparison.Ordinal);
+        Expect(i > 0, "suspension pose exists");
+        string body = code.Substring(i, 900);
+        foreach (var k in new[] { "ct.TransformPoint(wc.center)", "Physics.Raycast(origin, -up, out hit, susp + r, -5, QueryTriggerInteraction.Ignore)", "hit.distance - r * 0.95f", "susp + r * 0.05f", "w.T.position = ct.position - up * dist;", "GetIgnoreLayerCollision" })
+            Expect(body.Contains(k), "mirrors EVP VehicleController.UpdateTransform / UpdateSuspension: " + k);
+        int wf = code.IndexOf("void WheelFrame()", StringComparison.Ordinal);
+        Expect(wf > 0 && code.Substring(wf, 900).Contains("if (!lc.Observed || lc.Wheels == null || !lc.Active) continue;") && code.Substring(wf, 1400).Contains("SuspensionPose(w)"), "only cars observed here (the driver's EVP keeps its own wheels)");
+        Expect(!body.Contains("+ 0.") || body.Contains("0.95f"), "no fixed height offset");
+    }
+
+    static void TestCampaign()
+    {
+        // Welcome carries the flag (protocol 26)
+        foreach (bool t in new[] { false, true })
+        {
+            var w = new NetDataWriter(); new Welcome { SessionId = "s", HostInstanceId = "h", GameVersion = "1.27c", TestCampaign = t }.Write(w);
+            var r = new NetDataReader(w.CopyData()); r.GetByte(); Welcome back;
+            Expect(Welcome.TryRead(r, out back) && back.TestCampaign == t, "Welcome round trip test=" + t);
+        }
+        var w2 = new NetDataWriter(); new Welcome { SessionId = "s" }.Write(w2); var bytes = w2.CopyData();
+        bytes[bytes.Length - 1] = 2; var rr = new NetDataReader(bytes); rr.GetByte(); Welcome bad;
+        Expect(!Welcome.TryRead(rr, out bad), "unknown flag value refused");
+        var shortB = new byte[bytes.Length - 1]; Array.Copy(bytes, shortB, shortB.Length); var rs = new NetDataReader(shortB); rs.GetByte();
+        Expect(!Welcome.TryRead(rs, out bad), "a protocol-25 Welcome (no flag) is refused");
+        // folders
+        string data = @"C:\Users\x\AppData\Local\TS2MP", test = SaveIsolation.TestCampaignDataDir(data);
+        Expect(test == Path.Combine(data, "testcampaign") && SaveIsolation.TestCampaignDataDir(test) == test && test != SaveIsolation.DevTestDataDir(data), "test campaign folder, separate from devtest and production");
+        string real = @"C:\Users\x\AppData\LocalLow\CookieDev\Thief Simulator 2", game = @"D:\Games\Thief Simulator 2";
+        Expect(SaveIsolation.LayoutError(Path.Combine(test, "host-save"), real, game) == null && SaveIsolation.LayoutError(Path.Combine(test, "client-sandbox"), real, game) == null, "host copy + client test sandbox outside the real save / game folders");
+        // menu rules: main menu only, before any world, once, never in a Player-2 process, never in launcher mode
+        Expect(MenuRules.PrepareTest(GameContext.MainMenu, MpState.Offline, false, false, true, false, false).Enabled, "main menu, fresh process: available");
+        Expect(!MenuRules.PrepareTest(GameContext.InWorld, MpState.Offline, false, false, true, false, true).Enabled, "in a world: no");
+        Expect(!MenuRules.PrepareTest(GameContext.MainMenu, MpState.Offline, false, false, true, false, true).Enabled, "back in the menu after a solo world: restart first");
+        Expect(!MenuRules.PrepareTest(GameContext.MainMenu, MpState.Offline, false, true, true, false, false).Enabled, "a Player-2 process: no");
+        Expect(!MenuRules.PrepareTest(GameContext.MainMenu, MpState.Offline, true, false, true, false, false).Enabled && !MenuRules.PrepareTest(GameContext.MainMenu, MpState.Offline, false, false, false, false, false).Enabled, "launcher mode / no isolation: no");
+        Expect(!MenuRules.PrepareTest(GameContext.MainMenu, MpState.Offline, false, false, true, true, false).Enabled, "only once");
+        Expect(!MenuRules.Join(GameContext.MainMenu, MpState.Offline, false, true, true).Enabled && MenuRules.Join(GameContext.MainMenu, MpState.Offline, false, true, false).Enabled, "a test-host process cannot join");
+        Expect(MenuRules.Host(GameContext.MainMenu, MpState.Offline, false, false).Enabled == false && MenuRules.Host(GameContext.InWorld, MpState.Offline, false, false).Enabled, "hosting still needs a loaded world");
+        // isolation order (source)
+        var menu = Src("MultiplayerMenu.cs");
+        int prep = menu.IndexOf("void PrepareTestCampaign()", StringComparison.Ordinal);
+        string pb = menu.Substring(prep, menu.IndexOf("void RefreshContinueText()", prep, StringComparison.Ordinal) - prep);
+        Expect(pb.IndexOf("SaveGuard.PrepareTestHostSave(dir, out why)", StringComparison.Ordinal) > 0 && pb.IndexOf("SaveGuard.PrepareTestHostSave", StringComparison.Ordinal) < pb.IndexOf("_runner.EnableTestCampaign(dir", StringComparison.Ordinal)
+            && pb.Contains("_runner.RequestQuit("), "host: armed (fail closed) before the test records are enabled");
+        int cp = menu.IndexOf("void Prepare(SessionNode node", StringComparison.Ordinal);
+        string cb = menu.Substring(cp, menu.IndexOf("void ContinueOriginal()", cp, StringComparison.Ordinal) - cp);
+        Expect(cb.IndexOf("SelectClientSandbox(", StringComparison.Ordinal) < cb.IndexOf("SaveGuard.Arm(out why)", StringComparison.Ordinal)
+            && cb.IndexOf("_runner.EnableTestCampaign(dataDir, \"Player 2\")", StringComparison.Ordinal) < cb.IndexOf("_runner.AttachSession(node)", StringComparison.Ordinal), "client: test sandbox chosen before arming, test records before the systems are built");
+        Expect(menu.Contains("node.TestCampaign = _testHost && SaveGuard.DevHost && _runner.TestCampaignActive;"), "the flag is only sent by a prepared, isolated test host");
+        Expect(menu.Contains("SaveGuard.TestSandbox != node.HostTestCampaign"), "re-join with another campaign type is refused");
+        var guard = Src("SaveGuard.cs");
+        Expect(guard.Contains("string sandbox = SaveIsolation.Norm(Path.Combine(testDataDir, \"host-save\"));") && guard.Contains("DevHost = true; SandboxDir = sandbox;"), "host test save = copy in <testcampaign>\\host-save (same seed + guards as the developer host)");
+        var plugin = Src("Plugin.cs");
+        Expect(plugin.Contains("_settings.DataDir = testDataDir;"), "every TS2MP record of a test process lives in <testcampaign>");
+        var devm = StripComments(Src("DevTestMode.cs"));
+        Expect(devm.Contains("MoneyFloor = 1000000") && devm.Contains("static bool Isolated() { return SaveGuard.Armed && SaveGuard.RuntimeCheck(); }"), "test money >= 1,000,000, only while isolated");
+        Expect(!devm.Contains("SendProposal") && !devm.Contains("P2Report"), "no money transaction over the network (Player 2's balance reaches its test record via the normal report)");
     }
 
     // ---------------------------------------------------------------- source helpers

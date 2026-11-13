@@ -57,6 +57,38 @@ namespace TS2MP.Plugin
             return true;
         }
 
+        // W4.2B.2 F8 multiplayer TEST campaign, HOST: prepared in the main menu (before any save is loaded) by the F8 menu.
+        // Same isolation as the launcher's developer host: redirect + guards, FBPP re-initialised from <testcampaign>\host-save
+        // (a copy of the real save folder, made once while the copy has no save). The original Continue / New Game then load
+        // the copy. Process-sticky (never disarmed): solo play or a normal campaign needs a game restart.
+        public static bool PrepareTestHostSave(string testDataDir, out string why)
+        {
+            why = null;
+            if (Armed) { why = DevHost ? null : "this game already runs as Player 2"; return DevHost; }
+            if (!Available) { why = "save protection precheck failed"; return false; }
+            string sandbox = SaveIsolation.Norm(Path.Combine(testDataDir, "host-save"));
+            string layout = SaveIsolation.LayoutError(sandbox, RealDir, GameDir);
+            if (layout != null) { why = layout; _log.Error("SAVE_GUARD test campaign " + layout); return false; }
+            DevHost = true; SandboxDir = sandbox;
+            _log.Info("SAVE_GUARD multiplayer test campaign (host): save copy " + SandboxDir + " (the real save folder is only read)");
+            return Arm(out why);
+        }
+
+        // W4.2B.2 client: the sandbox of this join (normal: <data>\client-sandbox, test campaign: <testcampaign>\client-sandbox),
+        // chosen after the host's Welcome and before arming. Once armed the choice is fixed for the process (false = mismatch).
+        internal static bool TestSandbox { get; private set; }
+        public static bool SelectClientSandbox(string dataDir, bool test, out string why)
+        {
+            why = null;
+            if (Armed) { if (DevHost || TestSandbox != test) { why = "this game already used " + (DevHost ? "the test campaign as host" : TestSandbox ? "a test-campaign sandbox" : "the normal multiplayer sandbox") + " - restart the game"; return false; } return true; }
+            string sandbox = SaveIsolation.Norm(Path.Combine(dataDir, "client-sandbox"));
+            string layout = SaveIsolation.LayoutError(sandbox, RealDir, GameDir);
+            if (layout != null) { why = layout; return false; }
+            SandboxDir = sandbox; TestSandbox = test;
+            if (test) _log.Info("SAVE_GUARD multiplayer test campaign (Player 2): sandbox " + SandboxDir);
+            return true;
+        }
+
         // Read-only: folder layout and the original types/methods the protection relies on. No patch is applied.
         public static bool Precheck(Harmony harmony, string dataDir, InstanceLog log) { return Precheck(harmony, dataDir, log, "client-sandbox"); }
         static bool Precheck(Harmony harmony, string dataDir, InstanceLog log, string sandboxName)

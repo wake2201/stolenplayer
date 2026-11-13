@@ -71,6 +71,27 @@ namespace TS2MP.Shared
             return Availability.Yes;
         }
 
+        // W4.2B.2 multiplayer test campaign (host side): prepared ONLY in the main menu before any save is loaded (the original
+        // Continue / New Game then loads the isolated copy), never in a process that already acted as Player 2, once per process.
+        public const string TestPrepareMenuText = "Die Testkampagne kann nur im Hauptmenü vorbereitet werden, bevor ein Spielstand geladen ist (Spiel neu starten).";
+        public const string TestHostJoinText = "Dieses Spiel hat die Testkampagne als Host vorbereitet. Zum Beitreten bitte das Spiel neu starten.";
+        public static Availability PrepareTest(GameContext ctx, MpState s, bool legacy, bool clientModeSticky, bool isolationAvailable, bool prepared, bool worldLoadedBefore)
+        {
+            if (legacy) return Availability.No(LegacyText);
+            if (prepared) return Availability.No("Die Testkampagne ist bereits vorbereitet.");
+            if (clientModeSticky) return Availability.No(ClientModeStickyText);
+            if (Busy(s)) return Availability.No("Es läuft bereits eine Mehrspieler-Sitzung.");
+            if (ctx != GameContext.MainMenu || worldLoadedBefore) return Availability.No(TestPrepareMenuText);
+            if (!isolationAvailable) return Availability.No("Speicherschutz ist nicht verfügbar (siehe Log). Die Testkampagne ist deaktiviert.");
+            return Availability.Yes;
+        }
+
+        public static Availability Join(GameContext ctx, MpState s, bool legacy, bool isolationAvailable, bool testHostPrepared)
+        {
+            if (testHostPrepared && !legacy) return Availability.No(TestHostJoinText);
+            return Join(ctx, s, legacy, isolationAvailable);
+        }
+
         public static Availability Join(GameContext ctx, MpState s, bool legacy, bool isolationAvailable)
         {
             if (legacy) return Availability.No(LegacyText);

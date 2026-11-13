@@ -29,6 +29,17 @@ Mitspieler (Spieler 2):
     Region bzw. im Versteck.
   - Aus einem laufenden Einzelspieler-Spiel kann man nicht beitreten: erst zurück ins Hauptmenü.
 
+MEHRSPIELER-TESTKAMPAGNE (nur zum Ausprobieren; im normalen Spiel nicht aktiv)
+- Host: Spiel starten, im HAUPTMENÜ F8 -> "Testkampagne vorbereiten" (nur bevor ein Spielstand geladen wurde).
+  Danach im Spielmenü "Fortsetzen" wählen, warten bis du in der Welt stehst, dann F8 -> "Hosten starten".
+- Spieler 2 tritt ganz normal bei (Adresse, Port, Code); sein Spiel erkennt die Testkampagne automatisch.
+- Beide Spieler haben alle Fähigkeiten und mindestens 1.000.000 Testgeld (wird automatisch aufgefüllt).
+  Werkzeuge kauft ihr selbst in den Läden. Das Menü zeigt "TESTKAMPAGNE AKTIV".
+- Gespielt wird eine KOPIE deines Spielstands in %LOCALAPPDATA%\TS2MP\testcampaign. Dein echter Spielstand, der
+  Spielstand von Spieler 2 und die normalen Mehrspieler-Daten werden nicht verändert.
+- Danach für Einzelspieler oder eine normale Mehrspieler-Sitzung das Spiel einmal neu starten.
+  Ordner testcampaign löschen = Testkampagne zurücksetzen (neue Kopie beim nächsten Vorbereiten).
+
 DEINE SPIELSTÄNDE
 - Spieler 2 spielt in einem geschützten Speicherbereich (%LOCALAPPDATA%\TS2MP\client-sandbox). Die eigenen
   Einzelspieler-Spielstände werden dabei nicht verändert.

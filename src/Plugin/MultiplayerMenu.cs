@@ -65,7 +65,22 @@ namespace TS2MP.Plugin
                 _devJoin = Environment.GetEnvironmentVariable("TS2MP_DEV_AUTOJOIN");
                 if (_devJoin != null) { try { Environment.SetEnvironmentVariable("TS2MP_DEV_AUTOJOIN", null); } catch { } log.Info("DEV_AUTOJOIN test hook armed (one join from the main menu)"); }
             }
+            // W4.2B.1: the developer launcher's fixed-role host listens from startup. Without this gate a client was accepted
+            // in the host's main menu before the host save / Player-2 record were bound (CAMPAIGN snapshot NOT sent, the
+            // client waited forever). Same readiness rules as the F8 host; the client keeps retrying (HostNotReady).
+            var n = runner.Node;
+            if (legacy && n != null && n.Role == Role.Host) { n.HostGate = () => _hostGateReason; _legacyHostGate = true; log.Info("MENU launcher host: joins wait until the host is gameplay-ready (" + _hostGateReason + ")"); }
             log.Info("MENU ready key=" + settings.MenuKey + (legacy ? " (launcher mode: status only)" : " isolationAvailable=" + _isolationAvailable));
+        }
+        bool _legacyHostGate; float _nextLegacyGate; string _loggedGate;
+
+        // Launcher host: readiness re-evaluated 4 times per second (only read at a join attempt); transitions are logged.
+        void LegacyHostGate()
+        {
+            if (!_legacyHostGate || Time.realtimeSinceStartup < _nextLegacyGate) return;
+            _nextLegacyGate = Time.realtimeSinceStartup + 0.25f;
+            _hostGateReason = HostReadiness.Check(Facts(Context()));
+            if (!ReferenceEquals(_loggedGate, _hostGateReason)) { _loggedGate = _hostGateReason; _log.Info("HOST_READINESS " + (_hostGateReason ?? "ready: Player 2 may join")); }
         }
 
         void ResolveTypes()
@@ -133,7 +148,7 @@ namespace TS2MP.Plugin
             if (_open && _lockedPs != null && _psCursorLock(_lockedPs)) _setCursorLock(_lockedPs, false);   // the original may re-lock
 
             double now = Time.realtimeSinceStartup;
-            if (_legacy) return;
+            if (_legacy) { LegacyHostGate(); return; }
             if (_pendingClient != null) _pendingClient.Tick();
             if (_devJoin != null && !_lc.Busy() && Context() == GameContext.MainMenu)
             {

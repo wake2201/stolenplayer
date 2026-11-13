@@ -55,8 +55,10 @@ BEKANNTE EINSCHRÄNKUNGEN
 - Spieler 2 kann Beute in einer Region, die der Host in dieser Sitzung noch nicht geladen hat, nicht aufheben.
 - Gemeinsame Erfahrungspunkte und Story-Fortschritt WÄHREND der Sitzung sind noch nicht umgesetzt (Spieler 2
   startet mit dem Stand des Hosts beim Beitritt).
-- Geteilte Türen: nur normale Türen in Madison Street (offen/zu). Schlösser, Fenster, Schubladen und Türen, die
-  Passanten öffnen, folgen später.
+- Geteilt in Madison Street: normale Türen und Tore (auch aufgebrochene und langsam mit gehaltenem E geöffnete), Schlösser (Dietrich-Minispiele, Schlüssel,
+  Vorhängeschlösser, Brecheisen) und Fenster (von innen öffnen, Glas schneiden, Scheibe einschlagen).
+  Schubladen, Schränke und von NPCs geöffnete Türen bleiben lokal. Story-Schlösser
+  und Missionsfenster kann Spieler 2 noch nicht benutzen.
 - Einige ungespeicherte Erwerbungen von Spieler 1 haben eine Einschränkung bei der Dauerhaftigkeit.
 
 Protokolle: %LOCALAPPDATA%\TS2MP\logs (der Beitrittscode steht in keinem Protokoll).

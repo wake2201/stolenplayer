@@ -1,7 +1,7 @@
 // W4.2 Phase A offline tests: host-owned campaign bootstrap, persistent Player-2 spawn + story-safe fallback, host-owned
 // region-object registry and the ordinary-door vertical slice. The tests drive the SAME Unity-free pieces as the plugin
 // (src/Plugin/CampaignBootstrap.cs, WorldDoorSync.cs, SaveGuard.cs): CampaignPolicy / CampaignSnapshot / SpawnRules /
-// P2SpawnRecord / P2PosReport, RegionStateBook / ObjectStateList / ObjectTxnRequest / WorldDoorRules, WorldHost dispatch,
+// P2SpawnRecord / P2PosReport, WorldHost dispatch (region objects: tests/W42BTests.cs),
 // SaveIsolation.IsSaveData, plus one real LiteNetLib UDP transfer of a large campaign snapshot. Unity scene behaviour (the
 // FBPP write + reload, Continue, placement, door swings) is manual QA (docs/TESTING.md §27).
 using System;
@@ -32,10 +32,8 @@ static class W42Tests
         Run("07 invalid / stale spawn records and reports: rejected safely, never thrown, never applied", InvalidRecords);
         Run("08 solo-save protection: save data never seeded, local settings only, client write gated (source scan)", SoloSaves);
         Run("09 Player 2 inventory: host-owned record in the campaign base, P1 backpack/money/storage never copied", Inventory);
-        Run("10 door interaction while Player 1 is in another region: host decides without the scene", DoorHostElsewhere);
-        Run("11 duplicate / out-of-order / conflicting door messages never reverse or corrupt the state", DoorOrdering);
-        Run("12 door state across region reload: kept while the region is live, vanilla reset when it empties, late join", DoorReload);
-        Run("13 replica decisions: committed state applied only to idle, unlocked, non-pending doors", DoorReplicaRules);
+        // 10-13 (Phase A door slice) moved to tests/W42BTests.cs: the W4.2B region epochs / initialization / reservations
+        // replaced the Phase A door-only registry rules.
         Run("14 codecs: snapshot round trip, size, fuzz; object list cap; requests; spawn record 46 B; report 24 B", Codecs);
         Run("15 campaign snapshot over real LiteNetLib UDP (~70 KB, fragmented, reliable ordered) + version pins", Transport);
         Run("16 regressions: existing registry keys / loot / dropped items / vehicle doors unaffected by the new dispatch", Regressions);
@@ -258,139 +256,6 @@ static class W42Tests
         Expect(snap.Data.Bools["TPP"] && snap.Data.Ints["Story"] == 42, "only the local preference is taken from the client");
     }
 
-    // ---------------------------------------------------------------- doors
-    static StateEntry Txn(uint txn, int ns, uint hash, byte state, ushort baseVer)
-    {
-        var t = new ObjectTxnRequest { Txn = txn, Kind = (byte)ObjectKind.Door, Ns = ns, Hash = hash, State = state, BaseVer = baseVer };
-        return new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.ObjectTxn, Value = t.ToBytes() };
-    }
-
-    static ProposalCode Propose(WorldHost wh, string inst, byte slot, uint id, StateEntry e, double now)
-    { uint rev; int sr; float sh; return wh.HandleProposal(inst, slot, id, e, now, out rev, out sr, out sh); }
-
-    static ObjectState DoorState(StateRegistry reg, int ns, uint hash)
-    {
-        var e = reg.Get(StateScope.Region, ns, ObjectStateRules.RegistryKey(ObjectKind.Door));
-        ObjectStateList l; ObjectState s = default(ObjectState);
-        if (e != null && ObjectStateList.TryParse(e.Value, out l)) l.TryGet(hash, out s);
-        return s;
-    }
-
-    static void DoorHostElsewhere()
-    {
-        var wh = new WorldHost(11);
-        wh.SetPlayerRegion(1, Hideout, 0); wh.SetPlayerRegion(2, Madison, 0);
-        wh.ObjectCatalog = (k, ns, h) => null;   // the host never loaded Madison in this process
-        var code = Propose(wh, "c", 2, 1, Txn(1, Madison, 0xABCD1234, ObjectStateRules.DoorOpen, 0), 1);
-        Expect(code == ProposalCode.Accepted, "Player 2 opens a Madison door while Player 1 is at the hideout: " + code + " " + wh.LastNote);
-        var s = DoorState(wh.Reg, Madison, 0xABCD1234);
-        Expect(s.State == ObjectStateRules.DoorOpen && s.Ver == 1 && s.By == 2, "committed open v1 by P2");
-        Expect(wh.Objects.Unverified == 1, "accepted on the simulating player's word (host has no census) - counted as unverified");
-        Expect(wh.Outbox.Count > 0 && wh.Outbox[wh.Outbox.Count - 1].Key == "wobj2", "registry delta queued for the client");
-        // with a host catalog (host loaded the region earlier): unknown ids are refused
-        wh.ObjectCatalog = (k, ns, h) => h == 0x1111;
-        Expect(Propose(wh, "c", 2, 2, Txn(2, Madison, 0x2222, 1, 0), 2) == ProposalCode.Invalid, "unknown id refused when the host has a catalog");
-        Expect(Propose(wh, "c", 2, 3, Txn(3, Madison, 0x1111, 1, 0), 3) == ProposalCode.Accepted, "known id accepted");
-        // a player can only change objects of the region it has loaded
-        Expect(Propose(wh, "c", 2, 4, Txn(4, Hillville, 0x1111, 1, 0), 4) == ProposalCode.NotAuthorized, "other region refused (also unsupported)");
-        wh.SetPlayerRegion(2, Hillville, 5);
-        Expect(Propose(wh, "c", 2, 5, Txn(5, Madison, 0x1111, 0, 1), 6) == ProposalCode.NotAuthorized, "requester no longer in Madison");
-        // the host's own change (in place, same rules) while it is in Madison
-        wh.SetPlayerRegion(1, Madison, 7); wh.ObjectCatalog = null; string why;
-        var hc = wh.ObjectTransaction(1, new ObjectTxnRequest { Txn = 1, Kind = 2, Ns = Madison, Hash = 0x9999, State = 1, BaseVer = 0 }, 8, out why);
-        Expect(hc == ProposalCode.Accepted && DoorState(wh.Reg, Madison, 0x9999).By == 1, "host commits its own door change");
-        Expect(Propose(wh, "c", 2, 6, Txn(6, Madison, 0x9999, ObjectStateRules.DoorOpen, 0), 9) == ProposalCode.NotAuthorized, "P2 not in Madison any more");
-        Expect(Propose(wh, "c", 2, 7, new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.ObjectTxn, Value = new byte[3] }, 10) == ProposalCode.Invalid, "malformed");
-        Expect(wh.ObjectTransaction(1, new ObjectTxnRequest { Kind = 2, Ns = Madison, Hash = 1, State = 9 }, 11, out why) == ProposalCode.Invalid, "invalid door state");
-        Expect(wh.ObjectTransaction(1, new ObjectTxnRequest { Kind = (byte)ObjectKind.Safe, Ns = Madison, Hash = 1, State = 1 }, 12, out why) == ProposalCode.NotAuthorized, "kind not shared yet");
-    }
-
-    static void DoorOrdering()
-    {
-        var wh = new WorldHost(12);
-        wh.SetPlayerRegion(1, Madison, 0); wh.SetPlayerRegion(2, Madison, 0);
-        const uint D = 0x00C0FFEE;
-        // rapid open/close/open by Player 2 with chained versions
-        Expect(Propose(wh, "c", 2, 1, Txn(1, Madison, D, 1, 0), 0.0) == ProposalCode.Accepted, "open v1");
-        Expect(Propose(wh, "c", 2, 2, Txn(2, Madison, D, 0, 1), 0.1) == ProposalCode.Accepted, "close v2");
-        Expect(Propose(wh, "c", 2, 3, Txn(3, Madison, D, 1, 2), 0.2) == ProposalCode.Accepted, "open v3");
-        Expect(DoorState(wh.Reg, Madison, D).Ver == 3 && DoorState(wh.Reg, Madison, D).State == 1, "open at v3");
-        // retransmission of the last id #3: the cached answer, not applied again
-        Expect(Propose(wh, "c", 2, 3, Txn(3, Madison, D, 1, 2), 0.3) == ProposalCode.Accepted && DoorState(wh.Reg, Madison, D).Ver == 3, "retransmitted last id: cached Accepted, no new version");
-        // a late duplicate of #2 (close): the gate answers Stale and the door stays open (would otherwise close it)
-        Expect(Propose(wh, "c", 2, 2, Txn(2, Madison, D, 0, 1), 0.3) == ProposalCode.Stale && DoorState(wh.Reg, Madison, D).Ver == 3 && DoorState(wh.Reg, Madison, D).State == 1, "late duplicate not re-applied");
-        // an older id after newer ones: stale by the proposal gate
-        Expect(Propose(wh, "c", 2, 1, Txn(1, Madison, D, 0, 0), 0.4) != ProposalCode.Accepted && DoorState(wh.Reg, Madison, D).State == 1, "out-of-order older id refused");
-        // a delayed request with an old base version (new id): stale, never reverses the newer state
-        Expect(Propose(wh, "c", 2, 10, Txn(10, Madison, D, 0, 1), 0.5) == ProposalCode.Stale && DoorState(wh.Reg, Madison, D).State == 1, "old base -> Stale");
-        // the same physical state with an old base: Unchanged (no revision)
-        uint head = wh.Reg.HeadRev;
-        Expect(Propose(wh, "c", 2, 11, Txn(11, Madison, D, 1 | ObjectStateRules.DoorSlow, 1), 0.6) == ProposalCode.Unchanged && wh.Reg.HeadRev == head, "already open -> Unchanged, no new revision");
-        // simultaneous conflict: host and client both act on v3 -> first committed wins
-        string why;
-        Expect(wh.ObjectTransaction(1, new ObjectTxnRequest { Kind = 2, Ns = Madison, Hash = D, State = 0, BaseVer = 3 }, 0.7, out why) == ProposalCode.Accepted, "host closes first (v4)");
-        Expect(Propose(wh, "c", 2, 12, Txn(12, Madison, D, 0 | ObjectStateRules.DoorSlow, 3), 0.8) == ProposalCode.Unchanged, "client's close on v3 = same physical state -> Unchanged");
-        Expect(Propose(wh, "c", 2, 13, Txn(13, Madison, D, 1, 3), 0.9) == ProposalCode.Stale && DoorState(wh.Reg, Madison, D).Ver == 4 && DoorState(wh.Reg, Madison, D).By == 1, "client's open on v3 -> Stale; host's v4 stays");
-        // rate limit (per player, per second)
-        var wh2 = new WorldHost(13); wh2.SetPlayerRegion(2, Madison, 0);
-        int busy = 0;
-        for (uint i = 0; i < 12; i++) if (Propose(wh2, "x", 2, 100 + i, Txn(100 + i, Madison, 0x5000 + i, 1, 0), 5.0) == ProposalCode.Busy) busy++;
-        Expect(busy == 12 - ObjectStateRules.RatePerSecond, "rate limit: " + busy + " busy");
-        Expect(Propose(wh2, "x", 2, 200, Txn(200, Madison, 0x6000, 1, 0), 6.1) == ProposalCode.Accepted, "next second allowed");
-        // capacity
-        var wh3 = new WorldHost(14); wh3.SetPlayerRegion(2, Madison, 0); int ok = 0, full = 0;
-        for (uint i = 0; i < ObjectStateRules.MaxPerRegion + 5; i++) { var c = Propose(wh3, "y", 2, 1 + i, Txn(1 + i, Madison, 0x7000 + i, 1, 0), i); if (c == ProposalCode.Accepted) ok++; else if (c == ProposalCode.Busy) full++; }
-        Expect(ok == ObjectStateRules.MaxPerRegion && full == 5, "capacity " + ok + "/" + full);
-        Expect(wh3.Reg.Get(StateScope.Region, Madison, "wobj2").Value.Length <= StateEntry.MaxValueBytes, "registry value within 1024 B");
-    }
-
-    static void DoorReload()
-    {
-        var wh = new WorldHost(15);
-        const uint D = 0x0DD;
-        wh.SetPlayerRegion(1, Hideout, 0); wh.SetPlayerRegion(2, Madison, 0);
-        Expect(Propose(wh, "c", 2, 1, Txn(1, Madison, D, 1, 0), 1) == ProposalCode.Accepted, "P2 opens");
-        wh.SetPlayerRegion(1, Madison, 2);                     // P1 loads Madison: the state is there (late join of the region)
-        Expect(DoorState(wh.Reg, Madison, D).State == 1, "P1 arriving sees the open door");
-        wh.SetPlayerRegion(1, Hideout, 3); wh.SetPlayerRegion(1, Madison, 4);   // P1 reloads Madison while P2 stays
-        Expect(DoorState(wh.Reg, Madison, D).State == 1, "survives P1's region reload");
-        wh.PlayerDisconnected(2, 5);                           // P2 disconnects; P1 keeps the scene alive
-        Expect(DoorState(wh.Reg, Madison, D).State == 1, "survives P2's disconnect while the region is live");
-        wh.SetPlayerRegion(2, Madison, 6);                     // P2 reconnects into Madison
-        Expect(DoorState(wh.Reg, Madison, D).State == 1, "P2 reconnect sees the state");
-        // client late join: registry snapshot carries it
-        var w = new NetDataWriter(); StateMessages.WriteSnapshot(w, wh.Reg);
-        var r = new NetDataReader(w.CopyData()); r.GetByte(); uint ep, hd; List<StateEntry> entries;
-        Expect(StateMessages.TryReadSnapshot(r, out ep, out hd, out entries), "snapshot");
-        var client = StateRegistry.CreateClient(); client.LoadSnapshot(ep, hd, entries);
-        Expect(DoorState(client, Madison, D).State == 1, "client registry has the open door after a snapshot");
-        // both leave -> vanilla reset (the original reload rebuilds the door from the scene)
-        wh.SetPlayerRegion(1, Hideout, 7); wh.SetPlayerRegion(2, Hideout, 8);
-        Expect(DoorState(wh.Reg, Madison, D).Ver == 0, "region empty -> cleared like a vanilla reload");
-        Expect(wh.Objects.Cleared >= 1, "cleared counted");
-        // RegionLife states are never written as durable campaign data
-        Expect(Propose(wh, "c", 2, 20, Txn(20, Madison, D, 1, 0), 9) == ProposalCode.NotAuthorized, "P2 at the hideout cannot change Madison doors");
-        wh.SetPlayerRegion(2, Madison, 10); Expect(Propose(wh, "c", 2, 21, Txn(21, Madison, D, 1, 0), 11) == ProposalCode.Accepted, "new visit starts from v0 (scene default)");
-        var bytes = wh.Objects.SerializeCampaign(555);
-        var b2 = new RegionStateBook(); string err; var reg = StateRegistry.CreateHost(1); var outbox = new List<StateEntry>();
-        Expect(b2.LoadCampaign(bytes, 555, reg, outbox, out err) && outbox.Count == 0, "door states are not campaign-durable (vanilla has no door save key)");
-        Expect(!b2.LoadCampaign(bytes, 556, reg, outbox, out err) && err == "other save history", "campaign data of another history refused");
-    }
-
-    static void DoorReplicaRules()
-    {
-        Expect(WorldDoorRules.Decide(1, false, false, false, true, false) == DoorApply.Swing, "closed, idle, unlocked -> swing open");
-        Expect(WorldDoorRules.Decide(0, true, false, false, true, false) == DoorApply.Swing, "open -> swing closed");
-        Expect(WorldDoorRules.Decide(1 | ObjectStateRules.DoorSlow, true, false, false, true, false) == DoorApply.None, "already in state (slow bit is presentation only)");
-        Expect(WorldDoorRules.Decide(1, false, true, false, true, false) == DoorApply.SkipBusy, "original swing in progress -> later");
-        Expect(WorldDoorRules.Decide(1, false, false, true, true, false) == DoorApply.SkipBusy, "local player holds the door -> later");
-        Expect(WorldDoorRules.Decide(1, false, false, false, false, false) == DoorApply.SkipLocked, "locked here -> not forced (W4.2B)");
-        Expect(WorldDoorRules.Decide(0, true, false, false, true, true) == DoorApply.SkipPending, "own proposal in flight -> wait for the result");
-        Expect(ObjectStateRules.SupportedNamespace(ObjectKind.Door, Madison) && !ObjectStateRules.SupportedNamespace(ObjectKind.Door, Hillville) && !ObjectStateRules.SupportedNamespace(ObjectKind.LockedWindow, Madison), "slice scope: doors in Madison");
-        Expect(ObjectStateRules.Lifetime(ObjectKind.Door) == ObjectLifetime.RegionLife, "doors live as long as the scene (no save key)");
-        ObjectKind k; Expect(ObjectStateRules.TryKindOfKey("wobj2", out k) && k == ObjectKind.Door && !ObjectStateRules.TryKindOfKey("wloot0", out k), "registry key mapping");
-    }
-
     // ---------------------------------------------------------------- 14
     static void Codecs()
     {
@@ -415,13 +280,8 @@ static class W42Tests
         var rnd = new Random(9);
         for (int i = 0; i < 2000; i++) { var b = new byte[rnd.Next(0, 200)]; rnd.NextBytes(b); CampaignSnapshot.TryDecode(new NetDataReader(b), out x, out err); }
         for (int i = 0; i < 300; i++) { var b = (byte[])bytes.Clone(); b[rnd.Next(b.Length)] ^= (byte)(1 + rnd.Next(255)); CampaignSnapshot.TryDecode(new NetDataReader(b), out x, out err); }
-        // object list + txn + report
-        var l = new ObjectStateList(); for (uint i = 0; i < 100; i++) l.Items.Add(new ObjectState { Hash = i, State = 1, Ver = 2, By = 2 });
-        ObjectStateList l2; Expect(l.ToBytes().Length == 804 && ObjectStateList.TryParse(l.ToBytes(), out l2) && l2.Items.Count == 100, "list cap 100 = 804 B");
-        l.Items.Add(new ObjectState()); Expect(!ObjectStateList.TryParse(l.ToBytes(), out l2), "over cap refused");
-        ObjectTxnRequest t; Expect(new ObjectTxnRequest { Txn = 5, Kind = 2, Ns = 99, Hash = 7, State = 1, BaseVer = 3 }.ToBytes().Length == ObjectTxnRequest.Bytes && ObjectTxnRequest.TryParse(new ObjectTxnRequest { Txn = 5, Kind = 2, Ns = 99, Hash = 7, State = 1, BaseVer = 3 }.ToBytes(), out t) && t.BaseVer == 3, "txn 16 B");
+        // report (object codecs: tests/W42BTests.cs)
         Expect(new P2PosReport { Region = 99 }.ToBytes().Length == P2PosReport.Bytes, "report 24 B");
-        for (int i = 0; i < 2000; i++) { var b = new byte[rnd.Next(0, 40)]; rnd.NextBytes(b); ObjectStateList.TryParse(b, out l2); ObjectTxnRequest.TryParse(b, out t); }
     }
 
     // ---------------------------------------------------------------- 15
@@ -429,7 +289,7 @@ static class W42Tests
 
     static void Transport()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 23 && ProtocolInfo.ModVersion == "0.13.0", "protocol 23 / mod 0.13.0");
+        Expect(ProtocolInfo.ProtocolVersion == 25 && ProtocolInfo.ModVersion == "0.14.1", "protocol 25 / mod 0.14.1");
         Expect((byte)MsgType.CampaignSnapshot == 16 && (byte)MsgType.CampaignRequest == 17, "message ids");
         int port = _port++;
         string code = JoinAuth.NewCode();
@@ -476,11 +336,6 @@ static class W42Tests
         Expect(reg == ProposalCode.Accepted && RegionDirectory.RegionOf(wh.Reg, 2) == Hillville, "region proposal unchanged");
         Expect(wh.HandleProposal("c", 2, 2, new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.LootTxn, Value = new byte[20] }, 2, out rev, out sr, out sh) != ProposalCode.Accepted, "loot dispatch still guarded (no hook)");
         Expect(wh.HandleProposal("c", 2, 3, new StateEntry { Scope = StateScope.Session, ScopeArg = 5, Key = "unknownKey", Value = new byte[1] }, 3, out rev, out sr, out sh) == ProposalCode.NotAuthorized, "unknown keys refused");
-        // leaving a region clears dropped items, loot AND door states in one step (all scene-lifetime)
-        wh.SetPlayerRegion(2, Madison, 4);
-        Expect(Propose(wh, "c", 2, 4, Txn(4, Madison, 0x42, 1, 0), 5) == ProposalCode.Accepted, "door");
-        wh.SetPlayerRegion(1, Hideout, 6); wh.SetPlayerRegion(2, Hideout, 7);
-        Expect(DoorState(wh.Reg, Madison, 0x42).Ver == 0, "cleared with the region");
         // the client-side vehicle door replica type is untouched (name kept separate)
         Expect(typeof(DoorReplica).Name == "DoorReplica" && typeof(WorldDoorRules).Name == "WorldDoorRules", "vehicle DoorReplica and world WorldDoorRules are separate");
     }
@@ -501,7 +356,7 @@ static class W42Tests
     static void SourceScan()
     {
         string plugin = PluginDir();
-        foreach (var f in new[] { "WorldDoorSync.cs", "CampaignBootstrap.cs" })
+        foreach (var f in new[] { "CampaignBootstrap.cs" })
         {
             var src = File.ReadAllText(Path.Combine(plugin, f));
             foreach (var bad in new[] { "FindObjectsOfType", "Resources.FindObjectsOfTypeAll", "GameObject.Find", "GetComponentsInChildren", "FindGameObjectsWithTag", "GetRootGameObjects" })
@@ -511,9 +366,5 @@ static class W42Tests
         }
         var boot = File.ReadAllText(Path.Combine(plugin, "CampaignBootstrap.cs"));
         Expect(boot.Split(new[] { "FindObjectOfType" }, StringSplitOptions.None).Length - 1 == 1 && boot.Contains("// once per join, main menu only"), "the single FindObjectOfType is the one-shot Continue lookup in the main menu");
-        var doors = File.ReadAllText(Path.Combine(plugin, "WorldDoorSync.cs"));
-        Expect(doors.Contains("if (region == Regions.None || !ObjectStateRules.SupportedNamespace(ObjectKind.Door, region)) return;   // no work elsewhere"), "doors: no per-frame work outside the slice region");
-        Expect(doors.Contains("_watch.Count < 4"), "bounded watch list");
-        Expect(!doors.Contains("PMB") && !doors.Contains("MakeNoise") && !doors.Contains("mouseSensitivity = "), "remote swing never touches the local player (Door.Use side effects excluded)");
     }
 }

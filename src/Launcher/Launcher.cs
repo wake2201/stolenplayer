@@ -5,6 +5,7 @@
 //
 //   (no arguments)                 interactive menu
 //   local                          Local Test: 1st run = host, 2nd run = client, loopback only (default)
+//   devtest                        W4.2B.1 Developer Test: Local Test with isolated test saves in <data>\devtest, all skills, money top-up
 //   host  [--port N] [--bind A]    fixed-role host with a new join code (developer two-PC tests)
 //   join  [--host H] [--port N] [--code-stdin]   fixed-role client
 // Common: --game <folder> --data-dir <folder> --config <ini> --no-pause
@@ -34,6 +35,7 @@ namespace TS2MP.Launcher
         enum Exit { Ok = 0, Config = 2, Unmanaged = 3, Full = 4, Backup = 5, StartFailed = 6, EarlyExit = 7, Locked = 8, Inconsistent = 9, Internal = 10, PortInUse = 11, Install = 12, Cancelled = 13 }
 
         static string _dataDir, _iniPath;
+        static bool _devTest;   // W4.2B.1 "devtest": Local Test with isolated test saves + developer conveniences
         static bool _noPause, _interactive, _yes, _codeStdin;
         static Config _cfg;
         static string _optHost, _optBind; static int _optPort;
@@ -91,10 +93,24 @@ namespace TS2MP.Launcher
             switch (command ?? "local")
             {
                 case "local": return Locked(() => LaunchLocal());
+                case "devtest": UseDevTest(true); return Locked(() => LaunchLocal());
                 case "host": return Locked(() => LaunchHost());
                 case "join": return Locked(() => LaunchJoin());
-                default: return Fail(Exit.Config, "Unknown command '" + command + "'. Commands: local, host, join. (Players use the in-game F8 menu.)");
+                default: return Fail(Exit.Config, "Unknown command '" + command + "'. Commands: local, devtest, host, join. (Players use the in-game F8 menu.)");
             }
+        }
+
+        // W4.2B.1 Developer Test: the same loopback Local Test, but every file (session state, logs, Player-2 record, sandboxes,
+        // the host's isolated save copy) lives in <data>\devtest and the plugin enables its developer conveniences
+        // (-ts2mp-devtest 1). The real save folder is still backed up before the host starts (BackupSaves) and is never written.
+        static string _baseDataDir;
+        static void UseDevTest(bool on)
+        {
+            if (_baseDataDir == null) _baseDataDir = _dataDir;
+            _devTest = on;
+            _dataDir = on ? Path.Combine(_baseDataDir, "devtest") : _baseDataDir;
+            Directory.CreateDirectory(_dataDir);
+            if (on) Log("devtest: data folder " + _dataDir + " (isolated test saves, all skills, money top-up)");
         }
 
         // ================= interactive menu =================
@@ -110,6 +126,7 @@ namespace TS2MP.Launcher
                 Console.WriteLine("  1  Local Test         (two game instances on this PC: run twice)");
                 Console.WriteLine("  2  Host (fixed role)  (developer two-PC test)");
                 Console.WriteLine("  3  Join (fixed role)  (developer two-PC test)");
+                Console.WriteLine("  4  Developer Test     (Local Test with ISOLATED test saves, all skills, unlimited money: run twice)");
                 Console.WriteLine("  6  Settings");
                 Console.WriteLine("  0  Exit");
                 Console.WriteLine();
@@ -118,9 +135,10 @@ namespace TS2MP.Launcher
                 Console.WriteLine();
                 switch (choice.Trim())
                 {
-                    case "1": last = Locked(() => LaunchLocal()); break;
-                    case "2": last = Locked(() => LaunchHost()); break;
-                    case "3": last = Locked(() => LaunchJoin()); break;
+                    case "1": UseDevTest(false); last = Locked(() => LaunchLocal()); break;
+                    case "2": UseDevTest(false); last = Locked(() => LaunchHost()); break;
+                    case "3": UseDevTest(false); last = Locked(() => LaunchJoin()); break;
+                    case "4": UseDevTest(true); last = Locked(() => LaunchLocal()); break;
                     case "6": SettingsMenu(); continue;
                     case "0": return last;
                     default: continue;
@@ -401,7 +419,7 @@ namespace TS2MP.Launcher
             if (asHost) { st.HostPid = proc.Id; st.HostStart = startTicks; st.HostInstance = instanceId; st.ClientPid = 0; }
             else { st.ClientPid = proc.Id; st.ClientStart = startTicks; st.ClientInstance = instanceId; }
             st.Save(inst.StatePath);
-            Console.WriteLine("Thief Simulator 2 Multiplayer launcher - Local Test");
+            Console.WriteLine("Thief Simulator 2 Multiplayer launcher - " + (_devTest ? "DEVELOPER TEST (isolated test saves, all skills, unlimited money)" : "Local Test"));
             Console.WriteLine("  Role     : " + role.ToUpperInvariant() + (asHost ? " (start the launcher again for Player 2)" : " (connecting to the local host)"));
             Console.WriteLine("  Session  : " + st.SessionId + "   Port: 127.0.0.1:" + st.Port);
             Console.WriteLine("  Instance : " + instanceId + "   PID: " + proc.Id);
@@ -424,7 +442,7 @@ namespace TS2MP.Launcher
                 Arguments = "-logFile " + Q(Path.Combine(logDir, "unity.log"))
                     + " -ts2mp-role " + role + " -ts2mp-session " + sessionId + " -ts2mp-instance " + instanceId
                     + " -ts2mp-port " + port + " -ts2mp-logdir " + Q(logDir) + " -ts2mp-data " + Q(_dataDir)
-                    + " -ts2mp-bind " + bind + " -ts2mp-connect " + connect
+                    + " -ts2mp-bind " + bind + " -ts2mp-connect " + connect + (_devTest ? " -ts2mp-devtest 1" : "")
             };
             // The join code never appears in the arguments, the launcher log or a file: only in this child's environment.
             psi.EnvironmentVariables.Remove(JoinAuth.EnvVar);

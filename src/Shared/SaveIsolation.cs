@@ -45,6 +45,16 @@ namespace TS2MP.Shared
             return name.StartsWith("saveData", StringComparison.OrdinalIgnoreCase) || name.StartsWith("saveInfo", StringComparison.OrdinalIgnoreCase);
         }
 
+        // W4.2B.1 developer test mode: every TS2MP data file of a developer test lives in a dedicated "devtest" sub-folder of
+        // the given data folder (idempotent), so production records (p2inv / p2spawn / fleet / client sandbox) are unreachable.
+        public const string DevTestFolder = "devtest";
+        public static string DevTestDataDir(string dataDir)
+        {
+            if (string.IsNullOrEmpty(dataDir)) return null;
+            string trimmed = dataDir.TrimEnd('\\', '/');
+            return string.Equals(Path.GetFileName(trimmed), DevTestFolder, StringComparison.OrdinalIgnoreCase) ? trimmed : Path.Combine(trimmed, DevTestFolder);
+        }
+
         // Path the game's persistentDataPath callers see: the original while disarmed (solo / host), the sandbox while armed.
         public static string Effective(bool armed, string sandbox, Func<string> original) { return armed ? sandbox : original(); }
     }

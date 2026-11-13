@@ -45,7 +45,7 @@ namespace TS2MP.Plugin
                 CensusExport = Config.Bind("World", "CensusExport", false, "Diagnostics: write every census identity (id, kind, category, hierarchy path) to census-*.tsv in the instance log folder.").Value,
                 KeyMirror = Config.Bind("World", "KeyMirror", true, "M5 W2: the host's world keys (loot respawn days, daily events, hot item, day count) are mirrored to the client. Must be the same on both instances; off only for performance comparison.").Value,
                 SharedLoot = Config.Bind("World", "SharedLoot", true, "M5 W4.1: pre-placed world loot (Madison Street subset) is host-authoritative and shared. Must be the same on both instances; needs World.IdentityCensus.").Value,
-                SharedDoors = Config.Bind("World", "SharedDoors", true, "W4.2: ordinary doors (Madison Street) are host-authoritative and shared. Must be the same on both instances; needs World.IdentityCensus.").Value
+                SharedDoors = Config.Bind("World", "SharedDoors", true, "W4.2B: ordinary doors, locks (lockpicking) and windows in Madison Street are host-authoritative and shared. Must be the same on both instances; needs World.IdentityCensus.").Value
             };
             KeyCode travelKey, menuKey;
             var keyName = Config.Bind("Vehicles", "TravelMenuKey", "F7", "Opens the original travel menu on foot in the hideout / Auto Shop when you have no car there (another player simulates it or it is parked elsewhere).").Value;
@@ -95,8 +95,21 @@ namespace TS2MP.Plugin
             }
             else log.Info("JOIN_CODE none (only a loopback host may run without one)");
 
+            // W4.2B.1 developer test mode: loopback Local Test only; every TS2MP file goes to <data>\devtest and the host plays
+            // an isolated copy of its save (see DevTestMode.cs). Refused (normal Local Test) for any network session.
+            if (args.DevTest)
+            {
+                if (!DevTestMode.LoopbackOnly(args)) { args.DevTest = false; log.Error("DEVTEST refused: only for the loopback Local Test without a join code (bind " + args.BindAddress + ", connect " + args.ConnectAddress + ")"); }
+                else
+                {
+                    args.DataDir = DevTestMode.IsolatedDataDir(args.DataDir);
+                    try { Directory.CreateDirectory(args.DataDir); } catch (Exception ex) { log.Error("DEVTEST data folder not created", ex); }
+                    log.Warn("DEVTEST isolated data folder " + args.DataDir + " (Player-2 record, spawn, fleet, sandboxes; production files are not used)");
+                }
+            }
             bool saveSafe = true;
             if (args.Role == Role.Client) saveSafe = SaveGuard.Install(new Harmony(Guid + ".saveguard"), args, log);
+            else if (args.DevTest) saveSafe = SaveGuard.InstallDevHost(new Harmony(Guid + ".saveguard"), args.DataDir, log);
             else log.Info("SAVE_OWNER: host keeps normal game persistence (real save folder). No save patches applied.");
             settings.DataDir = args.DataDir; settings.LogDir = args.LogDir;
             runner.Init(args, log, saveSafe, settings);
@@ -127,6 +140,7 @@ namespace TS2MP.Plugin
         public string BindAddress = "127.0.0.1", ConnectAddress = "127.0.0.1";
         public int Port;
         public byte[] JoinKey;   // N1: from the environment, never from argv
+        public bool DevTest;     // W4.2B.1: -ts2mp-devtest 1 (developer launcher "devtest" command only)
 
         public static bool TryParse(string[] argv, out LaunchArgs a, out string error)
         {
@@ -144,6 +158,7 @@ namespace TS2MP.Plugin
                 else if (k == "-ts2mp-data") a.DataDir = v;
                 else if (k == "-ts2mp-bind") a.BindAddress = v;
                 else if (k == "-ts2mp-connect") a.ConnectAddress = v;
+                else if (k == "-ts2mp-devtest") a.DevTest = v == "1";
             }
             if (role == null) { error = "no -ts2mp-role argument"; return false; }
             if (role == "host") a.Role = Role.Host;
@@ -186,7 +201,8 @@ namespace TS2MP.Plugin
         WorldKeyMirror _mirror;
         WorldLootSync _loot;
         CampaignBootstrap _campaign;
-        WorldDoorSync _doors;
+        WorldObjectSync _doors;   // W4.2B doors / locks / windows
+        DevTestMode _devTest;     // W4.2B.1 developer launcher "devtest" only
         MultiplayerMenu _menu;
         bool _quitRequested, _shutdown;
         // M5 performance instrumentation (Debug.PerfStats; off = one null check per frame)
@@ -225,6 +241,7 @@ namespace TS2MP.Plugin
             _node = node;
             log.StateProvider = delegate { return _node != null ? _node.StateText : "state -"; };
             if (node.Start()) BuildSystems(node);
+            if (args.DevTest) { try { _devTest = new DevTestMode(log); } catch (Exception ex) { log.Error("DEVTEST init failed (test conveniences off; isolation stays active)", ex); _devTest = null; } }
             _menu = new MultiplayerMenu(this, log, settings, null, true);
             StartPerf();
         }
@@ -296,10 +313,10 @@ namespace TS2MP.Plugin
             catch (Exception ex) { log.Error("CAMPAIGN init failed (Player 2 cannot load a host campaign; joins time out safely)", ex); _campaign = null; }
             if (_census != null && world.SharedDoors)
             {
-                try { _doors = new WorldDoorSync(node, log, _world); }
-                catch (Exception ex) { log.Error("WDOOR init failed (shared doors disabled)", ex); _doors = null; }
+                try { _doors = new WorldObjectSync(node, log, _world); }
+                catch (Exception ex) { log.Error("WOBJ init failed (shared doors / locks / windows disabled)", ex); _doors = null; }
             }
-            else log.Info("WDOOR disabled (" + (!world.SharedDoors ? "World.SharedDoors = false" : "no identity census") + "): original local doors");
+            else log.Info("WOBJ disabled (" + (!world.SharedDoors ? "World.SharedDoors = false" : "no identity census") + "): original local doors / locks / windows");
         }
 
         // N1.2: end the session: final writes (fleet, Player-2 record) happen in the systems' Dispose, then the network stops.
@@ -428,7 +445,12 @@ namespace TS2MP.Plugin
             if (_doors != null && _world != null)
             {
                 try { _doors.Update(); }
-                catch (Exception ex) { _log.Error("WDOOR update exception (shared doors disabled)", ex); _doors.Dispose(); _doors = null; }
+                catch (Exception ex) { _log.Error("WOBJ update exception (shared doors / locks / windows disabled)", ex); _doors.Dispose(); _doors = null; }
+            }
+            if (_devTest != null)
+            {
+                try { _devTest.Update(); }
+                catch (Exception ex) { _log.Error("DEVTEST update exception (test conveniences off)", ex); _devTest.Dispose(); _devTest = null; }
             }
         }
 

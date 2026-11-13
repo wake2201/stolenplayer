@@ -176,7 +176,14 @@ namespace TS2MP.Plugin
             long t0 = Stopwatch.GetTimestamp();
             EnsureStore();
             var p2 = Player2Sync.Instance;
-            if (p2 == null || !p2.HostBookReady || _store == null) { _log.Error("CAMPAIGN snapshot NOT sent (" + why + "): Player-2 record not bound (host readiness should have prevented this join)"); return; }
+            if (p2 == null || !p2.HostBookReady || _store == null)
+            {
+                // W4.2B.1 defense in depth: the readiness gate (HostReadiness, now also in launcher mode) normally prevents this.
+                // Instead of leaving the client waiting forever, send the snapshot as soon as the record is bound.
+                if (!_snapshotDeferred) _log.Warn("CAMPAIGN snapshot deferred (" + why + "): Player-2 record not bound yet; sent as soon as the host's save is loaded");
+                _snapshotDeferred = true; _deferredWhy = why; return;
+            }
+            _snapshotDeferred = false;
             Vec3 feet; float yaw; bool hasFeet = LocalFeet(out feet, out yaw);
             int hostRegion = _world.LocalRegion;
             string note;
@@ -223,7 +230,15 @@ namespace TS2MP.Plugin
             if (now >= _nextEnsure) { _nextEnsure = now + 1.0; EnsureStore(); }   // profile / save history changes (new game, other save)
             if (_dirty && _writer != null && now >= _nextWrite) { _writer.Queue(_rec.ToBytes()); _dirty = false; _nextWrite = now + 5.0; }
             if (_requestAt > 0 && now >= _requestAt) { _requestAt = -1; if (_node.IsConnected) SendSnapshot("client back in the main menu"); }
+            if (_snapshotDeferred && now >= _nextDeferredTry)
+            {
+                _nextDeferredTry = now + 1.0;
+                var p2 = Player2Sync.Instance;
+                if (!_node.IsConnected) _snapshotDeferred = false;
+                else if (p2 != null && p2.HostBookReady) SendSnapshot(_deferredWhy + ", deferred until the host's save was loaded");
+            }
         }
+        bool _snapshotDeferred; string _deferredWhy; double _nextDeferredTry;
 
         // =================================================================== client
         bool InstallClientPatches()
@@ -296,7 +311,8 @@ namespace TS2MP.Plugin
             long t0 = Stopwatch.GetTimestamp();
             // Never write anything unless this process is isolated: the overwrite targets FBPP's active file.
             if (!SaveGuard.Armed || !SaveGuard.RuntimeCheck()) { _log.Error("CAMPAIGN snapshot refused: save isolation not armed/verified (nothing written)"); return; }
-            snap.ApplyLocalPreferences(SaveGuard.LocalPreferences);
+            SaveGuard.RefreshLocalPreferencesFromSandbox();   // W4.2B.1: keep this session's camera choice on a menu-return snapshot
+            snap.ApplyLocalPreferences(SaveGuard.LocalPreferences);   // missing -> original default (TPP = third person)
             string err;
             if (!FbppApi.Overwrite(snap.Data, out err)) { _log.Error("CAMPAIGN sandbox write failed (" + err + "): Continue stays blocked"); return; }
             int loc = FbppApi.GetInt("CurrentLocation", int.MinValue), story = FbppApi.GetInt("Story", 0);

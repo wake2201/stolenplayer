@@ -37,6 +37,10 @@ namespace TS2MP.Shared
         static readonly string[] StoragePrefixes = { "Storage_Item_", "Locker_Item_", "HeavyVan_", "HeavyItemShed", "PosX_item", "PosY_item", "PosZ_item", "RotX_item", "RotY_item", "RotZ_item" };
         // CarController.Update / RunCar / GameManager.Update read "TPP" (the player's own car camera choice).
         static readonly HashSet<string> LocalExact = new HashSet<string>(StringComparer.Ordinal) { "TPP" };
+        // W4.2B.1: original defaults of the local preferences. MainMenu.StartNewGame IL_003c and StartFreeMode IL_002f both
+        // write SPrefs.SetBool("TPP", true): every vanilla campaign starts with the third-person driving camera.
+        // CarController.RunCar reads SPrefs.GetBool("TPP") (= FBPP.GetBool(key, false)), so a missing key means first person.
+        public static readonly KeyValuePair<string, bool>[] LocalBoolDefaults = { new KeyValuePair<string, bool>("TPP", true) };
 
         public const string ModPrefix = "TS2MP_";
 
@@ -299,12 +303,17 @@ namespace TS2MP.Shared
             return false;
         }
 
-        // Client: add its own purely local preferences (never progression).
+        // Client: add its own purely local preferences (never progression). W4.2B.1: a preference this player has no value
+        // for gets the ORIGINAL new-campaign default (CampaignPolicy.LocalDefaults) - the host's value is never used (it is
+        // Player 1's choice) and an absent key would read as SPrefs.GetBool default false (= first-person driving).
         public void ApplyLocalPreferences(CampaignData local)
         {
-            if (local == null) return;
-            foreach (var kv in local.Bools) if (CampaignPolicy.Classify(kv.Key) == CampaignKeyClass.LocalPreference) Data.Bools[kv.Key] = kv.Value;
-            foreach (var kv in local.Ints) if (CampaignPolicy.Classify(kv.Key) == CampaignKeyClass.LocalPreference) Data.Ints[kv.Key] = kv.Value;
+            if (local != null)
+            {
+                foreach (var kv in local.Bools) if (CampaignPolicy.Classify(kv.Key) == CampaignKeyClass.LocalPreference) Data.Bools[kv.Key] = kv.Value;
+                foreach (var kv in local.Ints) if (CampaignPolicy.Classify(kv.Key) == CampaignKeyClass.LocalPreference) Data.Ints[kv.Key] = kv.Value;
+            }
+            foreach (var kv in CampaignPolicy.LocalBoolDefaults) if (local == null || !local.Bools.ContainsKey(kv.Key)) Data.Bools[kv.Key] = kv.Value;
         }
 
         public byte[] Encode()

@@ -36,7 +36,7 @@ try {
     $bad = @($files | Where-Object { -not $m.ContainsKey($_) -or $m[$_] -ne (Sha "$x\$_") })
     Check "ZIP content = manifest ($($files.Count) files, all SHA-256 match, none extra)" ($bad.Count -eq 0 -and $files.Count -eq $m.Count)
     $hdr = Get-Content "$x\BepInEx\plugins\TS2MP\manifest.sha256" -TotalCount 1
-    Check "versions pinned: manifest $ver / protocol $proto, plugin 0.13.0 / 23" ($hdr -match "version=$([regex]::Escape($ver)) protocol=$proto " -and $ver -eq '0.13.0' -and $proto -eq '23')
+    Check "versions pinned: manifest $ver / protocol $proto, plugin 0.14.1 / 25" ($hdr -match "version=$([regex]::Escape($ver)) protocol=$proto " -and $ver -eq '0.14.1' -and $proto -eq '25')
     $bep = Join-Path $repo 'build\deps\BepInEx_5.4.23.5'
     $bootstrap = @('winhttp.dll', 'doorstop_config.ini', '.doorstop_version') | Where-Object { (Sha "$x\$_") -ne (Sha "$bep\$_") }
     $core = @(Get-ChildItem "$bep\BepInEx\core\*.dll" | Where-Object { -not (Test-Path "$x\BepInEx\core\$($_.Name)") -or (Sha "$x\BepInEx\core\$($_.Name)") -ne (Sha $_.FullName) })

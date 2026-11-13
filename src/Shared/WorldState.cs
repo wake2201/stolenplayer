@@ -239,7 +239,9 @@ namespace TS2MP.Shared
         public const string WorldItems = "witems";       // Region scope (arg = region): committed dropped items of that region (WorldItemList, W3, protocol 17)
         public const string LootTxn = "lootTxn";         // Session scope (arg 0): client proposal, Player 2 picks up one verified world object (LootTxnRequest, W4.1, protocol 20)
         // W4.1: taken world loot = Region scope (arg = namespace = region id), keys LootBook.Keys "wloot0".."wloot3" (hash chunks)
-        public const string ObjectTxn = "objTxn";       // Session scope (arg 0): client proposal, one world-object transition (ObjectTxnRequest, W4.2, protocol 23)
+        public const string ObjectTxn = "objTxn";       // Session scope (arg 0): client proposal, one world-object operation (ObjectTxnRequest 19 B: set / reserve / release / NPC set, region epoch; W4.2B protocol 24)
+        public const string ObjectScene = "objScene";   // Player scope (arg = sender slot): client proposal, scene instance of a region loaded (ObjectSceneReport, W4.2B), never stored
+        public const string ObjectInit = "objInit";     // Session scope (arg 0): client proposal, one chunk of the region initializer's canonical initial state (ObjectInitChunk, W4.2B), never stored
         // W4.2: committed object states = Region scope (arg = namespace = region id), key ObjectStateRules.RegistryKey(kind) ("wobj2" = doors)
         public const string P2Pos = "p2pos";             // Player scope (arg 2): client proposal, Player 2's last valid position (P2PosReport, W4.2), never stored
         public const string ItemTxn = "itemTxn";         // Session scope (arg 0): client proposal, one dropped-item transaction (ItemTxnRequest, W3)

@@ -43,15 +43,30 @@ namespace TS2MP.Plugin
             return true;
         }
 
+        // W4.2B.1 developer test mode, HOST role (launcher only, DevTestMode): the host plays an isolated COPY of the real
+        // save folder in <devtest data>\host-save with the same redirect + guards as Player 2. The real folder is only read
+        // (seeded once, while the copy has no save yet); FBPP writes outside the copy, File writes into the real folder,
+        // PlayerPrefs and Steam achievement writes are blocked exactly as for an armed client.
+        internal static bool DevHost { get; private set; }
+        public static bool InstallDevHost(Harmony harmony, string devDataDir, InstanceLog log)
+        {
+            string why;
+            DevHost = true;
+            if (!Precheck(harmony, devDataDir, log, "host-save")) return false;
+            if (!Arm(out why)) { log.Error("SAVE_GUARD developer host arm failed: " + why); return false; }
+            return true;
+        }
+
         // Read-only: folder layout and the original types/methods the protection relies on. No patch is applied.
-        public static bool Precheck(Harmony harmony, string dataDir, InstanceLog log)
+        public static bool Precheck(Harmony harmony, string dataDir, InstanceLog log) { return Precheck(harmony, dataDir, log, "client-sandbox"); }
+        static bool Precheck(Harmony harmony, string dataDir, InstanceLog log, string sandboxName)
         {
             _log = log; _harmony = harmony;
             try
             {
                 RealDir = SaveIsolation.Norm(Application.persistentDataPath);   // the original value, nothing is redirected yet
                 GameDir = SaveIsolation.Norm(Path.GetDirectoryName(Application.dataPath));
-                SandboxDir = SaveIsolation.Norm(Path.Combine(dataDir, "client-sandbox"));
+                SandboxDir = SaveIsolation.Norm(Path.Combine(dataDir, sandboxName));
                 log.Info("SAVE_GUARD real=" + RealDir + " sandbox=" + SandboxDir + " game=" + GameDir);
                 string layout = SaveIsolation.LayoutError(SandboxDir, RealDir, GameDir);
                 if (layout != null) { log.Error("SAVE_GUARD " + layout); return false; }
@@ -86,9 +101,13 @@ namespace TS2MP.Plugin
                     _log.Info("SAVE_GUARD_INSTALLED redirect + guards (inactive until armed)");
                 }
                 Directory.CreateDirectory(SandboxDir);
-                CaptureLocalPreferences();
-                RetireSandboxSaves();
-                SeedSandbox();
+                if (DevHost) SeedDevHostSave();
+                else
+                {
+                    CaptureLocalPreferences();
+                    RetireSandboxSaves();
+                    SeedSandbox();
+                }
                 Armed = true;   // from here on every guard is active and the redirect points at the sandbox
                 _log.Info("SAVE_GUARD_ARMED redirect -> sandbox, guards active");
                 var fbpp = AccessTools.TypeByName("FBPP");
@@ -144,6 +163,46 @@ namespace TS2MP.Plugin
                 _log.Info("SAVE_GUARD local preferences kept from this player's own data: " + LocalPreferences.Count + " key(s) (no progression)");
             }
             catch (Exception ex) { _log.Warn("SAVE_GUARD local preferences not read (" + ex.Message + "); game defaults apply"); }
+        }
+
+        // W4.2B.1: the TPP choice made in this session (CarController.Update change_view writes it into the sandbox) wins over
+        // the value captured at arming time, so a fresh campaign snapshot (menu return) keeps the player's camera choice.
+        internal static void RefreshLocalPreferencesFromSandbox()
+        {
+            if (!Armed || DevHost) return;
+            try
+            {
+                var fbpp = AccessTools.TypeByName("FBPP");
+                if (AccessTools.Field(fbpp, "_config").GetValue(null) == null) return;
+                var has = AccessTools.Method(fbpp, "HasKeyForBool", new[] { typeof(string) });
+                var get = AccessTools.Method(fbpp, "GetBool", new[] { typeof(string), typeof(bool) });
+                if (has == null || get == null) return;
+                foreach (var k in new[] { "TPP" })
+                    if ((bool)has.Invoke(null, new object[] { k })) LocalPreferences.Bools[k] = (bool)get.Invoke(null, new object[] { k, false });
+            }
+            catch (Exception ex) { _log.Warn("SAVE_GUARD sandbox preferences not read (" + ex.Message + ")"); }
+        }
+
+        // Developer host copy: seeded from the real folder ONLY while the copy has no save file yet (later test runs keep
+        // their own progress). Copy = read-only access to the real folder; Unity cache and logs are skipped. Runs before
+        // Armed = true, so the File guards are not active yet and the destination is checked by LayoutError (Precheck).
+        static void SeedDevHostSave()
+        {
+            bool hasSave = Directory.GetFiles(SandboxDir, "saveData*", SearchOption.TopDirectoryOnly).Length > 0;
+            if (hasSave) { _log.Info("DEVTEST host save copy kept (" + SandboxDir + "); the real save folder is not read"); return; }
+            if (!Directory.Exists(RealDir)) { _log.Info("DEVTEST real save folder does not exist: the developer host starts without a save"); return; }
+            int n = 0;
+            foreach (var src in Directory.GetFiles(RealDir, "*", SearchOption.AllDirectories))
+            {
+                string rel = src.Substring(RealDir.Length).TrimStart('\\', '/');
+                if (rel.StartsWith("Unity" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)) continue;
+                if (rel.EndsWith(".log", StringComparison.OrdinalIgnoreCase)) continue;
+                string dst = Path.Combine(SandboxDir, rel);
+                Directory.CreateDirectory(Path.GetDirectoryName(dst));
+                try { File.Copy(src, dst, false); n++; }
+                catch (Exception ex) { _log.Warn("DEVTEST could not copy " + rel + ": " + ex.Message); }
+            }
+            _log.Info("DEVTEST host save copy created: " + n + " file(s) copied from the real save folder into " + SandboxDir + " (the real folder is never written)");
         }
 
         // W4.2: the client never plays its own solo save (classification: SaveIsolation.IsSaveData, tested offline).

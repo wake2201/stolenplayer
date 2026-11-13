@@ -8,6 +8,12 @@
 // W4.1: for every Pickupable the census also reads its serialized loot flags (before any Start) into a LootCatalog per
 // namespace (src/Shared/WorldLoot.cs); RandomFileCabinet contents are marked (random per instance). Catalog metadata is kept
 // after the scene unloads (the host validates a Player-2 pickup against it); live component references are released.
+// W4.2B: object maps for the shared kinds Door / Lockpick / LockedWindow (component -> id, per-namespace enumeration), the
+// window -> sash link (LockedWindow and its Door on the same GameObject = ONE logical window id), story/mission metadata
+// read from the serialized fields before any Start (Lockpick.on_unlock_advance_story / story_name / is_tutorial,
+// LockedWindow.complete_mission / isTutorial / Mission_Item), and an object digest (sorted ids of the three kinds) used as
+// scene metadata. LATE census: scenes that were already loaded when the census was created (the host pressed F8 inside a
+// region) are censused once for the three object kinds only (no loot catalog: their loot state is no longer pristine).
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -59,6 +65,7 @@ namespace TS2MP.Plugin
             var pick = AccessTools.TypeByName("Pickupable");
             _wasDropped = pick != null ? Fast.Getter<bool>(pick, "wasDropped") : null;
             if (pick != null) InitLootFlags(pick);
+            InitObjectMeta();
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             Instance = this;
@@ -69,10 +76,10 @@ namespace TS2MP.Plugin
         {
             try
             {
-                if (mode == LoadSceneMode.Single) { _registry.Clear(); foreach (var c in _loot.Values) c.ReleaseTargets(); _doorIds.Clear(); _doorIdsByNs.Clear(); }   // every other scene was unloaded
+                if (mode == LoadSceneMode.Single) { _registry.Clear(); foreach (var c in _loot.Values) c.ReleaseTargets(); _objIds.Clear(); _objByNs.Clear(); _windowDoor.Clear(); }   // every other scene was unloaded
                 int ns = IdentityNamespace.ForScene(s.name);
                 if (!_gate.TryBegin(s.handle, ns)) return;
-                Run(s, ns);
+                Run(s, ns, false);
             }
             catch (Exception ex) { _log.Error("CENSUS failed for scene " + s.name + " (no gameplay effect)", ex); }
             finally { _roots.Clear(); _paths.Clear(); _siblings.Clear(); _occurrence.Clear(); _rootNames = null; _cabinet.Clear(); }
@@ -82,33 +89,84 @@ namespace TS2MP.Plugin
         {
             _gate.Unloaded(s.handle);
             int ns = IdentityNamespace.ForScene(s.name);
-            if (ns != IdentityNamespace.None) { _registry.Remove(ns); LootCatalog c; if (_loot.TryGetValue(ns, out c)) c.ReleaseTargets(); ForgetDoors(ns); }
+            if (ns != IdentityNamespace.None) { _registry.Remove(ns); LootCatalog c; if (_loot.TryGetValue(ns, out c)) c.ReleaseTargets(); ForgetObjects(ns); }
         }
 
-        // ---- W4.2 doors: component -> id (live scene only) + retained catalog of unambiguous door ids per namespace ----
-        readonly Dictionary<int, WorldObjectId> _doorIds = new Dictionary<int, WorldObjectId>();
-        readonly Dictionary<int, List<int>> _doorIdsByNs = new Dictionary<int, List<int>>();
-        readonly Dictionary<int, HashSet<uint>> _doorCatalog = new Dictionary<int, HashSet<uint>>();
+        // ---- W4.2/W4.2B shared objects: component -> id (live scene only) + retained catalogs per namespace ----
+        public struct ObjectRef { public WorldObjectId Id; public ObjectKind Kind; public Component Comp; }
+        readonly Dictionary<int, ObjectRef> _objIds = new Dictionary<int, ObjectRef>();             // component instance id -> ref
+        readonly Dictionary<int, List<ObjectRef>> _objByNs = new Dictionary<int, List<ObjectRef>>();
+        readonly Dictionary<int, WorldObjectId> _windowDoor = new Dictionary<int, WorldObjectId>(); // sash Door instance id -> window id
+        readonly Dictionary<long, HashSet<uint>> _catalog = new Dictionary<long, HashSet<uint>>();  // (kind, ns) -> unambiguous ids
+        readonly Dictionary<int, HashSet<uint>> _restricted = new Dictionary<int, HashSet<uint>>(); // ns -> story locks / mission windows
+        readonly Dictionary<int, uint> _objDigest = new Dictionary<int, uint>();
+        readonly Dictionary<int, int> _objCount = new Dictionary<int, int>();
+        readonly HashSet<int> _late = new HashSet<int>();
+        Func<object, bool> _lpStory, _lpTut, _lwMission, _lwTut; Func<object, string> _lpStoryName; Type _missionItemT;
+        public event Action<int, bool> ObjectsCensused;   // (namespace, late)
 
-        void ForgetDoors(int ns)
+        static bool Shared(ObjectKind k) { return k == ObjectKind.Door || k == ObjectKind.Lockpick || k == ObjectKind.LockedWindow; }
+        static long CK(ObjectKind k, int ns) { return ((long)(byte)k << 32) | (uint)ns; }
+
+        void ForgetObjects(int ns)
         {
-            List<int> l;
-            if (!_doorIdsByNs.TryGetValue(ns, out l)) return;
-            foreach (var iid in l) _doorIds.Remove(iid);
-            _doorIdsByNs.Remove(ns);
+            List<ObjectRef> l;
+            if (!_objByNs.TryGetValue(ns, out l)) return;
+            foreach (var r in l) { if ((object)r.Comp == null) continue; int iid = r.Comp.GetInstanceID(); _objIds.Remove(iid); _windowDoor.Remove(iid); }
+            _objByNs.Remove(ns);
         }
 
-        // A Door of a loaded scene -> its census id; false for ambiguous / unknown doors (never shared).
-        public bool TryDoorId(Component door, out WorldObjectId id)
+        // A shared object of a loaded scene -> its census id; false for ambiguous / unknown objects (never shared).
+        public bool TryObjectId(Component c, ObjectKind kind, out WorldObjectId id)
         {
-            id = default(WorldObjectId);
-            if (door == null || !_doorIds.TryGetValue(door.GetInstanceID(), out id)) return false;
-            var t = _registry.Get(id.Namespace); IdentityCategory cat;
-            return t != null && t.TryCategory(id.Hash, out cat) && cat != IdentityCategory.Unsupported;
+            id = default(WorldObjectId); ObjectRef r;
+            if ((object)c == null || !_objIds.TryGetValue(c.GetInstanceID(), out r) || r.Kind != kind) return false;
+            id = r.Id; return true;
+        }
+        public bool TryDoorId(Component door, out WorldObjectId id) { return TryObjectId(door, ObjectKind.Door, out id); }
+        // The sash Door of a LockedWindow (same GameObject) -> the window's logical id.
+        public bool TryWindowOfDoor(Component door, out WorldObjectId id) { id = default(WorldObjectId); return (object)door != null && _windowDoor.TryGetValue(door.GetInstanceID(), out id); }
+        public List<ObjectRef> Objects(int ns) { List<ObjectRef> l; return _objByNs.TryGetValue(ns, out l) ? l : null; }
+        public bool IsLate(int ns) { return _late.Contains(ns); }
+        public bool TryDigest(int ns, out uint digest, out int count) { count = 0; _objCount.TryGetValue(ns, out count); return _objDigest.TryGetValue(ns, out digest); }
+
+        // Host validation: null = this process never censused the namespace (unverified), else known/unknown.
+        public bool? ObjectKnown(ObjectKind k, int ns, uint hash) { HashSet<uint> s; return _catalog.TryGetValue(CK(k, ns), out s) ? s.Contains(hash) : (bool?)null; }
+        public bool? DoorKnown(int ns, uint hash) { return ObjectKnown(ObjectKind.Door, ns, hash); }
+        public bool ObjectRestricted(ObjectKind k, int ns, uint hash) { HashSet<uint> s; return k != ObjectKind.Door && _restricted.TryGetValue(ns, out s) && s.Contains(hash); }
+
+        void InitObjectMeta()
+        {
+            var lp = AccessTools.TypeByName("Lockpick"); var lw = AccessTools.TypeByName("LockedWindow");
+            if (lp != null) { _lpStory = Fast.Getter<bool>(lp, "on_unlock_advance_story"); _lpStoryName = Fast.Getter<string>(lp, "story_name"); _lpTut = Fast.Getter<bool>(lp, "is_tutorial"); }
+            if (lw != null) { _lwMission = Fast.Getter<bool>(lw, "complete_mission"); _lwTut = Fast.Getter<bool>(lw, "isTutorial"); }
+            _missionItemT = AccessTools.TypeByName("Mission_Item");
         }
 
-        // Host validation of a door id: null = this process never censused the namespace (unverified), else known/unknown.
-        public bool? DoorKnown(int ns, uint hash) { HashSet<uint> s; return _doorCatalog.TryGetValue(ns, out s) ? s.Contains(hash) : (bool?)null; }
+        // Fail closed: when the metadata cannot be read the object counts as story-critical.
+        bool StoryCritical(ObjectKind k, Component c)
+        {
+            if (k == ObjectKind.Lockpick)
+                return _lpStory == null || _lpStoryName == null || _lpTut == null || _lpStory(c) || !string.IsNullOrEmpty(_lpStoryName(c)) || _lpTut(c);
+            if (k == ObjectKind.LockedWindow)
+                return _lwMission == null || _lwTut == null || _lwMission(c) || _lwTut(c) || (_missionItemT != null && c.GetComponent(_missionItemT) != null);
+            return false;
+        }
+
+        // Scenes already loaded when the census was created (F8 host inside a region): object kinds only, once.
+        public void CensusLoadedScenes()
+        {
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var s = SceneManager.GetSceneAt(i);
+                if (!s.isLoaded) continue;
+                int ns = IdentityNamespace.ForScene(s.name);
+                if (ns == IdentityNamespace.None || ns == IdentityNamespace.MainScene || !_gate.TryBegin(s.handle, ns)) continue;
+                try { Run(s, ns, true); }
+                catch (Exception ex) { _log.Error("CENSUS late run failed for scene " + s.name + " (no gameplay effect)", ex); }
+                finally { _roots.Clear(); _paths.Clear(); _siblings.Clear(); _occurrence.Clear(); _rootNames = null; _cabinet.Clear(); }
+            }
+        }
 
         void InitLootFlags(Type pick)
         {
@@ -157,18 +215,18 @@ namespace TS2MP.Plugin
                 }
         }
 
-        void Run(Scene scene, int ns)
+        void Run(Scene scene, int ns, bool late)
         {
             long t0 = Stopwatch.GetTimestamp();
             int gc0 = GC.CollectionCount(0); long mem0 = GC.GetTotalMemory(false);
             var table = _registry.Begin(ns);
-            ForgetDoors(ns);
-            var doors = new List<int>(); var doorHashes = new List<uint>();
+            ForgetObjects(ns);
+            var objs = new List<ObjectRef>(); var windowsByTransform = new Dictionary<Transform, WorldObjectId>(); var restricted = new HashSet<uint>();
             scene.GetRootGameObjects(_roots);
             _rootNames = new SiblingNames();
             for (int i = 0; i < _roots.Count; i++) _rootNames.Add(_roots[i].name);
             var loot = new NameCensus();
-            LootCatalog catalog = _pItem != null ? new LootCatalog(ns) : null;
+            LootCatalog catalog = _pItem != null && !late ? new LootCatalog(ns) : null;
             if (catalog != null) MarkCabinets();
             List<string> lines = _export ? new List<string>(4096) : null;
             int visitedComponents = 0;
@@ -177,6 +235,7 @@ namespace TS2MP.Plugin
             {
                 var type = _types[k]; if (type == null) continue;
                 var info = ObjectKinds.All[k];
+                if (late && !Shared(info.Kind)) continue;
                 for (int r = 0; r < _roots.Count; r++)
                 {
                     var comps = _roots[r].GetComponentsInChildren(type, true);
@@ -199,7 +258,13 @@ namespace TS2MP.Plugin
                         }
                         uint hash = IdentityHash.ForObject(scene.name, path, info.Kind);
                         var res = table.Add(hash, path, info.Kind, cat, comp);
-                        if (info.Kind == ObjectKind.Door && res == AddResult.Added) { int iid = comp.GetInstanceID(); _doorIds[iid] = new WorldObjectId(ns, hash); doors.Add(iid); doorHashes.Add(hash); }
+                        if (Shared(info.Kind) && res == AddResult.Added)
+                        {
+                            var oref = new ObjectRef { Id = new WorldObjectId(ns, hash), Kind = info.Kind, Comp = comp };
+                            objs.Add(oref);
+                            if (info.Kind == ObjectKind.LockedWindow) windowsByTransform[t] = oref.Id;
+                            if (StoryCritical(info.Kind, comp)) restricted.Add(hash);
+                        }
                         if (info.Kind == ObjectKind.Pickupable && catalog != null)
                         {
                             string lname = t.name;
@@ -209,11 +274,9 @@ namespace TS2MP.Plugin
                     }
                 }
             }
-            var stable = _registry.Finish(table);
-            _doorIdsByNs[ns] = doors;
-            var dcat = new HashSet<uint>(); IdentityCategory dc;
-            foreach (var h in doorHashes) if (table.TryCategory(h, out dc) && dc != IdentityCategory.Unsupported) dcat.Add(h);
-            _doorCatalog[ns] = dcat;
+            var stable = late ? null : _registry.Finish(table);
+            if (late) table.Seal();
+            FinishObjects(ns, table, objs, windowsByTransform, restricted, late);
             if (catalog != null)
             {
                 IdentityCategory ic;
@@ -226,7 +289,7 @@ namespace TS2MP.Plugin
             _runs++; _totalMs += ms; if (ms > _maxMs) _maxMs = ms;
 
             var sb = new StringBuilder();
-            sb.Append("WORLD_CENSUS ").Append(IdentityNamespace.Name(ns)).Append(" scene='").Append(scene.name).Append("' ").Append(table.Summary())
+            sb.Append(late ? "WORLD_CENSUS(late: objects only) " : "WORLD_CENSUS ").Append(IdentityNamespace.Name(ns)).Append(" scene='").Append(scene.name).Append("' ").Append(table.Summary())
               .Append(" components=").Append(visitedComponents).Append(" transforms=").Append(_paths.Count)
               .Append(" loot=").Append(table.CountOf(ObjectKind.Pickupable)).Append(" lootSharedNames=").Append(loot.SharedNames).Append("/").Append(loot.Names)
               .Append(" (").Append(loot.ObjectsWithSharedNames).Append(" objects share an ItemDay_ key)")
@@ -241,6 +304,39 @@ namespace TS2MP.Plugin
             if (catalog != null && catalog.Count > 0) LogLoot(catalog);
             if (stable == false) _log.Warn("WORLD_CENSUS " + IdentityNamespace.Name(ns) + " digest differs from the previous load of this namespace in this process");
             if (lines != null) Export(ns, scene.name, lines);
+            uint od; int oc; TryDigest(ns, out od, out oc);
+            _log.Info("WORLD_CENSUS_OBJECTS " + IdentityNamespace.Name(ns) + " shared=" + oc + " digest=" + od.ToString("X8") + " windowSashes=" + _windowDoorCount + " storyOrMission=" + restricted.Count + (late ? " (late census)" : ""));
+            var handler = ObjectsCensused; if (handler != null) handler(ns, late);
+        }
+
+        int _windowDoorCount;
+        void FinishObjects(int ns, IdentityTable table, List<ObjectRef> objs, Dictionary<Transform, WorldObjectId> windows, HashSet<uint> restricted, bool late)
+        {
+            var keep = new List<ObjectRef>(objs.Count); IdentityCategory cat;
+            var cats = new Dictionary<long, HashSet<uint>>();
+            var sorted = new List<ulong>(objs.Count);
+            _windowDoorCount = 0;
+            foreach (var r in objs)
+            {
+                if (!table.TryCategory(r.Id.Hash, out cat) || cat == IdentityCategory.Unsupported) continue;   // ambiguous after sealing
+                keep.Add(r);
+                _objIds[r.Comp.GetInstanceID()] = r;
+                HashSet<uint> s; long key = CK(r.Kind, ns);
+                if (!cats.TryGetValue(key, out s)) cats[key] = s = new HashSet<uint>();
+                s.Add(r.Id.Hash);
+                sorted.Add(((ulong)(byte)r.Kind << 32) | r.Id.Hash);
+                WorldObjectId wid;
+                if (r.Kind == ObjectKind.Door && windows.TryGetValue(r.Comp.transform, out wid)) { _windowDoor[r.Comp.GetInstanceID()] = wid; _windowDoorCount++; }
+            }
+            _objByNs[ns] = keep;
+            foreach (var kv in cats) _catalog[kv.Key] = kv.Value;
+            foreach (var k in new[] { ObjectKind.Door, ObjectKind.Lockpick, ObjectKind.LockedWindow }) if (!cats.ContainsKey(CK(k, ns))) _catalog[CK(k, ns)] = new HashSet<uint>();
+            _restricted[ns] = restricted;
+            sorted.Sort();
+            uint d = IdentityHash.Fnv1a32("objects");
+            foreach (var v in sorted) for (int b = 0; b < 5; b++) d = IdentityHash.Append(d, (byte)(v >> (8 * b)));
+            _objDigest[ns] = d; _objCount[ns] = sorted.Count;
+            if (late) _late.Add(ns); else _late.Remove(ns);
         }
 
         // W4.1: one line per census with the flag distribution (which loot is in the supported subset and why the rest is not).

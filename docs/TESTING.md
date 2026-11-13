@@ -151,6 +151,52 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 30. W4.2B.1 checklist — regression fixes + developer test mode (plugin 0.14.1 / protocol 25 on BOTH; deployed by Claude in the local game folder)
+**User run 2026-11-13 17:34 (0.14.0, developer launcher, one PC; logs `20261113-173429_host_0c25492c`, `-173434_client_5c23c038`, `-173621_client_c8200056`):** driving camera FAIL (Player 2 drove in first person, Player 1 as passenger followed it), crowbar door FAIL (lock open on the remote, leaf did not swing), relock → unlock FAIL (one instance kept a permanently open door), slow hold-E doors FAIL (not visible remotely), first client accepted in the host's main menu FAIL (`CAMPAIGN snapshot NOT sent … Player-2 record not bound`, the client had to be restarted). Root causes: PROGRESS "W4.2B.1".
+
+Start: `build\TS2-Multiplayer-Launcher.exe` → **4 Developer Test** twice (host first), or `TS2-Multiplayer-Launcher.exe devtest` twice. The developer test plays an isolated COPY of your save (`%LOCALAPPDATA%\TS2MP\devtest\host-save`) and a separate Player-2 record (`…\devtest\p2inv-*.dat`); your real save and the normal multiplayer records are not used. Logs: `%LOCALAPPDATA%\TS2MP\devtest\logs`. For steps 1-2 the normal **1 Local Test** works as well.
+
+| # | Step | Expected | Result |
+|---|---|---|---|
+| 1 | Start the host, then IMMEDIATELY the client (host still in the main menu / loading) | Client waits (host log `JOIN_DEFERRED … host not gameplay-ready`, `HOST_READINESS …` transitions); once the host stands in its world the client joins by itself, loads the host campaign (client `CAMPAIGN host campaign … written`), no `CAMPAIGN snapshot NOT sent` | NOT TESTED |
+| 2 | Player 2 drives a car (start the engine) | Third-person driving camera (as in single player); `V`/change-view toggles like vanilla; Player 1 entering as passenger sees the same mode (`PASSENGER camera -> third person`); toggling by the driver switches the passenger; stationary car / engine off / driver change / passenger exit / joint travel keep working | NOT TESTED |
+| 3 | Player 1 drives with its own camera choice | Unchanged single-player behaviour (its own TPP setting) | NOT TESTED |
+| 4 | Developer test: open the skill tree on both instances | All skills learned, extra skills at max (log `DEVTEST skills … learned`); no story/mission advanced | NOT TESTED |
+| 5 | Developer test: buy tools in a shop on both instances | Money stays ≥ 250,000 (log `DEVTEST money … -> 1000000`); purchases work; after the session your real save and `%LOCALAPPDATA%\TS2MP\p2inv-*.dat` are unchanged (timestamps) | NOT TESTED |
+| 6 | Madison: one player opens a door by holding E (slow), lets it finish | The other sees the slow, squeaking swing in the same direction, reaching the same final pose (log `slowReplicas` in `WOBJ_STATS`) | NOT TESTED |
+| 7 | Hold E and release early (door then finishes fast) | The other's swing speeds up at the same moment (log `fastFinish sent/applied`), same final pose | NOT TESTED |
+| 8 | Crowbar a locked house door (and a locked gate if you find one) | The remote sees the lock open AND the leaf swing open with the broken hinge; neither player can use it any more; lock + door identical on both | NOT TESTED |
+| 9 | Player A opens a picked door, closes it, relocks it (R); Player B picks it again and opens it; repeat with roles swapped | Both instances end with the same state each time; never a door that stays open on one PC | NOT TESTED |
+| 10 | A door that stays local (drawer / cupboard / car door) | Works locally as before; log once `WOBJ door '…' (isDrawer…) stays local` (W4.2C) | NOT TESTED |
+| 11 | Normal single player (game started without the launcher, no F8) | Unchanged: no `DEVTEST`, no isolation, normal save | NOT TESTED |
+| 12 | Optional: `Debug.PerfStats = true`, 2 min in Madison with door use | PERF mod cost unchanged vs 0.14.0 within noise; no GC spikes from the door code | NOT TESTED |
+
+## 29. W4.2B checklist — doors, locks, windows (release `TS2-Multiplayer-0.14.0.zip` on BOTH, protocol 24)
+Setup as §27/§28 (F8, two PCs). Optional `Debug.PerfStats = true` for step 20. Log tags: `WOBJ` (both), host `WOBJ objScene/objInit/objTxn … -> code`, `WOBJ_STATS` (PERF), `WORLD_CENSUS_OBJECTS`. Steps 2-15 in Madison Street with both players there unless stated.
+
+| # | Step | Expected | Result |
+|---|---|---|---|
+| 1 | Host loads its save IN Madison, opens one door and picks one simple lock, THEN presses F8 → Host; client joins into Madison | Host log `WORLD_CENSUS(late: objects only)`, `WOBJ host scene … epoch 1 started`, `initializer … N non-default`; client arrives with that door open and that lock unlocked | NOT TESTED |
+| 2 | Both load Madison fresh (travel there one after the other); look at houses with randomly open doors | Both PCs show the SAME open doors; second loader log `ready: … committed doors N` | NOT TESTED |
+| 3 | Client opens / closes a door (quick press), then hold-E slowly | Host sees the swing (slow = quieter, slower); logs `proposed Set Door` / host `Accepted` | NOT TESTED |
+| 4 | Both press E on the same door at the same moment | Same final state on both, no flicker loop (loser `Stale`/`Unchanged`) | NOT TESTED |
+| 5 | Client picks a SIMPLE lock (BLT minigame), succeeds | Client: minigame opens after the host's reservation (no visible delay on LAN); host sees the door unlocked (prompt "Door" instead of lock); host log `Reserve … reserved for P2`, `Set Lockpick … -> 1 … Accepted`; no police/alarm on the host | NOT TESTED |
+| 6 | Same with a MEDIUM (pins) and an ADVANCED (automatic) lock | As 5; advanced: exactly one `Set Lockpick` (host log), later duplicates `Unchanged` | NOT TESTED |
+| 7 | Client starts picking, host tries to pick the same lock | Host's E on the lock does nothing (`reservation … -> Busy`) | NOT TESTED |
+| 8 | Client cancels the minigame (Esc) / breaks the tool | Lock stays locked on both; client log `interaction ended without a result … released`; tool wear only in Player 2's inventory | NOT TESTED |
+| 9 | Key door (key in inventory), padlock (crowbar hit), crowbar break-in on a lock | Both PCs: unlocked; padlock falls on both (dust only on the replica when it was live); break-in door forced open and unusable on both | NOT TESTED |
+| 10 | Player relock (relock button on a closed, previously unlocked door) | Locked again on both PCs | NOT TESTED |
+| 11 | Window from inside (look at it from inside a house), glass cutting, brick throw / crowbar hit, crowbar break-in | Both PCs show the same result (glass stays / gone / shards), the window opens/closes on both afterwards; alarm and noise only for the actor | NOT TESTED |
+| 12 | Host at the hideout, client alone in Madison does 3, 5, 11 | Host log `Accepted (… unverified id …)`; then host travels to Madison: arrives with every change applied, no sound burst | Local Test (dev hook, no keyboard): scene report, P2 initializer, door/lock/window commits and a reservation round trip Accepted — keyboard + host arrival NOT TESTED |
+| 13 | Both leave Madison, one returns after > 5 s | Vanilla reset: original scene state (new epoch in the log) | NOT TESTED |
+| 14 | One leaves, the other stays; the first returns | Changes still there (same epoch) | NOT TESTED |
+| 15 | Client disconnects (quit) during a lockpicking minigame; rejoins | Host can pick that lock meanwhile; rejoined client sees the committed state | NOT TESTED |
+| 16 | Client tries a story lock / mission window (needs a story save at such a step) | Nothing happens for Player 2 (log `story/mission object`); host can still use it | NOT TESTED |
+| 17 | NPC tenant returns home through a door the players unlocked (both in Madison) | Relock happens on both PCs (owner = host publishes it), never twice | NOT TESTED |
+| 18 | Regression: §28 steps 2-8, §27, vehicles/passenger, P2 inventory, CarBox/locker, drops, W4.1 loot | As before | NOT TESTED |
+| 19 | Client's real saves after the session | Hash list identical (§3) | NOT TESTED (Local Test: client wrote only its sandbox; host's `saveData.thief` byte-identical, its own backup rotation ran) |
+| 20 | Logs + performance in Madison | No `ERROR`; `WOBJ_STATS diverged=0`; note FPS with PerfStats | NOT TESTED |
+
 ## 28. W4.2 Phase A checklist — host campaign bootstrap, Player-2 spawn, doors (release `TS2-Multiplayer-0.13.0.zip` on BOTH, protocol 23)
 Setup as §27 (F8 flow, two PCs). The client player saves a hash list of their real saves before the test (TESTING §3 command). Host log tags: `CAMPAIGN snapshot`, `P2SPAWN store/report/left`, `WDOOR host`, `PROPOSAL … objTxn`. Client log tags: `SEED`, `CAMPAIGN host campaign … written … verified`, `P2SPAWN <mode>`, `WDOOR proposed/region load/update`. Spawn record on the host PC: `%LOCALAPPDATA%\TS2MP\p2spawn-<profile>.dat`.
 

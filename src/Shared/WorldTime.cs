@@ -436,6 +436,9 @@ namespace TS2MP.Shared
         public readonly LootBook Loot = new LootBook();              // W4.1: taken pre-placed world loot (host-authoritative)
         public delegate ProposalCode LootTxnFn(byte slot, LootTxnRequest t, bool inRegion, out string why);
         public LootTxnFn LootTxnHook;                                // W4.1 host plugin: validation against the host catalog + durable Player-2 side
+        public readonly RegionStateBook Objects = new RegionStateBook(); // W4.2: host-owned per-region object states (doors in the slice)
+        public Func<ObjectKind, int, uint, bool?> ObjectCatalog;     // W4.2 host plugin: census catalog check (null result = no census of that region)
+        public Func<P2PosReport, ProposalCode> P2PosHook;            // W4.2 host plugin: Player-2 spawn store (p2spawn-<profile>.dat)
         public CarBoxLease Lease(byte kind) { return kind == StorageKind.Locker ? Locker : CarBox; }
         // M4.3.3: host plugin hooks (they touch the host's ItemID counters and the p2inv file); null = feature unavailable
         public Func<P2Inventory, ProposalCode> P2ReportHook;
@@ -723,6 +726,12 @@ namespace TS2MP.Shared
             return ProposalCode.Accepted;
         }
 
+        // ---- W4.2 region-independent object state (host in place for its own interactions, or client proposal "objTxn") ----
+        public ProposalCode ObjectTransaction(byte slot, ObjectTxnRequest t, double now, out string why)
+        {
+            return Objects.Change(slot, RegionOfSlot(slot), t, ObjectCatalog, now, Reg, Outbox, out why);
+        }
+
         // ---- M4.3 passenger seat: op 1 = reserve, 2 = seated (confirm), 0 = leave. Host in place or client proposal.
         public ProposalCode Ride(byte slot, ushort id, byte op, double now, out string why)
         {
@@ -773,6 +782,7 @@ namespace TS2MP.Shared
             {
                 Items.ClearRegion(prev, Reg, Outbox);                     // W3: region emptied = the original scene reload destroys its dropped items
                 Loot.ClearRegion(prev, Reg, Outbox);                      // W4.1: the reload re-creates the loot; the original ItemDay_ keys decide
+                Objects.ClearRegion(prev, Reg, Outbox);                   // W4.2: scene-lifetime objects (doors) reset like a vanilla reload
             }
             _now = now;
             Joint.OnRegion(slot, region, now, Outbox);                    // M4.3 Phase B: before any seat release (may end the trip)
@@ -889,6 +899,21 @@ namespace TS2MP.Shared
                 if (p.ScopeArg != 0 || !LootTxnRequest.TryParse(p.Value, out t)) code = ProposalCode.Invalid;
                 else code = LootTransaction(senderSlot, t, now, out why);
                 LastNote = "lootTxn #" + t.Txn + " " + IdentityNamespace.Name(t.Ns) + ":" + t.Hash.ToString("X8") + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
+            }
+            else if (p.Scope == StateScope.Session && p.Key == WorldKeys.ObjectTxn)
+            {
+                ObjectTxnRequest t = default(ObjectTxnRequest); string why = null;
+                if (p.ScopeArg != 0 || !ObjectTxnRequest.TryParse(p.Value, out t)) code = ProposalCode.Invalid;
+                else code = ObjectTransaction(senderSlot, t, now, out why);
+                LastNote = "objTxn #" + t.Txn + " " + t + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
+            }
+            else if (p.Scope == StateScope.Player && p.Key == WorldKeys.P2Pos)
+            {
+                P2PosReport r; string why = null;
+                if (!P2PosReport.TryParse(p.Value, out r)) code = ProposalCode.Invalid;
+                else if ((why = SpawnRules.CheckReport(senderSlot, p.ScopeArg, RegionOfSlot(senderSlot), r)) != null) code = ProposalCode.NotAuthorized;
+                else code = P2PosHook != null ? P2PosHook(r) : ProposalCode.NotAuthorized;
+                LastNote = code == ProposalCode.Accepted ? null : "p2pos by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
             }
             else if (p.Scope == StateScope.Player && p.Key == WorldKeys.TravelCancel)
             {

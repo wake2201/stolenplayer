@@ -44,7 +44,8 @@ namespace TS2MP.Plugin
                 IdentityCensus = Config.Bind("World", "IdentityCensus", true, "M5 W1: once per scene load, record stable ids of world objects (diagnostic log WORLD_CENSUS; no gameplay effect). Off only for performance comparison.").Value,
                 CensusExport = Config.Bind("World", "CensusExport", false, "Diagnostics: write every census identity (id, kind, category, hierarchy path) to census-*.tsv in the instance log folder.").Value,
                 KeyMirror = Config.Bind("World", "KeyMirror", true, "M5 W2: the host's world keys (loot respawn days, daily events, hot item, day count) are mirrored to the client. Must be the same on both instances; off only for performance comparison.").Value,
-                SharedLoot = Config.Bind("World", "SharedLoot", true, "M5 W4.1: pre-placed world loot (Madison Street subset) is host-authoritative and shared. Must be the same on both instances; needs World.IdentityCensus.").Value
+                SharedLoot = Config.Bind("World", "SharedLoot", true, "M5 W4.1: pre-placed world loot (Madison Street subset) is host-authoritative and shared. Must be the same on both instances; needs World.IdentityCensus.").Value,
+                SharedDoors = Config.Bind("World", "SharedDoors", true, "W4.2: ordinary doors (Madison Street) are host-authoritative and shared. Must be the same on both instances; needs World.IdentityCensus.").Value
             };
             KeyCode travelKey, menuKey;
             var keyName = Config.Bind("Vehicles", "TravelMenuKey", "F7", "Opens the original travel menu on foot in the hideout / Auto Shop when you have no car there (another player simulates it or it is parked elsewhere).").Value;
@@ -184,6 +185,8 @@ namespace TS2MP.Plugin
         WorldCensus _census;
         WorldKeyMirror _mirror;
         WorldLootSync _loot;
+        CampaignBootstrap _campaign;
+        WorldDoorSync _doors;
         MultiplayerMenu _menu;
         bool _quitRequested, _shutdown;
         // M5 performance instrumentation (Debug.PerfStats; off = one null check per frame)
@@ -195,6 +198,7 @@ namespace TS2MP.Plugin
         internal SessionNode Node { get { return _node; } }
         internal WorldSync World { get { return _world; } }
         internal Player2Sync P2 { get { return _p2; } }
+        internal CampaignBootstrap Campaign { get { return _campaign; } }
         internal InstanceLog Log { get { return _log; } }
 
         // Launcher developer mode: role fixed at startup (M1-N1 behaviour).
@@ -287,6 +291,15 @@ namespace TS2MP.Plugin
                 catch (Exception ex) { log.Error("WLOOT init failed (shared world loot disabled)", ex); _loot = null; }
             }
             else log.Info("WLOOT disabled (" + (!world.SharedLoot ? "World.SharedLoot = false" : "no identity census") + "): original local loot pickups");
+            // W4.2: host campaign bootstrap + Player-2 spawn (needs Player2Sync for the record / campaign id, VehicleSync for checked placement)
+            try { _campaign = new CampaignBootstrap(node, log, _world, _settings.DataDir, _args != null); _campaign.Vehicles = _vehicles; if (!_campaign.Ready) { _campaign.Dispose(); _campaign = null; } }
+            catch (Exception ex) { log.Error("CAMPAIGN init failed (Player 2 cannot load a host campaign; joins time out safely)", ex); _campaign = null; }
+            if (_census != null && world.SharedDoors)
+            {
+                try { _doors = new WorldDoorSync(node, log, _world); }
+                catch (Exception ex) { log.Error("WDOOR init failed (shared doors disabled)", ex); _doors = null; }
+            }
+            else log.Info("WDOOR disabled (" + (!world.SharedDoors ? "World.SharedDoors = false" : "no identity census") + "): original local doors");
         }
 
         // N1.2: end the session: final writes (fleet, Player-2 record) happen in the systems' Dispose, then the network stops.
@@ -300,6 +313,8 @@ namespace TS2MP.Plugin
 
         void DisposeSystems()
         {
+            if (_doors != null) { try { _doors.Dispose(); } catch { } _doors = null; }
+            if (_campaign != null) { try { _campaign.Dispose(); } catch { } _campaign = null; }
             if (_loot != null) { try { _loot.Dispose(); } catch { } _loot = null; }
             if (_mirror != null) { try { _mirror.Dispose(); } catch { } _mirror = null; }
             if (_census != null) { try { _census.Dispose(); } catch { } _census = null; }
@@ -341,6 +356,8 @@ namespace TS2MP.Plugin
                 + " scenes=" + UnityEngine.SceneManagement.SceneManager.sceneCount);
             if (_census != null) _log.Info("PERF " + _census.Stats);
             if (_mirror != null) _log.Info("PERF " + _mirror.Stats);
+            if (_campaign != null) _log.Info("PERF " + _campaign.Stats);
+            if (_doors != null) _log.Info("PERF " + _doors.Stats);
             _modCost.Reset(); _gc0 = g0; _gc1 = g1; _gc2 = g2; _netOut0 = outB; _netIn0 = inB;
         }
 
@@ -402,6 +419,16 @@ namespace TS2MP.Plugin
             {
                 try { _loot.Update(); }
                 catch (Exception ex) { _log.Error("WLOOT update exception (shared world loot disabled)", ex); _loot.Dispose(); _loot = null; }
+            }
+            if (_campaign != null && _world != null)
+            {
+                try { _campaign.Update(); }
+                catch (Exception ex) { _log.Error("CAMPAIGN update exception (bootstrap disabled)", ex); _campaign.Dispose(); _campaign = null; }
+            }
+            if (_doors != null && _world != null)
+            {
+                try { _doors.Update(); }
+                catch (Exception ex) { _log.Error("WDOOR update exception (shared doors disabled)", ex); _doors.Dispose(); _doors = null; }
             }
         }
 

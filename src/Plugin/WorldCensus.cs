@@ -69,7 +69,7 @@ namespace TS2MP.Plugin
         {
             try
             {
-                if (mode == LoadSceneMode.Single) { _registry.Clear(); foreach (var c in _loot.Values) c.ReleaseTargets(); }   // every other scene was unloaded
+                if (mode == LoadSceneMode.Single) { _registry.Clear(); foreach (var c in _loot.Values) c.ReleaseTargets(); _doorIds.Clear(); _doorIdsByNs.Clear(); }   // every other scene was unloaded
                 int ns = IdentityNamespace.ForScene(s.name);
                 if (!_gate.TryBegin(s.handle, ns)) return;
                 Run(s, ns);
@@ -82,8 +82,33 @@ namespace TS2MP.Plugin
         {
             _gate.Unloaded(s.handle);
             int ns = IdentityNamespace.ForScene(s.name);
-            if (ns != IdentityNamespace.None) { _registry.Remove(ns); LootCatalog c; if (_loot.TryGetValue(ns, out c)) c.ReleaseTargets(); }
+            if (ns != IdentityNamespace.None) { _registry.Remove(ns); LootCatalog c; if (_loot.TryGetValue(ns, out c)) c.ReleaseTargets(); ForgetDoors(ns); }
         }
+
+        // ---- W4.2 doors: component -> id (live scene only) + retained catalog of unambiguous door ids per namespace ----
+        readonly Dictionary<int, WorldObjectId> _doorIds = new Dictionary<int, WorldObjectId>();
+        readonly Dictionary<int, List<int>> _doorIdsByNs = new Dictionary<int, List<int>>();
+        readonly Dictionary<int, HashSet<uint>> _doorCatalog = new Dictionary<int, HashSet<uint>>();
+
+        void ForgetDoors(int ns)
+        {
+            List<int> l;
+            if (!_doorIdsByNs.TryGetValue(ns, out l)) return;
+            foreach (var iid in l) _doorIds.Remove(iid);
+            _doorIdsByNs.Remove(ns);
+        }
+
+        // A Door of a loaded scene -> its census id; false for ambiguous / unknown doors (never shared).
+        public bool TryDoorId(Component door, out WorldObjectId id)
+        {
+            id = default(WorldObjectId);
+            if (door == null || !_doorIds.TryGetValue(door.GetInstanceID(), out id)) return false;
+            var t = _registry.Get(id.Namespace); IdentityCategory cat;
+            return t != null && t.TryCategory(id.Hash, out cat) && cat != IdentityCategory.Unsupported;
+        }
+
+        // Host validation of a door id: null = this process never censused the namespace (unverified), else known/unknown.
+        public bool? DoorKnown(int ns, uint hash) { HashSet<uint> s; return _doorCatalog.TryGetValue(ns, out s) ? s.Contains(hash) : (bool?)null; }
 
         void InitLootFlags(Type pick)
         {
@@ -137,6 +162,8 @@ namespace TS2MP.Plugin
             long t0 = Stopwatch.GetTimestamp();
             int gc0 = GC.CollectionCount(0); long mem0 = GC.GetTotalMemory(false);
             var table = _registry.Begin(ns);
+            ForgetDoors(ns);
+            var doors = new List<int>(); var doorHashes = new List<uint>();
             scene.GetRootGameObjects(_roots);
             _rootNames = new SiblingNames();
             for (int i = 0; i < _roots.Count; i++) _rootNames.Add(_roots[i].name);
@@ -172,6 +199,7 @@ namespace TS2MP.Plugin
                         }
                         uint hash = IdentityHash.ForObject(scene.name, path, info.Kind);
                         var res = table.Add(hash, path, info.Kind, cat, comp);
+                        if (info.Kind == ObjectKind.Door && res == AddResult.Added) { int iid = comp.GetInstanceID(); _doorIds[iid] = new WorldObjectId(ns, hash); doors.Add(iid); doorHashes.Add(hash); }
                         if (info.Kind == ObjectKind.Pickupable && catalog != null)
                         {
                             string lname = t.name;
@@ -182,6 +210,10 @@ namespace TS2MP.Plugin
                 }
             }
             var stable = _registry.Finish(table);
+            _doorIdsByNs[ns] = doors;
+            var dcat = new HashSet<uint>(); IdentityCategory dc;
+            foreach (var h in doorHashes) if (table.TryCategory(h, out dc) && dc != IdentityCategory.Unsupported) dcat.Add(h);
+            _doorCatalog[ns] = dcat;
             if (catalog != null)
             {
                 IdentityCategory ic;

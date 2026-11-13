@@ -61,7 +61,8 @@ $suites = @(
     @('TS2MP.DurabilityTests', 'DurabilityTests.cs', 'storage durability tests (M5 W3.4)'),
     @('TS2MP.WorldLootTests', 'WorldLootTests.cs', 'shared world loot tests (M5 W4.1)'),
     @('TS2MP.NetAuthTests', 'NetAuthTests.cs', 'direct connect / join-code auth tests (N1)'),
-    @('TS2MP.LifecycleTests', 'LifecycleTests.cs', 'F8 session lifecycle / host gate / ClientReady / save isolation rules (N1.2)')
+    @('TS2MP.LifecycleTests', 'LifecycleTests.cs', 'F8 session lifecycle / host gate / ClientReady / save isolation rules (N1.2)'),
+    @('TS2MP.W42Tests', 'W42Tests.cs', 'host campaign bootstrap / Player-2 spawn / region-object registry / doors (W4.2 Phase A)')
 )
 foreach ($s in $suites) {
     Invoke-Csc "$($s[0]).exe" (@('/target:exe', "/out:$outTests\$($s[0]).exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\$($s[1])"))

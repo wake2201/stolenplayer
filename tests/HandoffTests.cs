@@ -463,7 +463,7 @@ static class HandoffTests
 
     static void Regressions()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 22 && ProtocolInfo.ModVersion == "0.12.0", "protocol 22 / mod 0.12.0");
+        Expect(ProtocolInfo.ProtocolVersion == 23 && ProtocolInfo.ModVersion == "0.13.0", "protocol 23 / mod 0.13.0");
         var s = Snap(Ranger, 5, Madison); s.Flags = VehicleStateFlags.Moving | VehicleStateFlags.Driven | VehicleStateFlags.EngineOn;
         var w = new NetDataWriter(); s.Write(w);
         Expect(w.Length == VehicleSnapshot.WireSize && w.Length == 39, "39 bytes (M5.0 steer)");

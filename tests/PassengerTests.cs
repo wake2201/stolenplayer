@@ -348,7 +348,7 @@ static class PassengerTests
         Expect(VehicleRecord.TryParse(r.ToBytes(), out p) && p.PassengerPending && p.Tpp && p.Passenger == 2, "record round trip with the new flags");
         var b = r.ToBytes(); b[1] = 0x20;
         Expect(!VehicleRecord.TryParse(b, out p), "unknown record flag bits rejected");
-        Expect(ProtocolInfo.ProtocolVersion == 22 && ProtocolInfo.ModVersion == "0.12.0", "protocol 22 / mod 0.12.0");
+        Expect(ProtocolInfo.ProtocolVersion == 23 && ProtocolInfo.ModVersion == "0.13.0", "protocol 23 / mod 0.13.0");
         Expect(WorldKeys.VehicleRide == "vehicleRide", "key");
     }
 

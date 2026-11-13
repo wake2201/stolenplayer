@@ -151,6 +151,30 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 28. W4.2 Phase A checklist — host campaign bootstrap, Player-2 spawn, doors (release `TS2-Multiplayer-0.13.0.zip` on BOTH, protocol 23)
+Setup as §27 (F8 flow, two PCs). The client player saves a hash list of their real saves before the test (TESTING §3 command). Host log tags: `CAMPAIGN snapshot`, `P2SPAWN store/report/left`, `WDOOR host`, `PROPOSAL … objTxn`. Client log tags: `SEED`, `CAMPAIGN host campaign … written … verified`, `P2SPAWN <mode>`, `WDOOR proposed/region load/update`. Spawn record on the host PC: `%LOCALAPPDATA%\TS2MP\p2spawn-<profile>.dat`.
+
+| # | Step | Expected | Result |
+|---|---|---|---|
+| 1 | Client: before joining, note your own solo save's location/story (or load it once and quit) | — | — |
+| 2 | Host loads its save, stands somewhere in Madison or the hideout, F8 → Host. Client joins from the main menu (first join for this host campaign) | Client log `SEED … save file(s) NOT copied`, `CAMPAIGN host campaign #… written … verified; spawn plan NearHost/FirstJoin`; the client loads the **host's** region, story state and world (not its own solo position/story); Player 2 stands beside Player 1 (not inside, not on a car) | Local Test (one PC, launcher, 2026-11-13): PASS for steps 2/4/6 in logs (see PROGRESS W4.2 G) — **two PCs NOT TESTED** |
+| 3 | Client inventory/money after the first join | Original new-game values (money 500 / 200 free mode, empty backpack) or Player 2's existing host record — never the client's solo inventory, never Player 1's | NOT TESTED |
+| 4 | Client walks somewhere else (same region), waits 5 s, quits to the main menu | Host log `P2SPAWN report …`, `P2SPAWN Player 2 left … written`; client log `P2SPAWN final position report (exit to the main menu …)` | NOT TESTED (two PCs) |
+| 5 | Client clicks the original Continue while still connected (or rejoins with F8 after a restart) | Client log `CAMPAIGN back in the main menu … fresh host campaign requested` (menu return) / new join; plan `Restore/Rejoin`; Player 2 is at the spot from step 4, facing the same way | NOT TESTED |
+| 6 | Host goes to the hideout. Client travels to Madison, walks a bit, quits the game (window close), restarts and joins again | Plan `Restore/Rejoin in MadisonSt`; only the client loads Madison; the host stays at the hideout; client log `P2SPAWN Restore … placed at last valid position` | Local Test variant PASS (SafePoint into Madison while host at hideout, see PROGRESS W4.2 G); **two PCs NOT TESTED** |
+| 7 | Story mission (needs a story save): client disconnects (quit) during a step where saving is blocked / a police chase is active / inside a heist scene | Host log `P2SPAWN report … ctx=BlockSaving/PoliceChase…` before the quit; on rejoin plan `SafePoint/StoryContext` (free-roam region: nearest original leave point) or `OriginalSpawn/MissionScene` (heist scene: hideout spawn); never inside the mission spot | NOT TESTED |
+| 8 | Client tries the original Continue / New Game in the main menu WITHOUT joining (after a session ended, same process) | Nothing happens (client log `CAMPAIGN blocked MainMenu.Continue …` / `… StartNewGame …`); F8 → Join still works | NOT TESTED |
+| 9 | Doors, both in Madison: client opens an ordinary house door (quick press and hold-E) | Host sees the door swing open; host log `WDOOR … objTxn … Accepted`; client log `WDOOR proposed #…`; closing it converges again | NOT TESTED |
+| 10 | Doors: host opens a door the client is looking at | Client sees it swing (client log `WDOOR update: 1 door(s) …`) | NOT TESTED |
+| 11 | Doors while the host is in ANOTHER region: host at the hideout, client opens a Madison door | Host log `WDOOR`/`PROPOSAL` shows `Accepted`, `unverified id (host has no census of MadisonSt)` when the host never loaded Madison in this session; the host does not load Madison | NOT TESTED |
+| 12 | Door reload: with the client still in Madison and a door open, the host travels to Madison | The host arrives with that door already open (silent restore, host log `WDOOR region load: 1 door(s) …`) | NOT TESTED |
+| 13 | Door reset like vanilla: both leave Madison, one returns | The door is in its original scene state again (vanilla reload behaviour) | NOT TESTED |
+| 14 | Door spam: both players press E on the same door at the same moment / rapidly | Both PCs end with the same state; no flicker loop; host log shows at most `Stale`/`Unchanged` for the loser | NOT TESTED |
+| 15 | Locked door (not yet unlocked on one PC) opened on the other PC | Not forced open on the PC where it is locked (log `committed open but locked here … W4.2B`) — expected limitation | NOT TESTED |
+| 16 | Regression: F8 host/join, movement, avatars, vehicles/passenger, P2 inventory, CarBox/locker, dropped items, W4.1 loot | As §27 / earlier checklists | NOT TESTED |
+| 17 | Client's real saves after the session | Hash list identical to step 1's list (§3) | NOT TESTED (Local Test: the sandboxed client wrote nothing into the real folder; the host's own Continue rewrote its active save byte-identically) |
+| 18 | Logs + performance | No `ERROR`; with `Debug.PerfStats = true` note `PERF … CAMPAIGN_STATS / WDOOR_STATS` and FPS in Madison | NOT TESTED |
+
 ## 27. N1.2 checklist — F8 menu, two PCs (release `TS2-Multiplayer-0.12.0.zip` on BOTH) — all NOT TESTED
 Each PC: own legitimate game copy (same version). Copy the ZIP contents into the game folder, start the game normally. Host PC: router forwarding of **UDP 27960 only** (`BepInEx\plugins\TS2MP\DIRECT_CONNECT_SETUP_DE.md`). Before the test the client player saves a hash list of their real saves (TESTING §3 command). Logs: `%LOCALAPPDATA%\TS2MP\logs\<stamp>_game_<pid>\plugin.log`.
 | # | Step | Expected | Result |

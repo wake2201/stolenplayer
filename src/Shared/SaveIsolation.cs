@@ -33,6 +33,18 @@ namespace TS2MP.Shared
             return IsUnder(fullPath, game) && !IsUnder(fullPath, Path.Combine(game, "BepInEx"));
         }
 
+        // W4.2: save data in a save folder (relative path): FBPP profiles saveData*.thief, MainMenu.BackupSave saveDataBackup.thief,
+        // GameManager.SaveFileInfo saveInfo*.txt, FBPP.BackupSaves backups\. Never seeded into the client sandbox: Player 2's world
+        // comes from the host campaign; only local files (settings) are copied.
+        public static bool IsSaveData(string rel)
+        {
+            if (string.IsNullOrEmpty(rel)) return false;
+            string r = rel.Replace('/', '\\').TrimStart('\\');
+            if (r.StartsWith("backups\\", StringComparison.OrdinalIgnoreCase)) return true;
+            string name = Path.GetFileName(r);
+            return name.StartsWith("saveData", StringComparison.OrdinalIgnoreCase) || name.StartsWith("saveInfo", StringComparison.OrdinalIgnoreCase);
+        }
+
         // Path the game's persistentDataPath callers see: the original while disarmed (solo / host), the sandbox while armed.
         public static string Effective(bool armed, string sandbox, Func<string> original) { return armed ? sandbox : original(); }
     }

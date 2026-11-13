@@ -18,6 +18,7 @@ namespace TS2MP.Plugin
     {
         public double ClockRefreshSeconds = 10;
         public bool IdentityCensus = true, CensusExport, KeyMirror = true, SharedLoot = true;   // M5 W1/W2 (switchable for A/B performance comparison)
+        public bool SharedDoors = true;   // W4.2: ordinary doors (Madison Street) on the host-owned region-object registry
     }
 
     internal sealed class WorldSync : IDisposable
@@ -402,6 +403,7 @@ namespace TS2MP.Plugin
             uint rev; int sleepRegion; float sleepHours;
             var code = _wh.HandleProposal(_node.RemoteInstanceId ?? "?", _remoteSlot, id, p, Now, out rev, out sleepRegion, out sleepHours);
             if (p.Key == WorldKeys.VehicleTake && _wh.LastNote != null) _log.Info("VEHICLE " + _wh.LastNote);
+            if (p.Key == WorldKeys.ObjectTxn && _wh.LastNote != null) _log.Info("WDOOR " + _wh.LastNote);   // W4.2: every door decision (also accepted ones)
             if (p.Key == WorldKeys.Region && code == ProposalCode.Accepted)
             {
                 if (_wh.LastNote != null) _log.Info("REGION_CLOCK " + _wh.LastNote);
@@ -717,6 +719,8 @@ namespace TS2MP.Plugin
                 if (ProposalResultHook3 != null && ProposalResultHook3(id, code)) return; // M4.3.3 Player-2 inventory reports
                 if (ProposalResultHook4 != null && ProposalResultHook4(id, code)) return; // M5 W3 dropped-item transactions
                 if (ProposalResultHook5 != null && ProposalResultHook5(id, code)) return; // M5 W4.1 world-loot pickups
+                if (ProposalResultHook6 != null && ProposalResultHook6(id, code)) return; // W4.2 Player-2 position reports
+                if (ProposalResultHook7 != null && ProposalResultHook7(id, code)) return; // W4.2 world-object transitions (doors)
                 if (_sleep.IsStart(id))
                 {
                     _sleep.StartResult(ok);
@@ -791,6 +795,8 @@ namespace TS2MP.Plugin
         internal Func<uint, ProposalCode, bool> ProposalResultHook3;
         internal Func<uint, ProposalCode, bool> ProposalResultHook4;   // M5 W3 WorldItemSync
         internal Func<uint, ProposalCode, bool> ProposalResultHook5;   // M5 W4.1 WorldLootSync
+        internal Func<uint, ProposalCode, bool> ProposalResultHook6;   // W4.2 CampaignBootstrap (p2pos)
+        internal Func<uint, ProposalCode, bool> ProposalResultHook7;   // W4.2 WorldDoorSync (objTxn)
         // M4.3.3 hotfix: bounded recovery when an expected entry (Player-2 record) is missing on the client.
         internal void RequestResync(string why)
         {

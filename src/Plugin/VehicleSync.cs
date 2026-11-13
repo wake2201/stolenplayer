@@ -2852,6 +2852,48 @@ namespace TS2MP.Plugin
         static float Flat(Vector3 a, Vector3 b) { float dx = a.x - b.x, dz = a.z - b.z; return Mathf.Sqrt(dx * dx + dz * dz); }
         static string Fmt(Vector3 v) { return v.x.ToString("0.0") + "," + v.y.ToString("0.0") + "," + v.z.ToString("0.0"); }
 
+        // ---- W4.2 Player-2 spawn (CampaignBootstrap): the arrival checks above, reused for the persistent spawn position ----
+        internal bool SpawnReady { get { return _ok; } }
+
+        // Same test as an arrival candidate: ground (normal >= 0.7, not on a car), within 4 m height of the anchor, free capsule,
+        // >= 1.2 m from the other player present in this region, no traffic within 6 m.
+        internal bool SpawnSpot(Vector3 candidate, Vector3 anchor, out Vector3 feet)
+        {
+            feet = candidate;
+            var gm = _world.GameManagerObject; var ps = gm != null ? _gmPS(gm) as Component : null;
+            if (ps == null) return false;
+            Vector3 rf; bool rin; float rs;
+            Vector3? avoid = TryGetRemoteHere(out rf, out rin, out rs) ? rf : (Vector3?)null;
+            return IsSafe(candidate, anchor, ps.transform, avoid, null, out feet);
+        }
+
+        internal bool SpawnPlace(Vector3 feet)
+        {
+            var gm = _world.GameManagerObject; var ps = gm != null ? _gmPS(gm) : null; var psc = ps as Component;
+            if (psc == null) return false;
+            Place(psc.transform, _psCC(ps) as CharacterController, feet, ps);
+            return true;
+        }
+
+        // The other player's feet when it is in this region and its snapshots are live.
+        internal bool TryGetRemoteHere(out Vector3 feet, out bool inCar, out float speed)
+        {
+            feet = Vector3.zero; inCar = false; speed = 0f;
+            return RegionDirectory.RegionOf(_world.Registry, _other) == _world.LocalRegion && _players != null && _players.TryGetRemote(out feet, out inCar, out speed);
+        }
+
+        // Nearest original leave point (GameManager.leavePoints, collected by ContinueButtonActivate) - Madison / Hillville only.
+        internal Vector3? SpawnLeavePoint(Vector3 near)
+        {
+            var gm = _world.GameManagerObject;
+            if (gm == null || !TravelRules.SeatsOnArrival(_world.LocalRegion)) return null;
+            var pts = _gmLeave(gm);
+            if (pts == null) return null;
+            Vector3? best = null; float bd = float.MaxValue;
+            foreach (var p in pts) { if (p == null) continue; float d = Flat(p.transform.position, near); if (d < bd) { bd = d; best = p.transform.position; } }
+            return best;
+        }
+
         // GameManager.ContinueButtonActivate: Madison/Hillville leave points, index from SPrefs MadisonPoint/HillvillePoint.
         Vector3? LeavePoint(UnityEngine.Object gm, int region)
         {

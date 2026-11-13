@@ -532,6 +532,10 @@ namespace TS2MP.Plugin
         public int P2Count(int itemId) { return _book != null ? _book.Rec.CountOf(itemId) : 0; }
         public uint P2AppliedTxn { get { return _book != null ? _book.Rec.AppliedTxn : 0; } }
         public bool HostBookReady { get { return _host && _book != null && _keys != null; } }
+        // W4.2 campaign bootstrap (host): Player 2's record and the campaign identity it belongs to (profile + save history id).
+        internal P2Inventory HostRecord { get { return _host && _book != null ? _book.Rec : null; } }
+        internal int HostHistoryId { get { return _host && _book != null ? _book.HistoryId : 0; } }
+        internal int HostProfile { get { return _profile; } }
 
         public byte LeaseOwner { get { return _host && _world.Host != null ? _world.Host.CarBoxState.Owner : (byte)0; } }
         public byte LockerLeaseOwner { get { return _host && _world.Host != null ? _world.Host.Locker.State.Owner : (byte)0; } }

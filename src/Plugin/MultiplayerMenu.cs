@@ -4,7 +4,8 @@
 //              sync systems; new joins are refused (HostNotReady) while HostReadiness reports a reason.
 //  Join Game : only in the original main menu (MainMenuNew). Connect + authenticate; after Welcome the save isolation is
 //              installed, armed and verified (SaveGuard.Arm), then the client systems are built and ClientReady is sent;
-//              once the host's world snapshot arrived the original MainMenu.Continue() loads the (sandboxed) save.
+//              once the host's world snapshot arrived and (W4.2) the host's campaign was written into the sandbox
+//              (CampaignBootstrap), the original MainMenu.Continue() loads it - never the client's own solo save.
 // Input while open in the world: the original player motor/camera behaviours and the Rewired player are switched off
 // and cursorLock cleared (the original PlayerScript.Update then frees the cursor); exactly the saved values are
 // restored on close. No text input is used in the world (port via buttons), so typing never reaches the game there.
@@ -168,7 +169,8 @@ namespace TS2MP.Plugin
             var node = _pendingClient ?? _runner.Node;
             if (node == null) { _lc.Fail("Client-Sitzung nicht vorhanden", now); return; }
             var w = _runner.World;
-            var action = _lc.ClientTick(ctx, node.State, node.LastReject, node.FatalReason, node.HostWaitReason, w != null && w.Synced, now);
+            var cb = _runner.Campaign;   // W4.2: the host's campaign must be written into the sandbox before the original Continue
+            var action = _lc.ClientTick(ctx, node.State, node.LastReject, node.FatalReason, node.HostWaitReason, w != null && w.Synced && cb != null && cb.Applied, now);
             switch (action)
             {
                 case ClientAction.ArmIsolation: Prepare(node, ctx, now); break;
@@ -214,8 +216,8 @@ namespace TS2MP.Plugin
             try { hasSave = _fbppExists != null && (bool)_fbppExists.Invoke(null, null); } catch { }
             if (!hasSave)
             {
-                _hint = "Kein Spielstand im Spieler-2-Bereich gefunden. Wähle im Hauptmenü „Neues Spiel“ (wird nur im geschützten Bereich gespeichert).";
-                _log.Info("JOIN no sandbox save for this profile: waiting for the player to start a game from the original main menu");
+                _hint = "Die Weltdaten des Hosts konnten nicht übernommen werden (siehe Log).";
+                _log.Error("JOIN no sandbox save after the host campaign was written: not continuing (Player 2 never starts a world of its own)");
                 return;
             }
             var mm = _menuType != null ? UnityEngine.Object.FindObjectOfType(_menuType) : null;   // once

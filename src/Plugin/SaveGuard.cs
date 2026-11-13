@@ -86,6 +86,8 @@ namespace TS2MP.Plugin
                     _log.Info("SAVE_GUARD_INSTALLED redirect + guards (inactive until armed)");
                 }
                 Directory.CreateDirectory(SandboxDir);
+                CaptureLocalPreferences();
+                RetireSandboxSaves();
                 SeedSandbox();
                 Armed = true;   // from here on every guard is active and the redirect points at the sandbox
                 _log.Info("SAVE_GUARD_ARMED redirect -> sandbox, guards active");
@@ -125,22 +127,64 @@ namespace TS2MP.Plugin
             return true;
         }
 
-        // Copies the real save files into the sandbox (read-only access to the real folder).
+        // W4.2: purely local preferences of this player (CampaignPolicy LocalPreference: TPP) read from the real save that FBPP
+        // still holds in memory (main menu, before the re-initialisation). Read-only; never progression.
+        internal static readonly CampaignData LocalPreferences = new CampaignData();
+        static void CaptureLocalPreferences()
+        {
+            try
+            {
+                var fbpp = AccessTools.TypeByName("FBPP");
+                if (AccessTools.Field(fbpp, "_config").GetValue(null) == null) return;
+                var has = AccessTools.Method(fbpp, "HasKeyForBool", new[] { typeof(string) });
+                var get = AccessTools.Method(fbpp, "GetBool", new[] { typeof(string), typeof(bool) });
+                if (has == null || get == null) return;
+                foreach (var k in new[] { "TPP" })
+                    if ((bool)has.Invoke(null, new object[] { k })) LocalPreferences.Bools[k] = (bool)get.Invoke(null, new object[] { k, false });
+                _log.Info("SAVE_GUARD local preferences kept from this player's own data: " + LocalPreferences.Count + " key(s) (no progression)");
+            }
+            catch (Exception ex) { _log.Warn("SAVE_GUARD local preferences not read (" + ex.Message + "); game defaults apply"); }
+        }
+
+        // W4.2: the client never plays its own solo save (classification: SaveIsolation.IsSaveData, tested offline).
+        static bool IsSaveData(string rel) { return SaveIsolation.IsSaveData(rel); }
+
+        // Save files in the sandbox (copies seeded by mod versions <= 0.12.0) are moved aside once per process - never deleted -
+        // so FBPP starts without a world until the host's campaign snapshot is written (CampaignBootstrap).
+        static bool _retired;
+        static void RetireSandboxSaves()
+        {
+            if (_retired || !Directory.Exists(SandboxDir)) return;
+            _retired = true;
+            string dst = Path.Combine(Path.Combine(Path.GetDirectoryName(SandboxDir), "client-sandbox-retired"), DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+            int n = 0;
+            foreach (var src in Directory.GetFiles(SandboxDir, "*", SearchOption.AllDirectories))
+            {
+                string rel = src.Substring(SandboxDir.Length).TrimStart('\\', '/');
+                if (!IsSaveData(rel)) continue;
+                try { string to = Path.Combine(dst, rel); Directory.CreateDirectory(Path.GetDirectoryName(to)); File.Move(src, to); n++; }
+                catch (Exception ex) { _log.Warn("SEED could not retire sandbox file " + rel + ": " + ex.Message); }
+            }
+            if (n > 0) _log.Info("SEED retired " + n + " old sandbox save file(s) to " + dst + " (kept, not deleted): Player 2 never plays a local world");
+        }
+
+        // Copies this player's purely local files (settings) into the sandbox - never save data (W4.2: the world comes from the host).
         static void SeedSandbox()
         {
             if (!Directory.Exists(RealDir)) { _log.Info("SEED real save folder does not exist yet; client sandbox starts empty"); return; }
-            int n = 0;
+            int n = 0, skipped = 0;
             foreach (var src in Directory.GetFiles(RealDir, "*", SearchOption.AllDirectories))
             {
                 string rel = src.Substring(RealDir.Length).TrimStart('\\', '/');
                 if (rel.StartsWith("Unity" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)) continue;
                 if (rel.EndsWith(".log", StringComparison.OrdinalIgnoreCase)) continue;
+                if (IsSaveData(rel)) { skipped++; continue; }
                 string dst = Path.Combine(SandboxDir, rel);
                 Directory.CreateDirectory(Path.GetDirectoryName(dst));
                 try { File.Copy(src, dst, true); n++; }
                 catch (Exception ex) { _log.Warn("SEED could not copy " + rel + ": " + ex.Message); }
             }
-            _log.Info("SEED copied " + n + " file(s) from real save folder into sandbox");
+            _log.Info("SEED copied " + n + " local file(s) into the sandbox; " + skipped + " save file(s) NOT copied (the multiplayer world comes from the host)");
         }
 
         static bool PatchRedirects(Harmony harmony)

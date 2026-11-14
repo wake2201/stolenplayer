@@ -1,4 +1,4 @@
-TS2-Multiplayer 0.12.0 - Koop-Mod für Thief Simulator 2 (2 Spieler, Direktverbindung)
+TS2-Multiplayer 0.14.3 - Koop-Mod für Thief Simulator 2 (2 Spieler, Direktverbindung)
 ========================================================================================
 
 INSTALLATION
@@ -11,17 +11,21 @@ Beide Spieler brauchen dieselbe Spielversion und dieselbe Version dieses Mods.
 Schon BepInEx 5 für andere Mods installiert? Dann nur den Ordner BepInEx\plugins\TS2MP kopieren und vorhandene
 Dateien nicht überschreiben (getestet ist BepInEx 5.4.23.5).
 
-SPIELEN - Taste F8 öffnet und schließt das Mehrspieler-Menü
+SPIELEN - Taste F8 öffnet und schließt das Mehrspieler-Menü, aber NUR im HAUPTMENÜ des Spiels.
+Im laufenden Spiel bewirkt F8 nichts.
 Host (Spieler 1):
   - Einmalig im Router UDP-Port 27960 an den eigenen PC weiterleiten
     (Anleitung: BepInEx\plugins\TS2MP\DIRECT_CONNECT_SETUP_DE.md).
-  - Den eigenen Spielstand laden und warten, bis du in der Welt stehst.
-  - F8 -> "Hosten starten". Das Menü zeigt den Beitrittscode ("Code kopieren" legt ihn in die Zwischenablage).
+  - Spiel starten und im HAUPTMENÜ F8 -> "Hosten vorbereiten". Das Menü zeigt den Beitrittscode
+    ("Code kopieren" legt ihn in die Zwischenablage).
   - Dem Mitspieler schicken: öffentliche IPv4-Adresse (Router-Übersicht) oder DynDNS-Name, Port 27960, Beitrittscode.
-  - Hosten ist im Hauptmenü nicht möglich. Zurück ins Hauptmenü beendet die Sitzung.
+  - F8 schließen und den Spielstand wie gewohnt laden ("Fortsetzen"). Der Mehrspieler startet automatisch;
+    Spieler 2 kann beitreten, sobald deine Welt vollständig geladen ist (vorher wartet sein Spiel einfach).
+  - Zurück ins Hauptmenü beendet die Sitzung. Erneut hosten: wieder im Hauptmenü F8 -> "Hosten vorbereiten".
 Mitspieler (Spieler 2):
   - Spiel starten und im HAUPTMENÜ bleiben.
   - F8 -> Adresse, Port und Beitrittscode eintragen -> "Verbinden".
+  - Zurück ins Hauptmenü beendet die Sitzung; erneut beitreten wieder mit F8 im Hauptmenü.
   - Nach erfolgreicher Verbindung lädt das Spiel automatisch die Welt des Hosts (nie den eigenen Einzelspieler-
     Spielstand); das Inventar von Spieler 2 kommt vom Host.
   - Beim ersten Beitritt erscheint Spieler 2 neben dem Host, danach an seiner letzten Position - auch in einer
@@ -30,8 +34,9 @@ Mitspieler (Spieler 2):
   - Aus einem laufenden Einzelspieler-Spiel kann man nicht beitreten: erst zurück ins Hauptmenü.
 
 MEHRSPIELER-TESTKAMPAGNE (nur zum Ausprobieren; im normalen Spiel nicht aktiv)
-- Host: Spiel starten, im HAUPTMENÜ F8 -> "Testkampagne vorbereiten" (nur bevor ein Spielstand geladen wurde).
-  Danach im Spielmenü "Fortsetzen" wählen, warten bis du in der Welt stehst, dann F8 -> "Hosten starten".
+- Host: Spiel starten, im HAUPTMENÜ F8 -> "Testkampagne hosten" (nur bevor ein Spielstand geladen wurde).
+  Das Menü zeigt den Beitrittscode. Danach F8 schließen und im Spielmenü "Fortsetzen" wählen; der Mehrspieler
+  startet automatisch, sobald die Welt geladen ist.
 - Spieler 2 tritt ganz normal bei (Adresse, Port, Code); sein Spiel erkennt die Testkampagne automatisch.
 - Beide Spieler haben alle Fähigkeiten und mindestens 1.000.000 Testgeld (wird automatisch aufgefüllt).
   Werkzeuge kauft ihr selbst in den Läden. Das Menü zeigt "TESTKAMPAGNE AKTIV".

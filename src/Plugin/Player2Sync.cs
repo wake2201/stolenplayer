@@ -236,7 +236,7 @@ namespace TS2MP.Plugin
             if (b != null && !P2Book.SameHistory(hist, mark, b))
             {
                 if (_writer != null) _writer.Flush(2000);
-                string q = null; try { q = _store.Quarantine("stale"); } catch { }
+                string q = null; try { q = _store.Quarantine("stale"); } catch (Exception ex) { _log.Warn("P2INV quarantine of a stale record failed: " + ex.Message); }
                 _log.Warn("P2INV record of profile " + profile + " belongs to another save history (save id " + hist + "/watermark " + mark + ", record id " + b.HistoryId + (b.HistoryConfirmed ? " confirmed" : "") + "/watermark " + b.LastSavedTxn + ": new game / older save): kept as " + q + ", Player 2 starts fresh");
                 b = null;
             }
@@ -740,9 +740,14 @@ namespace TS2MP.Plugin
 
         public void Dispose()
         {
-            try { if (!_host && _sync != null) _sync.CaptureExit(Now, Live, CurrentRecord()); } catch { }   // no-op if SaveGame.OnApplicationQuit already captured
+            try { if (!_host && _sync != null) _sync.CaptureExit(Now, Live, CurrentRecord()); }   // no-op if SaveGame.OnApplicationQuit already captured
+            catch (Exception ex) { _log.Warn("P2INV exit capture at session end failed (the last durable report stays valid): " + ex.Message); }
             _node.RemoteDisconnected -= OnDisconnected;
-            if (_host && _book != null && _writer != null) { try { QueueWrite(); _writer.Flush(3000); } catch { } }
+            if (_host && _book != null && _writer != null)
+            {
+                try { QueueWrite(); _writer.Flush(3000); }
+                catch (Exception ex) { _log.Error("P2INV final write of the Player-2 record failed (previous file version kept)", ex); }
+            }
             if (ReferenceEquals(Instance, this)) Instance = null;
             if (_host && _world.Host != null) { _world.Host.P2ReportHook = null; _world.Host.StorageTxnHook = null; }
             if (!_host && _world.ProposalResultHook3 == (Func<uint, ProposalCode, bool>)OnResult) _world.ProposalResultHook3 = null;

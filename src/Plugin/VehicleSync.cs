@@ -33,6 +33,7 @@ namespace TS2MP.Plugin
         public string DriverSeatAdjust = "";
         public string PassengerSeatAdjust = "";   // M4.3 local passenger root calibration "carNr:dx,dy,dz;..."
         public bool InteractDebug;              // M4.2.4 bounded E-ray probe (E key press near a proxy, <= 1/s)   // M4.2.3 manual seat calibration "carNr:dx,dy,dz;..."
+        public bool GroundDiagnostics = true;   // W4.2B.3 VEHICLE_GROUND lines (driver + observer, <= 1 per car per 5 s while it moves, capped)
     }
 
     internal sealed class VehicleSync : IDisposable, ITravelHandler
@@ -132,6 +133,8 @@ namespace TS2MP.Plugin
             // recorded box geometry) and the per-door slow-swing replay (start time, -1 = none) / own slow report in progress
             public Component CarBox; public BoxCollider CarBoxBox; public Bounds CarBoxLocal; public bool HasCarBox;
             public float GroundY;                                  // M4.3.2a car-local ground level (lowest wheel contact)
+            // W4.2B.3 ground diagnostics: last logged pose, wheel bindings for the driver side, observer wheel-ray outcomes since then
+            public Vector3 GroundLogPos; public double GroundLogAt = -100; public WheelVis[] DiagWheels; public int RayGround, RayOwnSkipped, RayKept, RayMiss;
             public readonly double[] SlowAt = { -1, -1 }; public readonly bool[] SlowRep = new bool[2];
             public bool Active { get { return Go != null && Go.activeInHierarchy; } }
         }
@@ -459,6 +462,7 @@ namespace TS2MP.Plugin
             CollisionFrame(now, gm);
             PushOutFrame(gm);
             WheelFrame();
+            GroundFrame(now);
             DoorFrame(region);
             SeatFrame();
             if (_cfg.InteractDebug && _observedBodies.Count > 0 && now >= _nextRayLog && Input.GetKeyDown(KeyCode.E)) { _nextRayLog = now + 1; RayProbe(gm); }
@@ -664,7 +668,21 @@ namespace TS2MP.Plugin
                 _log.Info("FLEET_INIT " + CarName(id) + " -> " + Regions.Name(reg) + " (no fleet record: from the host save CurrentCar=" + cur + " CurrentLocation=" + loc + ", fuel " + gas.ToString("0.0") + ")");
             }
             _fleetReady = true; _fleetDirty = true; _fleetUrgent = true;
+            int reassigned = _world.Host.FleetInitialized(Now);   // W4.2B.3: holder invariant right after placement (see WorldHost.FleetInitialized)
+            if (reassigned > 0) _log.Info("FLEET holders assigned right after placement (" + reassigned + " registry change(s); host region " + Regions.Name(_world.LocalRegion) + " already known)");
             _world.FlushOutbox();
+        }
+
+        // W4.2B.3 host readiness: the cars of the currently loaded save are bound and the fleet of this profile is registered
+        // (holders assigned in EnsureHostFleet). True when vehicle sync is inactive (accessors missing) or on the client.
+        internal bool HostFleetReady
+        {
+            get
+            {
+                if (!_ok || !_host) return true;
+                var gm = _world.GameManagerObject;
+                return gm != null && _fleetReady && ReferenceEquals(gm, _boundGm);
+            }
         }
 
         FleetSave ExportFleet()
@@ -1265,11 +1283,16 @@ namespace TS2MP.Plugin
         void BindWheels(LocalCar lc)
         {
             lc.Wheels = null; lc.WheelHasPos = false;
+            lc.Wheels = ReadWheels(lc);
+        }
+
+        WheelVis[] ReadWheels(LocalCar lc)
+        {
             try
             {
                 var dt = _drivetrain != null ? _drivetrain(lc.Car) : null;
                 var arr = dt != null && _evpWheels != null && _wT != null && _wCol != null ? _evpWheels.GetValue(dt) as Array : null;
-                if (arr == null) return;
+                if (arr == null) return null;
                 var inv = Quaternion.Inverse(lc.T.rotation);
                 var list = new List<WheelVis>();
                 foreach (var w in arr)
@@ -1282,9 +1305,9 @@ namespace TS2MP.Plugin
                     if (radius < 0.05f) continue;
                     list.Add(new WheelVis { T = t, RestRel = inv * t.rotation, AxleL = inv * ct.right, UpL = inv * ct.up, Radius = radius, Steers = _wSteer != null && (bool)_wSteer.GetValue(w), Col = wc });
                 }
-                if (list.Count > 0) lc.Wheels = list.ToArray();
+                return list.Count > 0 ? list.ToArray() : null;
             }
-            catch (Exception ex) { if (_warned.Add(91000 + lc.Kind)) _log.Warn("VEHICLE wheel visuals unavailable for " + CarName(lc.Id) + ": " + ex.Message); }
+            catch (Exception ex) { if (_warned.Add(91000 + lc.Kind)) _log.Warn("VEHICLE wheel visuals unavailable for " + CarName(lc.Id) + ": " + ex.Message); return null; }
         }
 
         // Proxy object that the original InitiateMainCar left inactive (e.g. not this save's current car, or the client's
@@ -1502,7 +1525,7 @@ namespace TS2MP.Plugin
                     if (w.T == null) continue;
                     w.Spin = (w.Spin + d / w.Radius * Mathf.Rad2Deg) % 360f;
                     w.T.rotation = rot * (Quaternion.AngleAxis(w.Steers ? lc.Steer : 0f, w.UpL) * Quaternion.AngleAxis(w.Spin, w.AxleL) * w.RestRel);
-                    if (w.Col != null) SuspensionPose(w);
+                    if (w.Col != null) SuspensionPose(w, lc);
                 }
             }
         }
@@ -1514,19 +1537,109 @@ namespace TS2MP.Plugin
         // IL_0017..IL_002e): ray from collider.transform.TransformPoint(center) along -up, length suspensionDistance + radius,
         // layer mask -5, triggers ignored; hit -> d = distance - 0.95 x radius, none -> d = suspensionDistance + 0.05 x radius;
         // wheel position = collider.transform.position - up x d. Same geometry and ground as the driver's EVP, no offsets.
-        static void SuspensionPose(WheelVis w)
+        // W4.2B.3 fidelity fix: EVP brackets that raycast with DisableCollidersRaycast / EnableCollidersRaycast
+        // (VehicleController.Update IL_00ca / IL_0117: every non-trigger, non-wheel collider of the car - FindColliders - moved
+        // to layer 2 "Ignore Raycast", which mask -5 excludes), so the car never hits ITSELF. The observer keeps the car's body
+        // colliders enabled (solid), so the same ray could stop on the car's own body / door colliders. Here the car's own
+        // colliders are skipped instead of re-layering them every frame: nearest hit that is not part of the car.
+        static readonly RaycastHit[] _rayBuf = new RaycastHit[8];
+
+        static bool NearestForeignHit(Vector3 origin, Vector3 dir, float length, Transform car, out RaycastHit best, out int ownSkipped)
+        {
+            best = default(RaycastHit); ownSkipped = 0;
+            int n = Physics.RaycastNonAlloc(origin, dir, _rayBuf, length, -5, QueryTriggerInteraction.Ignore);
+            bool found = false;
+            for (int i = 0; i < n; i++)
+            {
+                var h = _rayBuf[i];
+                if (h.collider == null) continue;
+                if (car != null && h.collider.transform.IsChildOf(car)) { ownSkipped++; continue; }
+                if (!found || h.distance < best.distance) { best = h; found = true; }
+            }
+            return found;
+        }
+
+        static void SuspensionPose(WheelVis w, LocalCar lc)
         {
             var wc = w.Col; var ct = wc.transform;
             Vector3 up = ct.up, origin = ct.TransformPoint(wc.center);
             float susp = wc.suspensionDistance, r = wc.radius, dist;
-            RaycastHit hit;
-            if (Physics.Raycast(origin, -up, out hit, susp + r, -5, QueryTriggerInteraction.Ignore))
+            RaycastHit hit; int own;
+            bool any = NearestForeignHit(origin, -up, susp + r, lc.T, out hit, out own);
+            lc.RayOwnSkipped += own;
+            if (any)
             {
-                if (Physics.GetIgnoreLayerCollision(wc.gameObject.layer, hit.collider.gameObject.layer)) return;   // EVP uses the physics compression here: keep the pose
+                if (Physics.GetIgnoreLayerCollision(wc.gameObject.layer, hit.collider.gameObject.layer)) { lc.RayKept++; return; }   // EVP uses the physics compression here: keep the pose
                 dist = hit.distance - r * 0.95f;
+                lc.RayGround++;
             }
-            else dist = susp + r * 0.05f;
+            else { dist = susp + r * 0.05f; lc.RayMiss++; }
             w.T.position = ct.position - up * dist;
+        }
+
+        // W4.2B.3 VEHICLE_GROUND diagnostics (Vehicles.GroundDiagnostics, default on during QA): the same measurements on the
+        // instance that simulates the car (role=driver: EVP placed the wheels) and on the one that observes it, so the two logs
+        // show where a "floating car" comes from: body pose (clearance differs), wheel visuals (wheelGap differs) or the
+        // follow path (recv/rb/transform heights differ). One line per car at most every 5 s and only after it moved >= 2 m;
+        // at most 240 lines per session. Rays skip the car's own colliders like EVP.
+        int _groundLines;
+        const int GroundLineCap = 240;
+
+        void GroundFrame(double now)
+        {
+            if (!_cfg.GroundDiagnostics || _groundLines >= GroundLineCap) return;
+            for (int i = 0; i < _local.Count; i++)
+            {
+                var lc = _local[i];
+                if (!lc.Active || lc.T == null || !(lc.Mine || lc.Observed) || now - lc.GroundLogAt < 5.0) continue;
+                bool driven = lc.Mine ? lc.LastDriver != 0 : lc.FollowRecv > 0 && now - lc.FollowRecv < 1.0;
+                if (!driven) continue;
+                var pos = lc.T.position;
+                if (lc.GroundLogAt > 0 && (pos - lc.GroundLogPos).sqrMagnitude < 4f) continue;
+                lc.GroundLogAt = now; lc.GroundLogPos = pos;
+                LogGround(lc, pos);
+                if (++_groundLines >= GroundLineCap) { _log.Info("VEHICLE_GROUND line cap reached (" + GroundLineCap + "): further ground diagnostics suppressed this session"); return; }
+            }
+        }
+
+        void LogGround(LocalCar lc, Vector3 pos)
+        {
+            var up = lc.T.up;
+            RaycastHit g; int own;
+            string clearance = NearestForeignHit(pos + up * 1.5f, -up, 6f, lc.T, out g, out own) ? (g.distance - 1.5f).ToString("0.000") : "none";
+            var wheels = lc.Observed ? lc.Wheels : (lc.DiagWheels ?? (lc.DiagWheels = ReadWheels(lc)));
+            float gapSum = 0f, gapMax = float.MinValue, dropSum = 0f; int gaps = 0, nw = 0;
+            if (wheels != null)
+                foreach (var w in wheels)
+                {
+                    if (w.T == null || w.Col == null) continue;
+                    var ct = w.Col.transform; var wup = ct.up;
+                    dropSum += Vector3.Dot(w.T.position - ct.position, wup); nw++;
+                    RaycastHit wh; int o2;
+                    if (NearestForeignHit(ct.TransformPoint(w.Col.center) + wup * 0.5f, -wup, w.Col.suspensionDistance + w.Col.radius + 2f, lc.T, out wh, out o2))
+                    {
+                        float gap = Vector3.Dot(w.T.position - wup * w.Radius - wh.point, wup);
+                        gapSum += gap; gaps++; if (gap > gapMax) gapMax = gap;
+                    }
+                }
+            var sb = new System.Text.StringBuilder(220);
+            sb.Append("VEHICLE_GROUND ").Append(CarName(lc.Id)).Append(lc.Mine ? " role=driver(simulated here)" : " role=observer(simulated by P" + _other + ")")
+              .Append(" pivotY=").Append(pos.y.ToString("0.000")).Append(" clearance=").Append(clearance)
+              .Append(" wheelGap avg=").Append(gaps > 0 ? (gapSum / gaps).ToString("0.000") : "-").Append(" max=").Append(gaps > 0 ? gapMax.ToString("0.000") : "-")
+              .Append(" wheelDrop avg=").Append(nw > 0 ? (dropSum / nw).ToString("0.000") : "-").Append(" wheels=").Append(nw);
+            if (lc.Observed)
+            {
+                VehiclePose last = default(VehiclePose);
+                bool hasLast = lc.Follow.Count > 0 && lc.Follow.Sample(Now, out last);
+                sb.Append(" | rays ground=").Append(lc.RayGround).Append(" ownSkipped=").Append(lc.RayOwnSkipped).Append(" keptLayer=").Append(lc.RayKept).Append(" miss=").Append(lc.RayMiss)
+                  .Append(" | sampleY=").Append(hasLast ? last.Pos.Y.ToString("0.000") : "-")
+                  .Append(" rbY=").Append(lc.Rb != null ? lc.Rb.position.y.ToString("0.000") : "-")
+                  .Append(" kin=").Append(lc.Rb != null && lc.Rb.isKinematic).Append(" interp=").Append(lc.Rb != null ? lc.Rb.interpolation.ToString() : "-")
+                  .Append(" follow=").Append(lc.Follow.Count);
+                lc.RayGround = lc.RayOwnSkipped = lc.RayKept = lc.RayMiss = 0;
+            }
+            else sb.Append(" | kin=").Append(lc.Rb != null && lc.Rb.isKinematic).Append(" interp=").Append(lc.Rb != null ? lc.Rb.interpolation.ToString() : "-");
+            _log.Info(sb.ToString());
         }
 
         // ---- M5.0 car doors: original Door components, host-committed state ("vdoor") ----
@@ -3167,7 +3280,7 @@ namespace TS2MP.Plugin
             _world.ProposalResultHook = null;
             if (_host && _world.Host != null) _world.Host.LivePark = null;
             if (_host && _fleetReady) { try { _fleetDirty = true; FlushFleet(true); _log.Info("FLEET final write " + (_store != null ? _store.Path : "-")); } catch (Exception ex) { _log.Error("FLEET final write failed", ex); } }
-            if (_ride != null) { try { ForceExitRide("plugin shutdown", true); } catch { } }
+            if (_ride != null) { try { ForceExitRide("plugin shutdown", true); } catch (Exception ex) { _log.Warn("VEHICLE passenger exit at shutdown failed: " + ex.Message); } }
             if (_selfBody != null) { _selfBody.Destroy(); _selfBody = null; }
             foreach (var lc in _local) { if (lc.Observed) ExitObserved(lc); else if (lc.IsProxy) ExitProxy(lc); }
             _observedBodies.Clear();

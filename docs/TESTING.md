@@ -151,6 +151,25 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 32. W4.2B.3 checklist — main-menu-only multiplayer lifecycle, hosting with a car, floating-car diagnostics (release `TS2-Multiplayer-0.14.3.zip` on BOTH PCs, protocol 26)
+Both PCs need 0.14.3 (a 0.14.2 peer is refused: mod version mismatch). Logs: `%LOCALAPPDATA%\TS2MP\logs\<stamp>_game_<pid>\plugin.log` on each PC — please send BOTH (the host log is needed for items 9–11).
+
+| # | Step | Expected | Result |
+|---|---|---|---|
+| 1 | Start normally (Steam), play single player without pressing F8 | Unchanged single player; log only `PLUGIN_INIT mode=F8 … (no patch, no network until F8 Host/Join in the main menu)` and `MENU ready` | NOT TESTED |
+| 2 | In a loaded world press F8 several times (on foot, then seated as driver) | Nothing happens: no window, camera / mouse / movement / car control unchanged; log at most one `MENU F8 ignored outside the main menu` per 30 s | NOT TESTED |
+| 3 | Host: main menu → F8 → port → "Hosten vorbereiten" | Code shown; status "Host vorbereitet – lade jetzt deinen Spielstand …"; log `HOST prepared in the main menu: UDP 0.0.0.0:<port> listening, session systems attached before the save loads`, `HOST_READINESS Hauptmenü – lade zuerst deinen Spielstand` | NOT TESTED |
+| 4 | Player 2 tries to join while the host is still in the main menu | Player 2 waits ("Host ist noch nicht bereit … neuer Versuch"); host log `JOIN_DEFERRED … host not gameplay-ready (Hauptmenü …)`; never `WELCOME` before item 5 finishes | NOT TESTED |
+| 5 | Host closes F8 and clicks the game's "Fortsetzen" | World loads normally; host log `HOST world loading started`, `VEHICLE_BIND`, `REGION local none -> …`, the own car `presentation Hidden -> Real`, then `HOST_READINESS ready: Player 2 may join`; Player 2 is admitted automatically afterwards and loads the host's world | NOT TESTED |
+| 6 | Host: save that was last saved with the player seated in / next to the car (if the game restores the seat: load it seated) | Host stays seated / the car stays where it is; no `must be released … leaving it first`, no `local copy deactivated` for the host's own car in the host log; readiness waits for `Fahrzeuge` if needed | NOT TESTED |
+| 7 | Both play a few minutes, then the HOST returns to the main menu | Host log `SESSION_END (host returned to the main menu)`; Player 2 log shows the disconnect; no `SESSION_CLEANUP … failed` lines; host save + fleet written (`FLEET final write`) | NOT TESTED |
+| 8 | Host: F8 in the main menu again → "Hosten vorbereiten" → Continue; Player 2 rejoins from its main menu | New code works; Player 2's inventory / position kept from the first session | NOT TESTED |
+| 9 | Player 2 returns to the main menu while connected | ~1.5 s later Player 2 log `SESSION_END (player 2 returned to the main menu)`; host log shows Player 2 left; F8 in Player 2's main menu offers "Verbinden" again; rejoin works with the same code | NOT TESTED |
+| 10 | Test campaign: restart host, main menu → F8 → "Testkampagne hosten" → Continue; Player 2 joins | Same as items 3–5 plus `TEST_CAMPAIGN prepared …`, `HOST prepared … MULTIPLAYER TEST CAMPAIGN`; Player 2 `TEST_CAMPAIGN active (Player 2)`; skills / test money as in §31 3–4; real saves untouched (§31 5) | NOT TESTED |
+| 11 | Floating car: Player 2 drives (Madison Street, also hideout), host watches from outside, then as passenger; then swap (host drives, Player 2 watches) | Report what each PC shows. Both logs contain `VEHICLE_GROUND <car> role=driver …` on the driving PC and `role=observer …` on the watching PC (≤ 1 per 5 s while moving). Compare `clearance` (body above the road) and `wheelGap` (wheel bottom above the road) between the two PCs; `ownSkipped` > 0 means the old wheel ray hit the car itself | NOT TESTED |
+| 12 | Regression spot checks (normal campaign): doors / lockpicking / windows, vehicle cameras, CarBox, shared drops, travel together | As confirmed with 0.14.2 | NOT TESTED |
+| 13 | Optional, if possible: `Debug.PerfStats = true` on both, 5 minutes of driving | `PERF` lines: mod cost and GC comparable to 0.14.2 (VEHICLE_GROUND adds ≤ 1 string per car per 5 s) | NOT TESTED |
+
 ## 31. W4.2B.2 checklist — broken doors, passenger legs, observed car height, F8 multiplayer test campaign (release `TS2-Multiplayer-0.14.2.zip` on BOTH PCs, protocol 26)
 Input: two-PC internet run 2026-11-13 19:23 with 0.14.1 (this PC = Player 2, log `20261113-192322_game_20044`): crowbar door now shared (`Set Door -> 5`), hold-E proposals `-> 3` present; user findings: broken doors cannot be closed, passenger legs visible in first person, car slightly above the ground on the passenger's PC.
 

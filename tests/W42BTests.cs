@@ -569,7 +569,7 @@ static class W42BTests
     // ---------------------------------------------------------------- 17
     static void CodecsAndScans()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 26 && ProtocolInfo.ModVersion == "0.14.2", "protocol 26 / mod 0.14.2");
+        Expect(ProtocolInfo.ProtocolVersion == 26 && ProtocolInfo.ModVersion == "0.14.3", "protocol 26 / mod 0.14.3");
         var t = new ObjectTxnRequest { Txn = 5, Op = ObjectOp.Reserve, Kind = L, Ns = Madison, Hash = 7, State = 1, BaseVer = 3, Epoch = 9 }; ObjectTxnRequest t2;
         Expect(t.ToBytes().Length == ObjectTxnRequest.Bytes && ObjectTxnRequest.TryParse(t.ToBytes(), out t2) && t2.Op == ObjectOp.Reserve && t2.Epoch == 9 && t2.BaseVer == 3, "txn 19 B");
         var bad = t.ToBytes(); bad[4] = 9; Expect(!ObjectTxnRequest.TryParse(bad, out t2), "unknown op refused");
@@ -790,11 +790,16 @@ static class W42BTests
         var code = StripComments(Src("VehicleSync.cs"));
         int i = code.IndexOf("static void SuspensionPose(", StringComparison.Ordinal);
         Expect(i > 0, "suspension pose exists");
-        string body = code.Substring(i, 900);
-        foreach (var k in new[] { "ct.TransformPoint(wc.center)", "Physics.Raycast(origin, -up, out hit, susp + r, -5, QueryTriggerInteraction.Ignore)", "hit.distance - r * 0.95f", "susp + r * 0.05f", "w.T.position = ct.position - up * dist;", "GetIgnoreLayerCollision" })
+        string body = code.Substring(i, code.IndexOf("void GroundFrame(", i, StringComparison.Ordinal) - i);
+        foreach (var k in new[] { "ct.TransformPoint(wc.center)", "NearestForeignHit(origin, -up, susp + r, lc.T, out hit, out own)", "hit.distance - r * 0.95f", "susp + r * 0.05f", "w.T.position = ct.position - up * dist;", "GetIgnoreLayerCollision" })
             Expect(body.Contains(k), "mirrors EVP VehicleController.UpdateTransform / UpdateSuspension: " + k);
+        // W4.2B.3: EVP raycasts with the car's own colliders on layer 2 (DisableCollidersRaycast); the mirror skips them
+        int nf = code.IndexOf("static bool NearestForeignHit(", StringComparison.Ordinal);
+        Expect(nf > 0, "own-collider-free ray helper exists");
+        string nb = code.Substring(nf, code.IndexOf("static void SuspensionPose(", nf, StringComparison.Ordinal) - nf);
+        Expect(nb.Contains("Physics.RaycastNonAlloc(origin, dir, _rayBuf, length, -5, QueryTriggerInteraction.Ignore)") && nb.Contains("h.collider.transform.IsChildOf(car)") && nb.Contains("h.distance < best.distance"), "same mask / trigger rule as EVP, nearest hit that is not part of the car, no allocation");
         int wf = code.IndexOf("void WheelFrame()", StringComparison.Ordinal);
-        Expect(wf > 0 && code.Substring(wf, 900).Contains("if (!lc.Observed || lc.Wheels == null || !lc.Active) continue;") && code.Substring(wf, 1400).Contains("SuspensionPose(w)"), "only cars observed here (the driver's EVP keeps its own wheels)");
+        Expect(wf > 0 && code.Substring(wf, 900).Contains("if (!lc.Observed || lc.Wheels == null || !lc.Active) continue;") && code.Substring(wf, 1400).Contains("SuspensionPose(w, lc)"), "only cars observed here (the driver's EVP keeps its own wheels)");
         Expect(!body.Contains("+ 0.") || body.Contains("0.95f"), "no fixed height offset");
     }
 
@@ -825,10 +830,10 @@ static class W42BTests
         Expect(!MenuRules.PrepareTest(GameContext.MainMenu, MpState.Offline, true, false, true, false, false).Enabled && !MenuRules.PrepareTest(GameContext.MainMenu, MpState.Offline, false, false, false, false, false).Enabled, "launcher mode / no isolation: no");
         Expect(!MenuRules.PrepareTest(GameContext.MainMenu, MpState.Offline, false, false, true, true, false).Enabled, "only once");
         Expect(!MenuRules.Join(GameContext.MainMenu, MpState.Offline, false, true, true).Enabled && MenuRules.Join(GameContext.MainMenu, MpState.Offline, false, true, false).Enabled, "a test-host process cannot join");
-        Expect(MenuRules.Host(GameContext.MainMenu, MpState.Offline, false, false).Enabled == false && MenuRules.Host(GameContext.InWorld, MpState.Offline, false, false).Enabled, "hosting still needs a loaded world");
+        Expect(MenuRules.Host(GameContext.MainMenu, MpState.Offline, false, false).Enabled && !MenuRules.Host(GameContext.InWorld, MpState.Offline, false, false).Enabled, "W4.2B.3: hosting is prepared in the main menu, never from a loaded world");
         // isolation order (source)
         var menu = Src("MultiplayerMenu.cs");
-        int prep = menu.IndexOf("void PrepareTestCampaign()", StringComparison.Ordinal);
+        int prep = menu.IndexOf("bool PrepareTestCampaign()", StringComparison.Ordinal);
         string pb = menu.Substring(prep, menu.IndexOf("void RefreshContinueText()", prep, StringComparison.Ordinal) - prep);
         Expect(pb.IndexOf("SaveGuard.PrepareTestHostSave(dir, out why)", StringComparison.Ordinal) > 0 && pb.IndexOf("SaveGuard.PrepareTestHostSave", StringComparison.Ordinal) < pb.IndexOf("_runner.EnableTestCampaign(dir", StringComparison.Ordinal)
             && pb.Contains("_runner.RequestQuit("), "host: armed (fail closed) before the test records are enabled");

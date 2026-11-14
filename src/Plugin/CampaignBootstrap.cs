@@ -125,12 +125,12 @@ namespace TS2MP.Plugin
             if (_rec == null && (File.Exists(_store.Path) || File.Exists(_store.Path + ".bak")))
             {
                 _recErr = "main: " + err1 + ", backup: " + err2;
-                string q = null; try { q = _store.Quarantine("invalid"); } catch { }
+                string q = null; try { q = _store.Quarantine("invalid"); } catch (Exception ex) { _log.Warn("P2SPAWN quarantine of an invalid record failed: " + ex.Message); }
                 _log.Warn("P2SPAWN record of profile " + profile + " unusable (" + _recErr + "): kept as " + q + "; Player 2 gets a first-join spawn");
             }
             else if (_rec != null && _rec.HistoryId != hist)
             {
-                string q = null; try { q = _store.Quarantine("stale"); } catch { }
+                string q = null; try { q = _store.Quarantine("stale"); } catch (Exception ex) { _log.Warn("P2SPAWN quarantine of a stale record failed: " + ex.Message); }
                 _log.Warn("P2SPAWN record of profile " + profile + " belongs to another save history (record " + _rec.HistoryId + ", campaign " + hist + "): kept as " + q + "; Player 2 gets a first-join spawn");
                 _recErr = null; var stale = _rec; _rec = null;
                 _staleNote = stale;   // SpawnRules sees it as stale (no exact restore into another history)

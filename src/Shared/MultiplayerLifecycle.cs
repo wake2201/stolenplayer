@@ -1,7 +1,13 @@
-// N1.2 F8 multiplayer session lifecycle (Unity-free; the plugin glue in src/Plugin/MultiplayerMenu.cs feeds it real game
-// facts and executes the actions it returns). Rules:
-//  - Host only from a loaded, playable single-player world; never from the main menu.
+// F8 multiplayer session lifecycle (Unity-free; the plugin glue in src/Plugin/MultiplayerMenu.cs feeds it real game
+// facts and executes the actions it returns). Rules (W4.2B.3: main-menu-only workflow):
+//  - The F8 menu exists only in the original main menu; in a loaded world F8 does nothing (no window, no input change).
+//  - Host is prepared ONLY in the main menu (port + join code; listening + session systems start there, exactly like the
+//    developer launcher host since M1). The player then loads through the original Continue / New Game; joins stay
+//    refused (HostNotReady, retryable) until HostReadiness reports the host's loaded world as gameplay-ready.
+//    Never a late attach into a running world (W4.2B.3 root cause of the "host from inside a car" defect).
 //  - Join only from the original main menu; never from an active solo world (no live migration).
+//  - Returning to the main menu after the world was loaded ends the session (host at once; Player 2 after a short grace
+//    so its exit report reaches the host).
 //  - Save isolation is armed only after authentication + host readiness and before any client gameplay message or
 //    scene load; once armed it stays armed for the rest of the process (solo play again = restart the game).
 //  - The client never loads into the world before ClientReady was sent and the host's world snapshot arrived.
@@ -9,7 +15,8 @@ using System;
 
 namespace TS2MP.Shared
 {
-    public enum MpState { Offline, HostStarting, HostReady, HostWaiting, ClientConnecting, ClientPreparing, ClientSynchronizing, Connected, Disconnecting, Error }
+    // HostArmed = W4.2B.3: host session prepared in the main menu, listening, waiting for the host's world to load.
+    public enum MpState { Offline, HostStarting, HostArmed, HostReady, HostWaiting, ClientConnecting, ClientPreparing, ClientSynchronizing, Connected, Disconnecting, Error }
 
     public enum GameContext { Unknown, MainMenu, Loading, InWorld }
 
@@ -23,6 +30,7 @@ namespace TS2MP.Shared
         public bool RegionKnown;        // WorldSync resolved the region (expected additive scene loaded)
         public bool PersistenceReady;   // Player2Sync host book bound to this profile (p2inv loaded)
         public bool SystemsReady;       // session systems constructed without fatal init errors
+        public bool VehiclesPending;    // W4.2B.3: vehicle sync runs but the host fleet of this profile is not registered / its holders not assigned yet
         public double SecondsSinceSceneLoad;
     }
 
@@ -41,6 +49,7 @@ namespace TS2MP.Shared
             if (!f.SystemsReady) return "Mehrspieler-Systeme nicht bereit";
             if (!f.RegionKnown) return "Region noch nicht erkannt";
             if (!f.PersistenceReady) return "Speicherdaten von Spieler 2 noch nicht geladen";
+            if (f.VehiclesPending) return "Fahrzeuge werden noch zugeordnet";
             return null;
         }
     }
@@ -55,7 +64,11 @@ namespace TS2MP.Shared
     public static class MenuRules
     {
         public const string JoinFromWorldText = "Um einem Multiplayer-Spiel beizutreten, musst du zuerst zum Hauptmenü zurückkehren.";
-        public const string HostFromMenuText = "Hosten ist erst möglich, wenn dein Einzelspieler-Spielstand vollständig geladen ist.";
+        // W4.2B.3: hosting is prepared in the main menu only (before the save is loaded).
+        public const string HostFromWorldText = "Hosten wird im Hauptmenü vorbereitet, bevor du deinen Spielstand lädst. Kehre dazu zum Hauptmenü zurück.";
+
+        // W4.2B.3: the F8 window opens only in the original main menu; in a loaded world (or while loading) F8 does nothing.
+        public static bool MenuOpens(GameContext ctx) { return ctx == GameContext.MainMenu; }
         public const string ClientModeStickyText = "Dieses Spiel lief bereits als Spieler 2 (geschützter Speicherbereich). Für Einzelspieler oder Hosten bitte das Spiel neu starten.";
         public const string LegacyText = "Vom Entwickler-Launcher gestartet – Rolle ist festgelegt.";
         public const string IsolationUnavailableText = "Speicherschutz für Spieler 2 ist nicht verfügbar (siehe Log). Beitreten ist deaktiviert.";
@@ -67,12 +80,13 @@ namespace TS2MP.Shared
             if (legacy) return Availability.No(LegacyText);
             if (clientModeSticky) return Availability.No(ClientModeStickyText);
             if (Busy(s)) return Availability.No("Es läuft bereits eine Mehrspieler-Sitzung.");
-            if (ctx != GameContext.InWorld) return Availability.No(HostFromMenuText);
+            if (ctx != GameContext.MainMenu) return Availability.No(HostFromWorldText);
             return Availability.Yes;
         }
 
         // W4.2B.2 multiplayer test campaign (host side): prepared ONLY in the main menu before any save is loaded (the original
         // Continue / New Game then loads the isolated copy), never in a process that already acted as Player 2, once per process.
+        // W4.2B.3: preparing it now also prepares the host session (same button), see MultiplayerMenu.StartHost(true).
         public const string TestPrepareMenuText = "Die Testkampagne kann nur im Hauptmenü vorbereitet werden, bevor ein Spielstand geladen ist (Spiel neu starten).";
         public const string TestHostJoinText = "Dieses Spiel hat die Testkampagne als Host vorbereitet. Zum Beitreten bitte das Spiel neu starten.";
         public static Availability PrepareTest(GameContext ctx, MpState s, bool legacy, bool clientModeSticky, bool isolationAvailable, bool prepared, bool worldLoadedBefore)
@@ -105,7 +119,8 @@ namespace TS2MP.Shared
 
     public sealed class JoinRequest { public string Host; public int Port; public string Code; }
 
-    public enum ClientAction { None, ArmIsolation, BuildSystemsAndConfirm, ContinueGame, Abort, GiveUp }
+    // EndSession = W4.2B.3: Player 2 returned to the main menu after the world was loaded (clean session end).
+    public enum ClientAction { None, ArmIsolation, BuildSystemsAndConfirm, ContinueGame, Abort, GiveUp, EndSession }
 
     public sealed class Lifecycle
     {
@@ -115,7 +130,10 @@ namespace TS2MP.Shared
         public bool ClientModeSticky { get; private set; }   // save isolation armed in this process
         public bool Legacy;                                   // launcher dev mode: role fixed at startup
         public double ConnectTimeoutSeconds = 30, SyncTimeoutSeconds = 30, HostWaitTimeoutSeconds = 180;
+        public double MenuLeaveGraceSeconds = 1.5;           // W4.2B.3: Player 2's exit report (SaveGame.LoseGame) is sent before the scene change; give it time to leave
         double _since; bool _continued, _hostWaitSeen; string _lastReason;
+        bool _hostWorldEntered, _clientWorldEntered; double _clientMenuSince = -1;
+        public bool HostWorldEntered { get { return _hostWorldEntered; } }
 
         public Lifecycle() { State = MpState.Offline; Status = "Offline"; }
 
@@ -130,8 +148,8 @@ namespace TS2MP.Shared
             var a = MenuRules.Host(ctx, State, Legacy, ClientModeSticky);
             if (!a.Enabled) return a.Reason;
             if (!NetConfig.ValidPort(port)) return "Ungültiger Port (1024–65535).";
-            Error = null;
-            Set(MpState.HostStarting, "Host wird gestartet …", now);
+            Error = null; _hostWorldEntered = false;
+            Set(MpState.HostStarting, "Host wird vorbereitet …", now);
             return null;
         }
 
@@ -139,14 +157,22 @@ namespace TS2MP.Shared
         {
             if (State != MpState.HostStarting) return;
             if (!ok) { Fail(error ?? "Host konnte nicht gestartet werden", now); return; }
-            Set(MpState.HostWaiting, "Host läuft – Welt wird geprüft …", now);
+            Set(MpState.HostArmed, ArmedText, now);
         }
 
-        // Called every frame while hosting. Returns true when the session must end (host left to the main menu).
+        public const string ArmedText = "Host vorbereitet – lade jetzt deinen Spielstand (Fortsetzen oder ein Spiel beginnen). Spieler 2 kann beitreten, sobald deine Welt geladen ist.";
+
+        // Called every frame while hosting. Returns true when the session must end (host returned to the main menu after its
+        // world was loaded). W4.2B.3: in the main menu before any world load the prepared session simply waits (HostArmed).
         public bool HostTick(GameContext ctx, string readinessReason, bool clientConnected, double now)
         {
-            if (State != MpState.HostReady && State != MpState.HostWaiting && State != MpState.Connected) return false;
-            if (ctx == GameContext.MainMenu) { Set(MpState.Disconnecting, "Sitzung wird beendet (Hauptmenü) …", now); return true; }
+            if (State != MpState.HostArmed && State != MpState.HostReady && State != MpState.HostWaiting && State != MpState.Connected) return false;
+            if (ctx == GameContext.MainMenu)
+            {
+                if (!_hostWorldEntered) { if (State != MpState.HostArmed) Set(MpState.HostArmed, ArmedText, now); return false; }
+                Set(MpState.Disconnecting, "Sitzung wird beendet (Hauptmenü) …", now); return true;
+            }
+            _hostWorldEntered = true;   // loading or in the world
             if (clientConnected) { if (State != MpState.Connected) Set(MpState.Connected, "Spieler 2 ist verbunden", now); }
             else if (readinessReason == null) { if (State != MpState.HostReady) Set(MpState.HostReady, "Bereit – warte auf Spieler 2", now); }
             else if (State != MpState.HostWaiting || !ReferenceEquals(_lastReason, readinessReason)) { _lastReason = readinessReason; Set(MpState.HostWaiting, "Beitritt pausiert: " + readinessReason, now); }
@@ -166,7 +192,7 @@ namespace TS2MP.Shared
             string code = JoinAuth.Normalize(codeText);
             if (code == null) return "Ungültiger Beitrittscode – bitte auf Tippfehler prüfen.";
             req = new JoinRequest { Host = host, Port = port, Code = code };
-            Error = null; _continued = false; _hostWaitSeen = false;
+            Error = null; _continued = false; _hostWaitSeen = false; _clientWorldEntered = false; _clientMenuSince = -1;
             Set(MpState.ClientConnecting, "Verbinde mit " + host + ":" + port + " …", now);
             return null;
         }
@@ -192,11 +218,19 @@ namespace TS2MP.Shared
                 case MpState.ClientSynchronizing:
                     if (node == ConnState.Failed) { Fail(Explain(fatal, lastReject), now); return ClientAction.GiveUp; }
                     if (node == ConnState.Connected && worldSynced && ctx == GameContext.MainMenu && !_continued) { _continued = true; return ClientAction.ContinueGame; }
-                    if (ctx == GameContext.Loading || ctx == GameContext.InWorld) { Set(MpState.Connected, "Verbunden als Spieler 2", now); return ClientAction.None; }
+                    if (ctx == GameContext.Loading || ctx == GameContext.InWorld) { _clientWorldEntered = true; Set(MpState.Connected, "Verbunden als Spieler 2", now); return ClientAction.None; }
                     if (!worldSynced && now - _since > SyncTimeoutSeconds) { Fail("Weltdaten vom Host kamen nicht an", now); return ClientAction.Abort; }
                     return ClientAction.None;
                 case MpState.Connected:
                     if (node == ConnState.Failed) { Fail(Explain(fatal, lastReject), now); return ClientAction.GiveUp; }
+                    if (ctx != GameContext.MainMenu) { _clientWorldEntered = true; _clientMenuSince = -1; }
+                    else if (_clientWorldEntered)
+                    {
+                        // W4.2B.3: back in the main menu after playing = the session ends (rejoin from the main menu with F8)
+                        if (_clientMenuSince < 0) { _clientMenuSince = now; Status = "Sitzung wird beendet (Hauptmenü) …"; }
+                        if (now - _clientMenuSince >= MenuLeaveGraceSeconds) { Set(MpState.Disconnecting, "Sitzung wird beendet (Hauptmenü) …", now); return ClientAction.EndSession; }
+                        return ClientAction.None;
+                    }
                     Status = node == ConnState.Connected ? "Verbunden als Spieler 2" : "Verbindung unterbrochen – neuer Versuch …";
                     return ClientAction.None;
             }
@@ -210,7 +244,7 @@ namespace TS2MP.Shared
         public void Stopped(double now) { if (State != MpState.Error) Set(MpState.Offline, ClientModeSticky ? "Offline (Spieler-2-Modus bleibt bis zum Neustart aktiv)" : "Offline", now); }
         public void BeginStop(double now) { if (Busy()) Set(MpState.Disconnecting, "Sitzung wird beendet …", now); }
         public bool Busy() { return MenuRules.Busy(State); }
-        public bool IsHostState { get { return State == MpState.HostStarting || State == MpState.HostReady || State == MpState.HostWaiting; } }
+        public bool IsHostState { get { return State == MpState.HostStarting || State == MpState.HostArmed || State == MpState.HostReady || State == MpState.HostWaiting; } }
 
         public static string Explain(string fatal, RejectCode? reject)
         {

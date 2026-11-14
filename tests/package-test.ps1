@@ -36,7 +36,7 @@ try {
     $bad = @($files | Where-Object { -not $m.ContainsKey($_) -or $m[$_] -ne (Sha "$x\$_") })
     Check "ZIP content = manifest ($($files.Count) files, all SHA-256 match, none extra)" ($bad.Count -eq 0 -and $files.Count -eq $m.Count)
     $hdr = Get-Content "$x\BepInEx\plugins\TS2MP\manifest.sha256" -TotalCount 1
-    Check "versions pinned: manifest $ver / protocol $proto, plugin 0.14.2 / 26" ($hdr -match "version=$([regex]::Escape($ver)) protocol=$proto " -and $ver -eq '0.14.2' -and $proto -eq '26')
+    Check "versions pinned: manifest $ver / protocol $proto, plugin 0.14.3 / 26" ($hdr -match "version=$([regex]::Escape($ver)) protocol=$proto " -and $ver -eq '0.14.3' -and $proto -eq '26')
     $bep = Join-Path $repo 'build\deps\BepInEx_5.4.23.5'
     $bootstrap = @('winhttp.dll', 'doorstop_config.ini', '.doorstop_version') | Where-Object { (Sha "$x\$_") -ne (Sha "$bep\$_") }
     $core = @(Get-ChildItem "$bep\BepInEx\core\*.dll" | Where-Object { -not (Test-Path "$x\BepInEx\core\$($_.Name)") -or (Sha "$x\BepInEx\core\$($_.Name)") -ne (Sha $_.FullName) })
@@ -45,8 +45,8 @@ try {
     $lic = @('LiteNetLib-LICENSE.txt', 'BepInEx-LICENSE.txt', 'HarmonyX-LICENSE.txt', 'MonoMod-LICENSE.txt', 'Mono.Cecil-LICENSE.txt', 'UnityDoorstop-LICENSE.txt') | Where-Object { -not (Test-Path "$x\BepInEx\plugins\TS2MP\licenses\$_") }
     Check 'license texts + third-party notice + German setup guide included' ($lic.Count -eq 0 -and (Test-Path "$x\BepInEx\plugins\TS2MP\THIRD-PARTY-NOTICES.txt") -and (Test-Path "$x\BepInEx\plugins\TS2MP\DIRECT_CONNECT_SETUP_DE.md"))
     $readme = Get-Content "$x\TS2-Multiplayer-LIESMICH.txt" -Raw -Encoding UTF8
-    Check 'German README: copy into the game folder, Steam start, F8, host from the world, join from the main menu, unencrypted, saves untouched' (
-        $readme -match 'Spielordner' -and $readme -match 'Steam' -and $readme -match 'F8' -and $readme -match 'HAUPTMENÜ' -and $readme -match 'NICHT verschl' -and $readme -match 'Einzelspieler-Spielstände werden dabei nicht verändert' -and $readme -match 'DS-Lite')
+    Check 'German README: copy into the game folder, Steam start, F8 only in the main menu, host prepared before loading, join from the main menu, unencrypted, saves untouched' (
+        $readme -match 'Spielordner' -and $readme -match 'Steam' -and $readme -match 'F8' -and $readme -match 'HAUPTMENÜ' -and $readme -match 'NICHT verschl' -and $readme -match 'Einzelspieler-Spielstände werden dabei nicht verändert' -and $readme -match 'DS-Lite' -and $readme -match 'Hosten vorbereiten' -and $readme -notmatch 'Hosten starten')
     $guide = Get-Content "$x\BepInEx\plugins\TS2MP\DIRECT_CONNECT_SETUP_DE.md" -Raw -Encoding UTF8
     Check 'setup guide: UDP 27960 only, DHCP reservation, firewall, CGNAT/DS-Lite, troubleshooting, no launcher references' ($guide -match 'UDP 27960' -and $guide -match 'DHCP-Reservierung' -and $guide -match 'Firewall' -and $guide -match 'CGNAT' -and $guide -match 'Fehlerbehebung' -and $guide -notmatch '(?i)launcher')
 

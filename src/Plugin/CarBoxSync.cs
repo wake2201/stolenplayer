@@ -370,7 +370,7 @@ namespace TS2MP.Plugin
 
         public void Dispose()
         {
-            if (_held != 0) { try { Release("shutdown"); } catch { } }
+            if (_held != 0) { try { Release("shutdown"); } catch (Exception ex) { _log.Warn("CARBOX lease release at shutdown failed (the host expires it): " + ex.Message); } }
             if (ReferenceEquals(Instance, this)) Instance = null;
             if (_world.ProposalResultHook2 == (Func<uint, ProposalCode, bool>)OnResult) _world.ProposalResultHook2 = null;
             if (_host && _world.Host != null) { _world.Host.CarBoxSnapshot = null; _world.Host.LockerSnapshot = null; }

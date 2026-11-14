@@ -1,6 +1,6 @@
 ﻿// BepInEx 5 plugin entry.
-// N1.2: a normally started game (Steam) runs in F8 mode: no patch and no network until the player opens the F8 menu and
-// hosts (from a loaded world) or joins (from the main menu); see MultiplayerMenu.cs. The developer launcher
+// N1.2: a normally started game (Steam) runs in F8 mode: no patch and no network until the player opens the F8 menu in the
+// main menu and prepares a host (W4.2B.3: before the save loads) or joins; see MultiplayerMenu.cs. The developer launcher
 // (-ts2mp-role argument) keeps the fixed-role mode used for local two-instance tests.
 using System;
 using System.IO;
@@ -52,8 +52,9 @@ namespace TS2MP.Plugin
             try { travelKey = (KeyCode)Enum.Parse(typeof(KeyCode), keyName, true); } catch { travelKey = KeyCode.F7; }
             var seatAdjust = Config.Bind("Vehicles", "DriverSeatAdjust", "", "Manual correction of the remote driver's seat in car-local metres, format carNr:dx,dy,dz;... (0 = Ranger, 1 = Shadowhawk), each value within +-0.5. Empty = automatic anchor from the car's own seat transforms.").Value;
             var passengerAdjust = Config.Bind("Vehicles", "PassengerSeatAdjust", "", "Manual correction of YOUR first-person passenger seat (player root, car-local metres), format carNr:dx,dy,dz;... (0 = Ranger, 1 = Shadowhawk), each within +-0.5. Empty = derived from the car's original companion seat (associateSitPos).").Value;
-            settings.Vehicles = new VehicleSettings { TravelMenuKey = travelKey, DriverSeatAdjust = seatAdjust ?? "", PassengerSeatAdjust = passengerAdjust ?? "", InteractDebug = Config.Bind("Vehicles", "InteractDebug", false, "Diagnostics: on each E press near another player's car (max 1/s) log what the original interaction ray hits.").Value };
-            var menuKeyName = Config.Bind("Network", "MenuKey", "F8", "Opens / closes the multiplayer menu (Host Game in a loaded world, Join Game in the main menu).").Value;
+            settings.Vehicles = new VehicleSettings { TravelMenuKey = travelKey, DriverSeatAdjust = seatAdjust ?? "", PassengerSeatAdjust = passengerAdjust ?? "", InteractDebug = Config.Bind("Vehicles", "InteractDebug", false, "Diagnostics: on each E press near another player's car (max 1/s) log what the original interaction ray hits.").Value,
+                GroundDiagnostics = Config.Bind("Vehicles", "GroundDiagnostics", true, "Diagnostics (W4.2B.3 QA): VEHICLE_GROUND lines in plugin.log comparing body clearance and wheel contact of a driven car on the driving and the observing PC (max 1 line per car per 5 s while it moves, 240 per session).").Value };
+            var menuKeyName = Config.Bind("Network", "MenuKey", "F8", "Opens / closes the multiplayer menu in the main menu (prepare Host before loading the save, or Join). Does nothing in a loaded world.").Value;
             try { menuKey = (KeyCode)Enum.Parse(typeof(KeyCode), menuKeyName, true); } catch { menuKey = KeyCode.F8; }
             settings.MenuKey = menuKey;
             int hostPort;
@@ -77,7 +78,7 @@ namespace TS2MP.Plugin
                 var flog = NewLog(logDir, "GAME", "-", "-");
                 flog.Info("PLUGIN_INIT mode=F8 mod=" + ProtocolInfo.ModVersion + " protocol=" + ProtocolInfo.ProtocolVersion + " game=" + Application.version
                     + " unity=" + Application.unityVersion + " pid=" + System.Diagnostics.Process.GetCurrentProcess().Id
-                    + " bepinex=" + typeof(BaseUnityPlugin).Assembly.GetName().Version + " logDir=" + logDir + " (no patch, no network until F8 Host/Join)");
+                    + " bepinex=" + typeof(BaseUnityPlugin).Assembly.GetName().Version + " logDir=" + logDir + " (no patch, no network until F8 Host/Join in the main menu)");
                 settings.LogDir = logDir;
                 runner.InitMenu(flog, settings, new Harmony(Guid + ".saveguard"));
                 return;
@@ -230,6 +231,7 @@ namespace TS2MP.Plugin
 
         internal SessionNode Node { get { return _node; } }
         internal WorldSync World { get { return _world; } }
+        internal VehicleSync Vehicles { get { return _vehicles; } }   // W4.2B.3 host readiness (fleet bound)
         internal Player2Sync P2 { get { return _p2; } }
         internal CampaignBootstrap Campaign { get { return _campaign; } }
         internal InstanceLog Log { get { return _log; } }
@@ -345,19 +347,22 @@ namespace TS2MP.Plugin
             if (_node != null) { _node.Dispose(); _node = null; }
         }
 
+        // Order unchanged. W4.2B.3: a failing Dispose no longer disappears silently - the final writes (fleet, Player-2 record,
+        // CarBox release, door/loot state) live in these Dispose methods, so every failure is logged once with the system
+        // name (bounded: at most one line per system per session end) and the remaining systems are still disposed.
         void DisposeSystems()
         {
-            if (_doors != null) { try { _doors.Dispose(); } catch { } _doors = null; }
-            if (_campaign != null) { try { _campaign.Dispose(); } catch { } _campaign = null; }
-            if (_loot != null) { try { _loot.Dispose(); } catch { } _loot = null; }
-            if (_mirror != null) { try { _mirror.Dispose(); } catch { } _mirror = null; }
-            if (_census != null) { try { _census.Dispose(); } catch { } _census = null; }
-            if (_items != null) { try { _items.Dispose(); } catch { } _items = null; }
-            if (_carbox != null) { try { _carbox.Dispose(); } catch { } _carbox = null; }
-            if (_p2 != null) { try { _p2.Dispose(); } catch { } _p2 = null; }
-            if (_vehicles != null) { try { _vehicles.Dispose(); } catch { } _vehicles = null; }
-            if (_world != null) { try { _world.Dispose(); } catch { } _world = null; }
-            if (_sync != null) { try { _sync.Dispose(); } catch { } _sync = null; }
+            Release(ref _doors, "WOBJ"); Release(ref _campaign, "CAMPAIGN"); Release(ref _loot, "WLOOT"); Release(ref _mirror, "MIRROR");
+            Release(ref _census, "CENSUS"); Release(ref _items, "WITEM"); Release(ref _carbox, "CARBOX"); Release(ref _p2, "P2INV");
+            Release(ref _vehicles, "VEHICLE"); Release(ref _world, "WORLD"); Release(ref _sync, "SYNC");
+        }
+
+        void Release<T>(ref T system, string name) where T : class, IDisposable
+        {
+            if (system == null) return;
+            try { system.Dispose(); }
+            catch (Exception ex) { if (_log != null) _log.Error("SESSION_CLEANUP " + name + " dispose failed (final writes of this system may be incomplete)", ex); }
+            system = null;
         }
 
         internal void RequestQuit(string why) { _log.Error(why); _quitRequested = true; }
@@ -542,7 +547,7 @@ namespace TS2MP.Plugin
             _shutdown = true;
             if (_log == null) return;
             _log.Info("PLUGIN_SHUTDOWN (" + why + ")");
-            if (_menu != null) { try { _menu.Dispose(); } catch { } }
+            if (_menu != null) { try { _menu.Dispose(); } catch (Exception ex) { _log.Error("SESSION_CLEANUP menu dispose failed", ex); } }
             DisposeSystems();
             if (_node != null) { _node.Dispose(); _node = null; }
             _log.Dispose();

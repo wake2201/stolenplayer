@@ -463,6 +463,13 @@ namespace TS2MP.Shared
             ResetDoorsOfMovedCars();
         }
 
+        // W4.2B.3: the host plugin placed / re-placed the fleet of a newly loaded save (FleetBook.Place resets Holder to 0).
+        // The holder invariant must be re-established at once: when the host's region was already known before its cars were
+        // registered (session attached in a running world, or a fast region probe), no later fleet change would assign the
+        // host as holder, and the host's own (possibly occupied) car would be presented as another player's car. With the
+        // region still unknown this changes nothing (the later SetPlayerRegion assigns it, the launcher-proven order).
+        public int FleetInitialized(double now) { _now = now; int before = Outbox.Count; AfterFleetChange(); return Outbox.Count - before; }
+
         // ---- M5.0 car doors ----
         // A local or remote change of an original car door (car_door_L = 0 / car_door_R = 1). The car's simulation holder may
         // always change its own doors (its original CarController opens/closes them on entry/exit); anybody else in the

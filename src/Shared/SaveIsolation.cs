@@ -67,5 +67,18 @@ namespace TS2MP.Shared
 
         // Path the game's persistentDataPath callers see: the original while disarmed (solo / host), the sandbox while armed.
         public static string Effective(bool armed, string sandbox, Func<string> original) { return armed ? sandbox : original(); }
+
+        // W4.2C.A: check after releasing the F8 test-campaign host copy (prepared host cancelled in the main menu before any
+        // world was loaded). Null = the active save target is back in the real save folder and nowhere inside the test copy.
+        public static string ReleaseError(string activeTarget, string real, string testCopy)
+        {
+            if (string.IsNullOrEmpty(activeTarget)) return "no active save target";
+            if (string.IsNullOrEmpty(real) || string.IsNullOrEmpty(testCopy)) return "folders unknown";
+            string t;
+            try { t = Norm(activeTarget); } catch (Exception ex) { return "invalid save target: " + ex.Message; }
+            if (IsUnder(t, testCopy)) return "save target still inside the test copy: " + t;
+            if (!IsUnder(t, real)) return "save target outside the real save folder: " + t;
+            return null;
+        }
     }
 }

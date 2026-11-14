@@ -30,6 +30,7 @@ namespace TS2MP.Plugin
         static readonly HashSet<string> _logged = new HashSet<string>();
         static readonly Dictionary<MethodBase, int[]> _filePathArgs = new Dictionary<MethodBase, int[]>();
         static int _blockedCount;
+        static string _defaultSandbox;   // the sandbox chosen by Precheck (W4.2C.A: restored when the test host copy is released)
 
         // Replacement for Application.persistentDataPath in the 13 redirected callers.
         public static string SandboxPath() { return Armed ? SandboxDir : Application.persistentDataPath; }
@@ -60,7 +61,9 @@ namespace TS2MP.Plugin
         // W4.2B.2 F8 multiplayer TEST campaign, HOST: prepared in the main menu (before any save is loaded) by the F8 menu.
         // Same isolation as the launcher's developer host: redirect + guards, FBPP re-initialised from <testcampaign>\host-save
         // (a copy of the real save folder, made once while the copy has no save). The original Continue / New Game then load
-        // the copy. Process-sticky (never disarmed): solo play or a normal campaign needs a game restart.
+        // the copy. Process-sticky once a world was loaded from the copy (solo play or a normal campaign then needs a game
+        // restart). W4.2C.A: before any world load, cancelling the prepared host releases it again (ReleaseTestHostSave).
+        static bool _f8TestHost;   // armed by PrepareTestHostSave (never by the launcher's InstallDevHost)
         public static bool PrepareTestHostSave(string testDataDir, out string why)
         {
             why = null;
@@ -69,9 +72,56 @@ namespace TS2MP.Plugin
             string sandbox = SaveIsolation.Norm(Path.Combine(testDataDir, "host-save"));
             string layout = SaveIsolation.LayoutError(sandbox, RealDir, GameDir);
             if (layout != null) { why = layout; _log.Error("SAVE_GUARD test campaign " + layout); return false; }
-            DevHost = true; SandboxDir = sandbox;
+            DevHost = true; _f8TestHost = true; SandboxDir = sandbox;
             _log.Info("SAVE_GUARD multiplayer test campaign (host): save copy " + SandboxDir + " (the real save folder is only read)");
             return Arm(out why);
+        }
+
+        // W4.2C.A: undo PrepareTestHostSave - only for the F8 test host, only in the main menu before any world was loaded
+        // (checked by the caller through Lifecycle.TestReleaseDue). Returns the process to the state of a fresh F8 start:
+        // redirect back to the original persistentDataPath (SandboxPath() returns it while not armed), guards pass through,
+        // FBPP re-initialised by the original InitializePrefs.Reinitialize - the same call the game makes in
+        // InitializePrefs.Awake at startup (IL: FBPPConfig AutoSaveData = false, SaveFilePath = persistentDataPath, FBPP.Start
+        // -> GetSaveFile reads the file; it creates an empty file only when none exists, exactly as at startup). Then the
+        // active target must be in the real folder and outside the test copy (SaveIsolation.ReleaseError). Nothing in the
+        // test copy is deleted. Any failure re-arms the test copy (fail closed); a failed re-arm returns false with
+        // ReArmFailed = true and the caller quits the process.
+        internal static bool ReArmFailed { get; private set; }
+        public static bool ReleaseTestHostSave(out string why)
+        {
+            why = null; ReArmFailed = false;
+            if (!Armed || !DevHost || !_f8TestHost) { why = "no F8 test-campaign host copy is armed"; return false; }
+            string copy = SandboxDir;
+            try
+            {
+                Armed = false;
+                DevHost = false; _f8TestHost = false; SandboxDir = _defaultSandbox;
+                var fbpp = AccessTools.TypeByName("FBPP");
+                var cfg = AccessTools.Field(fbpp, "_config").GetValue(null);
+                if (cfg != null)
+                {
+                    if (!ReinitializePrefs(out why)) throw new InvalidOperationException(why);
+                    cfg = AccessTools.Field(fbpp, "_config").GetValue(null);
+                    string active = cfg != null ? (string)AccessTools.Method(cfg.GetType(), "GetSaveFilePath").Invoke(cfg, null) : null;
+                    string err = SaveIsolation.ReleaseError(active, RealDir, copy);
+                    if (err != null) throw new InvalidOperationException("FBPP " + err);
+                }
+                var cfgType = AccessTools.TypeByName("FBPPConfig");
+                string fresh = (string)AccessTools.Method(cfgType, "GetSaveFilePath").Invoke(Activator.CreateInstance(cfgType), null);
+                string ferr = SaveIsolation.ReleaseError(fresh, RealDir, copy);
+                if (ferr != null) throw new InvalidOperationException("FBPPConfig " + ferr);
+                _log.Info("SAVE_GUARD test campaign RELEASED (prepared host cancelled before any world): redirect -> original save folder, guards inactive, FBPP re-initialised from " + RealDir + "; test copy kept unchanged in " + copy);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                why = ex is TargetInvocationException && ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                _log.Error("SAVE_GUARD test campaign release failed (" + why + "): re-arming the test copy (fail closed)");
+                DevHost = true; _f8TestHost = true; SandboxDir = copy;
+                string w2;
+                if (!Arm(out w2)) { ReArmFailed = true; why += "; re-arm failed: " + w2; }
+                return false;
+            }
         }
 
         // W4.2B.2 client: the sandbox of this join (normal: <data>\client-sandbox, test campaign: <testcampaign>\client-sandbox),
@@ -99,6 +149,7 @@ namespace TS2MP.Plugin
                 RealDir = SaveIsolation.Norm(Application.persistentDataPath);   // the original value, nothing is redirected yet
                 GameDir = SaveIsolation.Norm(Path.GetDirectoryName(Application.dataPath));
                 SandboxDir = SaveIsolation.Norm(Path.Combine(dataDir, sandboxName));
+                _defaultSandbox = SandboxDir;
                 log.Info("SAVE_GUARD real=" + RealDir + " sandbox=" + SandboxDir + " game=" + GameDir);
                 string layout = SaveIsolation.LayoutError(SandboxDir, RealDir, GameDir);
                 if (layout != null) { log.Error("SAVE_GUARD " + layout); return false; }

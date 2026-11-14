@@ -1,4 +1,4 @@
-TS2-Multiplayer 0.14.3 - Koop-Mod für Thief Simulator 2 (2 Spieler, Direktverbindung)
+TS2-Multiplayer 0.14.4 - Koop-Mod für Thief Simulator 2 (2 Spieler, Direktverbindung)
 ========================================================================================
 
 INSTALLATION
@@ -42,7 +42,10 @@ MEHRSPIELER-TESTKAMPAGNE (nur zum Ausprobieren; im normalen Spiel nicht aktiv)
   Werkzeuge kauft ihr selbst in den Läden. Das Menü zeigt "TESTKAMPAGNE AKTIV".
 - Gespielt wird eine KOPIE deines Spielstands in %LOCALAPPDATA%\TS2MP\testcampaign. Dein echter Spielstand, der
   Spielstand von Spieler 2 und die normalen Mehrspieler-Daten werden nicht verändert.
-- Danach für Einzelspieler oder eine normale Mehrspieler-Sitzung das Spiel einmal neu starten.
+- "Hosten abbrechen" im Hauptmenü (bevor ein Spielstand geladen wurde) beendet die Testkampagne wieder:
+  Beitreten, normales Hosten und Einzelspieler gehen dann ohne Neustart.
+- Nachdem in der Testkampagne gespielt wurde: für Einzelspieler oder eine normale Mehrspieler-Sitzung das Spiel
+  einmal neu starten.
   Ordner testcampaign löschen = Testkampagne zurücksetzen (neue Kopie beim nächsten Vorbereiten).
 
 DEINE SPIELSTÄNDE

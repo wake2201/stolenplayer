@@ -75,7 +75,7 @@ namespace TS2MP.Plugin
             log.Info("MENU ready key=" + settings.MenuKey + (legacy ? " (launcher mode: status only)" : " isolationAvailable=" + _isolationAvailable));
         }
         bool _legacyHostGate; float _nextGate; string _loggedGate;
-        bool _testHost, _worldLoadedOnce, _mismatchChecked;   // W4.2B.2 multiplayer test campaign
+        bool _worldLoadedOnce, _mismatchChecked;   // W4.2B.2 multiplayer test campaign (prepared flag: _lc.TestPrepared, W4.2C.A)
 
         void LegacyHostGate() { if (_legacyHostGate) RefreshHostGate(Context()); }
 
@@ -289,6 +289,34 @@ namespace TS2MP.Plugin
             _lc.Stopped(Time.realtimeSinceStartup);
         }
 
+        // W4.2C.A: "Hosten abbrechen" in the main menu. Root cause of the vanished Join option: the session itself was ended
+        // (listening socket closed, systems disposed, state Offline), but the test-campaign preparation of "Testkampagne
+        // hosten" (test save copy armed, test records, prepared flag) stayed, and MenuRules.Join refuses a test-host process.
+        // Now the cancel releases it again while no world was ever loaded in this process.
+        void CancelHost(string why)
+        {
+            StopSession(why);
+            ReleaseTestIfDue("prepared host cancelled");
+            _log.Info("HOST cancelled in the main menu: state " + _lc.State + ", test campaign " + (_lc.TestPrepared ? "still prepared" : "not prepared") + ", save isolation " + (SaveGuard.Armed ? "ARMED" : "off"));
+        }
+
+        void ReleaseTestIfDue(string why)
+        {
+            if (!_lc.TestReleaseDue(_worldLoadedOnce)) return;
+            string err;
+            if (!SaveGuard.ReleaseTestHostSave(out err))
+            {
+                _log.Error("TEST_CAMPAIGN not released (" + why + "): " + err + " - the test campaign stays active in this process");
+                _hint = "Die Testkampagne bleibt aktiv. Zum Beitreten oder für Einzelspieler bitte das Spiel neu starten.";
+                if (SaveGuard.ReArmFailed) _runner.RequestQuit("SAVE_GUARD_FAILED re-arming the test campaign after a failed release: quitting to protect the real saves (fail closed).");
+                return;
+            }
+            _runner.DisableTestCampaign(why);
+            _lc.TestCampaignReleased();
+            RefreshContinueText();
+            _log.Info("TEST_CAMPAIGN released (" + why + "): main menu back to the offline state (Join, Host and Test Host available); test copy kept");
+        }
+
         // ---------------------------------------------------------------- actions
         // W4.2B.3: main menu only (MenuRules.Host / Lifecycle.RequestHost refuse any other context). test = prepare the
         // isolated multiplayer test campaign first: its save redirect and test records must exist before the systems are built.
@@ -299,26 +327,28 @@ namespace TS2MP.Plugin
             var a = MenuRules.Host(ctx, _lc.State, _legacy, _lc.ClientModeSticky);
             if (!a.Enabled) { _hint = a.Reason; return; }
             if (!NetConfig.ValidPort(_port)) { _hint = "Ungültiger Port (1024–65535)."; return; }
-            if (test && !_testHost && !PrepareTestCampaign()) return;
+            if (test && !_lc.TestPrepared && !PrepareTestCampaign()) return;
             string deny = _lc.RequestHost(ctx, _port, now);
-            if (deny != null) { _hint = deny; return; }
+            if (deny != null) { _hint = deny; ReleaseTestIfDue("host request refused"); return; }
             string code = JoinAuth.NewCode();
             var node = new SessionNode(Role.Host, RandomHex(6), RandomHex(4), Application.version, _port, _log);
             node.BindAddress = "0.0.0.0";
             node.JoinKey = JoinAuth.DeriveKey(code);
             node.HostGate = () => _hostGateReason;
-            node.TestCampaign = _testHost && SaveGuard.DevHost && _runner.TestCampaignActive;   // W4.2B.2: told to Player 2 in Welcome
+            node.TestCampaign = _lc.TestPrepared && SaveGuard.DevHost && _runner.TestCampaignActive;   // W4.2B.2: told to Player 2 in Welcome
             _hostGateReason = "Host startet";
             if (!node.Start())
             {
                 node.Dispose();
                 _lc.HostStarted(false, "UDP-Port " + _port + " ist belegt oder blockiert – anderen Port wählen", now);
+                ReleaseTestIfDue("host start failed");
                 return;
             }
             if (!_runner.AttachSession(node))
             {
                 _runner.DetachSession("host systems failed");
                 _lc.HostStarted(false, "Mehrspieler-Systeme konnten nicht gestartet werden (siehe Log)", now);
+                ReleaseTestIfDue("host systems failed");
                 return;
             }
             _hostCode = JoinAuth.Format(code);
@@ -333,7 +363,7 @@ namespace TS2MP.Plugin
         {
             double now = Time.realtimeSinceStartup;
             JoinRequest req;
-            if (_testHost) { _hint = MenuRules.TestHostJoinText; return; }
+            if (_lc.TestPrepared) { _hint = MenuRules.TestHostJoinText; return; }
             string deny = _lc.RequestJoin(Context(), _isolationAvailable, _joinHost, _joinPort, _joinCode, out req, now);
             if (deny != null) { _hint = deny; return; }
             var node = new SessionNode(Role.Client, "join", RandomHex(4), Application.version, req.Port, _log);
@@ -449,8 +479,8 @@ namespace TS2MP.Plugin
         // tells its game.
         void DrawTestSection(GameContext ctx)
         {
-            if (_testHost || ctx != GameContext.MainMenu) return;   // offered only in the main menu, once
-            var a = MenuRules.PrepareTest(ctx, _lc.State, _legacy, _lc.ClientModeSticky, _isolationAvailable, _testHost, _worldLoadedOnce);
+            if (_lc.TestPrepared || ctx != GameContext.MainMenu) return;   // offered only in the main menu, while not prepared
+            var a = MenuRules.PrepareTest(ctx, _lc.State, _legacy, _lc.ClientModeSticky, _isolationAvailable, _lc.TestPrepared, _worldLoadedOnce);
             GUILayout.Label("Mehrspieler-Testkampagne hosten (nur zum Testen)", _title);
             GUILayout.Label("Isolierte KOPIE deines Spielstands mit allen Fähigkeiten und Testgeld für beide Spieler. Dein echter Spielstand und deine normalen Mehrspieler-Daten werden nicht verändert. Für Einzelspieler danach das Spiel neu starten.", _text);
             GUI.enabled = a.Enabled;
@@ -461,7 +491,7 @@ namespace TS2MP.Plugin
 
         bool PrepareTestCampaign()
         {
-            var a = MenuRules.PrepareTest(Context(), _lc.State, _legacy, _lc.ClientModeSticky, _isolationAvailable, _testHost, _worldLoadedOnce);
+            var a = MenuRules.PrepareTest(Context(), _lc.State, _legacy, _lc.ClientModeSticky, _isolationAvailable, _lc.TestPrepared, _worldLoadedOnce);
             if (!a.Enabled) { _hint = a.Reason; return false; }
             string dir = SaveIsolation.TestCampaignDataDir(_settings.DataDir), why;
             try { Directory.CreateDirectory(dir); } catch (Exception ex) { _hint = "Testordner konnte nicht angelegt werden: " + ex.Message; return false; }
@@ -474,7 +504,7 @@ namespace TS2MP.Plugin
                 return false;
             }
             _runner.EnableTestCampaign(dir, "F8 host");
-            _testHost = true; _hint = null;
+            _lc.TestCampaignPrepared(); _hint = null;
             RefreshContinueText();
             _log.Info("TEST_CAMPAIGN prepared in the main menu: the original Continue / New Game now loads the isolated copy; the host session is prepared next");
             return true;
@@ -495,7 +525,7 @@ namespace TS2MP.Plugin
         void DrawJoinSection(GameContext ctx)
         {
             GUILayout.Label("Spiel beitreten (du bist Spieler 2)", _title);
-            var a = MenuRules.Join(ctx, _lc.State, _legacy, _isolationAvailable, _testHost);
+            var a = MenuRules.Join(ctx, _lc.State, _legacy, _isolationAvailable, _lc.TestPrepared);
             if (!a.Enabled) { GUILayout.Label(a.Reason, _text); return; }
             GUILayout.Label("Adresse des Hosts (öffentliche IPv4 oder DNS-Name):", _text);
             _joinHost = GUILayout.TextField(_joinHost ?? "", 253, _field);
@@ -517,7 +547,7 @@ namespace TS2MP.Plugin
             GUILayout.Label("Spieler 2: " + (node != null && node.IsConnected ? "verbunden" : "nicht verbunden"), _text);
             GUILayout.Label("Gib deinem Mitspieler deine öffentliche IPv4-Adresse (Router) oder deinen DynDNS-Namen, den Port und den Code. Der Code gilt nur für diese Sitzung.", _text);
             GUILayout.Label("Jetzt dieses Fenster schließen und im Hauptmenü „Fortsetzen“ wählen (ohne Spielstand: ein Spiel beginnen). Zurück im Hauptmenü endet die Sitzung.", _text);
-            if (GUILayout.Button("Hosten abbrechen", _btn)) StopSession("cancelled by the player in the main menu");
+            if (GUILayout.Button("Hosten abbrechen", _btn)) CancelHost("cancelled by the player in the main menu");
         }
 
         void DrawClient()

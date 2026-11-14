@@ -42,6 +42,9 @@ static class LifecycleTests
         Run("20 armed host over UDP: menu -> loading -> world, joins deferred until every fact (incl. vehicles) holds", ArmedHostUdp);
         Run("21 source: no input lock left, host systems attached in the main-menu step, test campaign before the systems", MenuSourceRules);
         Run("22 host fleet placed after the host region is known: holder assigned at once (late-attach defect); unknown region unchanged", FleetHolderOrder);
+        Run("23 W4.2C.A cancel cycles over real UDP: Host/Test Host -> Cancel -> Join / Host / Test Host / Join -> Disconnect, same port, no restart", CancelCycles);
+        Run("24 W4.2C.A test-campaign release rules: only before any world, never in a Player-2 or launcher process; release target check", TestReleaseRules);
+        Run("25 W4.2C.A source: cancel button -> session stopped first -> test copy released (fail closed) -> records restored -> flag cleared", CancelSourceRules);
         Console.WriteLine();
         Console.WriteLine("RESULT: " + _passed + " passed, " + _failed + " failed. Logs: " + _logDir);
         return _failed == 0 ? 0 : 1;
@@ -567,6 +570,181 @@ static class LifecycleTests
         early.SetPlayerRegion(1, Madison, 2);
         early.Fleet.TryGet(ranger, out r);
         Expect(r.Holder == 1, "the region commit assigns the host as before");
+    }
+
+    // ---- 23 ----
+    // Mirrors MultiplayerMenu.StartHost / CancelHost / StartJoin / StopSession step by step with the real Lifecycle, real
+    // MenuRules and real LiteNetLib SessionNodes on 127.0.0.1. TestCopyArmed stands for SaveGuard's test-host copy: set by
+    // the test preparation, cleared only by the release that Lifecycle.TestReleaseDue allows.
+    sealed class MenuSim
+    {
+        public readonly Lifecycle Lc = new Lifecycle();
+        public SessionNode Node; public bool TestCopyArmed, WorldLoadedOnce; public double T;
+        public bool JoinOk { get { return MenuRules.Join(GameContext.MainMenu, Lc.State, false, true, Lc.TestPrepared).Enabled; } }
+        public bool HostOk { get { return MenuRules.Host(GameContext.MainMenu, Lc.State, false, Lc.ClientModeSticky).Enabled; } }
+        public bool TestOk { get { return MenuRules.PrepareTest(GameContext.MainMenu, Lc.State, false, Lc.ClientModeSticky, true, Lc.TestPrepared, WorldLoadedOnce).Enabled; } }
+        public bool Offline { get { return Lc.State == MpState.Offline && !Lc.Busy() && Node == null; } }
+
+        public void StartHost(bool test, int port, string code)
+        {
+            Expect(HostOk, "host available before StartHost");
+            if (test && !Lc.TestPrepared) { Expect(TestOk, "test preparation available"); TestCopyArmed = true; Lc.TestCampaignPrepared(); }
+            Expect(Lc.RequestHost(GameContext.MainMenu, port, T++) == null, "host request accepted");
+            Node = Host("cyc", port, code, () => "Hauptmenü – lade zuerst deinen Spielstand");
+            bool ok = Node.Start();
+            if (!ok) { Node.Dispose(); Node = null; }
+            Lc.HostStarted(ok, ok ? null : "port", T++);
+            Expect(ok && Lc.State == MpState.HostArmed, "host armed and listening on " + port);
+            Expect(!Lc.HostTick(GameContext.MainMenu, "Hauptmenü", false, T++) && Lc.State == MpState.HostArmed, "waits in the menu");
+        }
+
+        void Stop() { Lc.BeginStop(T++); if (Node != null) { Node.Dispose(); Node = null; } Lc.Stopped(T++); }
+
+        public void CancelHost()
+        {
+            Stop();
+            if (Lc.TestReleaseDue(WorldLoadedOnce)) { TestCopyArmed = false; Lc.TestCampaignReleased(); }
+        }
+
+        public void JoinAndPrepare(int port, string code, SessionNode realHost)
+        {
+            Expect(JoinOk, "join available");
+            JoinRequest req;
+            Expect(Lc.RequestJoin(GameContext.MainMenu, true, "127.0.0.1", port.ToString(), code, out req, T++) == null, "join request accepted");
+            Node = Client("cyc", port, "cli" + (int)T, code, false);
+            Node.Start();
+            Pump(() => Node.State == ConnState.Preparing, 5000, "client welcomed (preparing)", realHost, Node);
+            Expect(Lc.ClientTick(GameContext.MainMenu, Node.State, Node.LastReject, Node.FatalReason, Node.HostWaitReason, false, T++) == ClientAction.ArmIsolation, "isolation requested");
+            Expect(!TestCopyArmed, "Player-2 isolation never starts while the test-host copy is armed");
+            Lc.IsolationArmed(T++);
+        }
+
+        public void Disconnect() { Stop(); }
+    }
+
+    static void CancelCycles()
+    {
+        int port = _port++, joinPort = _port++;
+        string code = JoinAuth.NewCode(), joinCode = JoinAuth.NewCode();
+        using (var remote = Host("cyc-remote", joinPort, joinCode, () => null))
+        {
+            Expect(remote.Start(), "remote host for the join steps");
+            // Host -> Cancel -> Join ; Host -> Cancel -> Host ; Host -> Cancel -> Join -> Disconnect
+            var a = new MenuSim();
+            a.StartHost(false, port, code);
+            Expect(!a.JoinOk && !a.TestOk, "busy while hosting");
+            a.CancelHost();
+            Expect(a.Offline && a.JoinOk && a.HostOk && a.TestOk && !a.Lc.TestPrepared, "Host -> Cancel: complete offline menu");
+            a.StartHost(false, port, code);   // SAME port: the listening socket was really released
+            a.CancelHost();
+            Expect(a.Offline && a.JoinOk && a.HostOk && a.TestOk, "Host -> Cancel -> Host -> Cancel: offline again");
+            a.JoinAndPrepare(joinPort, joinCode, remote);
+            Expect(a.Lc.State == MpState.ClientPreparing && a.Lc.ClientModeSticky, "join after a cancelled host proceeds to isolation");
+            a.Disconnect();
+            Expect(a.Offline && a.JoinOk && !a.HostOk && !a.TestOk, "after Join -> Disconnect: offline, joining again allowed, hosting needs a restart (Player-2 isolation stays armed - unchanged rule)");
+
+            // Test Host -> Cancel -> Normal Host ; Test Host again ; Test Host -> Cancel -> Join -> Disconnect
+            var b = new MenuSim();
+            b.StartHost(true, port, code);
+            Expect(b.TestCopyArmed && b.Lc.TestPrepared && !b.JoinOk, "test host prepared: join refused while it is active");
+            b.CancelHost();
+            Expect(b.Offline && !b.TestCopyArmed && !b.Lc.TestPrepared && b.JoinOk && b.HostOk && b.TestOk, "Test Host -> Cancel: test copy released, Join + Host + Test Host available (the reported defect)");
+            b.StartHost(false, port, code);
+            Expect(!b.Lc.TestPrepared && !b.TestCopyArmed, "normal host after a cancelled test host is a normal host");
+            b.CancelHost();
+            b.StartHost(true, port, code);
+            Expect(b.TestCopyArmed && b.Lc.TestPrepared, "test host can be prepared again in the same process");
+            b.CancelHost();
+            b.JoinAndPrepare(joinPort, joinCode, remote);
+            b.Disconnect();
+            Expect(b.Offline && b.JoinOk, "Test Host -> Cancel -> Join -> Disconnect works");
+
+            // a world was loaded from the test copy: returning to the menu keeps it (process-sticky, unchanged)
+            var w = new MenuSim();
+            w.StartHost(true, port, code);
+            w.WorldLoadedOnce = true;
+            w.CancelHost();
+            Expect(w.TestCopyArmed && w.Lc.TestPrepared && !w.JoinOk, "after a world from the copy nothing is released");
+
+            // host start failure after the test preparation (port taken) releases it too
+            var c = new MenuSim();
+            using (var blocker = Host("cyc-block", port, code, () => "x"))
+            {
+                Expect(blocker.Start(), "port blocked");
+                c.TestCopyArmed = true; c.Lc.TestCampaignPrepared();
+                Expect(c.Lc.RequestHost(GameContext.MainMenu, port, 0) == null, "requested");
+                var n = Host("cyc-fail", port, code, () => "x");
+                bool ok = n.Start(); n.Dispose();
+                c.Lc.HostStarted(ok, "port", 1);
+                Expect(!ok && c.Lc.State == MpState.Error, "start failed on a taken port");
+                if (c.Lc.TestReleaseDue(false)) { c.TestCopyArmed = false; c.Lc.TestCampaignReleased(); }
+                Expect(!c.TestCopyArmed && c.JoinOk && c.HostOk && c.TestOk, "failed test host start: back to the complete offline menu");
+            }
+        }
+    }
+
+    // ---- 24 ----
+    static void TestReleaseRules()
+    {
+        var lc = new Lifecycle();
+        Expect(!lc.TestReleaseDue(false), "nothing prepared: nothing to release");
+        lc.TestCampaignPrepared();
+        Expect(lc.TestReleaseDue(false), "prepared, offline, no world yet: release");
+        Expect(!lc.TestReleaseDue(true), "a world was loaded from the copy: stays process-sticky (restart)");
+        lc.RequestHost(GameContext.MainMenu, 27960, 0); lc.HostStarted(true, null, 0);
+        Expect(!lc.TestReleaseDue(false), "never while the session is still running");
+        lc.BeginStop(1); lc.Stopped(1);
+        Expect(lc.TestReleaseDue(false), "after the stop");
+        lc.TestCampaignReleased();
+        Expect(!lc.TestPrepared && !lc.TestReleaseDue(false), "released once");
+        var legacy = new Lifecycle { Legacy = true }; legacy.TestCampaignPrepared();
+        Expect(!legacy.TestReleaseDue(false), "launcher developer host copy is never released");
+        var p2 = new Lifecycle(); JoinRequest req;
+        p2.RequestJoin(GameContext.MainMenu, true, "127.0.0.1", "27960", JoinAuth.NewCode(), out req, 0);
+        p2.ClientTick(GameContext.MainMenu, ConnState.Preparing, null, null, null, false, 1); p2.IsolationArmed(1); p2.TestCampaignPrepared();
+        p2.BeginStop(2); p2.Stopped(2);
+        Expect(!p2.TestReleaseDue(false), "a Player-2 process never releases anything");
+        // release target check (SaveGuard.ReleaseTestHostSave)
+        string real = @"C:\Users\x\AppData\LocalLow\CookieDev\Thief Simulator 2", copy = @"C:\Users\x\AppData\Local\TS2MP\testcampaign\host-save";
+        Expect(SaveIsolation.ReleaseError(Path.Combine(real, "saveData.thief"), real, copy) == null, "real save file accepted");
+        Expect(SaveIsolation.ReleaseError(real, real, copy) == null, "real folder itself accepted");
+        Expect(SaveIsolation.ReleaseError(Path.Combine(copy, "saveData.thief"), real, copy) != null, "still in the copy: refused");
+        Expect(SaveIsolation.ReleaseError(@"C:\Users\x\AppData\Local\TS2MP\client-sandbox\saveData.thief", real, copy) != null, "another sandbox: refused");
+        Expect(SaveIsolation.ReleaseError(null, real, copy) != null && SaveIsolation.ReleaseError("", real, copy) != null, "no target: refused");
+        Expect(SaveIsolation.ReleaseError(real + @"2\saveData.thief", real, copy) != null, "prefix look-alike folder: refused");
+    }
+
+    // ---- 25 ----
+    static void CancelSourceRules()
+    {
+        string root = Repo();
+        string menu = StripComments(File.ReadAllText(Path.Combine(root, "src", "Plugin", "MultiplayerMenu.cs")));
+        Expect(menu.IndexOf("_testHost", StringComparison.Ordinal) < 0, "the prepared flag lives in Lifecycle (no parallel menu flag)");
+        Expect(menu.Contains("GUILayout.Button(\"Hosten abbrechen\", _btn)) CancelHost("), "cancel button -> CancelHost");
+        int ch = menu.IndexOf("void CancelHost(string why)", StringComparison.Ordinal), rl = menu.IndexOf("void ReleaseTestIfDue(string why)", StringComparison.Ordinal);
+        Expect(ch > 0 && rl > ch, "CancelHost + ReleaseTestIfDue present");
+        string cb = menu.Substring(ch, rl - ch);
+        Expect(cb.IndexOf("StopSession(why);", StringComparison.Ordinal) >= 0 && cb.IndexOf("StopSession(why);", StringComparison.Ordinal) < cb.IndexOf("ReleaseTestIfDue(", StringComparison.Ordinal), "session (socket + systems) stopped before the release");
+        string rb = menu.Substring(rl, menu.IndexOf("void StartHost(bool test)", rl, StringComparison.Ordinal) - rl);
+        int due = rb.IndexOf("_lc.TestReleaseDue(_worldLoadedOnce)", StringComparison.Ordinal), rel = rb.IndexOf("SaveGuard.ReleaseTestHostSave(", StringComparison.Ordinal),
+            quit = rb.IndexOf("SaveGuard.ReArmFailed) _runner.RequestQuit(", StringComparison.Ordinal), dis = rb.IndexOf("_runner.DisableTestCampaign(", StringComparison.Ordinal),
+            clr = rb.IndexOf("_lc.TestCampaignReleased();", StringComparison.Ordinal);
+        Expect(due >= 0 && rel > due && quit > rel && dis > quit && clr > dis, "gate -> SaveGuard release (fail closed, quit on failed re-arm) -> records restored -> flag cleared");
+        string sh = menu.Substring(menu.IndexOf("void StartHost(bool test)", StringComparison.Ordinal));
+        sh = sh.Substring(0, sh.IndexOf("void StartJoin()", StringComparison.Ordinal));
+        int n = 0, at = 0; while ((at = sh.IndexOf("ReleaseTestIfDue(", at, StringComparison.Ordinal)) >= 0) { n++; at++; }
+        Expect(n == 3, "every failed host start after the test preparation releases it (refused / port / systems): " + n);
+        string guard = StripComments(File.ReadAllText(Path.Combine(root, "src", "Plugin", "SaveGuard.cs")));
+        int rg = guard.IndexOf("public static bool ReleaseTestHostSave(out string why)", StringComparison.Ordinal);
+        Expect(rg > 0, "release present");
+        string gb = guard.Substring(rg, guard.IndexOf("internal static bool TestSandbox", rg, StringComparison.Ordinal) - rg);
+        Expect(gb.Contains("if (!Armed || !DevHost || !_f8TestHost)") && gb.Contains("ReinitializePrefs(out why)") && gb.Contains("SaveIsolation.ReleaseError(") && gb.Contains("if (!Arm(out w2)) { ReArmFailed = true;"),
+            "only the F8 test copy; original Reinitialize; target verified; re-armed on failure");
+        Expect(gb.IndexOf("Delete", StringComparison.Ordinal) < 0, "the test copy is never deleted");
+        int dh = guard.IndexOf("public static bool InstallDevHost", StringComparison.Ordinal), ph = guard.IndexOf("static bool _f8TestHost;", StringComparison.Ordinal);
+        Expect(dh > 0 && ph > dh && guard.Substring(dh, ph - dh).IndexOf("_f8TestHost", StringComparison.Ordinal) < 0, "the launcher developer host never sets the F8 release flag");
+        string plugin = StripComments(File.ReadAllText(Path.Combine(root, "src", "Plugin", "Plugin.cs")));
+        Expect(plugin.Contains("if (_node != null || _world != null) { _log.Error(\"TEST_CAMPAIGN not disabled: a session is still attached\"); return false; }"), "records are only switched back between sessions");
     }
 
     static string StripComments(string s)

@@ -217,6 +217,7 @@ namespace TS2MP.Plugin
         // isolation is armed and BEFORE the session's systems are built; process-sticky.
         internal void EnableTestCampaign(string testDataDir, string who)
         {
+            if (!_testCampaign) _dataDirBeforeTest = _settings.DataDir;
             _settings.DataDir = testDataDir;
             if (_devTest == null)
             {
@@ -226,8 +227,21 @@ namespace TS2MP.Plugin
             _testCampaign = true;
             _log.Warn("TEST_CAMPAIGN active (" + who + "): records in " + testDataDir + "; genuine saves and normal multiplayer records are not used by this process");
         }
-        bool _testCampaign;
+        bool _testCampaign; string _dataDirBeforeTest;
         internal bool TestCampaignActive { get { return _testCampaign; } }
+
+        // W4.2C.A: undo EnableTestCampaign after the F8 test host was cancelled in the main menu before any world loaded and
+        // SaveGuard released the test copy. Only between sessions (no systems attached); records return to the normal folder.
+        internal bool DisableTestCampaign(string why)
+        {
+            if (!_testCampaign) return true;
+            if (_node != null || _world != null) { _log.Error("TEST_CAMPAIGN not disabled: a session is still attached"); return false; }
+            if (_devTest != null) { _devTest.Dispose(); _devTest = null; }
+            if (_dataDirBeforeTest != null) _settings.DataDir = _dataDirBeforeTest;
+            _testCampaign = false;
+            _log.Info("TEST_CAMPAIGN disabled (" + why + "): records back in " + _settings.DataDir + "; test conveniences off");
+            return true;
+        }
 
         internal SessionNode Node { get { return _node; } }
         internal WorldSync World { get { return _world; } }

@@ -151,6 +151,19 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 33. W4.2C Phase A checklist — cancelling a prepared host (plugin 0.14.4 / protocol 26; deployed by Claude in the local game folder, release `TS2-Multiplayer-0.14.4.zip` for the second PC)
+Both PCs need 0.14.4 for a session (mod version check). Items 1–6 need only ONE PC (no Player 2) except where a join target is named. Log: `%LOCALAPPDATA%\TS2MP\logs\<stamp>_game_<pid>\plugin.log`. Do not restart the game between items 1–5.
+
+| # | Step | Expected | Result |
+|---|---|---|---|
+| 1 | Main menu → F8 → "Testkampagne hosten" → "Hosten abbrechen" (do NOT load a save) | Menu shows the Host section ("Hosten vorbereiten", not "Testkampagne hosten"), the Test-campaign section AND the Join fields again; no "TESTKAMPAGNE AKTIV" line; the game's own main-menu save info shows your REAL save again. Log: `SESSION_END (cancelled by the player in the main menu)`, `SAVE_GUARD test campaign RELEASED …`, `TEST_CAMPAIGN disabled …`, `TEST_CAMPAIGN released …`, `HOST cancelled in the main menu: state Offline, test campaign not prepared, save isolation off` | NOT TESTED |
+| 2 | Continue: "Hosten vorbereiten" (normal) → "Hosten abbrechen" → "Hosten vorbereiten" again on the SAME port | Second prepare works (no "UDP-Port … belegt"); cancel returns to the full menu each time | NOT TESTED |
+| 3 | Continue: "Testkampagne hosten" again → close F8 → "Fortsetzen" | Loads the TEST copy (test money / skills, menu showed "TESTKAMPAGNE AKTIV"); the earlier release did not delete the copy (progress from an earlier test session still there) | NOT TESTED |
+| 4 | Restart. "Hosten vorbereiten" → cancel → "Verbinden" to a running 0.14.4 host on the other PC → play briefly → "Verbindung trennen" / return to main menu | Join works without a restart; after the disconnect "Verbinden" is offered again; hosting stays disabled with the restart hint (unchanged Player-2 rule) | NOT TESTED |
+| 5 | Restart. "Testkampagne hosten" → cancel → "Verbinden" to a NORMAL host | Joins as Player 2 of the normal campaign (log `JOIN save isolation armed …` without "test campaign"); no "Andere Kampagnenart" error | NOT TESTED |
+| 6 | Single player after item 1 (restart not needed): cancel the test host, then "Fortsetzen" without F8 | Your REAL save loads; progress you make is saved to the real save (check after a restart) — the test copy is unchanged | NOT TESTED |
+| 7 | Regression: normal host session with Player 2 (doors, lockpicking, vehicles, inventory) | As confirmed with 0.14.3 | NOT TESTED |
+
 ## 32. W4.2B.3 checklist — main-menu-only multiplayer lifecycle, hosting with a car, floating-car diagnostics (release `TS2-Multiplayer-0.14.3.zip` on BOTH PCs, protocol 26)
 Both PCs need 0.14.3 (a 0.14.2 peer is refused: mod version mismatch). Logs: `%LOCALAPPDATA%\TS2MP\logs\<stamp>_game_<pid>\plugin.log` on each PC — please send BOTH (the host log is needed for items 9–11).
 

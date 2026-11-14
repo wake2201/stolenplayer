@@ -1,5 +1,42 @@
 ﻿# PROGRESS
 
+## W4.2C Phase A — Main-menu cancel hotfix + original world-interaction audit — **HOTFIX BUILT + DEPLOYED (local) — PENDING MANUAL QA; investigation complete (no gameplay sync implemented)**, 2026-11-14
+Mod **0.14.4, protocol 26** (no wire change). No game started by Claude. Not committed.
+
+### A. Cancelled hosting hides "Spiel beitreten" — root cause and fix
+| Item | Evidence |
+|---|---|
+| Root cause | "Hosten abbrechen" called `StopSession` only: socket closed, systems disposed, `Lifecycle` → Offline (correct). But "Testkampagne hosten" had first run `PrepareTestCampaign` (`SaveGuard.PrepareTestHostSave` armed the test-copy redirect, `NetRunner.EnableTestCampaign` switched the records folder + DevTestMode, menu flag `_testHost = true`), and nothing undid it. `MenuRules.Join(…, testHostPrepared: true)` then refuses with `TestHostJoinText` (Join fields replaced by the restart hint), the Test section is hidden (`if (_testHost …) return`) and the Host button reads "Testkampagne hosten" (`_runner.TestCampaignActive`). A normal (non-test) host → cancel already returned to the full menu. |
+| Fix | `MultiplayerMenu.CancelHost` → `StopSession` → `ReleaseTestIfDue`: only when `Lifecycle.TestReleaseDue(_worldLoadedOnce)` (prepared, offline, no world loaded in this process, not a Player-2 process, not launcher mode) → `SaveGuard.ReleaseTestHostSave` (F8 test copy only: `Armed = false`, `DevHost = false`, sandbox back to the precheck default, original `InitializePrefs.Reinitialize`, then `SaveIsolation.ReleaseError` on the active and a fresh `FBPPConfig` target: must be in the real folder and outside the copy; any failure re-arms the copy, a failed re-arm quits — fail closed) → `NetRunner.DisableTestCampaign` (records folder restored, DevTestMode disposed + its Harmony postfix removed) → `Lifecycle.TestCampaignReleased` → `MainMenu.LoadContinueTxt` refresh. The same release runs when a host start fails after the test preparation (request refused / port busy / systems failed). The prepared flag moved into the Unity-free `Lifecycle` (`TestPrepared`) so it is tested. |
+| Unchanged on purpose | After a world was loaded from the test copy, the copy stays process-sticky (restart, W4.2B.2 rule). Player-2 isolation stays armed for the rest of the process (restart before solo / hosting). Join code / HMAC auth untouched. The test copy is never deleted. |
+| Classification | `MultiplayerMenu` test-campaign lifecycle before: **DEFECTIVE**; now **IMPLEMENTED BUT UNVERIFIED** (PENDING MANUAL QA, TESTING §33). |
+
+Files: `src/Plugin/MultiplayerMenu.cs`, `src/Plugin/SaveGuard.cs`, `src/Plugin/Plugin.cs` (`DisableTestCampaign`), `src/Plugin/DevTestMode.cs` (unpatch on Dispose), `src/Shared/MultiplayerLifecycle.cs`, `src/Shared/SaveIsolation.cs` (`ReleaseError`), `src/Shared/Protocol.cs` (0.14.4); tests `tests/LifecycleTests.cs` 23–25 (new), `W42BTests.cs` (2 source pins), version pins in 5 suites + `package-test.ps1`; `README.md`, `release/TS2-Multiplayer-LIESMICH.txt`, TESTING §33.
+
+### B. Evidence
+- `tools\build.ps1 -GamePath "C:\Users\Dima\Desktop\Thief Simulator 2" -Test` (run from Bash with a Windows-PowerShell `PSModulePath`; from pwsh 7 the PS 5.1 package test cannot load `Get-FileHash` — environment, not code): 26 csc builds, 0 errors (pre-existing CS0414 in Launcher.cs); **ALL 26 SUITES PASSED**; LifecycleTests **25/25** (new 23: real Lifecycle + MenuRules + LiteNetLib UDP: Host→Cancel→Join, Host→Cancel→Host on the same port, Host→Cancel→Join→Disconnect, Test Host→Cancel→Normal Host / Test Host / Join→Disconnect, world-loaded copy stays, failed test-host start; 24: release gate + target rules; 25: call order source scan), W42BTests 26/26, package 14/14, N1 smoke 3/3. Intermediate runs failed only on my own test window (25) and one W42B source pin; both fixed.
+- IL: `InitializePrefs.Reinitialize`, `FBPP.Start/GetSaveFile/CheckSaveFileExists` (re-initialising on the real folder = the game's own startup step).
+- Proves the state machine, gate and cancel ordering offline. Does NOT prove SaveGuard's release against the real FBPP in game.
+
+### C. Build / deploy
+`build\release\TS2-Multiplayer-0.14.4.zip` (27 files, manifest verified, SHA-256 `64718c492b362d20c5cdf389665039bcbd0a6436b8c968b02e5fe413bad26183`), plugin `TS2MP.Plugin.dll` `779df2b9de0181a119b77b6f28b20ffea427a7843eb6d0d36248218cd6c1178b` — **deployed** into `C:\Users\Dima\Desktop\Thief Simulator 2\BepInEx\plugins\TS2MP` (hash verified); previous DLLs backed up in `%LOCALAPPDATA%\TS2MP\backups\pre-0.14.4-20261114-203125`. The other PC needs the 0.14.4 ZIP.
+Performance: no per-frame code added. Cancel (menu only, once): one FBPP re-initialisation (one save-file read) + one `FindObjectOfType` for `LoadContinueTxt`. Network: none. GC: negligible. FPS impact: none expected in the world (unmeasured).
+
+### D. W4.2C investigation (read-only; IL + UnityPy scene reads) — see `docs/research/`
+| System | Key verified facts | Current MP status |
+|---|---|---|
+| Furniture (`FURNITURE_SYSTEM.md`) | Drawers/cupboards/fridges/cabinets/containers are `Door` (same flow, no save key); breakables `DestroyObject` (crowbar, one-shot, no save key except `Mission_Complete` objects); `RandomFileCabinet` rolls per load | furniture leaves excluded by `WorldObjectBridge.Ordinary` → **INCOMPLETE**; breakables local; loot inside shared (W4.1) |
+| House 102 fence (`DESTRUCTIBLES_SYSTEM.md`) | 2 stages: `PLANK DESTROYABLE/plywood_001a`, `DESTROYABLE PLANKS/Destroy` (+ blocking `Collider` in `normal_objects`); passage after stage 2; reset on reload | local only → **INCOMPLETE** |
+| Hideout / garage (`HIDEOUT_SYSTEM.md`) | `Inventory.BuyGarage` −8000, `Garage.BoughtSeq` swap, `garage = 2` committed at save; gates stolen-car delivery, a story step, skill nodes; hideout `Door` 43 | Player-2 purchase loses money and the flag → **DEFECTIVE** (outcome); hideout doors local |
+| Cat (`CAT_SYSTEM.md`) | `CatAI.TouchCat`: once per in-game week (`catty1` = week + 1) + once per scene instance; 25 XP (100 with `CatStuff`) | Player 2's reward repeatable per join and its XP discarded (XP keys are `World`) → **DEFECTIVE** (low impact) |
+| Drone (`DRONE_SYSTEM.md`) | inventory item with `ItemID.droneObject`; deploy only in 6 regions; upgrades write prefs + may advance the story | drone never sent → remote player sees nothing (**INCOMPLETE**); drone items excluded from shared drops/loot by design; P2 upgrades reset at rejoin (**DEFECTIVE** outcome) |
+| Other regions (DRONE_SYSTEM §7) | only two namespace whitelists are Madison-specific; Hillville counts fit `MaxPerRegion` | enabling = census digest check + whitelist + QA, no architecture copy |
+
+Architecture recommendation (not implemented): (1) furniture → reuse `WorldObjectSync` Door kind (lift the filter per type); (2) breakables → new census kind + RegionLife bit + replica bridge in a small `WorldBreakableBridge` used by `WorldObjectSync` (no new sync system); (3) garage / cat / drone upgrades → a separate host-authoritative **campaign transaction** component (`CampaignTxnSync`: txn id, idempotent replies, debit-once) — not in `VehicleSync`, `WorldSync` or `Plugin`; (4) drone visibility → a presenter next to `RemoteAvatar` fed by an optional player-snapshot extension. Recommended order: furniture → House 102 / breakables → Hillville + hideout namespaces → campaign transactions (garage, cat, drone upgrades; needs the economy decision) → drone presentation.
+
+### E. PENDING MANUAL QA / open
+TESTING §33 (cancel cycles, real-save integrity after release). Open decisions: cat reward per player vs shared; who pays for the garage before shared cash exists (interim: refuse Player-2 purchase); whether Player-2 XP becomes persistent. Unknowns: writer of `CatStuff`; furniture share of Madison's 1142 doors; whether NPCs use furniture; plank stage reachable through the plywood.
+
 ## W4.2B.3 — Main-menu multiplayer lifecycle & focused stability hardening — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-14
 Mod **0.14.3, protocol 26** (no wire change; the mod version still has to match on both PCs). Input: the W4.2B.3 prompt, the user's report (crash / corruption when hosting from inside a car; host sees a floating car while Player 2 drives), the newest local logs (`20261114-005258_game_21976` = Player 2 only; no F8-host log exists on this PC). No game started by Claude. Not committed.
 

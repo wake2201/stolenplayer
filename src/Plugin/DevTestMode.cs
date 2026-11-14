@@ -65,7 +65,8 @@ namespace TS2MP.Plugin
             {
                 try
                 {
-                    new Harmony("com.ts2mp.multiplayer.devtest").Patch(AccessTools.Method(_smT, "Start"), postfix: new HarmonyMethod(AccessTools.Method(typeof(DevTestMode), "SkillStartPost")));
+                    _harmony = new Harmony("com.ts2mp.multiplayer.devtest");
+                    _harmony.Patch(AccessTools.Method(_smT, "Start"), postfix: new HarmonyMethod(AccessTools.Method(typeof(DevTestMode), "SkillStartPost")));
                 }
                 catch (Exception ex) { skillsOk = false; _log.Error("DEVTEST Skill_Manager.Start hook failed", ex); }
             }
@@ -146,6 +147,13 @@ namespace TS2MP.Plugin
             }
         }
 
-        public void Dispose() { if (Instance == this) Instance = null; }
+        // W4.2C.A: the F8 test campaign can be released (prepared host cancelled before any world) and prepared again in the
+        // same process - remove this instance's postfix so a later DevTestMode never stacks a second one.
+        Harmony _harmony;
+        public void Dispose()
+        {
+            if (Instance == this) Instance = null;
+            if (_harmony != null) { try { _harmony.UnpatchSelf(); } catch (Exception ex) { _log.Warn("DEVTEST unpatch failed: " + ex.Message); } _harmony = null; }
+        }
     }
 }

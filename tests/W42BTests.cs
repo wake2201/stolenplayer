@@ -569,7 +569,7 @@ static class W42BTests
     // ---------------------------------------------------------------- 17
     static void CodecsAndScans()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 26 && ProtocolInfo.ModVersion == "0.14.3", "protocol 26 / mod 0.14.3");
+        Expect(ProtocolInfo.ProtocolVersion == 26 && ProtocolInfo.ModVersion == "0.14.4", "protocol 26 / mod 0.14.4");
         var t = new ObjectTxnRequest { Txn = 5, Op = ObjectOp.Reserve, Kind = L, Ns = Madison, Hash = 7, State = 1, BaseVer = 3, Epoch = 9 }; ObjectTxnRequest t2;
         Expect(t.ToBytes().Length == ObjectTxnRequest.Bytes && ObjectTxnRequest.TryParse(t.ToBytes(), out t2) && t2.Op == ObjectOp.Reserve && t2.Epoch == 9 && t2.BaseVer == 3, "txn 19 B");
         var bad = t.ToBytes(); bad[4] = 9; Expect(!ObjectTxnRequest.TryParse(bad, out t2), "unknown op refused");
@@ -841,10 +841,10 @@ static class W42BTests
         string cb = menu.Substring(cp, menu.IndexOf("void ContinueOriginal()", cp, StringComparison.Ordinal) - cp);
         Expect(cb.IndexOf("SelectClientSandbox(", StringComparison.Ordinal) < cb.IndexOf("SaveGuard.Arm(out why)", StringComparison.Ordinal)
             && cb.IndexOf("_runner.EnableTestCampaign(dataDir, \"Player 2\")", StringComparison.Ordinal) < cb.IndexOf("_runner.AttachSession(node)", StringComparison.Ordinal), "client: test sandbox chosen before arming, test records before the systems are built");
-        Expect(menu.Contains("node.TestCampaign = _testHost && SaveGuard.DevHost && _runner.TestCampaignActive;"), "the flag is only sent by a prepared, isolated test host");
+        Expect(menu.Contains("node.TestCampaign = _lc.TestPrepared && SaveGuard.DevHost && _runner.TestCampaignActive;"), "the flag is only sent by a prepared, isolated test host");
         Expect(menu.Contains("SaveGuard.TestSandbox != node.HostTestCampaign"), "re-join with another campaign type is refused");
         var guard = Src("SaveGuard.cs");
-        Expect(guard.Contains("string sandbox = SaveIsolation.Norm(Path.Combine(testDataDir, \"host-save\"));") && guard.Contains("DevHost = true; SandboxDir = sandbox;"), "host test save = copy in <testcampaign>\\host-save (same seed + guards as the developer host)");
+        Expect(guard.Contains("string sandbox = SaveIsolation.Norm(Path.Combine(testDataDir, \"host-save\"));") && guard.Contains("DevHost = true; _f8TestHost = true; SandboxDir = sandbox;"), "host test save = copy in <testcampaign>\\host-save (same seed + guards as the developer host)");
         var plugin = Src("Plugin.cs");
         Expect(plugin.Contains("_settings.DataDir = testDataDir;"), "every TS2MP record of a test process lives in <testcampaign>");
         var devm = StripComments(Src("DevTestMode.cs"));

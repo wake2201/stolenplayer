@@ -241,6 +241,16 @@ namespace TS2MP.Shared
         public void IsolationFailed(string why, double now) { Fail("Speicherschutz konnte nicht bestätigt werden: " + why, now); }
         public void SystemsConfirmed(double now) { if (State == MpState.ClientPreparing) Set(MpState.ClientSynchronizing, "Weltdaten werden synchronisiert …", now); }
 
+        // ---- W4.2C.A multiplayer test campaign (host side) ----
+        // True while THIS process has the isolated test-campaign host copy armed (MultiplayerMenu.PrepareTestCampaign).
+        // Cancelling the prepared host in the main menu before any world was loaded releases it again (TestReleaseDue), so
+        // the menu returns to the complete offline state: Join, normal Host and Test Host available. After a world was
+        // loaded from the copy it stays process-sticky (restart for solo / Join), unchanged since W4.2B.2.
+        public bool TestPrepared { get; private set; }
+        public void TestCampaignPrepared() { TestPrepared = true; }
+        public void TestCampaignReleased() { TestPrepared = false; }
+        public bool TestReleaseDue(bool worldLoadedBefore) { return TestPrepared && !worldLoadedBefore && !ClientModeSticky && !Legacy && !Busy(); }
+
         public void Stopped(double now) { if (State != MpState.Error) Set(MpState.Offline, ClientModeSticky ? "Offline (Spieler-2-Modus bleibt bis zum Neustart aktiv)" : "Offline", now); }
         public void BeginStop(double now) { if (Busy()) Set(MpState.Disconnecting, "Sitzung wird beendet …", now); }
         public bool Busy() { return MenuRules.Busy(State); }

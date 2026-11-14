@@ -537,7 +537,10 @@ static class W42BTests
         var wh = Host(Madison, Madison);
         Scene(wh, 1, Madison, 1, Digest, 0);
         Expect(Scene(wh, 2, Madison, 2, Digest ^ 1, 0) == ProposalCode.Invalid, "different scene metadata (digest) refused");
-        Expect(Scene(wh, 2, Hillville, 2, Digest, 0) == ProposalCode.NotAuthorized, "unsupported region / not the requester's region");
+        Expect(Scene(wh, 2, Hillville, 2, Digest, 0) == ProposalCode.NotAuthorized, "not the requester's region (W4.2C: Hillville itself is shared)");
+        wh.SetPlayerRegion(2, 92, 0);
+        Expect(Scene(wh, 2, 92, 2, Digest, 0) == ProposalCode.NotAuthorized && !ObjectStateRules.SupportedNamespace(92), "unsupported region (Bank)");
+        wh.SetPlayerRegion(2, Madison, 0);
         Expect(Scene(wh, 2, Madison, 2, Digest, 0) == ProposalCode.Accepted, "matching digest accepted");
         Expect(Init(wh, 2, Madison, new List<ObjectInitEntry>(), 0.2) == ProposalCode.NotAuthorized, "only the initializer sends the initial state");
         Expect(Txn(wh, 2, ObjectOp.Set, D, 1, 1, 0.3) == ProposalCode.Busy, "transitions wait for the initial state");
@@ -569,7 +572,7 @@ static class W42BTests
     // ---------------------------------------------------------------- 17
     static void CodecsAndScans()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 26 && ProtocolInfo.ModVersion == "0.14.4", "protocol 26 / mod 0.14.4");
+        Expect(ProtocolInfo.ProtocolVersion == 26 && ProtocolInfo.ModVersion == "0.15.0", "protocol 26 / mod 0.15.0");
         var t = new ObjectTxnRequest { Txn = 5, Op = ObjectOp.Reserve, Kind = L, Ns = Madison, Hash = 7, State = 1, BaseVer = 3, Epoch = 9 }; ObjectTxnRequest t2;
         Expect(t.ToBytes().Length == ObjectTxnRequest.Bytes && ObjectTxnRequest.TryParse(t.ToBytes(), out t2) && t2.Op == ObjectOp.Reserve && t2.Epoch == 9 && t2.BaseVer == 3, "txn 19 B");
         var bad = t.ToBytes(); bad[4] = 9; Expect(!ObjectTxnRequest.TryParse(bad, out t2), "unknown op refused");
@@ -653,11 +656,10 @@ static class W42BTests
         var bridge = StripComments(Src("WorldObjectBridge.cs"));
         int b = bridge.IndexOf("public void Break(", StringComparison.Ordinal);
         Expect(b > 0 && bridge.Substring(b, 260).Contains("b.enabled = true"), "Break enables the original Door behaviour first (as Lockpick.DoorUnlock does before OpenDestroyed)");
-        int s = bridge.IndexOf("SpecialNames =", StringComparison.Ordinal);
-        string names = bridge.Substring(s, bridge.IndexOf(';', s) - s);
-        Expect(!names.Contains("isGate") && names.Contains("isCarDoor") && names.Contains("isDrawer") && names.Contains("isContainer"), "gates shared; car doors + furniture stay local");
+        // W4.2C Phase B: gates and furniture shared, only car doors stay local (rule tested in W42CTests)
+        Expect(bridge.Contains("var names = DoorTypes.FlagFields;") && DoorTypes.FlagFields[0] == "isCarDoor" && Array.IndexOf(DoorTypes.FlagFields, "isGate") < 0, "gates shared; only car doors stay local");
         var sync = Src("WorldObjectSync.cs");
-        Expect(sync.Contains("stays local: furniture / car doors are not shared yet") && sync.Contains("_localOnly++"), "a non-shared door type is logged (no silent return)");
+        Expect(sync.Contains("stays local: car doors use the vehicle door sync") && sync.Contains("_localOnly++"), "a non-shared door type is logged (no silent return)");
         Expect(sync.Contains("LogStatsIfChanged()") && sync.Contains("_log.Info(Stats);"), "WOBJ_STATS reach the log");
     }
 

@@ -1,5 +1,6 @@
-// W4.2B: shared doors, locks (lockpicking) and windows of a supported region (Madison Street) on the host-owned region-object
-// registry. Design, authority and lifetime rules: src/Shared/RegionState.cs; investigation: docs/research/*_SYSTEM.md; the
+// W4.2B: shared doors, locks (lockpicking) and windows of a supported region on the host-owned region-object registry
+// (W4.2C Phase B: Madison Street, Hillville and the hideout; furniture leaves - drawers, cupboards, fridges, file / glass
+// cabinets, containers - are original Door components and share the door path unchanged, only car doors stay local). Design, authority and lifetime rules: src/Shared/RegionState.cs; investigation: docs/research/*_SYSTEM.md; the
 // replica side lives in src/Plugin/WorldObjectBridge.cs (no gameplay side effects). Supersedes the Phase A WorldDoorSync.
 //
 // Per region visit (scene instance = Unity scene handle):
@@ -48,9 +49,10 @@ namespace TS2MP.Plugin
         RegionObjectRecord _rec; bool _recOk; uint _recRev = uint.MaxValue, _seenHead = uint.MaxValue; ushort _reconciledEpoch;
         uint _reportPid; bool _initSent; uint _txn;
 
-        // committed state per kind (from the registry pages) and the page revisions it was built from
-        readonly Dictionary<uint, ObjectState>[] _com = { new Dictionary<uint, ObjectState>(), new Dictionary<uint, ObjectState>(), new Dictionary<uint, ObjectState>() };
-        readonly uint[][] _pageRev = { new uint[ObjectStateRules.MaxPages], new uint[ObjectStateRules.MaxPages], new uint[ObjectStateRules.MaxPages] };
+        // committed state per kind, kept from the registry pages (only changed pages are parsed, W4.2C Phase B)
+        readonly ObjectPageCache[] _com = { new ObjectPageCache(), new ObjectPageCache(), new ObjectPageCache() };
+        readonly Func<int, StateEntry>[] _pageOf = new Func<int, StateEntry>[3];
+        readonly List<uint>[] _changedKinds = new List<uint>[3];
         // local tracked states (this scene instance): locks and window glass are not reliably readable from tags
         readonly Dictionary<uint, byte> _lockLocal = new Dictionary<uint, byte>(), _glassLocal = new Dictionary<uint, byte>();
         readonly Dictionary<uint, Component> _sashOf = new Dictionary<uint, Component>();   // window hash -> sash Door
@@ -69,6 +71,7 @@ namespace TS2MP.Plugin
 
         long _local, _proposed, _committed, _refused, _applied, _silent, _skipLocked, _skipBusy, _unidentified, _diverged, _npcSuppressed, _storyBlocked, _gateRefused, _initEntries;
         long _localOnly, _slowApplied, _fastFinishes, _fastFinishSent; double _nextStats; long _statsSig = -1;
+        long _furnitureLocal, _furnitureApplied, _inactiveSnaps; int _furnitureInScene;
 
         static long Key(ObjectKind k, uint h) { return ((long)(byte)k << 32) | h; }
         static int KI(ObjectKind k) { return k == ObjectKind.Lockpick ? 0 : k == ObjectKind.LockedWindow ? 1 : 2; }
@@ -83,6 +86,7 @@ namespace TS2MP.Plugin
         {
             _node = node; _log = log; _world = world; _host = node.Role == Role.Host;
             _b = new WorldObjectBridge(log);
+            for (int i = 0; i < 3; i++) { int ki = i; _pageOf[i] = p => _world.Registry.Get(StateScope.Region, _region, PageKeys[ki][p]); }
             var gm = AccessTools.TypeByName("GameManager"); var ps = AccessTools.TypeByName("PlayerScript");
             _gmPs = Fast.Getter<object>(gm, "PS"); _gmLoaded = Fast.Getter<bool>(gm, "loadedMap"); _psAssign = Fast.Getter<object>(ps, "assignDoor"); _psLockpicking = Fast.Getter<bool>(ps, "isLockpicking");
             _ok = _b.Ok && _gmPs != null && _gmLoaded != null && _psAssign != null && _psLockpicking != null && WorldCensus.Instance != null;
@@ -102,7 +106,7 @@ namespace TS2MP.Plugin
             // the region is ready (keyboard interaction cannot be automated). Read once and cleared.
             if (!_host && Environment.GetEnvironmentVariable("TS2MP_DEV_WOBJ") == "1") { _dev = 1; try { Environment.SetEnvironmentVariable("TS2MP_DEV_WOBJ", null); } catch { } _log.Info("DEV_WOBJ test hook armed"); }
             census.CensusLoadedScenes();   // the host pressed F8 inside a region: census that already-loaded scene (objects only)
-            _log.Info("WOBJ ready (" + (_host ? "host: commits its own changes, decides Player 2's" : "client: proposes its changes") + "; doors / locks / windows in Madison Street; NPC door swings stay local)");
+            _log.Info("WOBJ ready (" + (_host ? "host: commits its own changes, decides Player 2's" : "client: proposes its changes") + "; doors, furniture, locks and windows in " + ObjectStateRules.SharedRegionNames + "; NPC door swings stay local)");
         }
 
         bool Patch(Type ps)
@@ -212,7 +216,7 @@ namespace TS2MP.Plugin
         void LogStatsIfChanged()
         {
             long sig = _local + _proposed * 3 + _committed * 7 + _refused * 11 + _applied * 13 + _silent * 17 + _skipLocked * 19 + _skipBusy * 23 + _unidentified * 29
-                + _diverged * 31 + _localOnly * 37 + _fastFinishes * 41 + _fastFinishSent * 43 + _storyBlocked * 47 + _gateRefused * 53;
+                + _diverged * 31 + _localOnly * 37 + _fastFinishes * 41 + _fastFinishSent * 43 + _storyBlocked * 47 + _gateRefused * 53 + _furnitureLocal * 59 + _furnitureApplied * 61 + _inactiveSnaps * 67;
             if (sig == _statsSig) return;
             _statsSig = sig;
             _log.Info(Stats);
@@ -223,7 +227,6 @@ namespace TS2MP.Plugin
             _b.ClearSlow();
             _watch.Clear(); _expect.Clear(); _pending.Clear(); _queue.Clear(); _dirty.Clear(); _initPids.Clear(); _initSent = false; _recOk = false; _recRev = uint.MaxValue; _appliedHead = uint.MaxValue; _seenHead = uint.MaxValue;
             foreach (var c in _com) c.Clear();
-            foreach (var r in _pageRev) for (int i = 0; i < r.Length; i++) r[i] = uint.MaxValue;
             _res.Clear();
         }
 
@@ -247,12 +250,17 @@ namespace TS2MP.Plugin
         // Lock / window states readable from this scene instance (fresh load: all default; late census: was_locked / padlock).
         void ReadLocalStates(WorldCensus census)
         {
-            _statesSerial = _serial;
+            _statesSerial = _serial; _furnitureInScene = 0;
             foreach (var r in census.Objects(_region))
             {
                 if ((object)r.Comp == null || r.Comp == null) continue;
                 if (r.Kind == ObjectKind.Lockpick) { byte s = _b.ReadLockState(r.Comp); if (s != 0 && !_lockLocal.ContainsKey(r.Id.Hash)) _lockLocal[r.Id.Hash] = s; }
-                else if (r.Kind == ObjectKind.Door) { WorldObjectId w; if (census.TryWindowOfDoor(r.Comp, out w)) _sashOf[w.Hash] = r.Comp; }
+                else if (r.Kind == ObjectKind.Door)
+                {
+                    WorldObjectId w;
+                    if (census.TryWindowOfDoor(r.Comp, out w)) _sashOf[w.Hash] = r.Comp;
+                    else if (DoorTypes.IsFurniture(_b.TypeOf(r.Comp))) _furnitureInScene++;
+                }
             }
         }
 
@@ -309,7 +317,7 @@ namespace TS2MP.Plugin
             {
                 case ObjectKind.Door:
                     WorldObjectId w;
-                    if (census.TryWindowOfDoor(c, out w) || !_b.Ordinary(c)) return 0;   // sashes are part of the window id
+                    if (census.TryWindowOfDoor(c, out w) || !_b.SharedDoor(c)) return 0;   // sashes are part of the window id
                     return _b.DoorBits(c);
                 case ObjectKind.Lockpick: return _lockLocal.TryGetValue(hash, out s) ? s : (byte)0;
                 case ObjectKind.LockedWindow:
@@ -324,45 +332,22 @@ namespace TS2MP.Plugin
         {
             _phase = Phase.Ready; _reconciledEpoch = _rec.Epoch;
             Reconcile(census, true);
-            _log.Info("WOBJ " + Regions.Name(_region) + " ready: epoch " + _rec.Epoch + ", " + _rec + "; committed doors " + _com[2].Count + ", locks " + _com[0].Count + ", windows " + _com[1].Count);
+            _log.Info("WOBJ " + Regions.Name(_region) + " ready: epoch " + _rec.Epoch + ", " + _rec + "; furniture leaves in the scene " + _furnitureInScene + "; committed doors " + _com[2].Count + ", locks " + _com[0].Count + ", windows " + _com[1].Count);
         }
 
         // ================================================================ committed -> local
-        // Rebuilds the committed dictionary of one kind when any of its pages changed; returns the hashes whose state changed
-        // (removed = back to the default state).
-        List<uint> RefreshKind(int ki)
-        {
-            bool changed = false;
-            var revs = _pageRev[ki]; var entries = new StateEntry[ObjectStateRules.MaxPages];
-            for (int p = 0; p < ObjectStateRules.MaxPages; p++)
-            {
-                var e = _world.Registry.Get(StateScope.Region, _region, PageKeys[ki][p]);
-                entries[p] = e; uint rev = e != null ? e.Rev : 0;
-                if (rev != revs[p]) { revs[p] = rev; changed = true; }
-            }
-            if (!changed) return null;
-            var fresh = new Dictionary<uint, ObjectState>();
-            for (int p = 0; p < ObjectStateRules.MaxPages; p++)
-            {
-                ObjectStateList l;
-                if (entries[p] != null && ObjectStateList.TryParse(entries[p].Value, out l)) foreach (var s in l.Items) fresh[s.Hash] = s;
-            }
-            var diff = new List<uint>();
-            var old = _com[ki];
-            foreach (var kv in fresh) { ObjectState o; if (!old.TryGetValue(kv.Key, out o) || o.State != kv.Value.State || o.Ver != kv.Value.Ver) diff.Add(kv.Key); }
-            foreach (var kv in old) if (!fresh.ContainsKey(kv.Key)) diff.Add(kv.Key);
-            _com[ki] = fresh;
-            return diff;
-        }
+        // Hashes of one kind whose committed state changed since the last refresh (removed = back to the default state);
+        // null = no page of the kind changed. Only the changed pages are parsed (ObjectPageCache).
+        List<uint> RefreshKind(int ki) { return _com[ki].Refresh(_pageOf[ki]); }
 
-        byte Committed(ObjectKind k, uint hash) { ObjectState s; return _com[KI(k)].TryGetValue(hash, out s) ? s.State : (byte)0; }
-        ushort CommittedVer(ObjectKind k, uint hash) { ObjectState s; return _com[KI(k)].TryGetValue(hash, out s) ? s.Ver : (ushort)0; }
+        byte Committed(ObjectKind k, uint hash) { ObjectState s; return _com[KI(k)].TryGet(hash, out s) ? s.State : (byte)0; }
+        ushort CommittedVer(ObjectKind k, uint hash) { ObjectState s; return _com[KI(k)].TryGet(hash, out s) ? s.Ver : (ushort)0; }
 
         void Reconcile(WorldCensus census, bool full)
         {
             _appliedHead = _world.Registry.HeadRev;
             int applied = 0;
-            var changed = new List<uint>[3];
+            var changed = _changedKinds;
             for (int ki = 0; ki < 3; ki++) changed[ki] = RefreshKind(ki);
             if (full)
             {
@@ -426,7 +411,7 @@ namespace TS2MP.Plugin
                 case ObjectKind.Door:
                 {
                     WorldObjectId w;
-                    if (census.TryWindowOfDoor(c, out w) || !_b.Ordinary(c)) return false;   // sash: via its window; drawers etc.: W4.2C
+                    if (census.TryWindowOfDoor(c, out w) || !_b.SharedDoor(c)) return false;   // sash: via its window; car doors: vdoor
                     return ApplyDoorBits(key, c, want, silent, pending);
                 }
             }
@@ -455,6 +440,9 @@ namespace TS2MP.Plugin
         bool ApplyDoorBits(long key, Component door, byte bits, bool silent, bool pending)
         {
             var assigned = AssignedDoor();
+            // W4.2C Phase B: an inactive leaf (e.g. below a disabled renovation / swap object) never runs Door.Update, so an
+            // animated swing would leave Door.opening set forever (every later apply = SkipBusy retry). Snap it instead.
+            if (!silent && !door.gameObject.activeInHierarchy) { silent = true; _inactiveSnaps++; }
             if (!silent && !pending && WorldDoorRules.FastFinish(bits, _b.DoorOpen(door), _b.DoorBroken(door), _b.IsSlowReplica(door)))
             { _b.FinishFast(door); _fastFinishes++; Count(false); return true; }
             var a = WorldDoorRules.Decide(bits, _b.DoorOpen(door), _b.DoorBroken(door), _b.DoorMoving(door), ReferenceEquals(door, assigned), WorldObjectBridge.DoorUsable(door), pending);
@@ -463,6 +451,7 @@ namespace TS2MP.Plugin
                 case DoorApply.Swing:
                     bool open = (bits & ObjectStateRules.DoorOpen) != 0, slow = (bits & ObjectStateRules.DoorSlow) != 0;
                     if (silent) _b.Snap(door, open); else { _b.Swing(door, open, slow); if (slow) _slowApplied++; }
+                    if (DoorTypes.IsFurniture(_b.TypeOf(door))) _furnitureApplied++;
                     SyncWatch(door); Count(silent); return true;
                 case DoorApply.Break:
                     _b.Break(door, silent); SyncWatch(door); Count(silent); return true;
@@ -532,14 +521,16 @@ namespace TS2MP.Plugin
                 LocalChange(ObjectKind.LockedWindow, id.Hash, WorldDoorRules.WithSash(glass, bits), op);
                 return;
             }
-            if (!_b.Ordinary(door))
+            var type = _b.TypeOf(door);
+            if (!DoorTypes.Shared(type))
             {
                 // W4.2B.1: was a silent return - the user's crowbar / hold-E doors left no trace in the log.
                 _localOnly++;
-                if (_logged.Add(0x7D00000000L | (uint)door.GetInstanceID())) _log.Info("WOBJ door '" + door.name + "' (" + _b.LocalOnlyType(door) + ") stays local: furniture / car doors are not shared yet (W4.2C)");
+                if (_logged.Add(0x7D00000000L | (uint)door.GetInstanceID())) _log.Info("WOBJ door '" + door.name + "' (" + type + ") stays local: car doors use the vehicle door sync");
                 return;
             }
             if (!census.TryDoorId(door, out id) || id.Namespace != _region) { Unidentified(door); return; }
+            if (DoorTypes.IsFurniture(type)) _furnitureLocal++;
             LocalChange(ObjectKind.Door, id.Hash, bits, op);
         }
 
@@ -853,7 +844,7 @@ namespace TS2MP.Plugin
                 switch (_dev)
                 {
                     case 1:   // nearest ordinary closed, unlocked door: assign it like PlayerScript.Update does (watch picks it up)
-                        _devDoor = Nearest(census, ObjectKind.Door, me, c => _b.Ordinary(c) && !_b.DoorOpen(c) && WorldObjectBridge.DoorUsable(c) && !census.TryWindowOfDoor(c, out _devId));
+                        _devDoor = Nearest(census, ObjectKind.Door, me, c => _b.SharedDoor(c) && !_b.DoorOpen(c) && WorldObjectBridge.DoorUsable(c) && !census.TryWindowOfDoor(c, out _devId));
                         if (_devDoor == null) { _log.Info("DEV_WOBJ no door found"); _dev = 3; break; }
                         AccessTools.Field(ps.GetType(), "assignDoor").SetValue(ps, _devDoor); _log.Info("DEV_WOBJ door '" + _devDoor.name + "' assigned"); _dev = 2; _devAt = now + 0.2; break;
                     case 2:   // the original quick use (Door.Use)
@@ -906,7 +897,7 @@ namespace TS2MP.Plugin
             {
                 return "WOBJ_STATS phase=" + _phase + " local=" + _local + " proposed=" + _proposed + " committed=" + _committed + " refused=" + _refused + " applied=" + _applied + " restoredSilently=" + _silent
                     + " skippedLocked=" + _skipLocked + " skippedBusy=" + _skipBusy + " unidentified=" + _unidentified + " diverged=" + _diverged + " npcRelockSuppressed=" + _npcSuppressed
-                    + " storyBlocked=" + _storyBlocked + " gateRefused=" + _gateRefused + " initEntries=" + _initEntries + " localOnlyDoors=" + _localOnly + " slowReplicas=" + _slowApplied + " fastFinish sent/applied=" + _fastFinishSent + "/" + _fastFinishes + (_host && _world.Host != null ? " | book " + _world.Host.Objects.Stats : "");
+                    + " storyBlocked=" + _storyBlocked + " gateRefused=" + _gateRefused + " initEntries=" + _initEntries + " localOnlyDoors=" + _localOnly + " furniture local/applied=" + _furnitureLocal + "/" + _furnitureApplied + " inactiveSnaps=" + _inactiveSnaps + " pagesParsed=" + (_com[0].PagesParsed + _com[1].PagesParsed + _com[2].PagesParsed) + " slowReplicas=" + _slowApplied + " fastFinish sent/applied=" + _fastFinishSent + "/" + _fastFinishes + (_host && _world.Host != null ? " | book " + _world.Host.Objects.Stats : "");
             }
         }
 

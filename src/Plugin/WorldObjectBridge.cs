@@ -54,10 +54,10 @@ namespace TS2MP.Plugin
             var d = DoorT;
             _open = Fast.Getter<bool>(d, "isOpen"); _opening = Fast.Getter<bool>(d, "opening"); _canUse = Fast.Getter<bool>(d, "canUse"); _broken = Fast.Getter<bool>(d, "brokeHinge"); _slowly = Fast.Getter<bool>(d, "openingSlowly");
             _rotateOpen = Fast.Getter<bool>(d, "rotateOpen"); _useVector = Fast.Getter<bool>(d, "useVectorRotation"); _moveOpen = Fast.Getter<bool>(d, "moveOpen");
-            // W4.2B.1: gates are entrance doors with the same Door mechanics (lock-gated, crowbar, slow use) and are shared now;
-            // a lock of a gate was shared while its leaf stayed local (remote saw the lock open but no swing). Car doors
-            // (M5.0 vdoor) and furniture (drawers, cupboards, fridges, cabinets, containers: W4.2C) stay local.
-            var names = SpecialNames;
+            // W4.2B.1: gates are entrance doors with the same Door mechanics (lock-gated, crowbar, slow use) and are shared.
+            // W4.2C Phase B: furniture leaves (drawers, cupboards, fridges, file / glass cabinets, containers) are shared too
+            // (same state machine, DoorTypes); only car doors (M5.0 vdoor) stay on their own path.
+            var names = DoorTypes.FlagFields;
             _special = new Func<object, bool>[names.Length];
             bool specialOk = true;
             for (int i = 0; i < names.Length; i++) { _special[i] = Fast.Getter<bool>(d, names[i]); if (_special[i] == null) specialOk = false; }
@@ -94,11 +94,9 @@ namespace TS2MP.Plugin
         public bool DoorSlow(Component d) { return _slowly(d); }
         public static bool DoorUsable(Component d) { return d.CompareTag("Door"); }
         public byte DoorBits(Component d) { return (byte)((_open(d) ? ObjectStateRules.DoorOpen : 0) | (_broken(d) ? ObjectStateRules.DoorBroken | ObjectStateRules.DoorOpen : 0)); }
-        // Ordinary = not a car door / drawer / cupboard / fridge / cabinet / container (W4.2C); gates and window sashes included.
-        static readonly string[] SpecialNames = { "isCarDoor", "isDrawer", "isCupboard", "isFridge", "isFileCabinet", "isGlassCabinet", "isContainer" };
-        public bool Ordinary(Component d) { for (int i = 0; i < _special.Length; i++) if (_special[i](d)) return false; return true; }
-        // The type flag that keeps a door local (diagnostics), null = shared type.
-        public string LocalOnlyType(Component d) { for (int i = 0; i < _special.Length; i++) if (_special[i](d)) return SpecialNames[i]; return null; }
+        // W4.2C Phase B: type of a Door leaf from its original flags (DoorTypes.FlagFields order); shared = not a car door.
+        public DoorType TypeOf(Component d) { var t = DoorType.None; for (int i = 0; i < _special.Length; i++) if (_special[i](d)) t |= (DoorType)(1 << i); return t; }
+        public bool SharedDoor(Component d) { return !_special[0](d); }   // FlagFields[0] = isCarDoor (DoorTypes.Shared)
 
         // Lock state readable from the scene (late census / region start): fallen padlock or doors marked was_locked.
         public byte ReadLockState(Component lp)

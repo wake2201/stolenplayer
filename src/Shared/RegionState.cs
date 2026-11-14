@@ -57,7 +57,10 @@ namespace TS2MP.Shared
         public const byte GlassMask = 3, GlassIntact = 0, GlassInside = 1, GlassCut = 2, GlassBroken = 3, SashOpen = 4, SashSlow = 8, SashBroken = 16;
 
         public static bool SupportedKind(ObjectKind k) { return k == ObjectKind.Door || k == ObjectKind.Lockpick || k == ObjectKind.LockedWindow; }
-        public static bool SupportedNamespace(int ns) { return ns == 99; }   // W4.2B scope: Madison Street
+        // W4.2C Phase B: Madison Street (99), Hillville (97) and the hideout (0). Every rule below is per namespace; the scene
+        // digest gate (OnScene) still refuses a region whose census differs between the instances (it then stays local).
+        public static bool SupportedNamespace(int ns) { return ns == 99 || ns == 97 || ns == 0; }
+        public const string SharedRegionNames = "Madison Street, Hillville, hideout";
         public static bool SupportedNamespace(ObjectKind k, int ns) { return SupportedKind(k) && SupportedNamespace(ns); }
         public static ObjectLifetime Lifetime(ObjectKind k) { return SupportedKind(k) ? ObjectLifetime.RegionLife : ObjectLifetime.Campaign; }
 
@@ -146,10 +149,106 @@ namespace TS2MP.Shared
         }
     }
 
+    // W4.2C Phase B: which original Door leaves are shared. Door.Start reads the type flags only to pick the clips
+    // ("drawer open", "file cabinet slow", ...) and the layer (disableCollisions -> 11); Use / Update / SlowFailed / TimeAdd /
+    // OpenOnStartt / Resett / ResetLock / OpenDestroyed never branch on them (IL, docs/research/FURNITURE_SYSTEM.md), so a
+    // drawer / cupboard / fridge / file or glass cabinet / container leaf runs exactly the door state machine and uses the
+    // same Door state bits. Car doors keep the vehicle path (M5.0 vdoor).
+    [Flags]
+    public enum DoorType : byte { None = 0, CarDoor = 1, Drawer = 2, Cupboard = 4, Fridge = 8, FileCabinet = 16, GlassCabinet = 32, Container = 64 }
+
+    public static class DoorTypes
+    {
+        // Original Door bool fields; index i <-> DoorType bit (1 << i).
+        public static readonly string[] FlagFields = { "isCarDoor", "isDrawer", "isCupboard", "isFridge", "isFileCabinet", "isGlassCabinet", "isContainer" };
+        public const DoorType Furniture = DoorType.Drawer | DoorType.Cupboard | DoorType.Fridge | DoorType.FileCabinet | DoorType.GlassCabinet | DoorType.Container;
+        public static bool Shared(DoorType t) { return (t & DoorType.CarDoor) == 0; }
+        public static bool IsFurniture(DoorType t) { return Shared(t) && (t & Furniture) != 0; }
+        public static DoorType FromFlags(bool[] flags)
+        {
+            var t = DoorType.None;
+            if (flags != null) for (int i = 0; i < FlagFields.Length && i < flags.Length; i++) if (flags[i]) t |= (DoorType)(1 << i);
+            return t;
+        }
+    }
+
     public struct ObjectState
     {
         public const int WireBytes = 8;
         public uint Hash; public byte State; public ushort Ver; public byte By;   // By = slot that committed the current state
+    }
+
+    // Committed states of one kind in one region as seen by an instance, kept from the registry pages incrementally
+    // (W4.2C Phase B: furniture raises the commit volume; the previous rebuild parsed all 12 pages and re-created the whole
+    // dictionary on every change of any page). Only pages whose revision changed are parsed; an object belongs to the
+    // page that last listed it (the host book never lists a hash twice; a prune can move it to a lower page).
+    public sealed class ObjectPageCache
+    {
+        readonly uint[] _rev = new uint[ObjectStateRules.MaxPages];
+        readonly List<ObjectState>[] _pages = new List<ObjectState>[ObjectStateRules.MaxPages];
+        readonly StateEntry[] _entry = new StateEntry[ObjectStateRules.MaxPages];
+        readonly bool[] _dirty = new bool[ObjectStateRules.MaxPages];
+        readonly Dictionary<uint, ObjectState> _all = new Dictionary<uint, ObjectState>();
+        readonly Dictionary<uint, int> _owner = new Dictionary<uint, int>();
+        readonly Dictionary<uint, ObjectState> _before = new Dictionary<uint, ObjectState>();
+        readonly List<uint> _changed = new List<uint>();
+        public long PagesParsed;
+
+        public ObjectPageCache() { Clear(); }
+        public int Count { get { return _all.Count; } }
+        public bool TryGet(uint hash, out ObjectState s) { return _all.TryGetValue(hash, out s); }
+        public void Clear()
+        {
+            for (int p = 0; p < _rev.Length; p++) { _rev[p] = uint.MaxValue; _pages[p] = null; _entry[p] = null; }
+            _all.Clear(); _owner.Clear();
+        }
+
+        // page(p) = the registry entry of page p (null = none). Returns the hashes whose committed state or version changed
+        // (removed = back to the default state), or null when no page revision changed. The list is reused by the next call.
+        public List<uint> Refresh(Func<int, StateEntry> page)
+        {
+            bool any = false;
+            for (int p = 0; p < _rev.Length; p++)
+            {
+                var e = page(p); uint rev = e != null ? e.Rev : 0;
+                _dirty[p] = rev != _rev[p]; _entry[p] = _dirty[p] ? e : null;
+                if (_dirty[p]) { _rev[p] = rev; any = true; }
+            }
+            if (!any) return null;
+            _before.Clear(); _changed.Clear();
+            for (int p = 0; p < _rev.Length; p++)
+            {
+                if (!_dirty[p] || _pages[p] == null) continue;
+                foreach (var s in _pages[p])
+                {
+                    int o; ObjectState cur;
+                    if (!_owner.TryGetValue(s.Hash, out o) || o != p) continue;
+                    if (_all.TryGetValue(s.Hash, out cur) && !_before.ContainsKey(s.Hash)) _before[s.Hash] = cur;
+                    _all.Remove(s.Hash); _owner.Remove(s.Hash);
+                }
+            }
+            for (int p = 0; p < _rev.Length; p++)
+            {
+                if (!_dirty[p]) continue;
+                List<ObjectState> items = null; ObjectStateList l;
+                if (_entry[p] != null && ObjectStateList.TryParse(_entry[p].Value, out l)) { items = l.Items; PagesParsed++; }
+                _pages[p] = items; _entry[p] = null;
+                if (items == null) continue;
+                foreach (var s in items)
+                {
+                    ObjectState cur;
+                    if (!_before.ContainsKey(s.Hash) && _all.TryGetValue(s.Hash, out cur)) _before[s.Hash] = cur;   // taken over from another page
+                    else if (!_before.ContainsKey(s.Hash)) _changed.Add(s.Hash);                                    // new object
+                    _all[s.Hash] = s; _owner[s.Hash] = p;
+                }
+            }
+            foreach (var kv in _before)
+            {
+                ObjectState now;
+                if (!_all.TryGetValue(kv.Key, out now) || now.State != kv.Value.State || now.Ver != kv.Value.Ver) _changed.Add(kv.Key);
+            }
+            return _changed;
+        }
     }
 
     // One registry page of committed states of one kind in one region (Region scope, arg = namespace,

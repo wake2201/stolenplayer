@@ -43,7 +43,7 @@ Players install a drag-and-drop ZIP into the game folder and start the game norm
 Direct-IP internet play between two PCs has been used by the user since 0.14.1 (doors, lockpicking, windows and vehicle cameras confirmed in 0.14.2).
 
 **Tested game target:** Thief Simulator 2 v1.27c  
-**Current development build:** 0.14.4 · protocol 26 (pending manual two-PC QA, `docs/TESTING.md` §32 + §33)
+**Current development build:** 0.15.0 · protocol 26 (pending manual two-PC QA, `docs/TESTING.md` §32 – §34)
 
 Both instances need the same mod version and protocol.
 

@@ -1,5 +1,39 @@
 ﻿# PROGRESS
 
+## W4.2C Phase B — Shared furniture interactions — **BUILT + DEPLOYED (local) — PENDING MANUAL TWO-PC QA**, 2026-11-14
+Mod **0.15.0, protocol 26** (wire format unchanged; the mod version must match on both PCs). No game started by Claude. Not committed. The Phase A cancel hotfix is unchanged (its QA, TESTING §33, is still pending).
+
+### A. Original-game facts used (IL, read-only Cecil; scene data, read-only UnityPy)
+| Fact | Evidence |
+|---|---|
+| Furniture leaves are `Door` components; the type flags `isDrawer`, `isCupboard`, `isFridge`, `isFileCabinet`, `isGlassCabinet`, `isContainer` are read ONLY in `Door.Start` (clips `drawer open` / `dooropen2 quiet` / `drawer close`, `file cabinet open/slow/close`, `glass cabinet open/close`, `container door open/slow/close`; `disableCollisions` → layer 11 + `SetChildren`) | `Door.Start` IL_0119–IL_0302; refs scan: no other reader of the flags |
+| `Door.Use`, `Door.Update` (slow branch + motion: `rotateOpen`/`useVectorRotation` via `RotateTowards`, `moveOpen` via `MoveTowards` to `OpenMove` / `SavePos`, then `Resett`), `SlowFailed`, `TimeAdd`, `OpenOnStartt` (sets `OpenMove` for `moveOpen`), `Resett` never branch on the furniture flags → the existing door replica (`WorldObjectBridge.Swing/Snap/FinishFast/Break`) is exact for furniture | `Door.Use` IL_0000–IL_017b, `Door.Update` IL_03ff–IL_05e0, `OpenOnStartt` IL_0085–IL_00be |
+| Opening furniture grants nothing: `Door.Use` touches only `isOpen/openedByPlayer/opening/canUse/openSpeed`, the local player's PCB/PMB/`MakeNoise`/`noNoise` and the `DoorSound` | `Door.Use` refs |
+| Other readers of `Door.isOpen`: `HidingSpot.Update` (hide prompt / tag `HidingSpot` only while its door is open), `AI` (`openedByPlayer`), cars, police | refs scan |
+| `RandomFileCabinet` (Madison 2: `DOMY/Villa/Interior_114/FileCabinetFull` + `(1)`; Hillville 1: `DOMY/House 207/VILLA2211/Interior207/FileCabinetFull`): its variants are ONLY loot `Pickupable`s (wallet, projector, $50, scanner, keyboard, tablet, hard drive), never `Door`s; the three drawers `SM_File_Cabinet_Drawer (1..3)` are fixed | UnityPy `level3` / `level8` |
+
+### B. Implementation
+- `src/Shared/RegionState.cs`: `DoorType` / `DoorTypes` (shared = not `isCarDoor`; `IsFurniture`; flag table = original field names in bit order); `ObjectStateRules.SupportedNamespace` = Madison 99 + Hillville 97 + hideout 0 (`SharedRegionNames`); `ObjectPageCache` (committed view per kind, parses only pages whose revision changed, owner-per-hash so a pruned object moving pages is never falsely removed).
+- `src/Plugin/WorldObjectBridge.cs`: blanket `Ordinary` / `SpecialNames` exclusion replaced by `TypeOf` + `SharedDoor` (only car doors excluded; they keep M5.0 `vdoor`).
+- `src/Plugin/WorldObjectSync.cs`: capture (`LocalDoor`), initial state (`LocalState`) and apply (`Apply`) use the same rule; committed view = `ObjectPageCache` (no per-change full rebuild); inactive leaves are snapped instead of animated (an inactive `Door` never runs `Update` → `opening` would stay set → endless SkipBusy retry); counters `furniture local/applied`, `inactiveSnaps`, `pagesParsed`; furniture count per scene instance in the ready line; log texts.
+- `src/Plugin/Plugin.cs` / `WorldSync.cs` config texts; `src/Shared/Protocol.cs` 0.15.0.
+- No new message, no new registry key, no new state bit, no new hook: furniture rides the W4.2B Door kind (`wobj2[.p]`, `objTxn`, `objInit`, region epochs, reservations, rate limit, catalog / digest checks).
+- Classification: furniture leaves before **INCOMPLETE** (local only); now **IMPLEMENTED BUT UNVERIFIED**. Doors / locks / windows in Hillville and the hideout: newly enabled, **IMPLEMENTED BUT UNVERIFIED** (same code as Madison, which is IMPLEMENTED BUT UNVERIFIED in game for W4.2B.1+).
+
+### C. Loot safety
+Opening and taking stay separate: a furniture transition commits only the door page (tested: no loot / item / XP key written). Taking contents stays the W4.1 loot path (Madison subset only; not expanded). `RandomFileCabinet` contents are flagged `RandomCabinet` by the census and stay outside shared loot (no shared identity → no double grant); their visible contents can differ per PC (original per-load roll) — aligning them would need shared loot for those items (out of scope).
+
+### D. Evidence
+- `tools\build.ps1 -GamePath "C:\Users\Dima\Desktop\Thief Simulator 2" -Test` (from Bash with a Windows-PowerShell `PSModulePath`): 27 csc builds, 0 errors (pre-existing CS0414 in Launcher.cs); **ALL 27 SUITES PASSED** — new **W42CTests 10/10** (door types; drawer / cupboard / fridge transitions incl. slow + fast finish through real snapshot + delta wire round trips to client registries and the plugin's page cache + apply rule; same-drawer race / stale / reordered; locked cabinet ordering; Hillville + hideout epochs with P2 alone in Hillville and the host in the hideout, digest refusal, host joining later; reload / disconnect resets; capacity 1142 → 1200 + Busy, 804 B pages, 8/s rate limit per player; page cache incl. 400-round randomized equivalence with the old full rebuild; loot safety; wiring), W42BTests 26/26 (2 pins updated for the new rule + Bank as the unsupported-region example), LifecycleTests 25/25, package 14/14, N1 smoke 3/3. First run: 1 failure in my own new test (a pin searched comment-stripped source); fixed.
+- Does NOT prove: swings / sounds / timing in Unity, census digest equality of Hillville / hideout on both PCs, NPC interplay.
+
+### E. Build / deploy / performance
+`build\release\TS2-Multiplayer-0.15.0.zip` (27 files, manifest verified, SHA-256 `7dfdb7fd2006a8111fa71efa3ff4511f0f658db76327c6dd9b6bae4d46175c20`), plugin `TS2MP.Plugin.dll` `dc0646d0479efe70de57fb186696e7c2cfb9b62cdaa53f2db4e078c728c96f50` — **deployed** into `C:\Users\Dima\Desktop\Thief Simulator 2\BepInEx\plugins\TS2MP` (hash verified); 0.14.4 DLLs backed up in `%LOCALAPPDATA%\TS2MP\backups\pre-0.15.0-20261114-223639`. The other PC needs the 0.15.0 ZIP.
+Hot paths: no new per-frame work (capture = existing `assignDoor` watch ≤ 4; `TypeOf` = 7 bool getters only on a transition / apply / once per scene instance). Committed-state refresh now parses only the changed page (before: all ≤ 12 pages + a new dictionary of ≤ 1200 entries per change). Network per furniture transition: one 19 B `objTxn` up, one page delta (≤ 804 B value) down; bounded by 8 transitions / s / player. New work in Hillville / hideout: one scene report + initial-state chunk(s) per region visit. GC: page parse ≈ 1 list of ≤ 100 structs per change. FPS impact: none expected — unmeasured (TESTING §34 item 14).
+
+### F. Remaining unsupported / open
+Breakables (`DestroyObject`, House 102 planks) local; `RandomFileCabinet` contents per PC; NPC-opened doors/furniture local (unchanged W4.2B rule); `HidingSpot` while another player opens the wardrobe [Q]; loot outside Madison not shared; garage / cat / drone untouched. Other regions (Bank, Warehouse, Museum, …) not enabled.
+
 ## W4.2C Phase A — Main-menu cancel hotfix + original world-interaction audit — **HOTFIX BUILT + DEPLOYED (local) — PENDING MANUAL QA; investigation complete (no gameplay sync implemented)**, 2026-11-14
 Mod **0.14.4, protocol 26** (no wire change). No game started by Claude. Not committed.
 

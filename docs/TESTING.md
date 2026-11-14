@@ -151,6 +151,26 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 34. W4.2C Phase B checklist — shared furniture, Hillville + hideout objects (plugin 0.15.0 / protocol 26; deployed by Claude in the local game folder, release `TS2-Multiplayer-0.15.0.zip` for the second PC)
+Both PCs need 0.15.0 (a 0.14.x peer is refused: mod version mismatch). Logs: `%LOCALAPPDATA%\TS2MP\logs\<stamp>_game_<pid>\plugin.log` on BOTH PCs. Useful lines: `WOBJ <region> ready: … furniture leaves in the scene N …`, `WOBJ proposed …` / `WOBJ host … -> Accepted`, `WOBJ_STATS … furniture local/applied=a/b inactiveSnaps=… pagesParsed=…`, `WORLD_CENSUS_OBJECTS <region> … digest=…` (must be equal on both PCs per region).
+
+| # | Step | Expected | Result |
+|---|---|---|---|
+| 1 | Both in Madison, same house. Player 2 opens a kitchen drawer (quick E), then closes it | Host sees the drawer slide open and closed with the original drawer sound; positions match; P2's log `WOBJ proposed … Door …`, host `Accepted` | NOT TESTED |
+| 2 | Host opens a cupboard, a fridge and a wardrobe door (quick E) | Player 2 sees each open with its own original sound (cupboard / fridge / door clips), no snapping | NOT TESTED |
+| 3 | Hold E on a cupboard / file-cabinet drawer (slow open), release halfway | The other player sees the slow (quiet) motion, then the fast finish at the same moment | NOT TESTED |
+| 4 | Both press E on the same closed drawer at the same time | It ends in ONE state on both screens (the losing press snaps back to the committed state); no flip-flop | NOT TESTED |
+| 5 | Locked cabinet / glass cabinet / container with a lock: Player 2 picks the lock, opens the leaf | Host: lock opens, then the leaf opens; before the lock is shared the host's leaf never opens on its own | NOT TESTED |
+| 6 | Loot inside: Player 2 opens a drawer and takes an item; host looks into the same drawer | Drawer open on both; the item is gone for the host (shared Madison loot, as before); opening alone gives nobody an item, money or XP | NOT TESTED |
+| 7 | File cabinet in the villa (`DOMY/Villa/Interior_114/FileCabinetFull`, Madison) or House 207 (Hillville): both open the same drawer | Drawer state shared; the CONTENTS may differ between PCs (random per load, original) — each player can take only what their own screen shows; no item appears twice in one inventory | NOT TESTED |
+| 8 | Hillville: both players in the same house — doors, drawers, a lock, a window | Shared like Madison. Host log `WOBJ Hillville ready`; if instead `scene metadata differs (census digest …)` appears, send both logs (Hillville stays local — safe) | NOT TESTED |
+| 9 | Hideout: Player 2 opens/closes doors and a cupboard while the host watches | Shared; nothing else in the hideout changes (garage, cat, renovations unchanged) | NOT TESTED |
+| 10 | Player 2 alone in Hillville (host stays in the hideout) opens furniture; host then drives to Hillville | Host arrives and sees P2's open drawers / doors; nothing reverts | NOT TESTED |
+| 11 | Region reload: both leave Madison (≥ 5 s), come back | All furniture closed again (original reload); random doors rolled anew | NOT TESTED |
+| 12 | Car doors: open the doors of your car and a parked car | Unchanged (vehicle door sync for the player cars; parked cars local) | NOT TESTED |
+| 13 | Regression: house doors, crowbar break-in, lockpicking, windows, vehicles + driver handoff, P2 inventory / CarBox, loot + drops, travel, reconnect | As confirmed with 0.14.x | NOT TESTED |
+| 14 | Performance: open/close ~10 drawers quickly in a kitchen while the other player watches; note FPS before/after | No stutter; log `WOBJ_STATS` refused stays small (rate limit 8/s per player: a 9th press within a second snaps back) | NOT TESTED |
+
 ## 33. W4.2C Phase A checklist — cancelling a prepared host (plugin 0.14.4 / protocol 26; deployed by Claude in the local game folder, release `TS2-Multiplayer-0.14.4.zip` for the second PC)
 Both PCs need 0.14.4 for a session (mod version check). Items 1–6 need only ONE PC (no Player 2) except where a join target is named. Log: `%LOCALAPPDATA%\TS2MP\logs\<stamp>_game_<pid>\plugin.log`. Do not restart the game between items 1–5.
 

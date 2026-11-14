@@ -45,7 +45,7 @@ namespace TS2MP.Plugin
                 CensusExport = Config.Bind("World", "CensusExport", false, "Diagnostics: write every census identity (id, kind, category, hierarchy path) to census-*.tsv in the instance log folder.").Value,
                 KeyMirror = Config.Bind("World", "KeyMirror", true, "M5 W2: the host's world keys (loot respawn days, daily events, hot item, day count) are mirrored to the client. Must be the same on both instances; off only for performance comparison.").Value,
                 SharedLoot = Config.Bind("World", "SharedLoot", true, "M5 W4.1: pre-placed world loot (Madison Street subset) is host-authoritative and shared. Must be the same on both instances; needs World.IdentityCensus.").Value,
-                SharedDoors = Config.Bind("World", "SharedDoors", true, "W4.2B: ordinary doors, locks (lockpicking) and windows in Madison Street are host-authoritative and shared. Must be the same on both instances; needs World.IdentityCensus.").Value
+                SharedDoors = Config.Bind("World", "SharedDoors", true, "W4.2B / W4.2C: doors, furniture (drawers, cupboards, fridges, cabinets), locks (lockpicking) and windows in Madison Street, Hillville and the hideout are host-authoritative and shared. Must be the same on both instances; needs World.IdentityCensus.").Value
             };
             KeyCode travelKey, menuKey;
             var keyName = Config.Bind("Vehicles", "TravelMenuKey", "F7", "Opens the original travel menu on foot in the hideout / Auto Shop when you have no car there (another player simulates it or it is parked elsewhere).").Value;

@@ -18,7 +18,7 @@ namespace TS2MP.Plugin
     {
         public double ClockRefreshSeconds = 10;
         public bool IdentityCensus = true, CensusExport, KeyMirror = true, SharedLoot = true;   // M5 W1/W2 (switchable for A/B performance comparison)
-        public bool SharedDoors = true;   // W4.2: ordinary doors (Madison Street) on the host-owned region-object registry
+        public bool SharedDoors = true;   // W4.2B/W4.2C: doors, furniture, locks, windows (Madison, Hillville, hideout) on the host-owned region-object registry
     }
 
     internal sealed class WorldSync : IDisposable

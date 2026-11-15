@@ -1,7 +1,13 @@
 // M5 W4.1 shared pre-placed world loot on the ORIGINAL pickup (design + verified IL: src/Shared/WorldLoot.cs).
 // Entry point: the existing W3 Harmony prefix on Pickupable.PickUp (WorldItemSync.PickPrefix) asks AllowPick for every object
 // that is not a W3 dropped item. Supported = census object of a supported region (Madison Street) whose flags and item type
-// are in the Phase B subset; everything else keeps the original local behaviour (logged once per object type).
+// are in the shared subset (v0.16.1: shared-name families included).
+// v0.16.1 root cause of the two-PC duplicate: every object outside that subset (excluded classes such as 'Pot'/'Wine1' with
+//   LootFlags.SharedName, unsupported regions, MainScene objects, heavy items) ran the ORIGINAL local pickup on BOTH PCs, so
+//   each player could collect it once. Now: Player 1 keeps the original pickup (excluded census objects get a non-blocking
+//   shadow claim so Player 2's copy disappears when the original commits); Player 2 is refused for everything no host
+//   transaction covers (LootRules.ClientPolicy; heavy: Pickupable.PickUpHeavy prefix) - nothing happens, logged once per name.
+//   Only Player 2's own unshared local drops (not in the census) are picked back locally.
 // W4.1B: classes via LootRules.Classify - ordinary valuables, unique valuables (destroy_if_was_picked; host refuses a take its
 //   save already removed and lists such objects as taken at region load) and world money (is_money: the host credits the
 //   SHARED balance + record counter in the same durable write as the world take; Player 2's coroutine add_money is counted by
@@ -40,7 +46,7 @@ namespace TS2MP.Plugin
         Action<object> _pickUp, _destroyMarker; MethodInfo _itemPicked; Func<string, int> _get;
 
         // host: Player-1 claims pending until the original reached SetDayRespawn (key = Pickupable instance id)
-        sealed class Claim { public int Ns; public uint Hash; public Component Pick; public string Name; public double At, InactiveSince; }
+        sealed class Claim { public int Ns; public uint Hash; public Component Pick; public string Name; public double At, InactiveSince; public bool Shadow, Family; public LootClass Cls; public uint Group; public int Outcome; }
         readonly Dictionary<int, Claim> _claims = new Dictionary<int, Claim>();
         readonly List<int> _scratch = new List<int>();
 
@@ -73,6 +79,7 @@ namespace TS2MP.Plugin
             {
                 var gm = AccessTools.TypeByName("GameManager"); var ps = AccessTools.TypeByName("PlayerScript"); var inv = AccessTools.TypeByName("Inventory");
                 var it = AccessTools.TypeByName("ItemID"); var pk = AccessTools.TypeByName("Pickupable"); var sp = AccessTools.TypeByName("SPrefs");
+                _gmMission = Fast.Getter<object>(gm, "mission_strings_to_set"); _gmParcels = Fast.Getter<object>(gm, "parcel_strings_to_set");
                 _gmPs = Fast.Getter<object>(gm, "PS"); _psItems = Fast.Getter<object>(ps, "item_IDs2"); _psInv = Fast.Getter<object>(ps, "invScript"); _invDays = Fast.Getter<int>(inv, "daysInGame");
                 _itemId = Fast.Getter<int>(it, "item_ID"); _itemAmount = Fast.Getter<int>(it, "item_amount"); _itemMax = Fast.Getter<int>(it, "max_amount");
                 _itemValue = Fast.Getter<float>(it, "item_value"); _itemAddXp = Fast.Getter<float>(it, "add_XP");
@@ -92,10 +99,23 @@ namespace TS2MP.Plugin
                 { _log.Warn("WLOOT game API incomplete: shared world loot disabled (original local pickups)"); return; }
                 _h = new Harmony("com.ts2mp.multiplayer.wloot");
                 _h.Patch(respawn, null, new HarmonyMethod(AccessTools.Method(typeof(WorldLootSync), "RespawnPostfix")));
+                if (!_host)
+                {
+                    var heavy = AccessTools.Method(pk, "PickUpHeavy", new[] { typeof(float) });
+                    if (heavy != null) _h.Patch(heavy, new HarmonyMethod(AccessTools.Method(typeof(WorldLootSync), "HeavyPrefix")));
+                    else _log.Warn("WLOOT Pickupable.PickUpHeavy(float) not found: Player-2 heavy pickups are not guarded");
+                }
+                // W4.2D: both instances seed the original RandomFileCabinet roll identically (cabinet identity + campaign day)
+                var cab = AccessTools.TypeByName("RandomFileCabinet"); var cabStart = cab != null ? AccessTools.Method(cab, "Start", Type.EmptyTypes) : null;
+                var rnd = AccessTools.TypeByName("UnityEngine.Random");
+                _rndState = rnd != null ? AccessTools.Property(rnd, "state") : null; _rndInit = rnd != null ? AccessTools.Method(rnd, "InitState", new[] { typeof(int) }) : null;
+                if (cabStart != null && _rndState != null && _rndInit != null)
+                    _h.Patch(cabStart, new HarmonyMethod(AccessTools.Method(typeof(WorldLootSync), "CabinetPrefix")), new HarmonyMethod(AccessTools.Method(typeof(WorldLootSync), "CabinetPostfix")));
+                else _log.Warn("WLOOT RandomFileCabinet.Start / UnityEngine.Random.state not found: cabinet rolls stay unseeded (the host still allows one outcome per slot)");
                 _ok = true; Instance = this;
-                if (_host && world.Host != null) world.Host.LootTxnHook = HostDecide;
+                if (_host && world.Host != null) { world.Host.LootTxnHook = HostDecide; HostLootCatalogs.Start(_log); }
                 if (!_host) world.ProposalResultHook5 = OnResult;
-                _log.Info("WLOOT shared world loot ready (" + (_host ? "host: authoritative" : "client: pickups as host transactions") + "), supported regions: MadisonSt");
+                _log.Info("WLOOT shared world loot ready (" + (_host ? "host: authoritative, validated against its own scene-file catalogs" : "client: pickups as host transactions") + "), regions: every original scene + MainScene");
             }
             catch (Exception ex) { _log.Error("WLOOT init failed: shared world loot disabled", ex); _ok = false; }
         }
@@ -141,17 +161,58 @@ namespace TS2MP.Plugin
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             try
             {
-                int ns = _world.LocalRegion;
-                // W4.1B: world money goes into the SHARED balance; on the client only a host transaction may grant it
-                bool money = !_host && _pickMoney(pick);
-                if (!LootRules.SupportedNamespace(ns)) return money ? RefuseMoney(pick.transform.name, "region not supported yet") : true;
-                var cat = LiveCatalog(ns); LootEntry e;
-                if (cat == null || !cat.TryByInstance(pick.GetInstanceID(), out e)) return money ? RefuseMoney(pick.transform.name, "not a verified scene object") : true;
-                string excl; var cls = LootRules.Classify(e, ItemFactsFor(e), out excl);
-                if (cls == LootClass.Excluded) { if (money) return RefuseMoney(e.Name, excl); NotShared(e, excl); return true; }
-                return _host ? HostPick(ns, e, pick) : ClientPick(ns, cat, e, cls, pick);
+                int ns = IdentityNamespace.ForScene(pick.gameObject.scene.name);   // W4.2D: the object's own scene (region scene or MainScene)
+                bool supported = LootRules.SupportedNamespace(ns) && (ns == IdentityNamespace.MainScene || ns == _world.LocalRegion);
+                var cat = supported ? LiveCatalog(ns) : null; LootEntry e = null;
+                bool inCat = cat != null && cat.TryByInstance(pick.GetInstanceID(), out e);
+                string excl = null; var cls = inCat ? LootRules.Classify(e, ItemFactsFor(e), out excl) : LootClass.Excluded;
+                if (_host)
+                {
+                    // Player 1 keeps the original pickup for everything; shared classes are claimed (host authority), excluded
+                    // census objects get a non-blocking shadow claim so Player 2's copy disappears once the original commits.
+                    if (!inCat) return true;
+                    if (cls == LootClass.Excluded) { ShadowClaim(ns, e, pick, excl); return true; }
+                    return HostPick(ns, e, cls, pick);
+                }
+                // v0.16.1 Player 2: only a host transaction may grant a world reward; everything else is refused (no duplicate).
+                bool dropped = _pickDropped(pick) || pick.transform.name == "dropped";
+                switch (LootRules.ClientPolicy(supported, inCat, cls, dropped))
+                {
+                    case P2PickPolicy.LocalOwnDrop: _p2OwnDrops++; return true;
+                    case P2PickPolicy.Refuse:
+                        string why = !supported ? "region " + Regions.Name(ns) + " not shared yet" : !inCat ? "not a verified scene object of " + Regions.Name(ns) + " (MainScene / runtime object)" : "excluded: " + excl;
+                        return RefuseP2(inCat ? e.Name : pick.transform.name, _pickMoney(pick), inCat ? e.Hash : 0u, why);
+                }
+                return ClientPick(ns, cat, e, cls, pick);
             }
             finally { double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency; if (ms > _pickMaxMs) _pickMaxMs = ms; }
+        }
+
+        // v0.16.1: a Player-2 pickup no host transaction can cover. Refused: the object stays, nothing is granted (logged once
+        // per object name; money keeps its W4.1B counter).
+        bool RefuseP2(string name, bool money, uint hash, string why)
+        {
+            if (money) { _moneyRefused++; } else _p2RefusedLocal++;
+            if (_notSharedLogged.Count < 128 && _notSharedLogged.Add(((money ? "money:" : "item:") + name).GetHashCode()))
+                _log.Info("WLOOT Player-2 pickup of " + (money ? "world money " : "") + "'" + name + "'" + (hash != 0 ? " (" + hash.ToString("X8") + ")" : "") + " refused: " + why + " - no shared transaction possible, a local pickup would duplicate the reward");
+            return false;
+        }
+
+        // v0.16.1 heavy items (Pickupable.PickUpHeavy, PlayerScript.Update IL_7cfb - its only caller, called right after the
+        // switch sound with no PlayerScript state set before it): not shared (W4.2 heavy flow), so Player 2 is refused - a local
+        // carry would duplicate the object Player 1 still sees.
+        static bool HeavyPrefix(object __instance)
+        {
+            var i = Instance; var c = __instance as Component;
+            if (i == null || c == null || i._host) return true;
+            try { return i.RefuseP2Heavy(c); } catch (Exception ex) { i._log.Error("WLOOT heavy pickup hook failed (pickup refused)", ex); return false; }
+        }
+        bool RefuseP2Heavy(Component pick)
+        {
+            _heavyRefused++;
+            string name = pick.transform.name;
+            if (_notSharedLogged.Count < 128 && _notSharedLogged.Add(("heavy:" + name).GetHashCode())) _log.Info("WLOOT Player-2 heavy pickup of '" + name + "' refused: heavy items are not shared yet (carry / trunk / van / shed / shop transaction family missing) - a local carry would duplicate the object");
+            return false;
         }
 
         // Money objects have no meaningful item type (item 0): their class does not depend on item facts.
@@ -159,30 +220,44 @@ namespace TS2MP.Plugin
 
         // W4.1B: a client pickup of world money that no host transaction can cover would add to the shared balance a second
         // time (both players see their own copy): refused, nothing happens (logged once per object name).
-        bool RefuseMoney(string name, string why)
-        {
-            _moneyRefused++;
-            if (_notSharedLogged.Count < 64 && _notSharedLogged.Add(("money:" + name).GetHashCode())) _log.Info("WLOOT world money '" + name + "' refused for Player 2: " + why + " - no shared transaction possible (would duplicate money)");
-            return false;
-        }
-        long _moneyRefused, _moneyTakes, _uniqueTakes, _persistRefused, _uniqueSeeded;
+        bool RefuseMoney(string name, string why) { return RefuseP2(name, true, 0u, why); }
+        long _moneyRefused, _moneyTakes, _uniqueTakes, _persistRefused, _uniqueSeeded, _p2RefusedLocal, _p2OwnDrops, _heavyRefused, _sharedNameTakes, _shadowClaims, _shadowCommits, _liveOnlyTakes, _cabinetTakes, _parcelEffects, _seededRegions;
+        Func<object, object> _gmMission, _gmParcels; PropertyInfo _rndState; MethodInfo _rndInit;
 
-        void NotShared(LootEntry e, string why)
+        // v0.16.1 (host): Player 1's original pickup of an excluded census object runs unchanged (never refused). If the book
+        // has room, a claim is recorded anyway: when the original reaches SetDayRespawn for this instance it is committed and
+        // Player 2's copy is removed. No SetDayRespawn (e.g. no XP) = the claim is released when the object is gone.
+        void ShadowClaim(int ns, LootEntry e, Component pick, string why)
         {
             _notShared++;
-            if (_notSharedLogged.Count < 64 && _notSharedLogged.Add(e.ItemId)) _log.Info("WLOOT '" + e.Name + "' (item " + e.ItemId + ") not shared: " + why + " - original local pickup");
+            if (_notSharedLogged.Count < 128 && _notSharedLogged.Add(("p1:" + e.Name).GetHashCode())) _log.Info("WLOOT Player-1 pickup of '" + e.Name + "' (" + e.Hash.ToString("X8") + ", item " + e.ItemId + ") not shared (" + why + "): original local pickup; Player 2 cannot pick it");
+            var book = _world.Host != null ? _world.Host.Loot : null;
+            int token = pick.GetInstanceID(); string ignore;
+            if (book == null || _claims.ContainsKey(token) || book.StateOf(ns, e.Hash) != LootState.Available || !book.Claim(ns, e.Hash, token, out ignore)) return;
+            _claims[token] = new Claim { Ns = ns, Hash = e.Hash, Pick = pick, Name = e.Name, At = Now, Shadow = true };
+            _shadowClaims++;
         }
 
-        bool HostPick(int ns, LootEntry e, Component pick)
+        // Host catalog entry (W4.2D): the trusted scene-file metadata (cabinet slot, parcel pref) of a census object.
+        static LootEntry HostEntry(int ns, uint hash) { var c = HostLootCatalogs.Get(ns); LootEntry e; return c != null && c.TryGet(hash, out e) ? e : null; }
+
+        bool HostPick(int ns, LootEntry e, LootClass cls, Component pick)
         {
             var book = _world.Host != null ? _world.Host.Loot : null;
             if (book == null) return true;
             int token = pick.GetInstanceID();
             if (_claims.ContainsKey(token)) return false;                                 // original already running for it
             if (book.StateOf(ns, e.Hash) == LootState.Taken) { Remove(pick, e.Name, "already taken by Player 2"); return false; }
+            var he = HostEntry(ns, e.Hash); uint group = he != null ? he.Group : 0u; int outcome = he != null ? he.Outcome : 0;
+            if (!book.Cabinets.Allowed(ns, group, outcome))
+            {
+                book.Cabinets.Refused++;
+                _log.Info("WLOOT Player-1 pickup of '" + e.Name + "' (" + e.Hash.ToString("X8") + ") refused: this cabinet slot already gave another outcome in this occupancy (one roll per slot)");
+                return false;
+            }
             string why;
-            if (!book.Claim(ns, e.Hash, token, out why)) { _log.Info("WLOOT Player-1 pickup of '" + e.Name + "' refused: " + why); return false; }
-            _claims[token] = new Claim { Ns = ns, Hash = e.Hash, Pick = pick, Name = e.Name, At = Now };
+            if (!book.Claim(ns, e.Hash, token, out why)) { _log.Info("WLOOT Player-1 pickup of '" + e.Name + "' (" + e.Hash.ToString("X8") + ") refused: " + why); return false; }
+            _claims[token] = new Claim { Ns = ns, Hash = e.Hash, Pick = pick, Name = e.Name, At = Now, Cls = cls, Family = (e.Flags & LootFlags.SharedName) != 0, Group = group, Outcome = outcome };
             _p1Claims++;
             return true;
         }
@@ -190,7 +265,7 @@ namespace TS2MP.Plugin
         bool ClientPick(int ns, LootCatalog cat, LootEntry e, LootClass cls, Component pick)
         {
             if (!Live) return false;                                   // disconnected: a local pick could never be reconciled
-            if (_taken.Contains(e.Hash) && _shownNs == ns) { Remove(pick, e.Name, "taken"); return false; }
+            if (IsTaken(ns, e.Hash)) { Remove(pick, e.Name, "taken"); return false; }
             if (_txn != null || Awaiting) return false;
             var p2 = Player2Sync.Instance; var cb = CarBoxSync.Instance; var wi = WorldItemSync.Instance;
             if (p2 == null || !p2.Restored || (cb != null && cb.TransferPending) || (wi != null && wi.TxnPending)) return false;
@@ -223,8 +298,10 @@ namespace TS2MP.Plugin
             {
                 _claims.Remove(token);
                 var code = _world.Host.Loot.Commit(c.Ns, c.Hash, _world.Host.Reg, _world.Host.Outbox); _world.FlushOutbox();
-                _p1Commits++;
-                _log.Info("WLOOT Player 1 took '" + c.Name + "' (" + IdentityNamespace.Name(c.Ns) + ":" + c.Hash.ToString("X8") + ") -> " + code + " after " + ((Now - c.At) * 1000).ToString("0") + " ms");
+                _world.Host.Loot.Cabinets.Take(c.Ns, c.Group, c.Outcome);
+                if (c.Shadow) _shadowCommits++; else _p1Commits++;
+                _log.Info("WLOOT Player 1 took '" + c.Name + "' (" + IdentityNamespace.Name(c.Ns) + ":" + c.Hash.ToString("X8") + ", " + (c.Shadow ? "not shared, original local pickup" : c.Cls.ToString()) + (c.Family ? ", shared-name family" : "") + (c.Group != 0 ? ", cabinet outcome " + c.Outcome : "")
+                    + ") -> " + code + " after " + ((Now - c.At) * 1000).ToString("0") + " ms: the original granted it once on this PC; listed as taken (Player 2's copy is removed)");
             }
             // provenance: every Player-1 world pickup that wrote a respawn key (supported or not) is an unsaved acquisition
             if (_pickHeavy(pick) || _pickMoney(pick) || _pickDropped(pick)) return;   // heavy: VanHeavyItems path; money: no unit
@@ -241,7 +318,10 @@ namespace TS2MP.Plugin
             if (p2 != null) p2.NoteP1Pick(new LootTake { Ns = ns, Hash = hash, ItemId = id, Day = day, ItemFlag = true, Name = name });
         }
 
-        // WorldHost.LootTransaction hook: validation against the host's own catalog, then the durable Player-2 side.
+        // WorldHost.LootTransaction hook. W4.2D: validated against the host's OWN scene-file catalog of that namespace (no need
+        // to have loaded the region), only after the region's book was seeded for the current occupancy; then the durable
+        // Player-2 side (record / wallet + world take in one write), the original key effects and the original side effects
+        // the host owns (parcel lists).
         ProposalCode HostDecide(byte slot, LootTxnRequest t, bool inRegion, out string why)
         {
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -251,34 +331,50 @@ namespace TS2MP.Plugin
                 var p2 = Player2Sync.Instance;
                 if (p2 == null || !p2.HostBookReady) { why = "host Player-2 book not ready"; return ProposalCode.Busy; }
                 var ps = Ps(); var inv = ps != null ? _psInv(ps) : null;
+                var book = _world.Host.Loot;
+                bool fresh = t.Txn > p2.P2AppliedTxn;   // retransmissions are answered by DecideP2 before anything else
                 // host scene loading: item facts / day count unavailable -> retry later (never a permanent refusal)
-                if (inv == null && t.Txn > p2.P2AppliedTxn) { why = "host scene loading"; return ProposalCode.Busy; }
-                var cat = WorldCensus.Instance != null ? WorldCensus.Instance.Loot(t.Ns) : null;
+                if (inv == null && fresh) { why = "host scene loading"; return ProposalCode.Busy; }
+                var cat = HostLootCatalogs.Get(t.Ns);
+                if (fresh && cat == null && HostLootCatalogs.Pending(t.Ns)) { why = "host loot catalog of " + IdentityNamespace.Name(t.Ns) + " still building"; return ProposalCode.Busy; }
+                if (fresh && cat != null && !book.IsSeeded(t.Ns)) { why = "loot state of " + IdentityNamespace.Name(t.Ns) + " not initialized for this occupancy yet"; return ProposalCode.Busy; }
                 LootEntry e = null; var facts = new ItemFacts(); bool persist = false;
                 if (cat != null && cat.TryGet(t.Hash, out e))
                 {
                     facts = ItemFactsFor(e);
-                    // W4.1B: the host save already removed it (respawn day in the future / unique item picked) -> never again
                     string ignore; var c0 = LootRules.Classify(e, facts, out ignore);
-                    if (c0 != LootClass.Excluded && inv != null) persist = LootRules.PersistentlyTaken(c0, _get(LootKeys.Day(e.Name)), _get(LootKeys.Picked(e.Name)), _invDays(inv));
+                    if (c0 != LootClass.Excluded && inv != null)
+                        persist = LootRules.TakenByKeys(c0, (e.Flags & LootFlags.SharedName) != 0, _get(LootKeys.Day(e.Name)), _get(LootKeys.Picked(e.Name)), _invDays(inv));
                 }
-                var book = _world.Host.Loot; LootClass cls;
+                LootClass cls;
                 var code = LootDecision.DecideP2(t.Txn, p2.P2AppliedTxn, inRegion, cat, t.Digest, t.Hash, t.ItemId, facts, book.StateOf(t.Ns, t.Hash), book.HasRoom(t.Ns, t.Hash), p2.P2Count(t.ItemId), persist, out cls, out why);
+                if (code == ProposalCode.Accepted && !book.Cabinets.Allowed(t.Ns, e.Group, e.Outcome))
+                {
+                    book.Cabinets.Refused++; persist = true; code = ProposalCode.Stale;
+                    why = "this cabinet slot already gave another outcome in this occupancy (one roll per slot)";
+                }
                 if (code != ProposalCode.Accepted)
                 {
-                    if (code != ProposalCode.Unchanged) { _hostRefused++; _log.Info("WLOOT Player-2 pickup #" + t.Txn + " " + IdentityNamespace.Name(t.Ns) + ":" + t.Hash.ToString("X8") + " -> " + code + " (" + why + ")"); }
+                    if (code != ProposalCode.Unchanged) { _hostRefused++; _log.Info("WLOOT Player-2 pickup #" + t.Txn + " " + IdentityNamespace.Name(t.Ns) + ":" + t.Hash.ToString("X8") + (e != null ? " '" + e.Name + "'" : "") + " -> " + code + " (" + why + ")"); }
                     if (persist && code == ProposalCode.Stale && book.StateOf(t.Ns, t.Hash) == LootState.Available)
                     { _persistRefused++; book.Commit(t.Ns, t.Hash, _world.Host.Reg, _world.Host.Outbox); _world.FlushOutbox(); _dirty = true; }   // listed as taken: Player 2's copy disappears
                     return code;
                 }
                 if (inv == null) { why = "host scene loading"; return ProposalCode.Busy; }
                 bool money = cls == LootClass.Money;
-                var take = new LootTake { Ns = t.Ns, Hash = t.Hash, ItemId = e.ItemId, Day = _invDays(inv) + LootRules.RespawnDays(facts.Value, money), ItemFlag = true, Name = e.Name };
+                var take = new LootTake { Ns = t.Ns, Hash = t.Hash, ItemId = e.ItemId, Day = LootRules.TakeDay(cls, _invDays(inv), facts.Value), ItemFlag = true, Name = e.Name };
                 code = money ? p2.HostMoneyTake(t.Txn, take, e.Money, out why) : p2.HostLootTake(t.Txn, take, out why);
                 if (code == ProposalCode.Accepted)
                 {
-                    _hostDecided++; if (money) _moneyTakes++; else if (cls == LootClass.UniqueValuable) _uniqueTakes++;
-                    var obj = e.Target as Component;
+                    _hostDecided++; if (money) _moneyTakes++; else if (cls == LootClass.UniqueValuable) _uniqueTakes++; else if (cls == LootClass.LiveOnly) _liveOnlyTakes++;
+                    bool family = (e.Flags & LootFlags.SharedName) != 0; if (family) _sharedNameTakes++;
+                    book.Cabinets.Take(t.Ns, e.Group, e.Outcome); if (e.Group != 0) _cabinetTakes++;
+                    string side = HostSideEffects(e);
+                    var live = WorldCensus.Instance != null ? WorldCensus.Instance.Loot(t.Ns) : null; LootEntry le = null;
+                    var obj = live != null && live.TryGet(t.Hash, out le) ? le.Target as Component : null;
+                    _log.Info("WLOOT Player-2 pickup #" + t.Txn + " of '" + e.Name + "' (" + IdentityNamespace.Name(t.Ns) + ":" + t.Hash.ToString("X8") + ", " + cls + (family ? ", shared-name family" : "") + (e.Group != 0 ? ", cabinet outcome " + e.Outcome : "") + ") ACCEPTED by the host: "
+                        + (money ? "$" + e.Money + " credited once to the shared balance" : "item " + e.ItemId + " +1 in Player 2's record") + ", world take durable, ItemDay " + (take.Day > 0 ? take.Day.ToString() : "none") + side
+                        + "; host copy " + (obj != null ? "removed" : "not loaded here"));
                     if (obj != null) Remove(obj, e.Name, "taken by Player 2");   // a Player-1 claim on it would have made the decision Busy
                     _dirty = true;
                 }
@@ -288,6 +384,19 @@ namespace TS2MP.Plugin
             finally { double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency; if (ms > _decideMaxMs) _decideMaxMs = ms; }
         }
 
+        // Original side effects of the pickup that belong to the host campaign (verified <PickingItem>d__72 final step):
+        // lock_parcel_after_pickup -> GameManager.mission_strings_to_set.Add(parcel_pref) + parcel_strings_to_set.Remove(parcel_pref).
+        // Contract items only show "contract_item_found" there (nothing to apply). Executed once, for the accepted take only.
+        string HostSideEffects(LootEntry e)
+        {
+            if ((e.Flags & LootFlags.Parcel) == 0 || string.IsNullOrEmpty(e.Pref)) return "";
+            var gm = _world.GameManagerObject;
+            var mission = gm != null && _gmMission != null ? _gmMission(gm) as System.Collections.IList : null;
+            var parcels = gm != null && _gmParcels != null ? _gmParcels(gm) as System.Collections.IList : null;
+            if (mission == null || parcels == null) { _log.Warn("WLOOT parcel '" + e.Pref + "': host GameManager mission lists unavailable - parcel lock NOT applied"); return ", parcel lock NOT applied"; }
+            mission.Add(e.Pref); parcels.Remove(e.Pref); _parcelEffects++;
+            return ", parcel '" + e.Pref + "' locked in the host campaign (original mission_strings_to_set / parcel_strings_to_set)";
+        }
         // 2x per second: a pending claim whose object is gone (scene unloaded) or deactivated (coroutine stopped) before the
         // irreversible step is released; nothing was granted.
         void CheckClaims(double now)
@@ -423,23 +532,33 @@ namespace TS2MP.Plugin
 
             var gm = _world.GameManagerObject;
             if (!ReferenceEquals(gm, _seenGm)) { _seenGm = gm; _dirty = true; _itemById.Clear(); _itemsGm = null; }
-            int ns = _world.LocalRegion;
-            if (!LootRules.SupportedNamespace(ns)) { if (_shownNs != Regions.None) { _shownNs = Regions.None; _taken.Clear(); } return; }
+            if (_host) SeedOccupied(now);
             if (!_host && !Live) return;
-            if (_host) SeedUnique(ns, gm);
+            // W4.2D: this instance shows two namespaces - its region scene and MainScene (present in every region)
+            int region = _world.LocalRegion;
             var reg = _world.Registry;
-            if (!_dirty && ns == _shownNs && reg.HeadRev == _seenHead && reg.Epoch == _seenEpoch) return;
+            if (!_dirty && region == _shownNs && reg.HeadRev == _seenHead && reg.Epoch == _seenEpoch) return;
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            _seenHead = reg.HeadRev; _seenEpoch = reg.Epoch; _dirty = false; _shownNs = ns;
-            _taken.Clear();
+            _seenHead = reg.HeadRev; _seenEpoch = reg.Epoch; _dirty = false; _shownNs = region;
+            _taken.Clear(); _takenMain.Clear();
+            if (region != Regions.None && LootRules.SupportedNamespace(region)) Observe(region, _taken, reg);
+            if (region != Regions.None) Observe(IdentityNamespace.MainScene, _takenMain, reg);
+            double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency; if (ms > _observeMaxMs) _observeMaxMs = ms;
+        }
+
+        readonly HashSet<uint> _takenMain = new HashSet<uint>();
+        bool IsTaken(int ns, uint hash) { return ns == IdentityNamespace.MainScene ? _takenMain.Contains(hash) : ns == _shownNs && _taken.Contains(hash); }
+
+        void Observe(int ns, HashSet<uint> into, StateRegistry reg)
+        {
             for (int c = 0; c < LootBook.Chunks; c++)
             {
                 var e = reg.Get(StateScope.Region, ns, LootBook.Keys[c]);
-                if (e != null && !LootBook.TryParse(e.Value, c, _taken)) _log.Warn("WLOOT registry chunk " + c + " of " + Regions.Name(ns) + " unreadable");
+                if (e != null && !LootBook.TryParse(e.Value, c, into)) _log.Warn("WLOOT registry chunk " + c + " of " + IdentityNamespace.Name(ns) + " unreadable");
             }
             var cat = LiveCatalog(ns);
             if (cat == null) return;                                   // census of this scene not available yet: retried on the next change
-            foreach (var h in _taken)
+            foreach (var h in into)
             {
                 LootEntry le; if (!cat.TryGet(h, out le)) continue;
                 var obj = le.Target as Component;
@@ -447,27 +566,77 @@ namespace TS2MP.Plugin
                 if (OwnPickupRunning(obj, h)) continue;
                 Remove(obj, le.Name, "taken");
             }
-            double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency; if (ms > _observeMaxMs) _observeMaxMs = ms;
         }
 
-        // W4.1B (host, once per loaded region scene): unique valuables the host save already removed for good (Item_<name> = 1,
-        // destroy_if_was_picked; the original <Start> destroyed them here) are listed as taken, so Player 2's sandbox - which
-        // has no Item_<objectName> keys (not mirrored, WorldMirror "ReservedFuture") - removes its copy as well.
-        object _seedGm; int _seedNs = Regions.None;
-        void SeedUnique(int ns, object gm)
+        // W4.2D host: a namespace's book is seeded once per OCCUPANCY (a player entered that region; MainScene: re-seeded after
+        // every region change, i.e. every original MainScene reload), from the host's own scene-file catalog and the host's keys
+        // with the original reload rule (<Start>d__68 destroys while daysInGame < ItemDay_<name>; destroy_if_was_picked with
+        // Item_<name> = 1). This replaces the former "host scene loaded" seeding: the host may never load the region at all.
+        // WorldHost clears a region's book (and its seeded mark) when the region empties, and MainScene's at every region change.
+        double _nextSeed;
+        void SeedOccupied(double now)
         {
-            if (ReferenceEquals(gm, _seedGm) && ns == _seedNs) return;
-            var cat = LiveCatalog(ns); var book = _world.Host != null ? _world.Host.Loot : null;
-            if (cat == null || book == null || gm == null) return;
-            _seedGm = gm; _seedNs = ns;
-            int n = 0;
+            if (now < _nextSeed || _world.Host == null) return;
+            _nextSeed = now + 0.5;
+            var book = _world.Host.Loot;
+            int p1 = _world.LocalRegion, p2 = _world.Host.RegionOf(2);
+            if (p1 != Regions.None || p2 != Regions.None) SeedRegion(IdentityNamespace.MainScene, book);
+            if (p1 != Regions.None) SeedRegion(p1, book);
+            if (p2 != Regions.None && p2 != p1) SeedRegion(p2, book);
+        }
+
+        void SeedRegion(int ns, LootBook book)
+        {
+            if (book.IsSeeded(ns) || !LootRules.SupportedNamespace(ns)) return;
+            var cat = HostLootCatalogs.Get(ns);
+            if (cat == null) { if (!HostLootCatalogs.Pending(ns)) book.MarkSeeded(ns); return; }   // no catalog (no scene / unusable): nothing to seed, takes are refused
+            var ps = Ps(); var inv = ps != null ? _psInv(ps) : null;
+            if (inv == null) return;                                   // host scene loading: day count needed, retried
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            int today = _invDays(inv), n = 0, unique = 0, family = 0;
+            CampaignData keys; string err; Func<string, int> get = _get;
+            if (FbppApi.ReadModel(out keys, out err)) get = k => { int v; return keys.TryInt(k, out v) ? v : 0; };   // one model read, O(1) lookups
             foreach (var e in cat.Entries)
             {
-                if (e.Flags != LootFlags.DestroyIfPicked || _get(LootKeys.Picked(e.Name)) != 1 || book.StateOf(ns, e.Hash) != LootState.Available || !book.HasRoom(ns, e.Hash)) continue;
-                if (book.Commit(ns, e.Hash, _world.Host.Reg, _world.Host.Outbox) == ProposalCode.Accepted) n++;
+                if (book.StateOf(ns, e.Hash) != LootState.Available || !book.HasRoom(ns, e.Hash)) continue;
+                string ignore; var cls = LootRules.Classify(e, ItemFactsFor(e), out ignore);
+                if (!LootRules.PersistentlyTaken(cls, get(LootKeys.Day(e.Name)), get(LootKeys.Picked(e.Name)), today)) continue;
+                if (book.Commit(ns, e.Hash, _world.Host.Reg, _world.Host.Outbox) != ProposalCode.Accepted) continue;
+                n++; if (cls == LootClass.UniqueValuable) unique++; if ((e.Flags & LootFlags.SharedName) != 0) family++;
             }
-            if (n > 0) { _world.FlushOutbox(); _uniqueSeeded += n; _dirty = true; _log.Info("WLOOT " + n + " unique valuable(s) of " + Regions.Name(ns) + " already picked in the host save (Item_<name> = 1): listed as taken for Player 2"); }
+            book.MarkSeeded(ns); _seededRegions++;
+            double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            if (n > 0) { _world.FlushOutbox(); _uniqueSeeded += n; }
+            _dirty = true;
+            _log.Info("WLOOT " + IdentityNamespace.Name(ns) + " occupancy seeded from the host catalog: " + n + " of " + cat.Count + " object(s) already removed by the host save listed as taken (unique " + unique + ", shared-name family members " + family + ", day " + today + ", " + ms.ToString("0.0") + " ms" + (err != null ? ", key fallback: " + err : "") + ")");
         }
+
+        // W4.2D RandomFileCabinet: the ORIGINAL Start rolls its slots with UnityEngine.Random; both instances run it with the same
+        // seed (cabinet census identity + campaign day), then the global Random state is restored. No outcome is replaced.
+        static object _savedRandom; static bool _seededCabinet;
+        static void CabinetPrefix(object __instance)
+        {
+            var i = Instance; var c = __instance as Component; _seededCabinet = false;
+            if (i == null || c == null || WorldCensus.Instance == null) return;
+            try
+            {
+                uint hash; if (!WorldCensus.Instance.TryCabinetId(c, out hash)) return;
+                var ps = i.Ps(); var inv = ps != null ? i._psInv(ps) : null; if (inv == null) return;
+                int day = i._invDays(inv);
+                _savedRandom = i._rndState.GetValue(null, null);
+                i._rndInit.Invoke(null, new object[] { CabinetBook.Seed(hash, day) });
+                _seededCabinet = true; i._cabinetSeeds++;
+            }
+            catch (Exception ex) { i._log.Error("WLOOT cabinet seed failed (original random roll)", ex); }
+        }
+        static void CabinetPostfix()
+        {
+            var i = Instance;
+            if (!_seededCabinet || i == null) return;
+            _seededCabinet = false;
+            try { i._rndState.SetValue(null, _savedRandom, null); } catch (Exception ex) { i._log.Error("WLOOT Random state restore failed", ex); }
+        }
+        long _cabinetSeeds;
 
         // This instance's own original pickup of that object is in progress: its coroutine removes it.
         bool OwnPickupRunning(Component obj, uint hash)
@@ -495,7 +664,8 @@ namespace TS2MP.Plugin
                 return "WLOOT_STATS " + (_host ? "p1Claims " + _p1Claims + " p1Commits " + _p1Commits + " p1Released " + _p1Released + " pendingNow " + _claims.Count + " p2Decided " + _hostDecided + " p2Refused " + _hostRefused
                         + (b != null ? " bookCommits " + b.Commits + " bookCleared " + b.Cleared + " full " + b.Full : "")
                     : "requests " + _p2Requests + " accepted " + _p2Accepted + " refused " + _p2Refused + " lost " + _lost + " directCounts " + _directCounts)
-                    + " removed " + _removed + " notShared " + _notShared + " moneyTakes " + _moneyTakes + " uniqueTakes " + _uniqueTakes + " moneyRefused " + _moneyRefused + " persistRefused " + _persistRefused + " uniqueSeeded " + _uniqueSeeded + " takenHere " + _taken.Count + " pickMax " + _pickMaxMs.ToString("0.00") + "ms decideMax " + _decideMaxMs.ToString("0.00") + "ms observeMax " + _observeMaxMs.ToString("0.00") + "ms";
+                    + " removed " + _removed + " notShared " + _notShared + " moneyTakes " + _moneyTakes + " uniqueTakes " + _uniqueTakes + " familyTakes " + _sharedNameTakes + " moneyRefused " + _moneyRefused + " persistRefused " + _persistRefused + " seeded " + _uniqueSeeded + " liveOnlyTakes " + _liveOnlyTakes + " cabinetTakes " + _cabinetTakes + " cabinetSeeds " + _cabinetSeeds + " parcelEffects " + _parcelEffects + " seededRegions " + _seededRegions + (_host && _world.Host != null ? " cabinetRefused " + _world.Host.Loot.Cabinets.Refused + " | " + HostLootCatalogs.Summary : "")
+                    + (_host ? " shadowClaims " + _shadowClaims + " shadowCommits " + _shadowCommits : " p2Refused(local) " + _p2RefusedLocal + " heavyRefused " + _heavyRefused + " ownDrops " + _p2OwnDrops) + " takenHere " + _taken.Count + " pickMax " + _pickMaxMs.ToString("0.00") + "ms decideMax " + _decideMaxMs.ToString("0.00") + "ms observeMax " + _observeMaxMs.ToString("0.00") + "ms";
             }
         }
 

@@ -75,6 +75,17 @@ namespace TS2MP.Shared
 
         public static bool Busy(MpState s) { return s != MpState.Offline && s != MpState.Error; }
 
+        // v0.16.1: Player 2's join shows the ORIGINAL main-menu loading state (MainMenu.Deactivate hidden, ActivateLoad shown,
+        // menu input blocked; src/Plugin/JoinLoadingScreen.cs) from the join request until the original MainMenu.Continue takes
+        // over. Never for the host (a prepared host keeps a usable main menu until it loads its save itself), never outside the
+        // main menu, never after Continue was issued (the original owns the screen then). Cancel / failure / timeout = Offline
+        // or Error = the main menu is restored.
+        public static bool JoinLoadingScreen(MpState s, GameContext ctx, bool continueIssued)
+        {
+            if (ctx != GameContext.MainMenu || continueIssued) return false;
+            return s == MpState.ClientConnecting || s == MpState.ClientPreparing || s == MpState.ClientSynchronizing;
+        }
+
         public static Availability Host(GameContext ctx, MpState s, bool legacy, bool clientModeSticky)
         {
             if (legacy) return Availability.No(LegacyText);
@@ -134,6 +145,7 @@ namespace TS2MP.Shared
         double _since; bool _continued, _hostWaitSeen; string _lastReason;
         bool _hostWorldEntered, _clientWorldEntered; double _clientMenuSince = -1;
         public bool HostWorldEntered { get { return _hostWorldEntered; } }
+        public bool ContinueIssued { get { return _continued; } }   // v0.16.1: ClientAction.ContinueGame was returned for this join
 
         public Lifecycle() { State = MpState.Offline; Status = "Offline"; }
 

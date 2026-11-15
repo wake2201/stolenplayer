@@ -23,12 +23,12 @@ static class W42Tests
     {
         _logDir = Path.Combine(Path.GetTempPath(), "ts2mp-w42-tests-" + DateTime.Now.ToString("yyyyMMdd-HHmmss"));
         Directory.CreateDirectory(_logDir);
-        Run("01 first join: host world + P2 record, never P1's personal keys; spawn near Player 1 in the host's free-roam region", FirstJoin);
-        Run("02 rejoin the same campaign: exact last valid position + yaw, original position keys for the load", Rejoin);
-        Run("03 another host campaign / another save history: never the old position (first-join spawn), record kept", OtherCampaign);
-        Run("04 Player 2 reconnects in a different region than Player 1: Player 2's region only (host region untouched)", DifferentRegion);
-        Run("05 disconnect during a story mission: no exact restore (safe point / hideout), flags from original metadata", StoryMission);
-        Run("06 safe spawn fallback: host in a mission scene / host not placed -> hideout original spawn", SafeFallback);
+        Run("01 first join: host world + P2 record, never P1's personal keys; spawn from the HOST CHECKPOINT (v0.16.1)", FirstJoin);
+        Run("02 live rejoin while the host world runs: last live position + yaw (memory only), original position keys for the load", Rejoin);
+        Run("03 another host campaign / another save history: never the old position (host checkpoint)", OtherCampaign);
+        Run("04 Player 2 live-rejoins in a different region than Player 1: Player 2's region only (host region untouched)", DifferentRegion);
+        Run("05 disconnect during a story mission: no exact restore (safe point / host checkpoint), flags from original metadata", StoryMission);
+        Run("06 safe spawn fallback: checkpoint in a mission scene / unusable checkpoint -> hideout original spawn", SafeFallback);
         Run("07 invalid / stale spawn records and reports: rejected safely, never thrown, never applied", InvalidRecords);
         Run("08 solo-save protection: save data never seeded, local settings only, client write gated (source scan)", SoloSaves);
         Run("09 Player 2 inventory: host-owned record in the campaign base, P1 backpack/money/storage never copied", Inventory);
@@ -82,11 +82,14 @@ static class W42Tests
     }
 
     // ---------------------------------------------------------------- 01
+    // v0.16.1: a first join follows the HOST CHECKPOINT with the original load rule, never Player 1's live position.
+    static HostCheckpoint Cp(int region, bool savedPos, float x, float y, float z) { return new HostCheckpoint { Region = region, SavedPos = savedPos, HasPos = true, Pos = new Vec3(x, y, z), Story = 42 }; }
+
     static void FirstJoin()
     {
         string note;
-        var plan = SpawnRules.Decide(null, null, 555, Madison, new Vec3(100f, 5f, -40f), out note);
-        Expect(plan.Mode == SpawnMode.NearHost && plan.Reason == SpawnReason.FirstJoin && plan.Region == Madison && plan.HasTarget && plan.Target.X == 100f, "first join near Player 1 in Madison: " + plan);
+        var plan = SpawnRules.Decide(null, 555, Cp(Madison, true, 100f, 5f, -40f), out note);
+        Expect(plan.Mode == SpawnMode.RestoreNear && plan.Reason == SpawnReason.FirstJoin && plan.Region == Madison && plan.HasTarget && plan.Target.X == 100f, "first join at the host's saved Madison checkpoint (beside it): " + plan);
         int[] removed;
         var snap = RoundTrip(CampaignSnapshot.Build(HostSave(Madison), P2Record(), plan, 0, 555, 1, out removed));
         int v;
@@ -99,21 +102,27 @@ static class W42Tests
         Expect(snap.Data.TryInt("CurrentLocation", out v) && v == Madison && snap.Data.TryInt("Saved_Pos", out v) && v == 1 && snap.Data.Floats["XPlayer"] == 100f, "position keys = the spawn plan");
         Expect(!snap.Data.Has("TS2MP_StorageTxn") && !snap.Data.Has("TS2MP_P2History"), "no host bookkeeping");
         Expect(removed[(int)CampaignKeyClass.PlayerOwnP1] == 452 + 5 && removed[(int)CampaignKeyClass.HostStorage] == 452 * 2 + 5 && removed[(int)CampaignKeyClass.ModHost] == 3, "removal counts " + string.Join(",", Array.ConvertAll(removed, x => x.ToString())));
+        // the checkpoint comes from the host model's original position keys
+        var host = HostSave(Hillville); host.Ints["Saved_Pos"] = 1;
+        var cp = HostCheckpoint.FromModel(host);
+        Expect(cp.Region == Hillville && cp.SavedPos && cp.HasPos && cp.Pos.X == 11f && cp.Pos.Z == 13f && cp.Story == 42, "HostCheckpoint.FromModel reads CurrentLocation / Saved_Pos / XPlayer..ZPlayer / Story");
+        Expect(HostCheckpoint.LeavePointKey(Madison) == "MadisonPoint" && HostCheckpoint.LeavePointKey(Hillville) == "HillvillePoint" && HostCheckpoint.LeavePointKey(Hideout) == null, "leave point index keys of <ContinueButtonActivate>");
     }
 
     // ---------------------------------------------------------------- 02
+    // Live rejoin while the host world keeps running: the memory-only live position of this host session.
     static void Rejoin()
     {
         string note;
-        var plan = SpawnRules.Decide(Rec(555, Madison, 12f, 3f, 99f, SpawnContext.None), null, 555, Madison, new Vec3(0, 0, 0), out note);
-        Expect(plan.Mode == SpawnMode.Restore && plan.Reason == SpawnReason.Rejoin && plan.Region == Madison && plan.Target.Z == 99f && plan.Yaw == 135f, "exact restore: " + plan);
+        var plan = SpawnRules.Decide(Rec(555, Madison, 12f, 3f, 99f, SpawnContext.None), 555, Cp(Madison, true, 1, 1, 1), out note);
+        Expect(plan.Mode == SpawnMode.Restore && plan.Reason == SpawnReason.Rejoin && plan.Region == Madison && plan.Target.Z == 99f && plan.Yaw == 135f, "live restore: " + plan);
         int[] r;
         var snap = RoundTrip(CampaignSnapshot.Build(HostSave(Madison), P2Record(), plan, 0, 555, 2, out r));
-        Expect(snap.Plan.Mode == SpawnMode.Restore && snap.Plan.Yaw == 135f && snap.Data.Floats["ZPlayer"] == 99f && snap.Data.Ints["Saved_Pos"] == 1, "original LoadPlayerPosition keys carry the restore position");
+        Expect(snap.Plan.Mode == SpawnMode.Restore && snap.Plan.Yaw == 135f && snap.Data.Floats["ZPlayer"] == 99f && snap.Data.Ints["Saved_Pos"] == 1, "original LoadPlayerPosition keys carry the live position");
         // vehicle / hiding spot at the last report: never into the seat / spot
-        plan = SpawnRules.Decide(Rec(555, Hillville, 1, 2, 3, SpawnContext.InVehicle), null, 555, Madison, null, out note);
-        Expect(plan.Mode == SpawnMode.RestoreNear && plan.Region == Hillville, "vehicle -> beside it");
-        plan = SpawnRules.Decide(Rec(555, Hideout, 1, 2, 3, SpawnContext.Hiding), null, 555, Madison, null, out note);
+        plan = SpawnRules.Decide(Rec(555, Hillville, 1, 2, 3, SpawnContext.InVehicle), 555, Cp(Madison, true, 1, 1, 1), out note);
+        Expect(plan.Mode == SpawnMode.RestoreNear && plan.Region == Hillville && plan.Reason == SpawnReason.VehicleOrHiding, "vehicle -> beside it");
+        plan = SpawnRules.Decide(Rec(555, Hideout, 1, 2, 3, SpawnContext.Hiding), 555, Cp(Madison, true, 1, 1, 1), out note);
         Expect(plan.Mode == SpawnMode.RestoreNear && plan.Region == Hideout, "hiding spot -> beside it");
     }
 
@@ -121,23 +130,22 @@ static class W42Tests
     static void OtherCampaign()
     {
         string note;
-        var plan = SpawnRules.Decide(Rec(111, Madison, 12f, 3f, 99f, SpawnContext.None), null, 555, Hillville, new Vec3(7, 8, 9), out note);
-        Expect(plan.Mode == SpawnMode.NearHost && plan.Reason == SpawnReason.StaleRecord && plan.Region == Hillville, "other history -> first join near the host: " + plan);
-        plan = SpawnRules.Decide(null, null, 999, Hideout, new Vec3(1, 1, 1), out note);
-        Expect(plan.Mode == SpawnMode.NearHost && plan.Region == Hideout, "another host (no record there) -> first join");
+        var plan = SpawnRules.Decide(Rec(111, Madison, 12f, 3f, 99f, SpawnContext.None), 555, Cp(Hillville, true, 7, 8, 9), out note);
+        Expect(plan.Mode == SpawnMode.RestoreNear && plan.Reason == SpawnReason.FirstJoin && plan.Region == Hillville && plan.Target.X == 7f, "live position of another save history -> host checkpoint: " + plan);
+        plan = SpawnRules.Decide(null, 999, Cp(Hideout, false, 0, 0, 0), out note);
+        Expect(plan.Mode == SpawnMode.OriginalSpawn && plan.Region == Hideout && plan.Reason == SpawnReason.FirstJoin, "hideout checkpoint -> the hideout's original fixed spawn");
         int[] r;
         var a = CampaignSnapshot.Build(HostSave(Hideout), P2Record(), plan, 3, 999, 3, out r);
         Expect(a.Profile == 3 && a.HistoryId == 999, "snapshot names the host campaign");
-        // the record stays with its own campaign: a host never mixes P2 records of other profiles (file per profile, history id)
-        Expect(Rec(111, Madison, 0, 0, 0, 0).HistoryId != 999, "record bound to its history");
+        Expect(Rec(111, Madison, 0, 0, 0, 0).HistoryId != 999, "live record bound to its history");
     }
 
     // ---------------------------------------------------------------- 04
     static void DifferentRegion()
     {
         string note;
-        var plan = SpawnRules.Decide(Rec(555, Madison, 50f, 2f, 60f, SpawnContext.None), null, 555, Hideout, new Vec3(1, 1, 1), out note);
-        Expect(plan.Region == Madison && plan.Mode == SpawnMode.Restore, "Player 2 returns to Madison while Player 1 is at the hideout");
+        var plan = SpawnRules.Decide(Rec(555, Madison, 50f, 2f, 60f, SpawnContext.None), 555, Cp(Hideout, false, 0, 0, 0), out note);
+        Expect(plan.Region == Madison && plan.Mode == SpawnMode.Restore, "live rejoin: Player 2 returns to Madison while Player 1 is at the hideout");
         int[] r;
         var host = HostSave(Hideout);
         var snap = RoundTrip(CampaignSnapshot.Build(host, P2Record(), plan, 0, 555, 4, out r));
@@ -163,11 +171,12 @@ static class W42Tests
         string note;
         foreach (var ctx in new[] { SpawnContext.BlockSaving, SpawnContext.BlockTravel, SpawnContext.PoliceChase, SpawnContext.Caught, SpawnContext.BlockSaving | SpawnContext.InVehicle })
         {
-            var plan = SpawnRules.Decide(Rec(555, Madison, 50f, 2f, 60f, ctx), null, 555, Hideout, null, out note);
+            var plan = SpawnRules.Decide(Rec(555, Madison, 50f, 2f, 60f, ctx), 555, Cp(Hideout, false, 0, 0, 0), out note);
             Expect(plan.Mode == SpawnMode.SafePoint && plan.Reason == SpawnReason.StoryContext && plan.Region == Madison && plan.HasTarget, ctx + " -> nearest original safe point of Madison: " + plan);
         }
-        var heist = SpawnRules.Decide(Rec(555, Bank, 1, 1, 1, SpawnContext.None), null, 555, Madison, new Vec3(0, 0, 0), out note);
-        Expect(heist.Mode == SpawnMode.OriginalSpawn && heist.Reason == SpawnReason.MissionScene && heist.Region == Hideout && !heist.HasTarget, "mission scene -> hideout original spawn");
+        // a live position in a mission scene is never restored: the host checkpoint decides
+        var heist = SpawnRules.Decide(Rec(555, Bank, 1, 1, 1, SpawnContext.None), 555, Cp(Hideout, false, 0, 0, 0), out note);
+        Expect(heist.Mode == SpawnMode.OriginalSpawn && heist.Region == Hideout && !heist.HasTarget, "mission scene live position -> host checkpoint (hideout): " + heist);
         foreach (int r in new[] { 90, 91, 92, 93, 94, 95, 96, 98, -1 }) Expect(!SpawnRegions.IsFreeRoam(r), Regions.Name(r) + " is a mission/scripted scene");
         foreach (int r in new[] { 0, 1, 3, 97, 99 }) Expect(SpawnRegions.IsFreeRoam(r), Regions.Name(r) + " is free roam");
         Expect(!SpawnContextRules.IsUnsafe(SpawnContext.InVehicle | SpawnContext.Hiding), "vehicle / hiding are not story contexts");
@@ -177,14 +186,17 @@ static class W42Tests
     static void SafeFallback()
     {
         string note;
-        var p = SpawnRules.Decide(null, null, 555, Bank, new Vec3(1, 1, 1), out note);
-        Expect(p.Mode == SpawnMode.OriginalSpawn && p.Region == Hideout && p.Reason == SpawnReason.HostInMissionScene, "host in a heist -> hideout: " + p);
-        p = SpawnRules.Decide(null, null, 555, Madison, null, out note);
-        Expect(p.Mode == SpawnMode.OriginalSpawn && p.Region == Hideout, "host not placed -> hideout");
-        p = SpawnRules.Decide(null, null, 555, Regions.None, null, out note);
-        Expect(p.Region == Hideout, "host region unknown -> hideout");
-        p = SpawnRules.Decide(null, null, 555, Madison, new Vec3(float.NaN, 0, 0), out note);
-        Expect(p.Region == Hideout, "invalid host feet -> hideout");
+        var p = SpawnRules.Decide(null, 555, Cp(Bank, false, 1, 1, 1), out note);
+        Expect(p.Mode == SpawnMode.OriginalSpawn && p.Region == Hideout && p.Reason == SpawnReason.HostInMissionScene, "host checkpoint in a heist -> hideout: " + p);
+        p = SpawnRules.Decide(null, 555, new HostCheckpoint { Region = Regions.None }, out note);
+        Expect(p.Region == Hideout && p.Mode == SpawnMode.OriginalSpawn, "checkpoint region unknown -> hideout");
+        var noPos = Cp(Madison, true, 0, 0, 0); noPos.HasPos = false;
+        p = SpawnRules.Decide(null, 555, noPos, out note);
+        Expect(p.Region == Hideout && p.Mode == SpawnMode.OriginalSpawn, "Saved_Pos 1 without a usable position -> hideout (never XPlayer..ZPlayer = 0): " + p);
+        p = SpawnRules.Decide(null, 555, Cp(Hillville, false, 1, 1, 1), out note);
+        Expect(p.Region == Hideout && p.Mode == SpawnMode.OriginalSpawn, "travel checkpoint without the host's leave point -> hideout: " + p);
+        var empty = HostCheckpoint.FromModel(new CampaignData());
+        Expect(empty.Region == Regions.None && !empty.HasPos, "empty model -> no checkpoint");
     }
 
     // ---------------------------------------------------------------- 07
@@ -199,9 +211,6 @@ static class W42Tests
         var reg = Rec(555, 12345, 0, 0, 0, 0).ToBytes(); Expect(!P2SpawnRecord.TryParse(reg, out r, out err), "unknown region");
         var noid = Rec(0, Madison, 0, 0, 0, 0).ToBytes(); Expect(!P2SpawnRecord.TryParse(noid, out r, out err), "no campaign id");
         var ver = (byte[])good.Clone(); ver[0] = 9; Expect(!P2SpawnRecord.TryParse(ver, out r, out err) && err == "version", "version");
-        string note;
-        var plan = SpawnRules.Decide(null, "main: size 3, backup: missing", 555, Madison, new Vec3(1, 1, 1), out note);
-        Expect(plan.Reason == SpawnReason.InvalidRecord && plan.Mode == SpawnMode.NearHost, "unusable record -> first-join spawn");
         var rnd = new Random(5);
         for (int i = 0; i < 3000; i++) { var b = new byte[rnd.Next(0, 60)]; rnd.NextBytes(b); P2SpawnRecord.TryParse(b, out r, out err); P2PosReport pr; P2PosReport.TryParse(b, out pr); }
         P2PosReport rep;
@@ -239,7 +248,7 @@ static class W42Tests
     static void Inventory()
     {
         string note; int[] r;
-        var plan = SpawnRules.Decide(null, null, 555, Madison, new Vec3(1, 1, 1), out note);
+        var plan = SpawnRules.Decide(null, 555, Cp(Madison, true, 1, 1, 1), out note);
         var empty = P2Inventory.Initial(false);
         var snap = RoundTrip(CampaignSnapshot.Build(HostSave(Madison), empty, plan, 0, 555, 9, out r));
         int v;
@@ -260,7 +269,7 @@ static class W42Tests
     static void Codecs()
     {
         string note; int[] r;
-        var plan = SpawnRules.Decide(null, null, 555, Madison, new Vec3(1, 2, 3), out note);
+        var plan = SpawnRules.Decide(null, 555, Cp(Madison, true, 1, 2, 3), out note);
         var big = HostSave(Madison);
         for (int i = 0; i < 1300; i++) big.Ints["Rating_mission_flag_" + i] = i;
         var s = CampaignSnapshot.Build(big, P2Record(), plan, 0, 555, 77, out r);
@@ -289,7 +298,7 @@ static class W42Tests
 
     static void Transport()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 27 && ProtocolInfo.ModVersion == "0.16.0", "protocol 27 / mod 0.16.0");
+        Expect(ProtocolInfo.ProtocolVersion == 28 && ProtocolInfo.ModVersion == "0.17.0", "protocol 28 / mod 0.17.0");
         Expect((byte)MsgType.CampaignSnapshot == 16 && (byte)MsgType.CampaignRequest == 17, "message ids");
         int port = _port++;
         string code = JoinAuth.NewCode();
@@ -305,7 +314,7 @@ static class W42Tests
             string note; int[] rm;
             var big = HostSave(Madison);
             for (int i = 0; i < 2500; i++) big.Ints["Rating_mission_flag_" + i] = i;
-            var snap = CampaignSnapshot.Build(big, P2Record(), SpawnRules.Decide(null, null, 555, Madison, new Vec3(1, 2, 3), out note), 0, 555, 4242, out rm);
+            var snap = CampaignSnapshot.Build(big, P2Record(), SpawnRules.Decide(null, 555, Cp(Madison, true, 1, 2, 3), out note), 0, 555, 4242, out rm);
             var body = snap.Encode();
             Expect(body.Length > 65535, "body larger than a ushort length prefix (" + body.Length + " B)");
             var w = new NetDataWriter(); w.Put((byte)MsgType.CampaignSnapshot); w.Put(body);

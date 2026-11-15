@@ -27,7 +27,7 @@ static class W42CTests
         Run("06 region reload semantics: furniture resets with the region (last member leaves / alone reload), never persisted", Reload);
         Run("07 capacity + packets: Madison-sized region (1142 leaves) fits, 1201st Busy; page <= 804 B; rate limit 8/s", Capacity);
         Run("08 committed-page cache: only changed pages parsed, exact diffs, prune moves across pages, clear, bad pages", PageCache);
-        Run("09 loot safety: opening furniture writes only the door page (no loot / item / XP keys); random-cabinet loot stays excluded", LootSafety);
+        Run("09 loot safety: opening furniture writes only the door page (no loot / item / XP keys); random-cabinet loot via the seeded roll (W4.2D)", LootSafety);
         Run("10 plugin wiring: bridge + sync use the shared rule, inactive leaves snap, no new side effects, protocol unchanged", Wiring);
         Console.WriteLine(_failed == 0 ? "W42C TESTS PASSED (" + _passed + ")" : "W42C TESTS FAILED: " + _failed + " of " + (_passed + _failed));
         return _failed == 0 ? 0 : 1;
@@ -396,7 +396,8 @@ static class W42CTests
             Expect(!k.StartsWith("wloot", StringComparison.Ordinal) && !k.StartsWith("Item", StringComparison.Ordinal) && k.IndexOf("XP", StringComparison.Ordinal) < 0, "no loot / item / XP key");
         }
         // opening = presentation of the leaf; taking the contents stays the separate loot path (W4.1 lootTxn, Madison subset)
-        Expect(LootRules.SupportedNamespace(Madison) && !LootRules.SupportedNamespace(Hillville) && !LootRules.SupportedNamespace(Hideout), "shared loot categories / regions not expanded in this milestone");
+        Expect(LootRules.SupportedNamespace(Madison) && LootRules.SupportedNamespace(Hillville) && LootRules.SupportedNamespace(Hideout), "W4.2D: loot shared in every region (host scene-file catalogs)");
+        Expect((LootRules.Blocking & LootFlags.RandomCabinet) == 0 && LootRules.Exclusion(LootFlags.RandomCabinet) != null, "W4.2D: cabinet loot shared through the seeded roll + one outcome per slot (CabinetBook)");
         Expect(LootRules.Exclusion(LootFlags.RandomCabinet) != null, "RandomFileCabinet contents (rolled per instance) stay outside shared loot: no shared identity -> no double grant");
         Expect(LootRules.Exclusion(LootFlags.RandomCabinet | LootFlags.NoXp) != null && LootRules.Exclusion(LootFlags.None) == null, "flag rule");
         // the census marks every Pickupable below a RandomFileCabinet (its own transform + every referenced variant)
@@ -420,7 +421,7 @@ static class W42CTests
         foreach (var bad in new[] { "MakeNoise", "AlertNPC", "Mission_Complete", "AdvanceStory", "currentXPPoints", "item_amount", "SetActive(", "Destroy(", "SPrefs", "FBPP", "FindObjectsOfType", "GetComponentsInChildren" })
             Expect(sync.IndexOf(bad, StringComparison.Ordinal) < 0, "sync never calls " + bad);
         Expect(File.ReadAllText(Path.Combine(PluginDir(), "WorldObjectSync.cs")).Contains("if (region == Regions.None || !ObjectStateRules.SupportedNamespace(region)) return;   // no work elsewhere"), "no per-frame work outside shared regions");
-        Expect(ProtocolInfo.ProtocolVersion == 27 && ProtocolInfo.ModVersion == "0.16.0", "protocol 27 (furniture wire unchanged; 27 = W4.1B shared money) / mod 0.16.0 (both instances must match)");
+        Expect(ProtocolInfo.ProtocolVersion == 28 && ProtocolInfo.ModVersion == "0.17.0", "protocol 28 (furniture wire unchanged; 27 = W4.1B shared money) / mod 0.16.1 (both instances must match)");
         Expect(Validation.Check(new Hello { ModVersion = "0.15.0", ClientNonce = new byte[JoinAuth.NonceBytes], InstanceId = "x" }, null, null, "h", false) == RejectCode.ModVersionMismatch, "a 0.15.0 peer (personal Player-2 money) is rejected at the handshake");
         Expect(Validation.Check(new Hello { ModVersion = "0.14.4", ClientNonce = new byte[JoinAuth.NonceBytes], InstanceId = "x" }, null, null, "h", false) == RejectCode.ModVersionMismatch, "a 0.14.4 peer (furniture local) is rejected at the handshake");
     }

@@ -572,7 +572,7 @@ static class W42BTests
     // ---------------------------------------------------------------- 17
     static void CodecsAndScans()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 27 && ProtocolInfo.ModVersion == "0.16.0", "protocol 27 / mod 0.16.0");
+        Expect(ProtocolInfo.ProtocolVersion == 28 && ProtocolInfo.ModVersion == "0.17.0", "protocol 28 / mod 0.17.0");
         var t = new ObjectTxnRequest { Txn = 5, Op = ObjectOp.Reserve, Kind = L, Ns = Madison, Hash = 7, State = 1, BaseVer = 3, Epoch = 9 }; ObjectTxnRequest t2;
         Expect(t.ToBytes().Length == ObjectTxnRequest.Bytes && ObjectTxnRequest.TryParse(t.ToBytes(), out t2) && t2.Op == ObjectOp.Reserve && t2.Epoch == 9 && t2.BaseVer == 3, "txn 19 B");
         var bad = t.ToBytes(); bad[4] = 9; Expect(!ObjectTxnRequest.TryParse(bad, out t2), "unknown op refused");
@@ -699,7 +699,7 @@ static class W42BTests
     static void DrivingCamera()
     {
         string note; int[] r;
-        var plan = SpawnRules.Decide(null, null, 555, Madison, new Vec3(1f, 2f, 3f), out note);
+        var plan = SpawnRules.Decide(null, 555, new HostCheckpoint { Region = Madison, SavedPos = true, HasPos = true, Pos = new Vec3(1f, 2f, 3f), Story = 42 }, out note);
         var host = new CampaignData(); host.Ints["Story"] = 3; host.Ints["CurrentLocation"] = Madison; host.Bools["TPP"] = false;   // Player 1 drives in first person
         var p2 = P2Inventory.Initial(false); p2.Id = 555;
         var snap = CampaignSnapshot.Build(host, p2, plan, 0, 555, 1, out r);
@@ -840,7 +840,7 @@ static class W42BTests
         Expect(pb.IndexOf("SaveGuard.PrepareTestHostSave(dir, out why)", StringComparison.Ordinal) > 0 && pb.IndexOf("SaveGuard.PrepareTestHostSave", StringComparison.Ordinal) < pb.IndexOf("_runner.EnableTestCampaign(dir", StringComparison.Ordinal)
             && pb.Contains("_runner.RequestQuit("), "host: armed (fail closed) before the test records are enabled");
         int cp = menu.IndexOf("void Prepare(SessionNode node", StringComparison.Ordinal);
-        string cb = menu.Substring(cp, menu.IndexOf("void ContinueOriginal()", cp, StringComparison.Ordinal) - cp);
+        string cb = menu.Substring(cp, menu.IndexOf("bool ContinueOriginal()", cp, StringComparison.Ordinal) - cp);
         Expect(cb.IndexOf("SelectClientSandbox(", StringComparison.Ordinal) < cb.IndexOf("SaveGuard.Arm(out why)", StringComparison.Ordinal)
             && cb.IndexOf("_runner.EnableTestCampaign(dataDir, \"Player 2\")", StringComparison.Ordinal) < cb.IndexOf("_runner.AttachSession(node)", StringComparison.Ordinal), "client: test sandbox chosen before arming, test records before the systems are built");
         Expect(menu.Contains("node.TestCampaign = _lc.TestPrepared && SaveGuard.DevHost && _runner.TestCampaignActive;"), "the flag is only sent by a prepared, isolated test host");

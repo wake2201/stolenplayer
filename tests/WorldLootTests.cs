@@ -34,8 +34,8 @@ static class WorldLootTests
         Run("12 P1 unsaved loot -> CarBox deposit -> P2 withdraw (W3.4 prerequisite) -> unsaved exit: no duplicate", TransferViaCarBox);
         Run("13 saved vs unsaved quantities: a saved unit is consumed first, never attributed to the new pickup", SavedFirst);
         Run("14 identical item types in different world instances stay separate (ids, keys, provenance)", SameTypeDifferentObjects);
-        Run("15 shared-name family: excluded, never merged into one state entry", SharedNames);
-        Run("16 exclusions: flags, item facts, unsupported region, no host catalog, digest mismatch", Exclusions);
+        Run("15 shared-name family (v0.16.1): shared by id, never merged, family key + live-object persistence", SharedNames);
+        Run("16 exclusions (W4.2D): heavy / story / identity-less only; LiveOnly; every region; no host catalog; digest mismatch", Exclusions);
         Run("17 p2inv migration v3 -> v4, world list round trip, corruption rejected, other profile refused", Migration);
         Run("18 save-history isolation: a world take of another history is never replayed", HistoryIsolation);
         Run("19 codecs: lootTxn 20 B, registry chunks (cap, wrong chunk), fuzz never throws", Codecs);
@@ -378,6 +378,7 @@ static class WorldLootTests
         Expect(s.LastAttribution == Attribution.WorldTake && s.Book.World[s.Book.World.Count - 1].Take.Hash == b.Hash, "provenance names P1's own pickup (B), not P2's (A)");
     }
 
+    // v0.16.1: shared-name families are shared by census id (formerly excluded): two ids, two book entries, one family key.
     static void SharedNames()
     {
         var c = new LootCatalog(Ns);
@@ -385,26 +386,48 @@ static class WorldLootTests
         c.Seal(null); c.Digest = 1;
         LootEntry e1, e2, e3; c.TryGet(1, out e1); c.TryGet(2, out e2); c.TryGet(3, out e3);
         Expect(c.Count == 3 && e1 != e2, "two physical objects keep two ids");
-        Expect((e1.Flags & LootFlags.SharedName) != 0 && (e2.Flags & LootFlags.SharedName) != 0 && e3.Flags == LootFlags.None && c.Eligible == 1 && c.SharedNameObjects == 2, "shared-name family flagged");
+        Expect((e1.Flags & LootFlags.SharedName) != 0 && (e2.Flags & LootFlags.SharedName) != 0 && e3.Flags == LootFlags.None && c.Eligible == 3 && c.SharedNameObjects == 2, "shared-name family flagged and eligible");
         string why;
-        Expect(LootDecision.DecideP2(1, 0, true, c, 1, 1, 9, Sim.Facts(9), LootState.Available, true, 0, out why) == ProposalCode.Invalid && why.Contains("SharedName"), "excluded in Phase B: " + why);
+        Expect(LootDecision.DecideP2(1, 0, true, c, 1, 1, 9, Sim.Facts(9), LootState.Available, true, 0, out why) == ProposalCode.Accepted, "family member accepted: " + why);
+        // two members are two separate takes in the book (never merged), the family key is written once (never backwards)
+        var reg = StateRegistry.CreateHost(9); var outbox = new List<StateEntry>(); var book = new LootBook();
+        Expect(book.Commit(Ns, 1, reg, outbox) == ProposalCode.Accepted && book.StateOf(Ns, 2) == LootState.Available, "taking member 1 leaves member 2 available");
+        Expect(book.Commit(Ns, 2, reg, outbox) == ProposalCode.Accepted && book.TakenCount(Ns) == 2, "member 2 is its own take");
+        var keys = new Store(); LootKeys.Apply(keys, new LootTake { Name = "Pot", Day = 20, ItemFlag = true }); LootKeys.Apply(keys, new LootTake { Name = "Pot", Day = 18, ItemFlag = true });
+        Expect(keys.Get(LootKeys.Day("Pot")) == 20 && keys.Get(LootKeys.Picked("Pot")) == 1, "one family key, max day (vanilla per-name meaning)");
+        // persistence: while the host has the scene loaded the live object decides; across a reload the family key does
+        Expect(!LootRules.PersistentlyTaken(LootClass.Valuable, true, true, true, 20, 1, 15), "sibling wrote the key, this member still exists on the host -> available (vanilla allows it until reload)");
+        Expect(LootRules.PersistentlyTaken(LootClass.Valuable, true, true, false, 20, 1, 15), "host object destroyed -> taken");
+        Expect(LootRules.PersistentlyTaken(LootClass.Valuable, true, false, false, 20, 1, 15), "no live host scene -> original reload rule: key destroys every member");
+        Expect(!LootRules.PersistentlyTaken(LootClass.Valuable, true, false, false, 15, 1, 15), "respawn day reached -> available again");
+        Expect(LootRules.PersistentlyTaken(LootClass.Valuable, false, true, true, 20, 0, 15), "non-family object: its own key decides as before");
         Expect(!c.Add(1, "Other", 9, LootFlags.None, null, 0), "same hash twice is never a second entry");
         c.Seal(null); c.TryGet(1, out e1); Expect((e1.Flags & LootFlags.Ambiguous) != 0, "duplicate hash -> ambiguous, never resolves to a merged entry");
+        Expect(LootDecision.DecideP2(2, 1, true, c, 1, 1, 9, Sim.Facts(9), LootState.Available, true, 0, out why) == ProposalCode.Invalid && why.Contains("Ambiguous"), "ambiguous stays excluded: " + why);
     }
 
+    // W4.2D: only heavy, story, dropped and identity-less objects stay excluded; contract / parcel / cabinet / no-key objects and
+    // tools are shared (LiveOnly = no respawn key); every census region is supported (host scene-file catalog).
     static void Exclusions()
     {
-        foreach (var f in new[] { LootFlags.Heavy, LootFlags.Money, LootFlags.StoryPick, LootFlags.StoryName, LootFlags.Contract, LootFlags.Parcel, LootFlags.RandomCabinet, LootFlags.DeleteIfPref, LootFlags.NoXp, LootFlags.Dropped, LootFlags.NoDays, LootFlags.NeverDestroy })
+        foreach (var f in new[] { LootFlags.Heavy, LootFlags.Money, LootFlags.StoryPick, LootFlags.StoryName, LootFlags.StoryCar, LootFlags.Dropped })
         {
             var c = new LootCatalog(Ns); c.Add(1, "Thing_" + f, 9, f, null, 0); c.Seal(null); c.Digest = 1; string why;
             Expect(LootDecision.DecideP2(1, 0, true, c, 1, 1, 9, Sim.Facts(9), LootState.Available, true, 0, out why) == ProposalCode.Invalid, f + " excluded");
         }
+        foreach (var f in new[] { LootFlags.Contract, LootFlags.Parcel, LootFlags.RandomCabinet, LootFlags.DeleteIfPref, LootFlags.NoXp, LootFlags.NoDays, LootFlags.NeverDestroy, LootFlags.CantPick })
+        {
+            var c = new LootCatalog(Ns); c.Add(1, "Thing_" + f, 9, f, null, 0); c.Seal(null); c.Digest = 1; string why;
+            Expect(LootDecision.DecideP2(1, 0, true, c, 1, 1, 9, Sim.Facts(9), LootState.Available, true, 0, out why) == ProposalCode.Accepted, f + " shared since W4.2D: " + why);
+        }
         var n = new LootCatalog(Ns); n.Add(1, "12", 9, LootFlags.None, null, 0); n.Seal(null);
         LootEntry ne; n.TryGet(1, out ne); Expect((ne.Flags & LootFlags.NumericName) != 0, "numeric name excluded (Item_<name> would hit a backpack count key)");
         var ok = new LootCatalog(Ns); ok.Add(1, "Lamp", 9, LootFlags.None, null, 0); ok.Seal(null); ok.Digest = 1; string w;
-        var bad = new[] { new ItemFacts { Known = true, Tool = true, Value = 50, AddXp = 5 }, new ItemFacts { Known = true, Story = true, Value = 50, AddXp = 5 }, new ItemFacts { Known = true, Value = 0, AddXp = 5 },
-                          new ItemFacts { Known = true, Value = 50, AddXp = 0.5f }, new ItemFacts { Known = true, Heavy = true, Value = 50, AddXp = 5 }, new ItemFacts { Known = false } };
+        var bad = new[] { new ItemFacts { Known = true, Story = true, Value = 50, AddXp = 5 }, new ItemFacts { Known = true, Heavy = true, Value = 50, AddXp = 5 }, new ItemFacts { Known = false },
+                          new ItemFacts { Known = true, Drone = true, Value = 50, AddXp = 5 }, new ItemFacts { Known = true, Mission = true, Value = 50, AddXp = 5 }, new ItemFacts { Known = true, Special = true, Value = 50, AddXp = 5 } };
         foreach (var fx in bad) Expect(LootDecision.DecideP2(1, 0, true, ok, 1, 1, 9, fx, LootState.Available, true, 0, out w) == ProposalCode.Invalid, "item facts excluded: " + w);
+        var liveOnly = new[] { new ItemFacts { Known = true, Tool = true, Value = 50, AddXp = 5 }, new ItemFacts { Known = true, Value = 0, AddXp = 5 }, new ItemFacts { Known = true, Value = 50, AddXp = 0.5f } };
+        foreach (var fx in liveOnly) { LootClass lc; Expect(LootDecision.DecideP2(1, 0, true, ok, 1, 1, 9, fx, LootState.Available, true, 0, false, out lc, out w) == ProposalCode.Accepted && lc == LootClass.LiveOnly, "no respawn key -> LiveOnly: " + w); }
         Expect(LootRules.XpAdd(0.5f) == 0 && LootRules.XpAdd(1.5f) == 2 && LootRules.XpAdd(2.5f) == 2, "banker's rounding like Mathf.RoundToInt");
         Expect(LootRules.RespawnDays(301, false) == 5 && LootRules.RespawnDays(201, false) == 4 && LootRules.RespawnDays(101, false) == 3 && LootRules.RespawnDays(1, false) == 2 && LootRules.RespawnDays(0, false) == 0 && LootRules.RespawnDays(0, true) == 5, "SetDayRespawn tiers");
         Expect(LootDecision.DecideP2(1, 0, true, null, 1, 1, 9, Sim.Facts(9), LootState.Available, true, 0, out w) == ProposalCode.NotAuthorized && w.Contains("catalog"), "host without a verified catalog refuses (no client metadata trusted)");
@@ -412,7 +435,8 @@ static class WorldLootTests
         Expect(LootDecision.DecideP2(1, 0, false, ok, 1, 1, 9, Sim.Facts(9), LootState.Available, true, 0, out w) == ProposalCode.NotAuthorized, "requester not in the region");
         Expect(LootDecision.DecideP2(1, 0, true, ok, 1, 1, 10, Sim.Facts(9), LootState.Available, true, 0, out w) == ProposalCode.Invalid, "item type mismatch refused");
         var hill = new LootCatalog(97); hill.Add(1, "Lamp", 9, LootFlags.None, null, 0); hill.Seal(null); hill.Digest = 1;
-        Expect(LootDecision.DecideP2(1, 0, true, hill, 1, 1, 9, Sim.Facts(9), LootState.Available, true, 0, out w) == ProposalCode.NotAuthorized && !LootRules.SupportedNamespace(IdentityNamespace.MainScene), "unsupported region / MainScene");
+        Expect(LootDecision.DecideP2(1, 0, true, hill, 1, 1, 9, Sim.Facts(9), LootState.Available, true, 0, out w) == ProposalCode.Accepted && LootRules.SupportedNamespace(IdentityNamespace.MainScene), "Hillville / MainScene supported (W4.2D)");
+        Expect(!LootRules.SupportedNamespace(IdentityNamespace.None) && !LootRules.SupportedNamespace(12345), "no unknown namespace");
         Expect(LootDecision.DecideP2(1, 0, true, ok, 1, 1, 9, Sim.Facts(9), LootState.Available, true, 0, out w) == ProposalCode.Accepted, "the eligible case is accepted");
     }
 

@@ -2,10 +2,10 @@
 //
 // HOST: on every client connection (after ClientReady) the host builds ONE CampaignSnapshot from its live FBPP model
 // (FBPP._latestData = what FBPP.GetSaveFileAsJson serialises; verified IL), filtered by CampaignPolicy, with Player 2's
-// host-owned record (P2Inventory) and a spawn plan (SpawnRules) from p2spawn-<profile>.dat (host data folder, atomic
-// write + .bak, background writer). Player 2's position reports ("p2pos" proposals, every few seconds while the position
-// is valid, plus one at every exit to the main menu) update that record; it is written at most every 5 s, at disconnect
-// and at shutdown - never only at disconnect (crash / network loss keep the last periodic write).
+// host-owned record (P2Inventory) and a spawn plan (SpawnRules). v0.16.1: the plan follows the HOST CHECKPOINT (its saved
+// CurrentLocation / Saved_Pos / XPlayer..ZPlayer + its original leave point) with the original load rule; Player 2's position
+// reports ("p2pos" proposals) only keep a MEMORY-ONLY live position for a rejoin while this host session's world keeps
+// running. Nothing is written to disk any more; the retired p2spawn-<profile>.dat files are left untouched and never read.
 // CLIENT: receives the snapshot in the main menu, refuses it unless the save isolation is armed and verified, writes it
 // into the SANDBOX save with the original FBPP.OverwriteLocalSaveFile (WriteToSaveFile + reload; verified IL) and verifies
 // the reload. Only then may the original MainMenu.Continue run (Harmony prefix: blocked otherwise while this process is
@@ -42,8 +42,10 @@ namespace TS2MP.Plugin
         Func<object, int> _smStory; Func<object, float> _pcbYaw; Action<object, float> _pcbSetYaw;
 
         // ---- host ----
-        FleetStore _store; FleetWriter _writer; int _storeProfile = int.MinValue, _storeHistory;
-        P2SpawnRecord _rec; string _recErr; bool _dirty; double _nextWrite; double _requestAt = -1, _lastRequestServed = -100;
+        int _liveProfile = int.MinValue, _liveHistory; bool _liveBound;
+        P2SpawnRecord _rec;   // v0.16.1: Player 2's live position in THIS host session (memory only)
+        Func<object, object> _gmLeave;
+        double _requestAt = -1, _lastRequestServed = -100;
         long _reports, _snapshots, _requests;
 
         // ---- client ----
@@ -68,6 +70,7 @@ namespace TS2MP.Plugin
             _pcbYaw = Fast.Getter<float>(pcb, "yaw"); _pcbSetYaw = Fast.Call<float>(pcb, "SetYaw");
             _smScript = Fast.Getter<object>(sm, "currentStoryScript"); _smStory = Fast.Getter<int>(sm, "story");
             _ssBlockSave = Fast.Getter<bool>(ss, "block_saving"); _ssBlockAll = Fast.Getter<bool>(ss, "block_all_buttons");
+            _gmLeave = Fast.Getter<object>(gm, "leavePoints");   // GameObject[] set by <ContinueButtonActivate> IL_00ee-00f8 (tag "LeavePoint")
             _ok = _gmPs != null && _gmLoaded != null && _psCC != null && _psInVeh != null && _pmbGrounded != null && _psPMB != null && FbppApi.Ok;
             if (!_ok) { _log.Error("CAMPAIGN original API not found (GameManager/PlayerScript/FBPP): campaign bootstrap disabled"); return; }
             if (_host)
@@ -90,7 +93,7 @@ namespace TS2MP.Plugin
                 if (!InstallClientPatches()) { _ok = false; _log.Error("CAMPAIGN client patches failed: Player 2 cannot load a host campaign safely (join will time out)"); return; }
             }
             Instance = this;
-            _log.Info("CAMPAIGN ready (" + (_host ? "host: campaign snapshots + Player-2 spawn store" : "client: host campaign -> sandbox, original Continue gated, spawn plan + position reports") + ")");
+            _log.Info("CAMPAIGN ready (" + (_host ? "host: campaign snapshots + Player-2 spawn from the host checkpoint (live position memory only)" : "client: host campaign -> sandbox, original Continue gated, spawn plan + position reports") + ")");
         }
 
         static double Now { get { return Time.realtimeSinceStartup; } }
@@ -102,42 +105,22 @@ namespace TS2MP.Plugin
         }
 
         // =================================================================== host
-        void EnsureStore()
+        // v0.16.1: binds the memory-only live position to the host campaign (profile + Player-2 save history). A new campaign
+        // (other profile / new game) drops it. Retired p2spawn-<profile>.dat files are only noticed (File.Exists), never read,
+        // renamed or deleted.
+        void EnsureLive()
         {
             var p2 = Player2Sync.Instance;
             if (p2 == null || !p2.HostBookReady) return;
             int profile = p2.HostProfile, hist = p2.HostHistoryId;
-            if (profile == _storeProfile && hist == _storeHistory && _store != null) return;
-            if (_writer != null) { if (_dirty) _writer.Queue(_rec.ToBytes()); _writer.Flush(2000); }
-            _storeProfile = profile; _storeHistory = hist; _dirty = false;
-            _store = new FleetStore(Path.Combine(_dataDir, "p2spawn-" + profile + ".dat"));
-            _writer = new FleetWriter(_store);
-            _rec = null; _recErr = null;
-            string err1 = "missing", err2 = "missing";
-            foreach (var path in new[] { _store.Path, _store.Path + ".bak" })
-            {
-                if (!File.Exists(path)) continue;
-                P2SpawnRecord r; string err;
-                try { if (P2SpawnRecord.TryParse(File.ReadAllBytes(path), out r, out err)) { _rec = r; break; } }
-                catch (Exception ex) { err = ex.Message; }
-                if (path == _store.Path) err1 = err; else err2 = err;
-            }
-            if (_rec == null && (File.Exists(_store.Path) || File.Exists(_store.Path + ".bak")))
-            {
-                _recErr = "main: " + err1 + ", backup: " + err2;
-                string q = null; try { q = _store.Quarantine("invalid"); } catch (Exception ex) { _log.Warn("P2SPAWN quarantine of an invalid record failed: " + ex.Message); }
-                _log.Warn("P2SPAWN record of profile " + profile + " unusable (" + _recErr + "): kept as " + q + "; Player 2 gets a first-join spawn");
-            }
-            else if (_rec != null && _rec.HistoryId != hist)
-            {
-                string q = null; try { q = _store.Quarantine("stale"); } catch (Exception ex) { _log.Warn("P2SPAWN quarantine of a stale record failed: " + ex.Message); }
-                _log.Warn("P2SPAWN record of profile " + profile + " belongs to another save history (record " + _rec.HistoryId + ", campaign " + hist + "): kept as " + q + "; Player 2 gets a first-join spawn");
-                _recErr = null; var stale = _rec; _rec = null;
-                _staleNote = stale;   // SpawnRules sees it as stale (no exact restore into another history)
-            }
-            _log.Info("P2SPAWN store " + _store.Path + " campaign profile=" + profile + " history=" + hist + " record=" + (_rec != null ? Regions.Name(_rec.Region) + " #" + _rec.Seq + " ctx=" + _rec.Context : "none"));
+            if (_liveBound && profile == _liveProfile && hist == _liveHistory) return;
+            if (_liveBound && _rec != null) _log.Info("P2SPAWN host campaign changed (profile " + _liveProfile + " -> " + profile + ", history " + _liveHistory + " -> " + hist + "): Player 2's live position dropped");
+            _liveBound = true; _liveProfile = profile; _liveHistory = hist; _rec = null;
+            string legacy = Path.Combine(_dataDir, "p2spawn-" + profile + ".dat");
+            bool old = false; try { old = File.Exists(legacy) || File.Exists(legacy + ".bak"); } catch { }
+            _log.Info("P2SPAWN campaign profile=" + profile + " history=" + hist + ": Player 2 spawns from the host checkpoint; live position kept in memory for this host session only"
+                + (old ? " (retired record " + legacy + " left untouched, not used)" : ""));
         }
-        P2SpawnRecord _staleNote;
 
         int HostStory()
         {
@@ -174,9 +157,9 @@ namespace TS2MP.Plugin
         void SendSnapshot(string why)
         {
             long t0 = Stopwatch.GetTimestamp();
-            EnsureStore();
+            EnsureLive();
             var p2 = Player2Sync.Instance;
-            if (p2 == null || !p2.HostBookReady || _store == null)
+            if (p2 == null || !p2.HostBookReady || !_liveBound)
             {
                 // W4.2B.1 defense in depth: the readiness gate (HostReadiness, now also in launcher mode) normally prevents this.
                 // Instead of leaving the client waiting forever, send the snapshot as soon as the record is bound.
@@ -184,12 +167,12 @@ namespace TS2MP.Plugin
                 _snapshotDeferred = true; _deferredWhy = why; return;
             }
             _snapshotDeferred = false;
-            Vec3 feet; float yaw; bool hasFeet = LocalFeet(out feet, out yaw);
             int hostRegion = _world.LocalRegion;
-            string note;
-            var plan = SpawnRules.Decide(_rec ?? _staleNote, _recErr, p2.HostHistoryId, hostRegion, hasFeet ? feet : (Vec3?)null, out note);
             CampaignData model; string err;
             if (!FbppApi.ReadModel(out model, out err)) { _log.Error("CAMPAIGN snapshot NOT sent (" + why + "): host FBPP model unreadable (" + err + ")"); return; }
+            var cp = Checkpoint(model, hostRegion);
+            string note;
+            var plan = SpawnRules.Decide(_rec, p2.HostHistoryId, cp, out note);
             int[] removed;
             // W4.1B: the client sandbox starts with the shared balance (live host money; the saved key if the wallet is not up yet)
             int shared; var wal = WalletSync.Instance;
@@ -199,39 +182,58 @@ namespace TS2MP.Plugin
             _w.Reset(); _w.Put((byte)MsgType.CampaignSnapshot); _w.Put(body);   // raw body: no 64 KB length prefix (LiteNetLib fragments it)
             _node.Send(_w, DeliveryMethod.ReliableOrdered, 0);
             _snapshots++; _lastRequestServed = Now;
+            var ic = System.Globalization.CultureInfo.InvariantCulture;
             _log.Info("CAMPAIGN snapshot #" + snap.Id.ToString("X8") + " sent (" + why + "): profile " + snap.Profile + " history " + snap.HistoryId + " story " + snap.HostStory
                 + " keys " + snap.Data.Count + "/" + model.Count + " (not sent: P1-personal " + removed[(int)CampaignKeyClass.PlayerOwnP1] + ", host storage/cargo " + removed[(int)CampaignKeyClass.HostStorage]
                 + ", position " + removed[(int)CampaignKeyClass.Position] + ", mod " + removed[(int)CampaignKeyClass.ModHost] + ", local prefs " + removed[(int)CampaignKeyClass.LocalPreference] + ")"
-                + " P2 record items " + (p2.HostRecord != null ? p2.HostRecord.Items.Count : 0) + " | spawn " + plan + " - " + note
+                + " P2 record items " + (p2.HostRecord != null ? p2.HostRecord.Items.Count : 0)
+                + " | host checkpoint " + Regions.Name(cp.Region) + " Saved_Pos " + (cp.SavedPos ? 1 : 0) + (cp.HasPos ? " pos (" + cp.Pos.X.ToString("0.0", ic) + " " + cp.Pos.Y.ToString("0.0", ic) + " " + cp.Pos.Z.ToString("0.0", ic) + ")" : "") + (cp.HasLeavePoint ? " leavePoint" : "")
+                + " | spawn " + plan + " - " + note
                 + " | " + body.Length + " B, " + ((Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency).ToString("0.0") + " ms (host region " + Regions.Name(hostRegion) + ")");
         }
 
+        // v0.16.1: the host checkpoint = the position keys of the host's live model (written only right before a save, see
+        // src/Shared/Campaign.cs) + for a travel checkpoint (Saved_Pos 0) the host's own original leave point, read only when
+        // the host is in that region (GameManager.leavePoints[MadisonPoint / HillvillePoint], the spot its car arrived at).
+        HostCheckpoint Checkpoint(CampaignData model, int hostRegion)
+        {
+            var cp = HostCheckpoint.FromModel(model);
+            string key = HostCheckpoint.LeavePointKey(cp.Region); int idx;
+            var gm = _world.GameManagerObject;
+            if (!cp.SavedPos && key != null && cp.Region == hostRegion && gm != null && _gmLeave != null && model.TryInt(key, out idx))
+            {
+                var arr = _gmLeave(gm) as GameObject[];
+                if (arr != null && idx >= 0 && idx < arr.Length && arr[idx] != null)
+                { var p = arr[idx].transform.position; cp.LeavePoint = new Vec3(p.x, p.y, p.z); cp.HasLeavePoint = true; }
+            }
+            return cp;
+        }
+
+        // Live position of Player 2 for a rejoin while this host session's world keeps running (memory only).
         ProposalCode OnPositionReport(P2PosReport r)
         {
-            EnsureStore();
+            EnsureLive();
             var p2 = Player2Sync.Instance;
-            if (_store == null || p2 == null || p2.HostHistoryId == 0) return ProposalCode.NotAuthorized;
+            if (!_liveBound || p2 == null || p2.HostHistoryId == 0) return ProposalCode.NotAuthorized;
             uint seq = _rec != null ? _rec.Seq + 1 : 1;
             bool regionChanged = _rec == null || _rec.Region != r.Region || _rec.Context != r.Context;
             _rec = new P2SpawnRecord { HistoryId = p2.HostHistoryId, Region = r.Region, Pos = r.Pos, Yaw = r.Yaw, Context = r.Context, Story = HostStory(), Seq = seq, UtcTicks = DateTime.UtcNow.Ticks, Profile = p2.HostProfile };
-            _staleNote = null; _recErr = null;
-            _dirty = true; _reports++;
-            if (regionChanged) _log.Info("P2SPAWN report #" + seq + " " + Regions.Name(r.Region) + " ctx=" + r.Context + " (story " + _rec.Story + ")");
+            _reports++;
+            if (regionChanged) _log.Info("P2SPAWN live report #" + seq + " " + Regions.Name(r.Region) + " ctx=" + r.Context + " (story " + _rec.Story + ", memory only)");
             return ProposalCode.Accepted;
         }
 
         void OnHostDisconnected(string reason)
         {
-            if (_dirty && _writer != null) { _writer.Queue(_rec.ToBytes()); _dirty = false; _nextWrite = Now + 5; }
-            _log.Info("P2SPAWN Player 2 left (" + reason + "): last valid position " + (_rec != null ? Regions.Name(_rec.Region) + " #" + _rec.Seq + " ctx=" + _rec.Context : "none") + " written");
+            _log.Info("P2SPAWN Player 2 left (" + reason + "): live position " + (_rec != null ? Regions.Name(_rec.Region) + " #" + _rec.Seq + " ctx=" + _rec.Context : "none")
+                + " kept in memory for a rejoin while this host session runs (never written; a host restart / menu return uses the host checkpoint)");
         }
 
         double _nextEnsure; bool _devContinue; double _devAt = -1;
         void HostUpdate(double now)
         {
             if (_devContinue && InMainMenu()) { if (_devAt < 0) _devAt = now + 6.0; else if (now >= _devAt) { _devContinue = false; ContinueOriginal(); } }
-            if (now >= _nextEnsure) { _nextEnsure = now + 1.0; EnsureStore(); }   // profile / save history changes (new game, other save)
-            if (_dirty && _writer != null && now >= _nextWrite) { _writer.Queue(_rec.ToBytes()); _dirty = false; _nextWrite = now + 5.0; }
+            if (now >= _nextEnsure) { _nextEnsure = now + 1.0; EnsureLive(); }   // profile / save history changes (new game, other save)
             if (_requestAt > 0 && now >= _requestAt) { _requestAt = -1; if (_node.IsConnected) SendSnapshot("client back in the main menu"); }
             if (_snapshotDeferred && now >= _nextDeferredTry)
             {
@@ -408,7 +410,7 @@ namespace TS2MP.Plugin
                 if (!vs.SpawnSpot(cand[i].Value, cand[i].Value, out feet)) continue;
                 bool moved = (feet - here).sqrMagnitude > 0.04f;
                 if (moved) vs.SpawnPlace(feet);
-                if ((_plan.Mode == SpawnMode.Restore || _plan.Mode == SpawnMode.RestoreNear) && _pcbSetYaw != null)
+                if ((_plan.Reason == SpawnReason.Rejoin || _plan.Reason == SpawnReason.VehicleOrHiding) && _pcbSetYaw != null)   // v0.16.1: only a live position carries a yaw (the checkpoint keys have none)
                 {
                     var pcb = _psPCB(ps); if (Alive(pcb)) _pcbSetYaw(pcb, _plan.Yaw);
                 }
@@ -482,7 +484,7 @@ namespace TS2MP.Plugin
         {
             get
             {
-                return _host ? "CAMPAIGN_STATS host snapshots=" + _snapshots + " requests=" + _requests + " spawnReports=" + _reports + " writes=" + (_writer != null ? _writer.Writes : 0) + " writeFailures=" + (_writer != null ? _writer.Failures : 0)
+                return _host ? "CAMPAIGN_STATS host snapshots=" + _snapshots + " requests=" + _requests + " liveReports=" + _reports + " livePosition=" + (_rec != null ? Regions.Name(_rec.Region) : "none")
                              : "CAMPAIGN_STATS client applied=" + _applied + " reports=" + _sent + " refused=" + _rejected;
             }
         }
@@ -493,7 +495,6 @@ namespace TS2MP.Plugin
             {
                 _node.RemoteConnected -= OnHostConnected; _node.RemoteDisconnected -= OnHostDisconnected; _node.MessageReceived -= OnHostMessage;
                 if (_world.Host != null && _world.Host.P2PosHook == (Func<P2PosReport, ProposalCode>)OnPositionReport) _world.Host.P2PosHook = null;
-                if (_writer != null) { if (_dirty && _rec != null) _writer.Queue(_rec.ToBytes()); _dirty = false; if (!_writer.Flush(3000)) _log.Warn("P2SPAWN final write did not finish within 3 s"); }
             }
             else
             {

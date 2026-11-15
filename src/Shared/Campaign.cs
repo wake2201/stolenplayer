@@ -15,8 +15,30 @@
 // The client writes the result into its SANDBOX save with the original FBPP.OverwriteLocalSaveFile (verified IL:
 // WriteToSaveFile + reload of _latestData) while still in the main menu, then the original MainMenu.Continue loads it.
 //
-// Player-2 spawn (SpawnRules): the host keeps Player 2's last valid multiplayer position per host campaign (save profile +
-// the Player-2 record's save-history id) in its own data folder, updated from periodic client reports and at disconnect.
+// Player-2 spawn (SpawnRules), v0.16.1 - the host's campaign checkpoint is the only save point:
+// Verified original save/load rules (IL, Assembly-CSharp 1.27c):
+//   SaveGame.SaveGameNewSystem(savePos, time): savePos -> SavePlayerPosition (XPlayer..ZPlayer; in a vehicle
+//     SavePlayerPositionNearCar) + SaveCarPosition + Saved_Pos = 1 (IL_00af-00dc); otherwise Saved_Pos = 0 (IL_0156); always
+//     ends in the FBPP disk write. CurrentLocation / Saved_Pos / XPlayer..ZPlayer are written ONLY right before such a save
+//     (Select<Map> + ResetPlayerPosition; SaveGameNewSystem) -> the host's live model holds its last saved checkpoint.
+//   Manual save / quicksave key / pause-menu save (GameManager.SaveToProfile) / autosave / "save and quit" all go through
+//     PlayerScript.Quicksave: in Madison 99, Hillville 97, 98 -> SaveGame.SaveGame1 -> SaveGameNewSystem(true) (refused during
+//     a police chase / possession); elsewhere SaveGameNewSystem(false).
+//   Autosave is optional: PlayerScript.tryToSave (set by CarController.ExitRunningCar, Police_Manager.End_Chase) -> after 1 s
+//     CheckIfCanSave + Inventory.autoSaveToggle.isOn (PlayerPrefs "AutoSave") -> Quicksave (PlayerScript.Update IL_0810-0865).
+//   Travel: GameManager.Select<Map> -> Saved_Pos = 0, CurrentLocation = N, SaveGameNewSystem(false) (every travel is a save).
+//   Quit to menu: GameManager.LoadMenu / Inventory.QuitGame(false) -> SaveGame.LoseGame (empty) -> no save. QuitGame(true) /
+//     QuitGameDesktop(true) -> QuitGameIE -> Inventory.SaveOnTheRun -> Quicksave.
+//   Load (MainMenu.Continue -> MainScene, GameManager.Start): CurrentLocation picks the scene; hideout 0 / pawn shop 2 / Auto
+//     Shop 3 / heists / jail / intro use FIXED original spawns; Verwood 1 keeps the MainScene default; Madison 99 (Story > 3)
+//     and Hillville 97: Saved_Pos == 0 -> CarController.IsStartingCar (seated in the car at leavePoints[MadisonPoint /
+//     HillvillePoint], <ContinueButtonActivate>), else SaveGame.LoadPlayerPosition (XPlayer..ZPlayer).
+//   Checkpoint after being caught: GameManager.LoadCheckpoint -> Application.LoadLevel("MainScene") with the in-memory model
+//     (= the same checkpoint keys).
+// Multiplayer rule: Player 2 never has a save point of its own. A Player-2 join into a host world session that Player 2 has
+// not played in yet follows the HOST CHECKPOINT with the original rule above (HostCheckpoint -> Checkpoint spawn); only while
+// that host world keeps running does a rejoin resume Player 2's last live position (memory only, never written to disk, gone
+// with the host session). The retired p2spawn-<profile>.dat files (<= 0.16.0) are left untouched on disk and never read.
 using System;
 using System.Collections.Generic;
 using LiteNetLib.Utils;
@@ -99,6 +121,10 @@ namespace TS2MP.Shared
         // Shop, Hillville, Madison). Everything else (heists 90-98, jail 93, intro -1) is a mission / scripted scene.
         public static bool IsFreeRoam(int region) { return TravelRules.IsFleetRegion(region); }
         public const int Fallback = TravelRules.Hideout;   // verified safe fallback: the hideout's original spawn (GameManager.SpawnHideoutPlayer)
+        public const int Madison = 99, Hillville = 97;
+        // GameManager.Start IL_03f4-0435 (Madison, only Story > 3) / IL_049b-04cc (Hillville): the only regions whose load uses
+        // Saved_Pos + XPlayer..ZPlayer; every other region spawns at a fixed original point.
+        public static bool LoadsSavedPosition(int region, int story) { return region == Hillville || (region == Madison && story > 3); }
     }
 
     public static class SpawnContextRules
@@ -173,16 +199,47 @@ namespace TS2MP.Shared
         }
     }
 
+    // Wire values unchanged since protocol 23 (v0.16.1 reuses them; the client handles every mode as before).
     public enum SpawnMode : byte
     {
-        NearHost = 1,        // first join: near Player 1 in the host's free-roam region (checked ring placement, never on top)
-        Restore = 2,         // rejoin: exact last valid position (checked; ring fallback)
-        RestoreNear = 3,     // rejoin, last report was in a vehicle / hiding spot: checked ring around it, never the seat/spot
-        SafePoint = 4,       // rejoin after an unsafe story context: nearest original leave point of that region / its original spawn
-        OriginalSpawn = 5,   // the region's original spawn (hideout fallback, host in a mission scene, no usable data)
+        NearHost = 1,        // retired as a decision in v0.16.1 (never sent; the client still handles it)
+        Restore = 2,         // live rejoin: exact last valid position of this host session (checked; ring fallback)
+        RestoreNear = 3,     // checked ring around the target, never the exact spot: host checkpoint position (Player 1 shares
+                             // it) or a live position that was in a vehicle / hiding spot
+        SafePoint = 4,       // nearest original leave point to the target (travel checkpoint Saved_Pos 0 / unsafe story context), then the original spawn
+        OriginalSpawn = 5,   // the region's original fixed spawn (GameManager.Start), ring beside it; hideout fallback for mission scenes
     }
 
+    // FirstJoin (v0.16.1) = Player 2's first spawn in this host world session -> host checkpoint. StaleRecord / InvalidRecord:
+    // retired with the p2spawn file (never sent).
     public enum SpawnReason : byte { FirstJoin = 1, Rejoin = 2, StaleRecord = 3, InvalidRecord = 4, StoryContext = 5, MissionScene = 6, HostInMissionScene = 7, VehicleOrHiding = 8 }
+
+    // v0.16.1: the host campaign checkpoint, read from the host's live FBPP model (whose position keys equal its last save, see
+    // the file header) plus, for a travel checkpoint, the host's own original leave point (GameManager.leavePoints[index]).
+    public struct HostCheckpoint
+    {
+        public int Region;            // CurrentLocation
+        public bool SavedPos;         // Saved_Pos == 1
+        public bool HasPos; public Vec3 Pos;            // XPlayer..ZPlayer
+        public int Story;
+        public bool HasLeavePoint; public Vec3 LeavePoint;   // host GameManager.leavePoints[MadisonPoint / HillvillePoint]
+
+        public static HostCheckpoint FromModel(CampaignData m)
+        {
+            var c = new HostCheckpoint { Region = Regions.None };
+            int v; float x, y, z;
+            if (m == null) return c;
+            if (m.TryInt("CurrentLocation", out v)) c.Region = v;
+            c.SavedPos = m.TryInt("Saved_Pos", out v) && v == 1;
+            if (m.TryInt("Story", out v)) c.Story = v;
+            if (m.Floats.TryGetValue("XPlayer", out x) && m.Floats.TryGetValue("YPlayer", out y) && m.Floats.TryGetValue("ZPlayer", out z))
+            { c.Pos = new Vec3(x, y, z); c.HasPos = SpawnValidation.PositionOk(c.Pos); }
+            return c;
+        }
+
+        // Leave-point index key the original <ContinueButtonActivate> reads for this region (null = none).
+        public static string LeavePointKey(int region) { return region == SpawnRegions.Madison ? "MadisonPoint" : region == SpawnRegions.Hillville ? "HillvillePoint" : null; }
+    }
 
     public struct SpawnPlan
     {
@@ -208,42 +265,58 @@ namespace TS2MP.Shared
 
     public static class SpawnRules
     {
-        // record: the host's stored record (null = none); historyId: the current Player-2 record's save history id.
-        // recordError: non-null when a stored record exists but could not be parsed.
-        public static SpawnPlan Decide(P2SpawnRecord record, string recordError, int historyId, int hostRegion, Vec3? hostFeet, out string note)
+        // v0.16.1. live: Player 2's last valid position in THIS host world session (memory only; null = none, e.g. after a host
+        // restart / menu return / first join); historyId: the current Player-2 record's save-history id; cp: the host checkpoint.
+        public static SpawnPlan Decide(P2SpawnRecord live, int historyId, HostCheckpoint cp, out string note)
         {
-            if (record == null)
-                return First(recordError != null ? SpawnReason.InvalidRecord : SpawnReason.FirstJoin, hostRegion, hostFeet, recordError != null ? "stored record unusable (" + recordError + ")" : "no record for this campaign", out note);
-            if (record.HistoryId != historyId)
-                return First(SpawnReason.StaleRecord, hostRegion, hostFeet, "record belongs to another save history of this profile (record " + record.HistoryId + ", campaign " + historyId + ")", out note);
-            if (!SpawnRegions.IsFreeRoam(record.Region))
+            if (live != null && live.HistoryId == historyId && SpawnRegions.IsFreeRoam(live.Region))
             {
-                note = "last position was in the mission scene " + Regions.Name(record.Region) + ": verified fallback = hideout original spawn";
-                return new SpawnPlan { Mode = SpawnMode.OriginalSpawn, Reason = SpawnReason.MissionScene, Region = SpawnRegions.Fallback };
+                if (SpawnContextRules.IsUnsafe(live.Context))
+                {
+                    note = "live rejoin (host world still running): last position was in an unsafe story context (" + live.Context + "): nearest original safe point of " + Regions.Name(live.Region);
+                    return new SpawnPlan { Mode = SpawnMode.SafePoint, Reason = SpawnReason.StoryContext, Region = live.Region, HasTarget = true, Target = live.Pos };
+                }
+                if ((live.Context & (SpawnContext.InVehicle | SpawnContext.Hiding)) != 0)
+                {
+                    note = "live rejoin (host world still running): last position was " + ((live.Context & SpawnContext.InVehicle) != 0 ? "in a vehicle" : "in a hiding spot") + ": checked placement beside it";
+                    return new SpawnPlan { Mode = SpawnMode.RestoreNear, Reason = SpawnReason.VehicleOrHiding, Region = live.Region, HasTarget = true, Target = live.Pos, Yaw = live.Yaw };
+                }
+                note = "live rejoin (host world still running, never saved): last valid position of this session (report #" + live.Seq + ")";
+                return new SpawnPlan { Mode = SpawnMode.Restore, Reason = SpawnReason.Rejoin, Region = live.Region, HasTarget = true, Target = live.Pos, Yaw = live.Yaw };
             }
-            if (SpawnContextRules.IsUnsafe(record.Context))
-            {
-                note = "last position was in an unsafe story context (" + record.Context + "): nearest original safe point of " + Regions.Name(record.Region);
-                return new SpawnPlan { Mode = SpawnMode.SafePoint, Reason = SpawnReason.StoryContext, Region = record.Region, HasTarget = true, Target = record.Pos };
-            }
-            if ((record.Context & (SpawnContext.InVehicle | SpawnContext.Hiding)) != 0)
-            {
-                note = "last position was " + ((record.Context & SpawnContext.InVehicle) != 0 ? "in a vehicle" : "in a hiding spot") + ": checked placement beside it";
-                return new SpawnPlan { Mode = SpawnMode.RestoreNear, Reason = SpawnReason.VehicleOrHiding, Region = record.Region, HasTarget = true, Target = record.Pos, Yaw = record.Yaw };
-            }
-            note = "rejoin: last valid position (report #" + record.Seq + ")";
-            return new SpawnPlan { Mode = SpawnMode.Restore, Reason = SpawnReason.Rejoin, Region = record.Region, HasTarget = true, Target = record.Pos, Yaw = record.Yaw };
+            string why = live == null ? "first join in this host world session" : live.HistoryId != historyId ? "live position belongs to another save history" : "live position was in the mission scene " + Regions.Name(live.Region);
+            return Checkpoint(why, cp, out note);
         }
 
-        static SpawnPlan First(SpawnReason why, int hostRegion, Vec3? hostFeet, string what, out string note)
+        // The original load rule applied to the host's checkpoint (file header). Player 1 loads at the same checkpoint, so a
+        // position target is never used exactly (ring beside it).
+        public static SpawnPlan Checkpoint(string why, HostCheckpoint cp, out string note)
         {
-            if (SpawnRegions.IsFreeRoam(hostRegion) && hostFeet.HasValue && SpawnValidation.PositionOk(hostFeet.Value))
+            if (!SpawnRegions.IsFreeRoam(cp.Region))
             {
-                note = what + ": first spawn near Player 1 in " + Regions.Name(hostRegion);
-                return new SpawnPlan { Mode = SpawnMode.NearHost, Reason = why, Region = hostRegion, HasTarget = true, Target = hostFeet.Value };
+                // Multiplayer adaptation (unchanged since W4.2A): Player 2 is not loaded into a mission / scripted scene.
+                note = why + ": host checkpoint is " + (cp.Region == Regions.None ? "unknown" : "the mission/scripted scene " + Regions.Name(cp.Region)) + " -> hideout original spawn";
+                return new SpawnPlan { Mode = SpawnMode.OriginalSpawn, Reason = SpawnReason.HostInMissionScene, Region = SpawnRegions.Fallback };
             }
-            note = what + ": Player 1 is " + (SpawnRegions.IsFreeRoam(hostRegion) ? "not placed yet" : "in " + Regions.Name(hostRegion)) + " -> hideout original spawn";
-            return new SpawnPlan { Mode = SpawnMode.OriginalSpawn, Reason = why == SpawnReason.FirstJoin ? SpawnReason.HostInMissionScene : why, Region = SpawnRegions.Fallback };
+            if (SpawnRegions.LoadsSavedPosition(cp.Region, cp.Story))
+            {
+                if (cp.SavedPos && cp.HasPos)
+                {
+                    note = why + ": host checkpoint " + Regions.Name(cp.Region) + " saved position (Saved_Pos 1, original LoadPlayerPosition) -> beside it";
+                    return new SpawnPlan { Mode = SpawnMode.RestoreNear, Reason = SpawnReason.FirstJoin, Region = cp.Region, HasTarget = true, Target = cp.Pos };
+                }
+                if (!cp.SavedPos && cp.HasLeavePoint && SpawnValidation.PositionOk(cp.LeavePoint))
+                {
+                    note = why + ": host checkpoint " + Regions.Name(cp.Region) + " is a travel arrival (Saved_Pos 0, original IsStartingCar at the leave point) -> beside that leave point (the seat belongs to the car's driver)";
+                    return new SpawnPlan { Mode = SpawnMode.SafePoint, Reason = SpawnReason.FirstJoin, Region = cp.Region, HasTarget = true, Target = cp.LeavePoint };
+                }
+                // A position region without a usable target would load at XPlayer..ZPlayer = 0 (CampaignSnapshot writes
+                // Saved_Pos 1): never. The hideout's fixed spawn is the verified safe fallback.
+                note = why + ": host checkpoint " + Regions.Name(cp.Region) + " has no usable " + (cp.SavedPos ? "saved position" : "leave point") + " -> hideout original spawn";
+                return new SpawnPlan { Mode = SpawnMode.OriginalSpawn, Reason = SpawnReason.FirstJoin, Region = SpawnRegions.Fallback };
+            }
+            note = why + ": host checkpoint " + Regions.Name(cp.Region) + " -> the region's original fixed spawn (GameManager.Start), beside it";
+            return new SpawnPlan { Mode = SpawnMode.OriginalSpawn, Reason = SpawnReason.FirstJoin, Region = cp.Region };
         }
 
         // Host acceptance of a client position report (validation boundary: the host cannot see the client's scene; it checks

@@ -76,7 +76,7 @@ namespace TS2MP.Plugin
         {
             try
             {
-                if (mode == LoadSceneMode.Single) { _registry.Clear(); foreach (var c in _loot.Values) c.ReleaseTargets(); _objIds.Clear(); _objByNs.Clear(); _windowDoor.Clear(); }   // every other scene was unloaded
+                if (mode == LoadSceneMode.Single) { _registry.Clear(); foreach (var c in _loot.Values) c.ReleaseTargets(); _objIds.Clear(); _objByNs.Clear(); _windowDoor.Clear(); _cabinetIds.Clear(); }   // every other scene was unloaded
                 int ns = IdentityNamespace.ForScene(s.name);
                 if (!_gate.TryBegin(s.handle, ns)) return;
                 Run(s, ns, false);
@@ -128,6 +128,9 @@ namespace TS2MP.Plugin
         public bool TryWindowOfDoor(Component door, out WorldObjectId id) { id = default(WorldObjectId); return (object)door != null && _windowDoor.TryGetValue(door.GetInstanceID(), out id); }
         public List<ObjectRef> Objects(int ns) { List<ObjectRef> l; return _objByNs.TryGetValue(ns, out l) ? l : null; }
         public bool IsLate(int ns) { return _late.Contains(ns); }
+        // W4.2D: census identity of a RandomFileCabinet component (seed of its original roll; same on both instances).
+        readonly Dictionary<int, uint> _cabinetIds = new Dictionary<int, uint>();
+        public bool TryCabinetId(Component c, out uint hash) { hash = 0; return (object)c != null && _cabinetIds.TryGetValue(c.GetInstanceID(), out hash); }
         public bool TryDigest(int ns, out uint digest, out int count) { count = 0; _objCount.TryGetValue(ns, out count); return _objDigest.TryGetValue(ns, out digest); }
 
         // Host validation: null = this process never censused the namespace (unverified), else known/unknown.
@@ -258,6 +261,7 @@ namespace TS2MP.Plugin
                         }
                         uint hash = IdentityHash.ForObject(scene.name, path, info.Kind);
                         var res = table.Add(hash, path, info.Kind, cat, comp);
+                        if (info.Kind == ObjectKind.FileCabinet && res == AddResult.Added) _cabinetIds[comp.GetInstanceID()] = hash;   // W4.2D cabinet roll seed
                         if (Shared(info.Kind) && res == AddResult.Added)
                         {
                             var oref = new ObjectRef { Id = new WorldObjectId(ns, hash), Kind = info.Kind, Comp = comp };

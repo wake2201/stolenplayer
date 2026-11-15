@@ -11,7 +11,9 @@
 //         and verified (SaveGuard.Arm), then the client systems are built and ClientReady is sent; once the host's world
 //         snapshot arrived and (W4.2) the host's campaign was written into the sandbox (CampaignBootstrap), the original
 //         MainMenu.Continue() loads it - never the client's own solo save. Back in the main menu after playing = the
-//         session ends (rejoin with F8).
+//         session ends (rejoin with F8). v0.16.1: from the join request until that Continue the main menu shows its ORIGINAL
+//         loading state and its buttons take no input (JoinLoadingScreen, MenuRules.JoinLoadingScreen); cancel, timeout or
+//         a failed verification restores the menu. The host's prepared menu is never locked.
 // The join code is shown only inside this window and never written to a log.
 using System;
 using System.IO;
@@ -62,6 +64,7 @@ namespace TS2MP.Plugin
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             for (int i = 0; i < SceneManager.sceneCount; i++) Mark(SceneManager.GetSceneAt(i).name, true);
             if (!legacy) _isolationAvailable = SaveGuard.Precheck(saveHarmony, settings.DataDir, log);
+            if (!legacy) _loading = new JoinLoadingScreen(log);
             if (!legacy)
             {
                 _devJoin = Environment.GetEnvironmentVariable("TS2MP_DEV_AUTOJOIN");
@@ -75,6 +78,7 @@ namespace TS2MP.Plugin
             log.Info("MENU ready key=" + settings.MenuKey + (legacy ? " (launcher mode: status only)" : " isolationAvailable=" + _isolationAvailable));
         }
         bool _legacyHostGate; float _nextGate; string _loggedGate;
+        JoinLoadingScreen _loading;   // v0.16.1 (F8 mode only)
         bool _worldLoadedOnce, _mismatchChecked;   // W4.2B.2 multiplayer test campaign (prepared flag: _lc.TestPrepared, W4.2C.A)
 
         void LegacyHostGate() { if (_legacyHostGate) RefreshHostGate(Context()); }
@@ -168,10 +172,21 @@ namespace TS2MP.Plugin
                     else _log.Warn("DEV_AUTOJOIN malformed (expected host|port|code)");
                 }
             }
-            if (!_lc.Busy()) return;
+            if (!_lc.Busy()) { SyncLoading(); return; }
             var ctx = Context();
             if (_lc.IsHostState || (_lc.State == MpState.Connected && _hostCode != null)) HostFrame(ctx, now);
             else ClientFrame(ctx, now);
+            SyncLoading();
+        }
+
+        // v0.16.1: original loading presentation + menu input lock while Player 2 joins (MenuRules.JoinLoadingScreen).
+        void SyncLoading()
+        {
+            if (_loading == null) return;
+            var s = _lc.State;   // cheap state test first: no context probe unless Player 2 is joining
+            bool joining = _hostCode == null && (s == MpState.ClientConnecting || s == MpState.ClientPreparing || s == MpState.ClientSynchronizing);
+            bool show = joining && MenuRules.JoinLoadingScreen(s, Context(), _lc.ContinueIssued);
+            if (show || _loading.Shown) _loading.Sync(show);
         }
 
         void HostFrame(GameContext ctx, double now)
@@ -206,7 +221,7 @@ namespace TS2MP.Plugin
             switch (action)
             {
                 case ClientAction.ArmIsolation: Prepare(node, ctx, now); break;
-                case ClientAction.ContinueGame: ContinueOriginal(); break;
+                case ClientAction.ContinueGame: if (!ContinueOriginal()) { _lc.Fail(_hint ?? "Laden fehlgeschlagen (siehe Log)", now); EndClient("continue failed"); } break;
                 case ClientAction.Abort: node.AbortPreparation("aborted"); EndClient("aborted: " + _lc.Error); break;
                 case ClientAction.GiveUp: EndClient("connection ended: " + _lc.Error); break;
                 case ClientAction.EndSession: StopSession("player 2 returned to the main menu"); break;
@@ -255,7 +270,9 @@ namespace TS2MP.Plugin
             _lc.SystemsConfirmed(now);
         }
 
-        void ContinueOriginal()
+        // v0.16.1: false = the original load could not be started; the caller ends the join (the main menu is restored - the
+        // player never has to click Continue behind the loading screen, and Continue stays gated by CampaignBootstrap).
+        bool ContinueOriginal()
         {
             bool hasSave = false;
             try { hasSave = _fbppExists != null && (bool)_fbppExists.Invoke(null, null); } catch { }
@@ -263,15 +280,16 @@ namespace TS2MP.Plugin
             {
                 _hint = "Die Weltdaten des Hosts konnten nicht übernommen werden (siehe Log).";
                 _log.Error("JOIN no sandbox save after the host campaign was written: not continuing (Player 2 never starts a world of its own)");
-                return;
+                return false;
             }
             var mm = _menuType != null ? UnityEngine.Object.FindObjectOfType(_menuType) : null;   // once
             var cont = _menuType != null ? AccessTools.Method(_menuType, "Continue") : null;
-            if (mm == null || cont == null) { _hint = "Bitte im Hauptmenü auf „Fortsetzen“ klicken."; _log.Warn("JOIN MainMenu.Continue not found; the player continues manually"); return; }
+            if (mm == null || cont == null) { _hint = "Das Hauptmenü des Spiels wurde nicht gefunden (siehe Log)."; _log.Error("JOIN MainMenu.Continue not found: join ended"); return false; }
             CloseMenu("continue");
+            if (_loading != null) _loading.HandOff();
             _log.Info("JOIN host world synchronized: loading the save through the original MainMenu.Continue()");
-            try { cont.Invoke(mm, null); }
-            catch (Exception ex) { _log.Error("JOIN MainMenu.Continue failed", ex); _hint = "Bitte im Hauptmenü auf „Fortsetzen“ klicken."; }
+            try { cont.Invoke(mm, null); return true; }
+            catch (Exception ex) { _log.Error("JOIN MainMenu.Continue failed", ex); _hint = "Laden fehlgeschlagen (siehe Log)."; return false; }
         }
 
         void EndClient(string why)
@@ -571,6 +589,7 @@ namespace TS2MP.Plugin
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
             if (_open) CloseMenu("shutdown");
+            if (_loading != null && _loading.Shown) _loading.Sync(false);
             if (_pendingClient != null) { _pendingClient.Dispose(); _pendingClient = null; }
         }
     }

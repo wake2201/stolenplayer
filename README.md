@@ -43,7 +43,7 @@ Players install a drag-and-drop ZIP into the game folder and start the game norm
 Direct-IP internet play between two PCs has been used by the user since 0.14.1 (doors, lockpicking, windows and vehicle cameras confirmed in 0.14.2).
 
 **Tested game target:** Thief Simulator 2 v1.27c  
-**Current development build:** 0.16.0 · protocol 27 — one shared money balance for both players, shared world money and unique valuables in Madison Street, on top of the 0.15.0 furniture / Hillville / hideout objects (pending manual two-PC QA, `docs/TESTING.md` §32 – §35)
+**Current development build:** 0.17.0 · protocol 28 — cross-region loot (both players collect money, valuables, keys, contract/parcel items and file-cabinet loot in every region, validated by the host from its own scene files); 0.16.1: two-PC QA fixes (no duplicate loot for Player 2, original loading screen while joining, Player-2 spawn from the host checkpoint); 0.16.0: one shared money balance for both players, shared world money and unique valuables in Madison Street, on top of the 0.15.0 furniture / Hillville / hideout objects (pending manual two-PC QA, `docs/TESTING.md` §32 – §35)
 
 Both instances need the same mod version and protocol.
 

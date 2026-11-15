@@ -30,7 +30,7 @@ static class WalletTests
         Run("08 duplicate pickup requests (same txn) -> Unchanged, money credited once", DuplicatePickup);
         Run("09 duplicate acknowledgments / retransmitted reports never apply twice; older report refused", DuplicateAcks);
         Run("10 interrupted pickups: P1 claim released (no money); P2 coroutine not run -> credited once, run -> counted once", Interrupted);
-        Run("11 valuables: ordinary respawn, unique (destroy_if_was_picked) never again, key excluded", Valuables);
+        Run("11 valuables: ordinary respawn, unique (destroy_if_was_picked) never again, keys shared as unique (W4.2D)", Valuables);
         Run("12 reconnection: lost report kept pending and committed once; lost result resolved from the record", Reconnect);
         Run("13 checkpoint rollback: P1's unsaved spend rolls back, P2's durable purchase and money stay; idempotent", CheckpointRollback);
         Run("14 host save + restart: p2inv v5 journal replayed above the watermark, compacted after the save", HostRestart);
@@ -38,7 +38,7 @@ static class WalletTests
         Run("16 insufficient funds: purchase refused, record restored, nothing deducted", InsufficientFunds);
         Run("17 host scene loading: delta journaled and applied at bind; purchase uses the last bound balance", HostLoading);
         Run("18 penalties keep original semantics (may go below 0); host save clamps; client clamp/rent/hidden item reverted", Penalties);
-        Run("19 unsupported: missions/jobs/pickpocket excluded, host/world purchases refused, special / story / heavy loot excluded", Unsupported);
+        Run("19 unsupported: missions/jobs/pickpocket excluded, host/world purchases refused, special / story / heavy loot excluded (W4.2D list)", Unsupported);
         Run("20 codecs: wallet entry, record v3 (+v2 read), p2inv v5 (+v4 read), corrupt wallet journal rejected, fuzz", Codecs);
         Run("21 WorldHost: 'wallet' is host-committed only (client proposal NotAuthorized), registry entry readable", HostOnlyKey);
         Run("23 refused report right before a money pickup: the restored record covers it, add_money not counted twice", RefusedThenPickup);
@@ -511,7 +511,7 @@ static class WalletTests
         string why;
         Expect(LootRules.Classify(vase, Host.Facts(Vase), out why) == LootClass.UniqueValuable, "destroy_if_was_picked = unique valuable");
         Expect(LootRules.Classify(lamp, Host.Facts(Vase), out why) == LootClass.Valuable, "ordinary valuable");
-        Expect(LootRules.Classify(key, Host.Facts(62), out why) == LootClass.Excluded && why.Contains("key"), "a unique key (lock state) stays excluded: " + why);
+        Expect(LootRules.Classify(key, Host.Facts(62), out why) == LootClass.UniqueValuable, "W4.2D: a unique key is a shared inventory unit (first pickup wins; unlocking stays the W4.2B lock sync): " + why);
         w.C.RequestLoot(0x6001, Vase); w.Settle();
         Expect(w.C.LootResult == ProposalCode.Accepted && w.H.Book.Rec.CountOf(Vase) == 1 && w.H.Mem.Get("Item_vase_102_2") == 1, "P2 takes the unique vase: record +1, Item_<name> = 1");
         Live(w, Vase, 1);
@@ -658,9 +658,9 @@ static class WalletTests
         foreach (var m in new[] { "Darkbank.DepositMoney", "Darkbank.WithdrawMoney", "StockManager.BuyShares", "Inventory.BuyGarage", "Whiplist.UpgradeEngine", "DroneUpgradePanel.BuyUpgrade", "HouseRenovator.BuyAddition", "Tutorial.BuyVan" })
             Expect(Policy(m) == MoneyPolicy.Refuse, m + " refused on the client");
         Expect(Policy("Shop_Manager.Buy_Item") == MoneyPolicy.Purchase && purchase == 1, "only the shop purchase is a checked purchase");
-        // loot classes that stay unsupported
+        // loot classes that stay unsupported (v0.16.1: SharedName is shared by census id - WorldLootTests 15, V161Tests)
         string why;
-        var flags = new[] { LootFlags.StoryPick, LootFlags.StoryName, LootFlags.Contract, LootFlags.Parcel, LootFlags.Heavy, LootFlags.RandomCabinet, LootFlags.DeleteIfPref, LootFlags.SharedName, LootFlags.NeverDestroy, LootFlags.NoDays, LootFlags.CantPick };
+        var flags = new[] { LootFlags.StoryPick, LootFlags.StoryName, LootFlags.StoryCar, LootFlags.Heavy, LootFlags.Dropped };   // W4.2D: contract / parcel / cabinet / no-key flags are shared (WorldLootTests 16, W42DTests)
         foreach (var f in flags)
         {
             Expect(LootRules.Classify(new LootEntry { Name = "x", Flags = f }, new ItemFacts { Known = true, Value = 100, AddXp = 5 }, out why) == LootClass.Excluded, f + " item excluded");
@@ -672,7 +672,7 @@ static class WalletTests
         Expect(LootRules.Classify(new LootEntry { Name = "m", Flags = LootFlags.Money, Money = 0 }, new ItemFacts(), out why) == LootClass.Excluded, "money without amount excluded");
         Expect(LootRules.Classify(new LootEntry { Name = "m", Flags = LootFlags.Money | LootFlags.NoXp, Money = 15 }, new ItemFacts(), out why) == LootClass.Money, "money ignores NoXp (respawn key written for money)");
         var hill = new LootCatalog(97); hill.Add(1, "15$_a", 0, LootFlags.Money, null, 0, 15); hill.Seal(null); hill.Digest = 1; LootClass cls;
-        Expect(LootDecision.DecideP2(1, 0, true, hill, 1, 1, 0, new ItemFacts(), LootState.Available, true, 0, false, out cls, out why) == ProposalCode.NotAuthorized, "money in an unsupported region: refused (client also refuses the pickup)");
+        Expect(LootDecision.DecideP2(1, 0, true, hill, 1, 1, 0, new ItemFacts(), LootState.Available, true, 0, false, out cls, out why) == ProposalCode.Accepted && cls == LootClass.Money, "W4.2D: Hillville world money is a shared money take (host scene-file catalog)");
     }
     static MoneyPolicy Policy(string tm) { foreach (var m in WalletPolicy.Writers) if (m.Type + "." + m.Method == tm && m.Policy != MoneyPolicy.Count) return m.Policy; foreach (var m in WalletPolicy.Writers) if (m.Type + "." + m.Method == tm) return m.Policy; throw new Exception("not in table: " + tm); }
 

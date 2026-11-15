@@ -65,7 +65,9 @@ $suites = @(
     @('TS2MP.W42Tests', 'W42Tests.cs', 'host campaign bootstrap / Player-2 spawn (W4.2 Phase A)'),
     @('TS2MP.W42BTests', 'W42BTests.cs', 'shared doors / locks / windows, region epochs, initialization, reservations (W4.2B)'),
     @('TS2MP.W42CTests', 'W42CTests.cs', 'shared furniture, Hillville + hideout regions, incremental page cache (W4.2C Phase B)'),
-    @('TS2MP.WalletTests', 'WalletTests.cs', 'shared money balance + world money / unique valuables (W4.1B)')
+    @('TS2MP.WalletTests', 'WalletTests.cs', 'shared money balance + world money / unique valuables (W4.1B)'),
+    @('TS2MP.V161Tests', 'V161Tests.cs', 'v0.16.1 two-PC QA fixes: no duplicate loot, original join loading screen, host-checkpoint spawn'),
+    @('TS2MP.W42DTests', 'W42DTests.cs', 'W4.2D cross-region loot: host scene-file catalogs (real game files), cabinets, keys, parcels')
 )
 foreach ($s in $suites) {
     Invoke-Csc "$($s[0]).exe" (@('/target:exe', "/out:$outTests\$($s[0]).exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\$($s[1])"))
@@ -99,7 +101,7 @@ if ($Test) {
     $ran = 0
     foreach ($s in $suites) {
         Write-Host "== $($s[2])"
-        & "$outTests\$($s[0]).exe"
+        & "$outTests\$($s[0]).exe" $managed   # suites without arguments ignore it; W42DTests reads the real scene files
         if ($LASTEXITCODE -ne 0) { throw "$($s[2]) failed" }
         $ran++
     }

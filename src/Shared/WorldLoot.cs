@@ -11,8 +11,14 @@
 //  - SelectResidence.RefreshIfComplete reads "Item_<loot_prefs>" -> the Item_<objectName> flag is world state too.
 //
 // Identity = the W1 census id (namespace + FNV-1a of scene/hierarchy path/kind), never the name. The original keys keep their
-// original (name-based) meaning; a shared-name family is excluded from the Phase B subset (LootFlags.SharedName) because
-// one key serves several physical objects (strategy for Phase C: docs/PROGRESS.md "W4.1 Phase B", shared-name families).
+// original (name-based) meaning.
+// v0.16.1 shared-name families (LootFlags.SharedName, e.g. Madison 'Pot', 'Wine1': 31 objects / 12 names): shared by census
+// id like every other object. Vanilla semantics are kept exactly: picking ANY member writes the family's ItemDay_<name> /
+// Item_<name> (LootKeys.Apply never moves a day backwards) and the next scene load destroys EVERY member (<Start>d__68), while
+// the other members stay pickable until that reload. Hence a family member's "already taken" is decided by the host's live
+// object (PersistentlyTaken overload) while the host has the scene loaded, and by the key only across a reload.
+// Player 2 (v0.16.1): whatever is NOT shared (unsupported region, MainScene/runtime object, excluded class) is refused on the
+// client (P2PickPolicy) - a vanilla local pickup there would hand out a second copy of the reward.
 //
 // W4.1B: LootRules.Classify adds unique valuables (destroy_if_was_picked, Item_<name> = permanent removal) and world money
 // (is_money + add_money, credited to the shared balance, src/Shared/Wallet.cs); LootRules.PersistentlyTaken refuses a take
@@ -66,20 +72,36 @@ namespace TS2MP.Shared
         public uint Hash; public string Name; public int ItemId; public LootFlags Flags;
         public int Money;       // W4.1B: Pickupable.add_money (serialized, read by the census; only meaningful with LootFlags.Money)
         public object Target;   // live Pickupable component (null after the scene unloaded; metadata stays)
+        // W4.2D host catalog (SceneCatalogBuilder) only: Pickupable.parcel_pref, and the RandomFileCabinet slot this object
+        // belongs to (Group 0 = none; Outcome 0 = the slot's default contents "<x>CabinetDisable", k + 1 = list element k).
+        public string Pref; public uint Group; public int Outcome;
     }
 
-    // W4.1B shared-loot classes (LootRules.Classify). Valuable = ordinary item (W4.1 Phase B); UniqueValuable = the same with
-    // destroy_if_was_picked (the original removes it for good once Item_<name> = 1); Money = is_money with add_money > 0
-    // (the original adds add_money to PlayerScript.moneyAm, IL_034d, and writes ItemDay_<name> (5 days) + Item_<name>).
-    public enum LootClass : byte { Excluded, Valuable, UniqueValuable, Money }
+    // Shared-loot classes (LootRules.Classify).
+    //   Valuable       ordinary item whose original pickup writes a respawn key (SetDayRespawn: value > 0, xpAdd >= 1)
+    //   UniqueValuable destroy_if_was_picked (Item_<name> = 1 removes it for good; keys included since W4.2D)
+    //   Money          is_money with add_money > 0 (shared balance, W4.1B)
+    //   LiveOnly       W4.2D: ordinary item whose original pickup writes NO respawn key (no XP / no value / tool /
+    //                  never_destroy / dontDestroyDays): vanilla re-creates it at the next scene load, so it is shared for the
+    //                  current region occupancy only (book); no ItemDay_ key is written for it.
+    public enum LootClass : byte { Excluded, Valuable, UniqueValuable, Money, LiveOnly }
+
+    public enum P2PickPolicy : byte { Shared, LocalOwnDrop, Refuse }
 
     public static class LootRules
     {
         public const int MaxNameChars = 120;
-        // Phase B vertical slice: Madison Street (region scene "MadisonSt", census: 869 loot objects, digest identical on
-        // both instances). MainScene loot (namespace -1000, present in every region) and other regions: Phase C.
-        static readonly HashSet<int> Supported = new HashSet<int> { 99 };
-        public static bool SupportedNamespace(int ns) { return Supported.Contains(ns); }
+        // W4.2D: every census namespace (each original scene with a region id, plus MainScene). The host validates against its
+        // own scene-file catalog (SceneCatalogBuilder), so it no longer needs to have visited the region in this process.
+        public static bool SupportedNamespace(int ns) { return ns != IdentityNamespace.None && (ns == IdentityNamespace.MainScene || Regions.IsKnown(ns)); }
+
+        // Flags that change nothing about sharing an object by census id (see Classify). Everything else excludes it.
+        public const LootFlags Neutral = LootFlags.SharedName | LootFlags.DestroyIfPicked | LootFlags.NoXp | LootFlags.NoDays | LootFlags.NeverDestroy
+                                       | LootFlags.CantPick | LootFlags.DeleteIfPref | LootFlags.Contract | LootFlags.Parcel | LootFlags.RandomCabinet;
+        // Still excluded (W4.2D, precise reasons in docs/PROGRESS.md): heavy items (carry / trunk / van / shed / shop transaction
+        // family), story pickups (StoryManager.AdvanceStory needs story sync), dropped (W3 path), ids without a stable identity.
+        public const LootFlags Blocking = LootFlags.Heavy | LootFlags.StoryPick | LootFlags.StoryCar | LootFlags.StoryName | LootFlags.Dropped
+                                        | LootFlags.NumericName | LootFlags.Ambiguous | LootFlags.LongName;
 
         public static bool IsNumeric(string s) { int v; return !string.IsNullOrEmpty(s) && int.TryParse(s, out v); }
 
@@ -91,54 +113,93 @@ namespace TS2MP.Shared
             return f.ToString();
         }
 
-        // W4.1B: which shared-loot class an object belongs to. Money ignores NoXp (SetDayRespawn writes the key for money
-        // regardless of XP) and ignores the item type (item 0, no backpack unit). DestroyIfPicked is the only extra flag an
-        // item may carry (unique valuable); a key with destroy_if_was_picked opens a lock (W4.2B lock state): excluded.
+        // W4.2D class rules. Neutral flags are verified to need nothing beyond the shared take:
+        //   SharedName   shared by census id, the family key keeps its per-name meaning (v0.16.1)
+        //   CantPick     the original refuses before Pickupable.PickUp (PlayerScript.Update IL_7ca6) - never reaches the hook
+        //   DeleteIfPref presence decided by a campaign pref at Start (the client loads the host's campaign keys)
+        //   Contract     the pickup only shows "contract_item_found" (<PickingItem> final step); the contract itself is completed
+        //                by the host's original ClaimReward with the item (Player 2 hands it over via shared storage / drop)
+        //   Parcel       the pickup moves parcel_pref from GameManager.parcel_strings_to_set to mission_strings_to_set - the host
+        //                applies exactly that to ITS GameManager when it accepts Player 2's take (WorldLootSync.HostParcel)
+        //   RandomCabinet slot contents are rolled per instance: both instances seed the original roll identically and the host
+        //                allows only one outcome per slot and occupancy (CabinetBook)
         public static LootClass Classify(LootEntry e, ItemFacts it, out string why)
         {
             why = null;
             if (e == null) { why = "unknown object"; return LootClass.Excluded; }
-            var f = e.Flags;
-            if ((f & LootFlags.Money) != 0)
+            var block = e.Flags & Blocking;
+            if (block != LootFlags.None) { why = Exclusion(block); return LootClass.Excluded; }
+            if ((e.Flags & LootFlags.Money) != 0)
             {
-                var rest = f & ~(LootFlags.Money | LootFlags.NoXp);
-                if (rest != LootFlags.None) { why = Exclusion(rest); return LootClass.Excluded; }
                 if (e.Money <= 0 || e.Money > WalletRules.MaxLootMoney) { why = "money amount " + e.Money; return LootClass.Excluded; }
-                return LootClass.Money;
+                return LootClass.Money;   // SetDayRespawn writes the money key regardless of XP (IL_0000-0061)
             }
-            var r = f & ~LootFlags.DestroyIfPicked;
-            if (r != LootFlags.None) { why = Exclusion(r); return LootClass.Excluded; }
             why = Exclusion(it);
             if (why != null) return LootClass.Excluded;
-            if ((f & LootFlags.DestroyIfPicked) != 0)
-            {
-                if (it.Key) { why = "key with destroy_if_was_picked (lock state)"; return LootClass.Excluded; }
-                return LootClass.UniqueValuable;
-            }
+            if ((e.Flags & LootFlags.DestroyIfPicked) != 0) return LootClass.UniqueValuable;   // removal by Item_<name>, independent of XP / value
+            if ((e.Flags & (LootFlags.NoXp | LootFlags.NoDays | LootFlags.NeverDestroy)) != 0 || it.Tool || RespawnDays(it.Value, false) <= 0 || XpAdd(it.AddXp) < 1)
+                return LootClass.LiveOnly;
             return LootClass.Valuable;
         }
 
+        // ItemDay_<name> the host writes for an accepted take: the original SetDayRespawn tier; 0 (= nothing written, LootKeys.Apply
+        // never lowers a day) for LiveOnly and for objects without a respawn tier (the original writes no future day either).
+        public static int TakeDay(LootClass c, int today, float value)
+        {
+            if (c == LootClass.Money) return today + RespawnDays(0, true);
+            if (c == LootClass.LiveOnly) return 0;
+            int d = RespawnDays(value, false);
+            return d > 0 ? today + d : 0;
+        }
+
         // W4.1B: the host's save already says this object is gone: ItemDay_<name> lies in the future (original <Start>d__68
-        // destroys it) or, for a unique valuable, Item_<name> = 1 (destroy_if_was_picked). A pickup is then a duplicate.
+        // destroys it) or, for a unique valuable, Item_<name> = 1 (destroy_if_was_picked). LiveOnly has no key: book only.
         public static bool PersistentlyTaken(LootClass c, int itemDayKey, int pickedKey, int today)
         {
-            if (c == LootClass.Excluded) return false;
+            if (c == LootClass.Excluded || c == LootClass.LiveOnly) return false;
             if (itemDayKey > today) return true;
             return c == LootClass.UniqueValuable && pickedKey == 1;
         }
 
+        // W4.2D host decision while the region is occupied: the region book was seeded with the original reload rule when the
+        // occupancy began (LootBook.IsSeeded). A shared-name family member is then decided by the book alone (a sibling's key
+        // written later does not remove it - vanilla lets the player pick it until the next reload); every other object also
+        // checks its own key (written by a pickup the book already knows, or by an unsaved-exit replay).
+        public static bool TakenByKeys(LootClass c, bool sharedName, int itemDayKey, int pickedKey, int today)
+        {
+            if (sharedName) return false;
+            return PersistentlyTaken(c, itemDayKey, pickedKey, today);
+        }
+
+        // v0.16.1 overload (family rule with a live host scene), kept for diagnostics / tests.
+        public static bool PersistentlyTaken(LootClass c, bool sharedName, bool hostSceneLive, bool hostObjectAlive, int itemDayKey, int pickedKey, int today)
+        {
+            if (c == LootClass.Excluded) return false;
+            if (sharedName && hostSceneLive) return !hostObjectAlive;
+            return PersistentlyTaken(c, itemDayKey, pickedKey, today);
+        }
+
+        // v0.16.1 Player-2 pickup policy (client). Shared = host transaction; LocalOwnDrop = Player 2's own unshared local drop
+        // (exists only in Player 2's world, picking it back is no duplicate); Refuse = nothing happens (like any refused
+        // original interaction): no host transaction can cover the object, and a vanilla local pickup would let both players
+        // collect the same world object.
+        public static P2PickPolicy ClientPolicy(bool supportedRegion, bool inCatalog, LootClass cls, bool droppedObject)
+        {
+            if (droppedObject && !inCatalog) return P2PickPolicy.LocalOwnDrop;
+            if (!supportedRegion || !inCatalog || cls == LootClass.Excluded) return P2PickPolicy.Refuse;
+            return P2PickPolicy.Shared;
+        }
+
+        // W4.2D: tools and keys are shared inventory units (unlocking stays the W4.2B lock sync).
         public static string Exclusion(ItemFacts it)
         {
             if (!it.Known) return "unknown item type";
             if (it.Heavy) return "heavy item type";
             if (it.Car) return "car item";
-            if (it.Drone) return "drone";
+            if (it.Drone) return "drone (DroneManager.DronePickedUp equips the picker's drone)";
             if (it.Story) return "story item";
             if (it.Mission) return "mission item";
-            if (it.Tool) return "tool (no XP, no respawn key)";
             if (it.Special) return "special item (special-skill reward)";
-            if (RespawnDays(it.Value, false) <= 0) return "no value (no respawn key)";
-            if (XpAdd(it.AddXp) < 1) return "no XP (no respawn key)";
             return null;
         }
 
@@ -190,9 +251,10 @@ namespace TS2MP.Shared
             {
                 if (n[e.Name] > 1) e.Flags |= LootFlags.SharedName;
                 if (ambiguous != null && ambiguous(e.Hash)) e.Flags |= LootFlags.Ambiguous;
-                if (e.Flags == LootFlags.None) Eligible++;
-                else if (e.Flags == LootFlags.DestroyIfPicked) EligibleUnique++;
-                else if ((e.Flags & ~(LootFlags.Money | LootFlags.NoXp)) == LootFlags.None && (e.Flags & LootFlags.Money) != 0 && e.Money > 0) EligibleMoney++;
+                var f = e.Flags & ~LootFlags.SharedName;   // v0.16.1: shared-name family members are eligible
+                if (f == LootFlags.None) Eligible++;
+                else if (f == LootFlags.DestroyIfPicked) EligibleUnique++;
+                else if ((f & ~(LootFlags.Money | LootFlags.NoXp)) == LootFlags.None && (f & LootFlags.Money) != 0 && e.Money > 0) EligibleMoney++;
             }
         }
         // W4.1B flag-level counts (item facts are checked per pickup): unique valuables, money objects.
@@ -272,6 +334,14 @@ namespace TS2MP.Shared
         readonly Dictionary<int, HashSet<uint>> _taken = new Dictionary<int, HashSet<uint>>();
         readonly Dictionary<long, int> _pending = new Dictionary<long, int>();   // (ns, hash) -> claim token (Pickupable instance id)
         public long Claims, Commits, Releases, Refused, Cleared, Full;
+
+        // W4.2D: a namespace's book is "seeded" once the host listed, at the start of the current occupancy, every object the
+        // original reload removes (WorldLootSync.SeedRegion). Player-2 takes wait for it (Busy). Cleared with the occupancy.
+        readonly HashSet<int> _seeded = new HashSet<int>();
+        public bool IsSeeded(int ns) { return _seeded.Contains(ns); }
+        public void MarkSeeded(int ns) { _seeded.Add(ns); }
+        // Cabinet slot outcomes of the current occupancy (one roll per slot is shared; see CabinetBook).
+        public readonly CabinetBook Cabinets = new CabinetBook();
         static long K(int ns, uint h) { return ((long)ns << 32) | h; }
 
         public LootState StateOf(int ns, uint hash)
@@ -324,6 +394,7 @@ namespace TS2MP.Shared
             var drop = new List<long>();
             foreach (var kv in _pending) if ((int)(kv.Key >> 32) == ns) drop.Add(kv.Key);
             foreach (var k in drop) _pending.Remove(k);
+            _seeded.Remove(ns); Cabinets.ClearRegion(ns);
             HashSet<uint> s;
             if (!_taken.TryGetValue(ns, out s) || s.Count == 0) return 0;
             int n = s.Count; s.Clear(); Cleared += n;
@@ -363,6 +434,30 @@ namespace TS2MP.Shared
             for (int i = 0; i < n; i++) { uint h = BitConverter.ToUInt32(v, 2 + 4 * i); if (ChunkOf(h) != chunk) return false; into.Add(h); }
             return true;
         }
+    }
+
+    // W4.2D RandomFileCabinet slots (verified IL, RandomFileCabinet.Start): per slot (first / sec / th) one roll
+    // Random.Range(0, 20) > 17 hides "<slot>CabinetDisable" (the default contents) and activates ONE random element of
+    // "<slot>CabinetRandom". A slot therefore shows exactly one outcome per scene load: 0 = default contents, k + 1 = element k.
+    // Both instances seed that original roll identically (WorldLootSync.CabinetPrefix), and the host lets the first taken
+    // object of a slot fix its outcome for the occupancy: objects of another outcome of the same slot are refused (a different
+    // local roll can never yield a second reward from one slot). Several objects of the SAME outcome stay pickable.
+    public sealed class CabinetBook
+    {
+        readonly Dictionary<long, int> _outcome = new Dictionary<long, int>();
+        static long K(int ns, uint g) { return ((long)ns << 32) | g; }
+        public long Refused;
+        public bool Allowed(int ns, uint group, int outcome) { int o; return group == 0 || !_outcome.TryGetValue(K(ns, group), out o) || o == outcome; }
+        public void Take(int ns, uint group, int outcome) { if (group != 0 && !_outcome.ContainsKey(K(ns, group))) _outcome[K(ns, group)] = outcome; }
+        public int OutcomeCount { get { return _outcome.Count; } }
+        public void ClearRegion(int ns)
+        {
+            var drop = new List<long>();
+            foreach (var k in _outcome.Keys) if ((int)(k >> 32) == ns) drop.Add(k);
+            foreach (var k in drop) _outcome.Remove(k);
+        }
+        // Seed of the original roll: same cabinet identity + same campaign day on both instances -> same Random sequence.
+        public static int Seed(uint cabinetHash, int day) { return (int)IdentityHash.Append(IdentityHash.Append(IdentityHash.Fnv1a32("cabinet"), cabinetHash.ToString("X8")), day.ToString()); }
     }
 
     // Host decision for a Player-2 pickup, in this order (a retransmission is answered before anything else is looked at).

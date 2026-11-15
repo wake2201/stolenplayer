@@ -456,6 +456,7 @@ namespace TS2MP.Shared
         }
 
         int RegionOfSlot(byte s) { return RegionDirectory.RegionOf(Reg, s); }
+        public int RegionOf(byte slot) { return RegionOfSlot(slot); }   // W4.2D: loot occupancy seeding (plugin)
 
         void AfterFleetChange()
         {
@@ -735,7 +736,9 @@ namespace TS2MP.Shared
             why = null;
             if (slot != 2) { why = "only Player 2 proposes (Player 1 = the original pickup on the host)"; return ProposalCode.NotAuthorized; }
             if (LootTxnHook == null) { why = "shared world loot unavailable on the host"; return ProposalCode.NotAuthorized; }
-            var code = LootTxnHook(slot, t, RegionOfSlot(slot) == t.Ns, out why);
+            // W4.2D: MainScene objects exist in every region (the requester only has to be in the world)
+            int at = RegionOfSlot(slot);
+            var code = LootTxnHook(slot, t, t.Ns == IdentityNamespace.MainScene ? at != Regions.None : at == t.Ns, out why);
             if (code != ProposalCode.Accepted) return code;
             var c = Loot.Commit(t.Ns, t.Hash, Reg, Outbox);
             if (c == ProposalCode.Busy) why = "registry chunk full after the durable commit (should not happen: room checked first)";
@@ -803,6 +806,9 @@ namespace TS2MP.Shared
             if (CarBox.Release(slot)) CommitCarBox();                     // M4.3.2b: a storage session never survives a region change
             if (Locker.Release(slot)) CommitLease(StorageKind.Locker);    // W3: same for the hideout locker
             Items.ReleaseSim(slot, Reg, Outbox);                          // W3: its original item objects are gone with its scene
+            // W4.2D: every region change is an original MainScene reload for that player (Select<Map> -> LoadLevel MainScene):
+            // the MainScene loot book starts a new occupancy (re-seeded by the host plugin from its keys).
+            if (prev != region) Loot.ClearRegion(IdentityNamespace.MainScene, Reg, Outbox);
             if (exists && prev != region && prev != Regions.None && !RegionDirectory.Occupants(Reg).ContainsKey(prev))
             {
                 Items.ClearRegion(prev, Reg, Outbox);                     // W3: region emptied = the original scene reload destroys its dropped items

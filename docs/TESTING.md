@@ -151,6 +151,54 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 37. W4.2D checklist — cross-region loot (release `TS2-Multiplayer-0.17.0.zip` on BOTH PCs, protocol 28)
+Both PCs need 0.17.0 (0.16.x is refused: protocol / mod mismatch). Back up the host save. Run §36 first (v0.16.1 is not yet tested in game; its loading-screen and spawn rows still apply). Keep both `LogOutput.log` files.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Host: F8 → Host in the main menu, wait ~20 s before Continue | Host log `LOOT_CATALOG <scene> … digest=… loot=…` for 14 scenes, then `LOOT_CATALOG ready: 14 scene(s) in N ms` (note N); MadisonSt digest `50D2F273`, PlayerHideout `C14C64A1`, MainScene `4A364B6F` | NOT TESTED |
+| 2 | P1 in Madison, P2 travels alone to Hillville; P2 picks ordinary items and money | Host `WLOOT Hillville occupancy seeded …`, `WLOOT Player-2 pickup #N … (Hillville:…) ACCEPTED … host copy not loaded here`; P2's money appears once in the shared wallet on both PCs | NOT TESTED |
+| 3 | P1 later travels to Hillville | The objects P2 took are gone for P1; P1 can still pick the rest | NOT TESTED |
+| 4 | Both in Hillville: P1 picks an item, P2 picks another; then each tries the other's | P1's object disappears on P2's PC and vice versa; second attempts do nothing | NOT TESTED |
+| 5 | Hideout: P2 picks the hideout loot objects (2) | Accepted once; P1 cannot pick them afterwards | NOT TESTED |
+| 6 | MainScene loot (an object that exists in every region) while P1 and P2 are in different regions | Taken by one player = unavailable for the other; host log `(MainScene:…)` | NOT TESTED |
+| 7 | Same-name objects (e.g. Madison `Pot`, Hillville `Wallet brown`): P2 takes one, the other stays pickable until both leave and return | After leaving the region with nobody left there and returning: every member gone until its respawn day | NOT TESTED |
+| 8 | A key (e.g. Madison `Key_102_Porch`) picked by P2 | Accepted as UniqueValuable; P1 cannot pick it; P2 can unlock the matching door (lock state shared, W4.2B) | NOT TESTED |
+| 9 | File cabinet with random contents (Madison house 114, BankScene): note what both PCs show; one player takes an item | Normally both see the same contents (`cabinetSeeds` > 0 in `WLOOT_STATS`); after one item is taken, the other alternative of the same slot is refused (`… cabinet slot already gave another outcome`) | NOT TESTED |
+| 10 | A parcel in Madison picked by P2 | Host `… parcel '<pref>' locked in the host campaign`; P1 cannot pick it; after a host save + reload the parcel stays locked | NOT TESTED |
+| 11 | A tool / no-XP object (e.g. a crowbar on the ground) picked by P2 | `LiveOnly` accepted, no ItemDay written; after the region is reloaded by both it is back (vanilla respawn) | NOT TESTED |
+| 12 | P2 tries a heavy item and a story item | Nothing happens; client `… heavy pickup … refused` / `… excluded: StoryPick` | NOT TESTED |
+| 13 | P2 disconnects during a pickup (pull the network / quit) and rejoins | Item either granted once (record) or not at all; object state matches on both | NOT TESTED |
+| 14 | Host saves, quits without saving after a P2 pickup in Hillville, restarts, P2 rejoins | P2 keeps the item; the object stays gone in Hillville (durable world take replayed) | NOT TESTED |
+| 15 | Single player without F8 | No `LOOT_CATALOG` / `WLOOT` lines; cabinets roll normally | NOT TESTED |
+| 16 | Performance | Note FPS in the host main menu while `LOOT_CATALOG` builds and in Madison/Hillville; `WLOOT_STATS … decideMax/observeMax` < 5 ms | NOT TESTED |
+
+## 36. v0.16.1 checklist — two-PC QA fixes: loot duplicates, join loading screen, Player-2 spawn (release `TS2-Multiplayer-0.16.1.zip` on BOTH PCs, protocol 27)
+Both PCs need 0.16.1 (0.16.0 is refused: mod version mismatch). Back up the host save first. Keep both `BepInEx\LogOutput.log` files. Re-check §35 rows for wallet, doors/drawers and travel once as a regression (they passed on 0.16.0).
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Madison: P1 picks an ordinary item / money / unique valuable | P2's copy disappears; host `WLOOT Player 1 took '…' (…, Valuable/Money/UniqueValuable) -> Accepted`; P1 credited once | NOT TESTED |
+| 2 | Madison: P2 picks the same three classes | Host `WLOOT Player-2 pickup #N of '…' ACCEPTED by the host: item … +1 / $… credited once`, host copy removed; P1 cannot pick it; wallet rises once on both | NOT TESTED |
+| 3 | Madison: a shared-name object (`Pot`, `Wine1`) — P2 picks one, then P1 tries the same one | Host `… shared-name family … ACCEPTED`; object gone on P1's PC; the other `Pot` stays pickable for both (vanilla until reload) | NOT TESTED |
+| 4 | Madison: P2 tries an excluded object (contract/parcel/story item, file-cabinet content) and a heavy item | Nothing happens on P2's PC; client `WLOOT Player-2 pickup of '…' refused: excluded: …` / `heavy pickup … refused`; P1 can still pick it normally | NOT TESTED |
+| 5 | Hillville or hideout: P2 tries any loot | Nothing happens; client `… refused: region Hillville not shared yet`. P1 picks it normally (P2 still sees P1's picked object there — known, see PROGRESS) | NOT TESTED |
+| 6 | P2 drops an unshareable own item (if any) and picks it back up | Works locally (own drop) | NOT TESTED |
+| 7 | Both press E on the same Madison object at the same moment | Exactly one gets it; the other's press does nothing; no double money/item | NOT TESTED |
+| 8 | P1 saves, leaves Madison with P2, both return (or host restarts and P2 rejoins) | Host `WLOOT MadisonSt loaded: N shared object(s) already removed by the host save listed as taken`; nothing taken before respawn day reappears for P2 | NOT TESTED |
+| 9 | Single player (no F8): main menu Continue / New Game | Unchanged original loading screen; no `JOIN_LOADING` lines | NOT TESTED |
+| 10 | P1: F8 → Host, menu stays usable; then Continue | Play/Settings clickable while hosting is prepared; normal original loading screen | NOT TESTED |
+| 11 | P2: F8 → Join (host already in world) | Main menu switches to the original loading screen at once, Play/Settings do not react; `JOIN_LOADING original loading screen shown …`; world loads; `JOIN_LOADING handed over …`; camera/cursor/controls normal in world | NOT TESTED |
+| 12 | P2: Join while the host is still in its main menu, then press F8 → Abbrechen | Loading screen while retrying; after cancel the original main menu is back and clickable (`JOIN_LOADING main menu restored`) | NOT TESTED |
+| 13 | P2: Join with a wrong code / unreachable address | Error in the F8 window, main menu restored and clickable | NOT TESTED |
+| 14 | Full restart: P1 saves in Madison (quicksave or manual), both quit, P1 Continues, P2 joins | P1 at its saved spot; P2 beside that saved spot (host `spawn RestoreNear/FirstJoin … host checkpoint MadisonSt Saved_Pos 1`) — NOT at P2's last pre-restart position | NOT TESTED |
+| 15 | Full restart after a travel into Madison/Hillville without a later save | P1 seated in the car at the leave point; P2 beside that leave point (`SafePoint/FirstJoin … travel arrival (Saved_Pos 0)`) | NOT TESTED |
+| 16 | Full restart with the host checkpoint in the hideout / Auto Shop | Both at the original fixed spawn (P2 beside P1, `OriginalSpawn/FirstJoin`) | NOT TESTED |
+| 17 | P2 walks away (P1 does not save), P2 quits to menu, rejoins with F8 while P1 keeps playing | P2 back at its last position (`Restore/Rejoin … live rejoin (host world still running)`) | NOT TESTED |
+| 18 | P2 moves, nobody saves, P1 returns to menu (session ends), P1 Continues, P2 joins | P2 at the host checkpoint, not at its unsaved position | NOT TESTED |
+| 19 | Host data folder | `p2spawn-<profile>.dat` (if present from older builds) unchanged (same date/size); no new p2spawn files written | NOT TESTED |
+| 20 | Logs / FPS | No `ERROR`; `WLOOT_STATS` shows `familyTakes`, `p2Refused(local)`, `heavyRefused`; seeding time in `WLOOT MadisonSt loaded: … ms` < 20 ms; note FPS in Madison before/after a pickup | NOT TESTED |
+
 ## 35. W4.1B checklist (integrated) — shared money & duplicate-free world loot (release `TS2-Multiplayer-0.16.0.zip` on BOTH PCs, protocol 27)
 Both PCs need 0.16.0 (0.15.0 and older are refused: protocol / mod mismatch). Run §34 (furniture) once more on 0.16.0 as a regression check. **Use a real campaign or a backup copy, NOT the F8 test campaign** for rows 1–9: the test campaign tops the host balance up to 2,000,000 whenever it falls below 1,000,000, which hides the arithmetic. Note the host's money before each row. Send BOTH `plugin.log` files (`%LOCALAPPDATA%\TS2MP\logs\<stamp>_game_<pid>\`). Look for `WALLET`, `WLOOT`, `P2INV`, `WALLET_STATS`, `WLOOT_STATS`.
 

@@ -151,6 +151,30 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 35. W4.1B checklist (integrated) — shared money & duplicate-free world loot (release `TS2-Multiplayer-0.16.0.zip` on BOTH PCs, protocol 27)
+Both PCs need 0.16.0 (0.15.0 and older are refused: protocol / mod mismatch). Run §34 (furniture) once more on 0.16.0 as a regression check. **Use a real campaign or a backup copy, NOT the F8 test campaign** for rows 1–9: the test campaign tops the host balance up to 2,000,000 whenever it falls below 1,000,000, which hides the arithmetic. Note the host's money before each row. Send BOTH `plugin.log` files (`%LOCALAPPDATA%\TS2MP\logs\<stamp>_game_<pid>\`). Look for `WALLET`, `WLOOT`, `P2INV`, `WALLET_STATS`, `WLOOT_STATS`.
+
+| # | Step | Expected | Result |
+|---|---|---|---|
+| 1 | Host loads the save, client joins | Client money = host money (not Player 2's old personal money, not the sum). Client log `WALLET mirror active … (legacy personal money X / bank Y kept untouched, not added)`; host log `WALLET bound: shared balance N` | NOT TESTED |
+| 2 | Example A: host buys something for a known price in an original shop | Both show balance − price within ~1 s; client log `WALLET money A -> B (host balance …)` | NOT TESTED |
+| 3 | Example C: client buys an item (original shop) | Price deducted ONCE on both; item in the client backpack; host log `WALLET Player-2 money change (report, spend +price): -price -> shared balance …` exactly once | NOT TESTED |
+| 4 | Client sells an own item (original sale / Blackbay) | Both balances + the original sale price; item gone from the client | NOT TESTED |
+| 5 | Example B (Madison Street): client picks up a world money note (e.g. `15$…`) | +amount once on both; note disappears on the host too; host log `WALLET Player 2 collected world money '…'` + `P2INV`/`WLOOT`; host cannot pick it up | NOT TESTED |
+| 6 | Host picks up a different money note | +amount once on both; note disappears on the client | NOT TESTED |
+| 7 | Both press E on the same note at the same moment | Exactly one gets it; money +amount once; the other: nothing happens | NOT TESTED |
+| 8 | Unique valuable (e.g. `vase_102_2`, `Toaster`, `alarm_102`) picked by the client, then by nobody else | Gone on both; host cannot take it; after both leave and return (even days later) it stays gone on both | NOT TESTED |
+| 9 | Simultaneous spend: bring the balance to just above one item price, both buy at the same moment | Balance never below 0; if the host's purchase landed first, the client's item disappears again and its money returns (log `WALLET Player-2 report -> Stale: insufficient shared funds`) | NOT TESTED |
+| 10 | Client tries garage / car upgrade (Whiplist) / hideout renovation / drone upgrade / Darkbank / stocks | Nothing happens, money unchanged; client log `WALLET <Type>.<Method> refused on the client` once | NOT TESTED |
+| 11 | Client completes a job / contract / payphone mission or pickpockets an NPC | Original flow runs; money NOT added to the shared balance (client log `WALLET … not credited to the shared balance … reverted`) | NOT TESTED |
+| 12 | Client: crash the car (repair cost), refuel, buy a drink | Costs deducted once from the shared balance | NOT TESTED |
+| 13 | Rent day passes (sleep) with both connected | Rent charged ONCE (host); client log `WALLET rent … reverted` | NOT TESTED |
+| 14 | Client travels; host travels; both reconnect (client leaves via menu and joins again) | Balance identical on both after every step; no jump | NOT TESTED |
+| 15 | Checkpoint: host saves, host buys X, client buys Y, host quits to menu WITHOUT saving and continues | Host's purchase rolled back (+X), client's purchase and its money stay (balance = saved − Y); client keeps the item; host log `WALLET replay of 1 Player-2 money change(s)` | NOT TESTED |
+| 16 | Host saves normally, quits the game, restarts and hosts again | Same balance; host log `WALLET bound … journal 0` | NOT TESTED |
+| 17 | Client picks up money in Hillville or the hideout (furniture there is shared since 0.15.0) | Nothing happens (client log `WLOOT world money '…' refused for Player 2`) — documented limitation | NOT TESTED |
+| 18 | Performance | No visible hitch; `WALLET_STATS mirrorMax` < 0.1 ms; `WLOOT_STATS decideMax` similar to 0.15.0 | NOT TESTED |
+
 ## 34. W4.2C Phase B checklist — shared furniture, Hillville + hideout objects (plugin 0.15.0 / protocol 26; deployed by Claude in the local game folder, release `TS2-Multiplayer-0.15.0.zip` for the second PC)
 Both PCs need 0.15.0 (a 0.14.x peer is refused: mod version mismatch). Logs: `%LOCALAPPDATA%\TS2MP\logs\<stamp>_game_<pid>\plugin.log` on BOTH PCs. Useful lines: `WOBJ <region> ready: … furniture leaves in the scene N …`, `WOBJ proposed …` / `WOBJ host … -> Accepted`, `WOBJ_STATS … furniture local/applied=a/b inactiveSnaps=… pagesParsed=…`, `WORLD_CENSUS_OBJECTS <region> … digest=…` (must be equal on both PCs per region).
 

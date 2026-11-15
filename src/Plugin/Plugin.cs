@@ -198,6 +198,7 @@ namespace TS2MP.Plugin
         CarBoxSync _carbox;
         WorldItemSync _items;
         Player2Sync _p2;
+        WalletSync _wallet;       // W4.1B shared money (hooks + client mirror; host side lives in Player2Sync)
         WorldCensus _census;
         WorldKeyMirror _mirror;
         WorldLootSync _loot;
@@ -317,6 +318,8 @@ namespace TS2MP.Plugin
             if (_world == null) return;
             try { _vehicles = new VehicleSync(node, log, _world, _sync, _settings.DataDir, _settings.Vehicles); }
             catch (Exception ex) { log.Error("VEHICLE init failed (vehicle sync disabled)", ex); _vehicles = null; }
+            try { _wallet = new WalletSync(node, log, _world); }
+            catch (Exception ex) { log.Error("WALLET init failed (shared money disabled)", ex); _wallet = null; }
             try { _p2 = new Player2Sync(node, log, _world, _settings.DataDir); }
             catch (Exception ex) { log.Error("P2INV init failed (Player-2 persistence disabled)", ex); _p2 = null; }
             try { _carbox = new CarBoxSync(node, log, _world); }
@@ -367,7 +370,7 @@ namespace TS2MP.Plugin
         void DisposeSystems()
         {
             Release(ref _doors, "WOBJ"); Release(ref _campaign, "CAMPAIGN"); Release(ref _loot, "WLOOT"); Release(ref _mirror, "MIRROR");
-            Release(ref _census, "CENSUS"); Release(ref _items, "WITEM"); Release(ref _carbox, "CARBOX"); Release(ref _p2, "P2INV");
+            Release(ref _census, "CENSUS"); Release(ref _items, "WITEM"); Release(ref _carbox, "CARBOX"); Release(ref _p2, "P2INV"); Release(ref _wallet, "WALLET");
             Release(ref _vehicles, "VEHICLE"); Release(ref _world, "WORLD"); Release(ref _sync, "SYNC");
         }
 
@@ -452,6 +455,11 @@ namespace TS2MP.Plugin
             {
                 try { _p2.Update(); }
                 catch (Exception ex) { _log.Error("P2INV update exception (Player-2 persistence disabled)", ex); _p2.Dispose(); _p2 = null; }
+            }
+            if (_wallet != null && _world != null)
+            {
+                try { _wallet.Update(); }
+                catch (Exception ex) { _log.Error("WALLET update exception (shared money mirror disabled)", ex); _wallet.Dispose(); _wallet = null; }
             }
             if (_carbox != null && _world != null)
             {

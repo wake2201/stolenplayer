@@ -60,6 +60,7 @@ namespace TS2MP.Plugin
         Keys _keys;
         // ---- client ----
         P2ClientSync _sync; object _sceneGm; string _pendingPath; readonly Dictionary<int, int> _unknown = new Dictionary<int, int>();
+        P2Inventory _restored;   // W4.1B: record applied to this scene (legacy money/bank reported unchanged, counter fallback)
         long _bbBlocked, _pendingWrites; double _pendingWriteMaxMs, _captureMaxMs;
 
         static double Now { get { return Time.realtimeSinceStartup; } }
@@ -129,7 +130,7 @@ namespace TS2MP.Plugin
                     var newSave = sg != null ? AccessTools.Method(sg, "SaveGameNewSystem", new[] { typeof(bool), typeof(float) }) : null;
                     if (lose == null || newSave == null) { _log.Warn("P2INV SaveGame.LoseGame / SaveGameNewSystem not found: Player-2 persistence disabled (no exit synchronization)"); return; }
                     var exit = new HarmonyMethod(AccessTools.Method(typeof(Player2Sync), "ExitPrefix"));
-                    _h.Patch(lose, exit); _h.Patch(newSave, exit);
+                    _h.Patch(lose, exit); _h.Patch(newSave, exit, exit);   // W4.1B: + postfix: the travel damage cost (IL_035a) is inside the original
                     InitClientSync();
                 }
                 var sell = bbo != null ? AccessTools.Method(bbo, "SellIt", Type.EmptyTypes) : null;
@@ -170,6 +171,60 @@ namespace TS2MP.Plugin
         {
             if (!ReferenceEquals(gm, _bookGm)) { _bookGm = gm; HostBind(); }
             if (_book != null && _dirtyFile && Now >= _nextWrite) { _dirtyFile = false; _nextWrite = Now + 1.0; QueueWrite(); }
+            if (!ReferenceEquals(_walletGm, _bookGm)) BindWallet();
+            PublishWallet(false);
+        }
+
+        // ======================================================================== W4.1B shared money (host)
+        // The host's PlayerScript.moneyAm is the shared balance. Player-2 deltas are applied only while this scene is bound
+        // (HostBind ran: the original LoadGame already set moneyAm); deltas committed while the host scene loads stay in the
+        // journal and are replayed by the next HostBind (their sequence is above the save's watermark).
+        int _lastBalance; bool _haveBalance; long _unapplied; WalletState _pub; uint _pubSeq; double _nextPub; bool _pubForce;
+        long _walletApplied, _walletReplayed, _walletRefused, _walletJournalOnly;
+        object LivePs() { var ps = Ps(); var u = ps as UnityEngine.Object; return u != null && u ? ps : null; }
+        internal bool HostWalletBound { get { var gm = _world.GameManagerObject; return _host && _ok && _book != null && gm != null && ReferenceEquals(gm, _bookGm) && ReferenceEquals(_walletGm, _bookGm) && LivePs() != null; } }
+
+        // Shared balance for a decision: live when bound; else the last bound balance + journaled deltas not applied yet.
+        bool HostBalance(out long balance)
+        {
+            balance = 0;
+            if (HostWalletBound) { balance = _money(LivePs()); return true; }
+            if (!_haveBalance) return false;
+            balance = (long)_lastBalance + _unapplied; return true;
+        }
+        internal bool TryHostBalance(out int balance) { balance = 0; if (!HostWalletBound) return false; balance = _money(LivePs()); return true; }
+
+        void ApplyWallet(uint seq, int delta, string what)
+        {
+            if (HostWalletBound)
+            {
+                var ps = LivePs(); int before = _money(ps), after = WalletRules.Apply(before, delta);
+                _setMoney(ps, after); _book.WalletApplied = seq; _walletApplied++;
+                _log.Info("WALLET " + what + ": " + (delta >= 0 ? "+" : "") + delta + " -> shared balance " + before + " -> " + after + " (wallet seq " + seq + ")");
+            }
+            else { _unapplied += delta; _walletJournalOnly++; _log.Info("WALLET " + what + ": " + (delta >= 0 ? "+" : "") + delta + " journaled (seq " + seq + ") while the host scene loads - applied by the next bind"); }
+            _pubForce = true; PublishWallet(true);
+        }
+
+        // SPrefs.SetInt("Money", ...) prefix (WalletSync, host): the value being written is moneyAm, which contains every applied
+        // Player-2 delta up to WalletApplied -> the watermark goes into the same save memory (same FBPP write).
+        internal void OnMoneyKeyWritten()
+        {
+            if (!_host || _book == null || !HostWalletBound) return;
+            _set(WalletRules.MarkKey, (int)_book.WalletApplied);
+        }
+
+        // Registry "wallet": one consistent (balance, Player-2 counter) pair; on change, at most 10 per second unless forced.
+        void PublishWallet(bool force)
+        {
+            if (!HostWalletBound || _world.Host == null) return;
+            int bal = _money(LivePs()); _lastBalance = bal; _haveBalance = true; _unapplied = 0;
+            var rec = _book.Rec;
+            if (_pub.RecId == rec.Id && _pub.Balance == bal && _pub.P2Wallet == rec.Wallet && !_pubForce) return;
+            if (!force && !_pubForce && Now < _nextPub) return;
+            _nextPub = Now + 0.1; _pubForce = false;
+            _pub = new WalletState { RecId = rec.Id, Balance = bal, P2Wallet = rec.Wallet, Seq = ++_pubSeq };
+            _world.Host.CommitWallet(_pub); _world.FlushOutbox();
         }
 
         // New GameManager (save loaded, travel reload): (re)load the profile's book, then bring the in-memory storage counts
@@ -217,9 +272,36 @@ namespace TS2MP.Plugin
                 _lootReplayed += wl.Count;
                 _log.Info("P2INV replay of " + wl.Count + " world take(s) not contained in the loaded save (host watermark " + hmark + "): " + wl[0].Take + (wl.Count > 1 ? " ..." : ""));
             }
+            // W4.1B: Player-2 money deltas the loaded "Money" key does not contain (wallet seq above its watermark). The original
+            // LoadGame already ran (SaveGame.Start; loadedMap is set later), so moneyAm = the saved shared balance here.
+            _walletGm = null; BindWallet();
             _prov.Reset();                                                   // the loaded save + replays = the recoverable state
             _world.Host.CommitP2(_book.Rec); _world.FlushOutbox();
-            _log.Info("P2INV host book profile " + profile + " watermark " + mark + " host watermark " + hmark + ": " + _book.Rec + ", journal " + _book.Journal.Count);
+            _log.Info("P2INV host book profile " + profile + " watermark " + mark + " host watermark " + hmark + ": " + _book.Rec + ", journal " + _book.Journal.Count + ", wallet journal " + _book.WalletLog.Count);
+        }
+
+        // Once per bound scene, as soon as the host player exists (normally inside HostBind).
+        object _walletGm;
+        void BindWallet()
+        {
+            var wps = LivePs();
+            if (_book == null || wps == null || ReferenceEquals(_walletGm, _bookGm)) return;
+            _walletGm = _bookGm;
+            uint wmark = (uint)Math.Max(0, _get(WalletRules.MarkKey));
+            if (wmark > _book.WalletSeq) _book.WalletSeq = wmark;
+            uint wmax;
+            var wr = _book.ReplayWallet(wmark, out wmax);
+            if (wr.Count > 0)
+            {
+                int before = _money(wps), m = before;
+                foreach (var e in wr) m = WalletRules.Apply(m, e.Delta);
+                _setMoney(wps, m); _walletReplayed += wr.Count;
+                _log.Info("WALLET replay of " + wr.Count + " Player-2 money change(s) not contained in the loaded save (wallet watermark " + wmark + "): shared balance " + before + " -> " + m);
+            }
+            _book.WalletApplied = wmax; _unapplied = 0;
+            _lastBalance = _money(wps); _haveBalance = true;
+            _pubForce = true; PublishWallet(true);
+            _log.Info("WALLET bound: shared balance " + _lastBalance + " (wallet watermark " + wmark + ", journal " + _book.WalletLog.Count + ", Player-2 counter " + _book.Rec.Wallet + ")");
         }
 
         P2Book LoadBook(int profile, uint mark)
@@ -261,8 +343,9 @@ namespace TS2MP.Plugin
         static void SavePrefix()
         {
             var i = Instance; if (i == null || !i._host || i._book == null) return;
-            try { i._savingTxn = Math.Max(0, i._get(WatermarkKey)); i._savingHost = Math.Max(0, i._get(HostMarkKey)); } catch { i._savingTxn = -1; i._savingHost = -1; }
+            try { i._savingTxn = Math.Max(0, i._get(WatermarkKey)); i._savingHost = Math.Max(0, i._get(HostMarkKey)); i._savingWallet = Math.Max(0, i._get(WalletRules.MarkKey)); } catch { i._savingTxn = -1; i._savingHost = -1; i._savingWallet = -1; }
         }
+        long _savingWallet = -1;
 
         static void SavePostfix()
         {
@@ -274,6 +357,8 @@ namespace TS2MP.Plugin
             try
             {
                 i._book.SaveCompleted((uint)i._savingTxn, (uint)Math.Max(0, i._savingHost)); i._savingTxn = -1; i._savingHost = -1;
+                if (i._savingWallet > 0) i._book.WalletSaved((uint)i._savingWallet);   // W4.1B: deltas in the "Money" key now on disk
+                i._savingWallet = -1;
                 if (!i._book.HistoryConfirmed && i._get(HistoryKey) == i._book.HistoryId) i._book.HistoryConfirmed = true;
                 i.QueueWrite();
             }
@@ -324,16 +409,22 @@ namespace TS2MP.Plugin
         ProposalCode HostReport(P2Inventory rep)
         {
             if (_book == null) return ProposalCode.Busy;
-            var before = _book.Rec;
-            var code = _book.AcceptReport(rep);
+            var before = _book.Mark();
+            // W4.1B: the money side is decided with the report (shared balance covers a purchase, else refused -> the client
+            // restores this record: item and money return together); an accepted delta is journaled in the same durable write.
+            long balance; bool known = HostBalance(out balance);
+            int delta; uint wseq; string why;
+            var code = _book.AcceptReport(rep, balance, known, out delta, out wseq, out why);
             if (code == ProposalCode.Accepted)
             {
-                if (!WriteNow()) { _book.Rec = before; _log.Warn("P2INV report not committed (durable write failed): Busy"); return ProposalCode.Busy; }
+                if (!WriteNow()) { _book.Restore(before); _log.Warn("P2INV report not committed (durable write failed): Busy, nothing changed"); return ProposalCode.Busy; }
                 _dirtyFile = false;
+                if (delta != 0) ApplyWallet(wseq, delta, "Player-2 money change (report, spend +" + (rep.Spend - before.Rec.Spend) + ")");
                 _world.Host.CommitP2(_book.Rec);
                 _log.Info("P2INV report committed: " + _book.Rec);
             }
-            if (code == ProposalCode.Stale) _log.Info("P2INV report refused as stale: report " + rep + ", host " + _book.Rec);
+            if (why != null && code != ProposalCode.Accepted) { _walletRefused++; _log.Info("WALLET Player-2 report -> " + code + ": " + why + (code == ProposalCode.Stale ? " (client restores the record: purchase and money return together)" : "")); }
+            else if (code == ProposalCode.Stale) _log.Info("P2INV report refused as stale: report " + rep + ", host " + _book.Rec);
             if ((code == ProposalCode.Accepted || code == ProposalCode.Unchanged) && !_clientSynced)
             { _clientSynced = true; _hostSyncs++; _log.Info("P2INV client synchronized: restore acknowledged, record " + _book.Rec); }
             return code;
@@ -529,6 +620,29 @@ namespace TS2MP.Plugin
             return ProposalCode.Accepted;
         }
 
+        // W4.1B: a validated Player-2 pickup of world money: record Wallet += add_money (exactly-once txn) + wallet journal entry
+        // + world take, ONE atomic p2inv write; then the original keys, the host watermark and the shared balance (+ registry).
+        // The client's resumed original coroutine adds the same amount locally, which its mirror counts into the same Wallet value.
+        public ProposalCode HostMoneyTake(uint txn, LootTake take, int amount, out string why)
+        {
+            why = null;
+            if (_book == null || _keys == null) { why = "no Player-2 book yet"; return ProposalCode.Busy; }
+            if (_book.WorldFull) { why = "world journal full (host never saved)"; return ProposalCode.Busy; }
+            var mark = _book.Mark();
+            uint wseq;
+            var code = _book.MoneyTxn(txn, amount, out wseq);
+            if (code != ProposalCode.Accepted) { why = "record " + code; return code; }
+            uint seq = _book.NextHostSeq();
+            if (!_book.AddWorldTake(seq, take)) { _book.Restore(mark); why = "world take refused"; return ProposalCode.Busy; }
+            if (!WriteNow()) { _book.Restore(mark); why = "durable write failed"; _log.Warn("P2INV world money #" + txn + " not committed (durable write failed): Busy, nothing changed"); return ProposalCode.Busy; }
+            LootKeys.Apply(_keys, take);
+            _set(HostMarkKey, (int)seq);
+            _dirtyFile = false; _lootTakes++;
+            ApplyWallet(wseq, amount, "Player 2 collected world money " + take);
+            _world.Host.CommitP2(_book.Rec);
+            return ProposalCode.Accepted;
+        }
+
         public int P2Count(int itemId) { return _book != null ? _book.Rec.CountOf(itemId) : 0; }
         public uint P2AppliedTxn { get { return _book != null ? _book.Rec.AppliedTxn : 0; } }
         public bool HostBookReady { get { return _host && _book != null && _keys != null; } }
@@ -561,7 +675,7 @@ namespace TS2MP.Plugin
         void ClientFrame(object gm, bool loaded)
         {
             object scene = loaded ? gm : null;
-            if (!ReferenceEquals(scene, _sceneGm)) { _sceneGm = scene; _sync.SceneLeft(); }   // new GameManager / main menu: restore again
+            if (!ReferenceEquals(scene, _sceneGm)) { _sceneGm = scene; _sync.SceneLeft(); var wal = WalletSync.Instance; if (wal != null) wal.ClientSceneLeft(); }   // new GameManager / main menu: restore again
             bool live = Live;
             P2Inventory rec = null; bool invalid = false;
             if (live) TryRecord(out rec, out invalid);
@@ -614,7 +728,11 @@ namespace TS2MP.Plugin
             }
             _unknown.Clear();
             foreach (var kv in rec.Items) if (!known.Contains(kv.Key)) _unknown[kv.Key] = kv.Value;
-            _setMoney(ps, rec.Money); _set("Money", rec.Money);
+            // W4.1B: money = the shared balance mirror (never the legacy personal rec.Money); legacy bank frozen at the record value
+            _restored = rec;
+            var wal = WalletSync.Instance;
+            if (wal != null) { wal.ClientRestore(ps, rec); _set("Money", _money(ps)); var wl = WorldLootSync.Instance; if (wl != null) wl.OnRecordRestored(rec); }
+            else _log.Warn("WALLET mirror unavailable: Player 2's money is not shared in this scene (changes are not reported)");
             _set("BankBalance", rec.Bank);
             _setBaton(ps, rec.BatonLife); _set("BatonLife", rec.BatonLife);
             _setCrowbar(ps, rec.CrowbarLife); _set("CrowbarLife", rec.CrowbarLife);
@@ -632,7 +750,15 @@ namespace TS2MP.Plugin
             var s = new P2Inventory();
             foreach (var o in items) { if (o == null) continue; int c = _amt(o); if (c > 0 && !s.Items.ContainsKey(_id(o))) s.Items[_id(o)] = c; }
             foreach (var kv in _unknown) if (!s.Items.ContainsKey(kv.Key)) s.Items[kv.Key] = kv.Value;
-            s.Money = _money(ps); s.Bank = _get("BankBalance"); s.BatonLife = _baton(ps); s.CrowbarLife = _crowbar(ps);
+            s.BatonLife = _baton(ps); s.CrowbarLife = _crowbar(ps);
+            // W4.1B: legacy personal money / bank stay exactly as restored (dormant); the shared-money counters come from the
+            // mirror after one more observation of the live field (a purchase is never reported without its money change)
+            var r0 = _restored;
+            s.Money = r0 != null ? r0.Money : 0; s.Bank = r0 != null ? r0.Bank : 0;
+            int wallet = r0 != null ? r0.Wallet : 0, spend = r0 != null ? r0.Spend : 0;
+            var wal = WalletSync.Instance;
+            if (wal != null) wal.ClientCapture(ps, ref wallet, ref spend);
+            s.Wallet = wallet; s.Spend = spend;
             double ms = sw.Elapsed.TotalMilliseconds; if (ms > _captureMaxMs) _captureMaxMs = ms;
             return s;
         }
@@ -669,6 +795,8 @@ namespace TS2MP.Plugin
 
         // Before a CarBox transfer: newest Player-2 state first (same ordered channel); false = the transfer waits.
         public bool PrepareTransfer() { return !_host && _sync != null && _sync.PrepareTransfer(Now, CurrentRecord()); }
+        // W4.1B: right after a client purchase: report now (same path; when a report is already out the 2 s check follows it)
+        public void ReportNow() { if (!_host && _sync != null) _sync.PrepareTransfer(Now, CurrentRecord()); }
 
         // The host's storage values written into the client for an open session are cleared when it ends.
         public void ClearStorageMirror(byte kind)
@@ -734,6 +862,8 @@ namespace TS2MP.Plugin
                     + " clientSynced " + _clientSynced + " syncs " + _hostSyncs
                     + " durability ledger " + (_ledgerOn ? _ledger.Entries + " type(s)" : "OFF") + " prerequisites " + _prereqs + " refusedUnsaved " + _refusedUnsaved + " ledgerClears " + _ledgerClears
                     + " worldTakes " + _lootTakes + " worldReplayed " + _lootReplayed + " worldJournal " + (_book != null ? _book.World.Count : 0) + " provenance tracked " + _prov.Tracked + " attributed " + _provTakes + " unattributed " + _provUnattributed
+                    + " | WALLET balance " + (_haveBalance ? _lastBalance.ToString() : "-") + " applied " + _walletApplied + " replayed " + _walletReplayed + " journalOnly " + _walletJournalOnly + " refused " + _walletRefused
+                    + " journal " + (_book != null ? _book.WalletLog.Count + " seq " + _book.WalletSeq + "/" + _book.WalletApplied + " saved " + _book.LastSavedWallet : "-") + " published #" + _pubSeq
                     : (_sync != null ? _sync.Stats : "no lifecycle") + " pendingWrites " + _pendingWrites + " max " + _pendingWriteMaxMs.ToString("0.0") + "ms captureMax " + _captureMaxMs.ToString("0.00") + "ms") + " blackbayBlocked " + _bbBlocked;
             }
         }

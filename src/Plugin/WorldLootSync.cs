@@ -2,6 +2,10 @@
 // Entry point: the existing W3 Harmony prefix on Pickupable.PickUp (WorldItemSync.PickPrefix) asks AllowPick for every object
 // that is not a W3 dropped item. Supported = census object of a supported region (Madison Street) whose flags and item type
 // are in the Phase B subset; everything else keeps the original local behaviour (logged once per object type).
+// W4.1B: classes via LootRules.Classify - ordinary valuables, unique valuables (destroy_if_was_picked; host refuses a take its
+//   save already removed and lists such objects as taken at region load) and world money (is_money: the host credits the
+//   SHARED balance + record counter in the same durable write as the world take; Player 2's coroutine add_money is counted by
+//   the wallet mirror into the same counter). World money that no host transaction can cover is refused for Player 2.
 //   Player 1 (host): a claim is taken at PickUp and stays PENDING while the original coroutine runs; the postfix on
 //     Pickupable.SetDayRespawn (= the coroutine's irreversible step for that very instance) commits it as taken. A pending
 //     claim whose object disappears (scene unloaded) or is deactivated before that step is released - nothing irreversible
@@ -32,7 +36,7 @@ namespace TS2MP.Plugin
         Harmony _h; bool _ok;
         Func<object, object> _gmPs, _psItems, _psInv, _pickItem; Func<object, int> _invDays;
         Func<object, int> _itemId, _itemAmount, _itemMax, _pickId; Func<object, float> _itemValue, _itemAddXp;
-        Func<object, bool> _itemHeavy, _itemCar, _itemDrone, _itemStory, _itemMission, _itemTool, _itemSpecial, _pickPicking, _pickHeavy, _pickMoney, _pickDropped;
+        Func<object, bool> _itemHeavy, _itemCar, _itemDrone, _itemStory, _itemMission, _itemTool, _itemSpecial, _itemKey, _pickPicking, _pickHeavy, _pickMoney, _pickDropped;
         Action<object> _pickUp, _destroyMarker; MethodInfo _itemPicked; Func<string, int> _get;
 
         // host: Player-1 claims pending until the original reached SetDayRespawn (key = Pickupable instance id)
@@ -41,9 +45,12 @@ namespace TS2MP.Plugin
         readonly List<int> _scratch = new List<int>();
 
         // client: one Player-2 world pickup at a time (shares the Player-2 transaction id with storage / dropped items)
-        sealed class Txn { public uint Id, Txn_; public int Ns; public uint Hash; public Component Pick; public object Item, Gm; public string Name; public double At; public bool Lost; }
+        sealed class Txn { public uint Id, Txn_; public int Ns; public uint Hash; public Component Pick; public object Item, Gm; public string Name; public double At; public bool Lost; public LootClass Cls; public int Money; }
         Txn _txn;
         object _awaitItem; int _awaitAmount; uint _awaitTxn; Component _awaitPick; string _awaitName; double _awaitInactive;
+        // W4.1B money pickup: the original coroutine adds add_money; the wallet mirror counts it (await counter target)
+        bool _awaitMoney, _awaitCovered; int _awaitMoneyAmount;
+        bool Awaiting { get { return _awaitItem != null || _awaitMoney; } }
         Component _resume;
 
         // observer: taken objects of the local region
@@ -55,7 +62,7 @@ namespace TS2MP.Plugin
         double _pickMaxMs, _decideMaxMs, _observeMaxMs; double _nextStats, _nextClaimCheck;
         static double Now { get { return Time.realtimeSinceStartup; } }
 
-        public bool TxnPending { get { return (_txn != null && !_txn.Lost) || _awaitItem != null; } }
+        public bool TxnPending { get { return (_txn != null && !_txn.Lost) || Awaiting; } }
         public bool HasLostTxn { get { return _txn != null && _txn.Lost; } }
         bool Live { get { return _node.IsConnected && _world.Synced; } }
 
@@ -70,7 +77,7 @@ namespace TS2MP.Plugin
                 _itemId = Fast.Getter<int>(it, "item_ID"); _itemAmount = Fast.Getter<int>(it, "item_amount"); _itemMax = Fast.Getter<int>(it, "max_amount");
                 _itemValue = Fast.Getter<float>(it, "item_value"); _itemAddXp = Fast.Getter<float>(it, "add_XP");
                 _itemHeavy = Fast.Getter<bool>(it, "is_heavy"); _itemCar = Fast.Getter<bool>(it, "isCar"); _itemDrone = Fast.Getter<bool>(it, "isDrone"); _itemStory = Fast.Getter<bool>(it, "isStoryItem");
-                _itemMission = Fast.Getter<bool>(it, "isMissionItem"); _itemTool = Fast.Getter<bool>(it, "isTool"); _itemSpecial = Fast.Getter<bool>(it, "is_special");
+                _itemMission = Fast.Getter<bool>(it, "isMissionItem"); _itemTool = Fast.Getter<bool>(it, "isTool"); _itemSpecial = Fast.Getter<bool>(it, "is_special"); _itemKey = Fast.Getter<bool>(it, "isKey");
                 _pickItem = Fast.Getter<object>(pk, "itemScript"); _pickId = Fast.Getter<int>(pk, "item_ID"); _pickPicking = Fast.Getter<bool>(pk, "picking");
                 _pickHeavy = Fast.Getter<bool>(pk, "is_heavy_item"); _pickMoney = Fast.Getter<bool>(pk, "is_money"); _pickDropped = Fast.Getter<bool>(pk, "wasDropped");
                 _pickUp = Fast.Call0(pk, "PickUp"); _destroyMarker = Fast.Call0(pk, "DestroyMarker");
@@ -79,7 +86,7 @@ namespace TS2MP.Plugin
                 if (gi != null) _get = (Func<string, int>)Delegate.CreateDelegate(typeof(Func<string, int>), gi);
                 var respawn = pk != null ? AccessTools.Method(pk, "SetDayRespawn", Type.EmptyTypes) : null;
                 if (_gmPs == null || _psItems == null || _psInv == null || _invDays == null || _itemId == null || _itemAmount == null || _itemMax == null || _itemValue == null || _itemAddXp == null
-                    || _itemHeavy == null || _itemCar == null || _itemDrone == null || _itemStory == null || _itemMission == null || _itemTool == null || _itemSpecial == null
+                    || _itemHeavy == null || _itemCar == null || _itemDrone == null || _itemStory == null || _itemMission == null || _itemTool == null || _itemSpecial == null || _itemKey == null
                     || _pickItem == null || _pickId == null || _pickPicking == null || _pickHeavy == null || _pickMoney == null || _pickDropped == null || _pickUp == null || _destroyMarker == null
                     || _itemPicked == null || _get == null || respawn == null)
                 { _log.Warn("WLOOT game API incomplete: shared world loot disabled (original local pickups)"); return; }
@@ -114,7 +121,7 @@ namespace TS2MP.Plugin
             if (o == null) return new ItemFacts();
             return new ItemFacts
             {
-                Known = true, Heavy = _itemHeavy(o), Car = _itemCar(o), Drone = _itemDrone(o), Story = _itemStory(o), Mission = _itemMission(o), Tool = _itemTool(o), Special = _itemSpecial(o),
+                Known = true, Heavy = _itemHeavy(o), Car = _itemCar(o), Drone = _itemDrone(o), Story = _itemStory(o), Mission = _itemMission(o), Tool = _itemTool(o), Special = _itemSpecial(o), Key = _itemKey(o),
                 Value = _itemValue(o), AddXp = _itemAddXp(o), MaxAmount = _itemMax(o)
             };
         }
@@ -135,15 +142,30 @@ namespace TS2MP.Plugin
             try
             {
                 int ns = _world.LocalRegion;
-                if (!LootRules.SupportedNamespace(ns)) return true;
+                // W4.1B: world money goes into the SHARED balance; on the client only a host transaction may grant it
+                bool money = !_host && _pickMoney(pick);
+                if (!LootRules.SupportedNamespace(ns)) return money ? RefuseMoney(pick.transform.name, "region not supported yet") : true;
                 var cat = LiveCatalog(ns); LootEntry e;
-                if (cat == null || !cat.TryByInstance(pick.GetInstanceID(), out e)) return true;   // not a verified scene object
-                string excl = e.Flags != LootFlags.None ? LootRules.Exclusion(e.Flags) : LootRules.Exclusion(Facts(e.ItemId));
-                if (excl != null) { NotShared(e, excl); return true; }
-                return _host ? HostPick(ns, e, pick) : ClientPick(ns, cat, e, pick);
+                if (cat == null || !cat.TryByInstance(pick.GetInstanceID(), out e)) return money ? RefuseMoney(pick.transform.name, "not a verified scene object") : true;
+                string excl; var cls = LootRules.Classify(e, ItemFactsFor(e), out excl);
+                if (cls == LootClass.Excluded) { if (money) return RefuseMoney(e.Name, excl); NotShared(e, excl); return true; }
+                return _host ? HostPick(ns, e, pick) : ClientPick(ns, cat, e, cls, pick);
             }
             finally { double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency; if (ms > _pickMaxMs) _pickMaxMs = ms; }
         }
+
+        // Money objects have no meaningful item type (item 0): their class does not depend on item facts.
+        ItemFacts ItemFactsFor(LootEntry e) { return (e.Flags & LootFlags.Money) != 0 ? new ItemFacts() : Facts(e.ItemId); }
+
+        // W4.1B: a client pickup of world money that no host transaction can cover would add to the shared balance a second
+        // time (both players see their own copy): refused, nothing happens (logged once per object name).
+        bool RefuseMoney(string name, string why)
+        {
+            _moneyRefused++;
+            if (_notSharedLogged.Count < 64 && _notSharedLogged.Add(("money:" + name).GetHashCode())) _log.Info("WLOOT world money '" + name + "' refused for Player 2: " + why + " - no shared transaction possible (would duplicate money)");
+            return false;
+        }
+        long _moneyRefused, _moneyTakes, _uniqueTakes, _persistRefused, _uniqueSeeded;
 
         void NotShared(LootEntry e, string why)
         {
@@ -165,20 +187,23 @@ namespace TS2MP.Plugin
             return true;
         }
 
-        bool ClientPick(int ns, LootCatalog cat, LootEntry e, Component pick)
+        bool ClientPick(int ns, LootCatalog cat, LootEntry e, LootClass cls, Component pick)
         {
             if (!Live) return false;                                   // disconnected: a local pick could never be reconciled
             if (_taken.Contains(e.Hash) && _shownNs == ns) { Remove(pick, e.Name, "taken"); return false; }
-            if (_txn != null || _awaitItem != null) return false;
+            if (_txn != null || Awaiting) return false;
             var p2 = Player2Sync.Instance; var cb = CarBoxSync.Instance; var wi = WorldItemSync.Instance;
             if (p2 == null || !p2.Restored || (cb != null && cb.TransferPending) || (wi != null && wi.TxnPending)) return false;
+            bool money = cls == LootClass.Money;
+            var wal = WalletSync.Instance;
+            if (money && (wal == null || !wal.ClientActive)) return RefuseMoney(e.Name, "shared money mirror not active in this scene");
             if (!p2.PrepareTransfer()) return false;
             uint txn = p2.AppliedTxn + 1;
             var req = new LootTxnRequest { Txn = txn, Ns = ns, Hash = e.Hash, ItemId = e.ItemId, Digest = cat.Digest };
-            _txn = new Txn { Txn_ = txn, Ns = ns, Hash = e.Hash, Pick = pick, Item = ItemOf(e.ItemId), Gm = _world.GameManagerObject, Name = e.Name, At = Now };
+            _txn = new Txn { Txn_ = txn, Ns = ns, Hash = e.Hash, Pick = pick, Item = money ? null : ItemOf(e.ItemId), Gm = _world.GameManagerObject, Name = e.Name, At = Now, Cls = cls, Money = money ? e.Money : 0 };
             _txn.Id = _world.SendProposal(new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.LootTxn, Value = req.Encode() });
             _p2Requests++;
-            _log.Info("WLOOT pickup #" + txn + " of '" + e.Name + "' (" + IdentityNamespace.Name(ns) + ":" + e.Hash.ToString("X8") + ", item " + e.ItemId + ") requested (proposal " + _txn.Id + ")");
+            _log.Info("WLOOT pickup #" + txn + " of '" + e.Name + "' (" + IdentityNamespace.Name(ns) + ":" + e.Hash.ToString("X8") + ", " + cls + (money ? " $" + e.Money : ", item " + e.ItemId) + ") requested (proposal " + _txn.Id + ")");
             return false;
         }
 
@@ -229,17 +254,30 @@ namespace TS2MP.Plugin
                 // host scene loading: item facts / day count unavailable -> retry later (never a permanent refusal)
                 if (inv == null && t.Txn > p2.P2AppliedTxn) { why = "host scene loading"; return ProposalCode.Busy; }
                 var cat = WorldCensus.Instance != null ? WorldCensus.Instance.Loot(t.Ns) : null;
-                LootEntry e = null; var facts = new ItemFacts();
-                if (cat != null && cat.TryGet(t.Hash, out e)) facts = Facts(e.ItemId);
-                var book = _world.Host.Loot;
-                var code = LootDecision.DecideP2(t.Txn, p2.P2AppliedTxn, inRegion, cat, t.Digest, t.Hash, t.ItemId, facts, book.StateOf(t.Ns, t.Hash), book.HasRoom(t.Ns, t.Hash), p2.P2Count(t.ItemId), out why);
-                if (code != ProposalCode.Accepted) { if (code != ProposalCode.Unchanged) { _hostRefused++; _log.Info("WLOOT Player-2 pickup #" + t.Txn + " " + IdentityNamespace.Name(t.Ns) + ":" + t.Hash.ToString("X8") + " -> " + code + " (" + why + ")"); } return code; }
+                LootEntry e = null; var facts = new ItemFacts(); bool persist = false;
+                if (cat != null && cat.TryGet(t.Hash, out e))
+                {
+                    facts = ItemFactsFor(e);
+                    // W4.1B: the host save already removed it (respawn day in the future / unique item picked) -> never again
+                    string ignore; var c0 = LootRules.Classify(e, facts, out ignore);
+                    if (c0 != LootClass.Excluded && inv != null) persist = LootRules.PersistentlyTaken(c0, _get(LootKeys.Day(e.Name)), _get(LootKeys.Picked(e.Name)), _invDays(inv));
+                }
+                var book = _world.Host.Loot; LootClass cls;
+                var code = LootDecision.DecideP2(t.Txn, p2.P2AppliedTxn, inRegion, cat, t.Digest, t.Hash, t.ItemId, facts, book.StateOf(t.Ns, t.Hash), book.HasRoom(t.Ns, t.Hash), p2.P2Count(t.ItemId), persist, out cls, out why);
+                if (code != ProposalCode.Accepted)
+                {
+                    if (code != ProposalCode.Unchanged) { _hostRefused++; _log.Info("WLOOT Player-2 pickup #" + t.Txn + " " + IdentityNamespace.Name(t.Ns) + ":" + t.Hash.ToString("X8") + " -> " + code + " (" + why + ")"); }
+                    if (persist && code == ProposalCode.Stale && book.StateOf(t.Ns, t.Hash) == LootState.Available)
+                    { _persistRefused++; book.Commit(t.Ns, t.Hash, _world.Host.Reg, _world.Host.Outbox); _world.FlushOutbox(); _dirty = true; }   // listed as taken: Player 2's copy disappears
+                    return code;
+                }
                 if (inv == null) { why = "host scene loading"; return ProposalCode.Busy; }
-                var take = new LootTake { Ns = t.Ns, Hash = t.Hash, ItemId = e.ItemId, Day = _invDays(inv) + LootRules.RespawnDays(facts.Value, false), ItemFlag = true, Name = e.Name };
-                code = p2.HostLootTake(t.Txn, take, out why);
+                bool money = cls == LootClass.Money;
+                var take = new LootTake { Ns = t.Ns, Hash = t.Hash, ItemId = e.ItemId, Day = _invDays(inv) + LootRules.RespawnDays(facts.Value, money), ItemFlag = true, Name = e.Name };
+                code = money ? p2.HostMoneyTake(t.Txn, take, e.Money, out why) : p2.HostLootTake(t.Txn, take, out why);
                 if (code == ProposalCode.Accepted)
                 {
-                    _hostDecided++;
+                    _hostDecided++; if (money) _moneyTakes++; else if (cls == LootClass.UniqueValuable) _uniqueTakes++;
                     var obj = e.Target as Component;
                     if (obj != null) Remove(obj, e.Name, "taken by Player 2");   // a Player-1 claim on it would have made the decision Busy
                     _dirty = true;
@@ -287,6 +325,15 @@ namespace TS2MP.Plugin
                 return;
             }
             _awaitItem = t.Item; _awaitAmount = t.Item != null ? _itemAmount(t.Item) + 1 : 0; _awaitTxn = t.Txn_; _awaitPick = t.Pick; _awaitName = t.Name; _awaitInactive = 0;
+            _awaitMoney = false;
+            if (t.Cls == LootClass.Money)
+            {
+                // the host already credited the shared balance and the record counter; the original coroutine's add_money is
+                // counted by the mirror into the same counter value (await it; credit directly if the coroutine cannot run)
+                var wal = WalletSync.Instance; int local;
+                if (wal == null || !wal.TryClientCounter(out local)) { _log.Info("WLOOT money pickup #" + t.Txn_ + " " + why + ": mirror inactive - the record restore carries it"); if (p2 != null && p2.AppliedTxn < t.Txn_) p2.AppliedTxn = t.Txn_; return; }
+                _awaitItem = null; _awaitMoney = true; _awaitCovered = false; _awaitMoneyAmount = t.Money;
+            }
             bool started = false;
             if (t.Pick != null && t.Pick.gameObject.activeInHierarchy)
             {
@@ -300,6 +347,7 @@ namespace TS2MP.Plugin
 
         void Finish(string why)
         {
+            if (_awaitMoney) { FinishMoney(why, true); return; }   // never started / interrupted: the original did not add it
             var item = _awaitItem; uint txn = _awaitTxn; _awaitItem = null; _awaitPick = null;
             if (item == null) return;
             if (_itemAmount(item) < _awaitAmount)
@@ -309,6 +357,34 @@ namespace TS2MP.Plugin
             }
             var p2 = Player2Sync.Instance; if (p2 != null && p2.AppliedTxn < txn) p2.AppliedTxn = txn;
             _log.Info("WLOOT pickup #" + txn + " applied locally: item " + _itemId(item) + " now " + _itemAmount(item) + " - " + why);
+        }
+
+        // W4.1B money: the coroutine's add_money was counted by the mirror (object destroyed in the same coroutine step) or, when
+        // it could not run, the amount is added to the live field once (counted like the original's own addition). If the
+        // record was restored in between and already contains this pickup (_awaitCovered), the restore carried the amount:
+        // the coroutine's addition is reverted by the armed exclusion and nothing is credited here. Exactly once in every case.
+        void FinishMoney(string why, bool credit)
+        {
+            uint txn = _awaitTxn; _awaitMoney = false; _awaitPick = null;
+            var wal = WalletSync.Instance;
+            if (_awaitCovered) { credit = false; why += " (already contained in the restored record)"; if (wal != null) wal.DisarmClientExclusion(); }
+            _awaitCovered = false;
+            if (credit && wal != null && wal.ClientCredit(_awaitMoneyAmount)) { _directCounts++; why += " (amount added directly)"; }
+            var p2 = Player2Sync.Instance; if (p2 != null && p2.AppliedTxn < txn) p2.AppliedTxn = txn;
+            _log.Info("WLOOT money pickup #" + txn + " applied locally: $" + _awaitMoneyAmount + " - " + why);
+        }
+
+        // W4.1B: the client restored a host record while a money pickup was still awaiting its coroutine (e.g. the report sent
+        // just before the pickup was refused -> resync). If that record already contains the pickup, the restored counter
+        // includes the amount, so the coroutine's own add_money must not be counted again (one-shot exclusion, 3 s).
+        public void OnRecordRestored(P2Inventory rec)
+        {
+            if (!_awaitMoney || _awaitCovered || rec == null || rec.AppliedTxn < _awaitTxn) return;
+            var wal = WalletSync.Instance;
+            if (wal == null) return;
+            wal.ArmClientExclusion(_awaitMoneyAmount, 3.0);
+            _awaitCovered = true;
+            _log.Info("WLOOT money pickup #" + _awaitTxn + ": the restored record already contains it - the original's add_money is not counted again");
         }
 
         // After a reconnect the acknowledgment may be lost: the host record decides.
@@ -328,9 +404,14 @@ namespace TS2MP.Plugin
             double now = Now;
             if (now >= _nextStats) { _nextStats = now + 30; if (_p1Claims + _p2Requests + _hostDecided + _removed + _hostRefused > 0) _log.Info(Stats); }
             if (_txn != null && !_txn.Lost && (!Live || now - _txn.At > 15.0)) { _txn.Lost = true; _lost++; _log.Warn("WLOOT pickup #" + _txn.Txn_ + " unanswered: resolved from the host record"); }
-            if (_awaitItem != null)
+            if (Awaiting)
             {
-                if (_itemAmount(_awaitItem) >= _awaitAmount) Finish("original pickup counted");
+                int wl; var wal = WalletSync.Instance;
+                if (_awaitMoney && (wal == null || !wal.TryClientCounter(out wl))) { _awaitMoney = false; _awaitPick = null; var p2m = Player2Sync.Instance; if (p2m != null && p2m.AppliedTxn < _awaitTxn) p2m.AppliedTxn = _awaitTxn; _log.Info("WLOOT money pickup #" + _awaitTxn + ": scene left before the original finished - the record restore carries it"); }
+                // money: the original adds add_money and destroys the object in ONE coroutine step (IL_034d .. IL_046f), so
+                // "object destroyed" = counted by the mirror; a counter target would be wrong if Player 2 spends meanwhile
+                else if (_awaitMoney && _awaitPick == null) FinishMoney("original pickup finished", false);
+                else if (!_awaitMoney && _itemAmount(_awaitItem) >= _awaitAmount) Finish("original pickup counted");
                 else if (_awaitPick == null) Finish("original pickup interrupted (object gone)");
                 else if (!_awaitPick.gameObject.activeInHierarchy)
                 {
@@ -345,6 +426,7 @@ namespace TS2MP.Plugin
             int ns = _world.LocalRegion;
             if (!LootRules.SupportedNamespace(ns)) { if (_shownNs != Regions.None) { _shownNs = Regions.None; _taken.Clear(); } return; }
             if (!_host && !Live) return;
+            if (_host) SeedUnique(ns, gm);
             var reg = _world.Registry;
             if (!_dirty && ns == _shownNs && reg.HeadRev == _seenHead && reg.Epoch == _seenEpoch) return;
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -368,12 +450,31 @@ namespace TS2MP.Plugin
             double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency; if (ms > _observeMaxMs) _observeMaxMs = ms;
         }
 
+        // W4.1B (host, once per loaded region scene): unique valuables the host save already removed for good (Item_<name> = 1,
+        // destroy_if_was_picked; the original <Start> destroyed them here) are listed as taken, so Player 2's sandbox - which
+        // has no Item_<objectName> keys (not mirrored, WorldMirror "ReservedFuture") - removes its copy as well.
+        object _seedGm; int _seedNs = Regions.None;
+        void SeedUnique(int ns, object gm)
+        {
+            if (ReferenceEquals(gm, _seedGm) && ns == _seedNs) return;
+            var cat = LiveCatalog(ns); var book = _world.Host != null ? _world.Host.Loot : null;
+            if (cat == null || book == null || gm == null) return;
+            _seedGm = gm; _seedNs = ns;
+            int n = 0;
+            foreach (var e in cat.Entries)
+            {
+                if (e.Flags != LootFlags.DestroyIfPicked || _get(LootKeys.Picked(e.Name)) != 1 || book.StateOf(ns, e.Hash) != LootState.Available || !book.HasRoom(ns, e.Hash)) continue;
+                if (book.Commit(ns, e.Hash, _world.Host.Reg, _world.Host.Outbox) == ProposalCode.Accepted) n++;
+            }
+            if (n > 0) { _world.FlushOutbox(); _uniqueSeeded += n; _dirty = true; _log.Info("WLOOT " + n + " unique valuable(s) of " + Regions.Name(ns) + " already picked in the host save (Item_<name> = 1): listed as taken for Player 2"); }
+        }
+
         // This instance's own original pickup of that object is in progress: its coroutine removes it.
         bool OwnPickupRunning(Component obj, uint hash)
         {
             if (_pickPicking(obj)) return true;
             if (_host) return _claims.ContainsKey(obj.GetInstanceID());
-            return (_txn != null && _txn.Hash == hash && ReferenceEquals(_txn.Pick, obj)) || (_awaitItem != null && ReferenceEquals(_awaitPick, obj));
+            return (_txn != null && _txn.Hash == hash && ReferenceEquals(_txn.Pick, obj)) || (Awaiting && ReferenceEquals(_awaitPick, obj));
         }
 
         // Observer removal = the original's own end of a pickup (marker + object), without any of its effects.
@@ -394,7 +495,7 @@ namespace TS2MP.Plugin
                 return "WLOOT_STATS " + (_host ? "p1Claims " + _p1Claims + " p1Commits " + _p1Commits + " p1Released " + _p1Released + " pendingNow " + _claims.Count + " p2Decided " + _hostDecided + " p2Refused " + _hostRefused
                         + (b != null ? " bookCommits " + b.Commits + " bookCleared " + b.Cleared + " full " + b.Full : "")
                     : "requests " + _p2Requests + " accepted " + _p2Accepted + " refused " + _p2Refused + " lost " + _lost + " directCounts " + _directCounts)
-                    + " removed " + _removed + " notShared " + _notShared + " takenHere " + _taken.Count + " pickMax " + _pickMaxMs.ToString("0.00") + "ms decideMax " + _decideMaxMs.ToString("0.00") + "ms observeMax " + _observeMaxMs.ToString("0.00") + "ms";
+                    + " removed " + _removed + " notShared " + _notShared + " moneyTakes " + _moneyTakes + " uniqueTakes " + _uniqueTakes + " moneyRefused " + _moneyRefused + " persistRefused " + _persistRefused + " uniqueSeeded " + _uniqueSeeded + " takenHere " + _taken.Count + " pickMax " + _pickMaxMs.ToString("0.00") + "ms decideMax " + _decideMaxMs.ToString("0.00") + "ms observeMax " + _observeMaxMs.ToString("0.00") + "ms";
             }
         }
 

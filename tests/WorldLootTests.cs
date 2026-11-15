@@ -394,7 +394,7 @@ static class WorldLootTests
 
     static void Exclusions()
     {
-        foreach (var f in new[] { LootFlags.Heavy, LootFlags.Money, LootFlags.StoryPick, LootFlags.StoryName, LootFlags.Contract, LootFlags.Parcel, LootFlags.RandomCabinet, LootFlags.DestroyIfPicked, LootFlags.DeleteIfPref, LootFlags.NoXp, LootFlags.Dropped, LootFlags.NoDays, LootFlags.NeverDestroy })
+        foreach (var f in new[] { LootFlags.Heavy, LootFlags.Money, LootFlags.StoryPick, LootFlags.StoryName, LootFlags.Contract, LootFlags.Parcel, LootFlags.RandomCabinet, LootFlags.DeleteIfPref, LootFlags.NoXp, LootFlags.Dropped, LootFlags.NoDays, LootFlags.NeverDestroy })
         {
             var c = new LootCatalog(Ns); c.Add(1, "Thing_" + f, 9, f, null, 0); c.Seal(null); c.Digest = 1; string why;
             Expect(LootDecision.DecideP2(1, 0, true, c, 1, 1, 9, Sim.Facts(9), LootState.Available, true, 0, out why) == ProposalCode.Invalid, f + " excluded");
@@ -427,7 +427,7 @@ static class WorldLootTests
         Expect(P2Book.TryDeserialize(v3, 0, out b, out err), "v3 loads: " + err);
         Expect(b.World.Count == 0 && b.Rec.CountOf(Phone) == 3 && b.Rec.Money == 1234 && b.HostSeq == 12 && b.LastSavedHost == 9 && b.LastSavedTxn == 6 && b.Journal.Count == 1, "v3 content preserved");
         b.AddWorldTake(13, new LootTake { Ns = Ns, Hash = 0xABCDEF01, ItemId = Phone, Day = 14, ItemFlag = true, Name = "Landline_Phone_Kitchen" });
-        var v4 = b.Serialize(0); Expect(v4[8] == 4, "written as v4");
+        var v4 = b.Serialize(0); Expect(v4[8] == 5, "written as v5 (W4.1B)");
         P2Book c; Expect(P2Book.TryDeserialize(v4, 0, out c, out err), "v4 loads: " + err);
         Expect(c.World.Count == 1 && c.World[0].Seq == 13 && c.World[0].Take.Name == "Landline_Phone_Kitchen" && c.World[0].Take.Hash == 0xABCDEF01 && c.World[0].Take.Day == 14 && c.World[0].Take.ItemFlag
                && c.Rec.SameContent(b.Rec) && c.Journal.Count == 1 && c.HostSeq == 13, "round trip: nothing lost");

@@ -667,6 +667,13 @@ namespace TS2MP.Shared
             if (e != null) Outbox.Add(e);
         }
 
+        // ---- W4.1B shared money: host-committed only (a client proposal for this key falls through to NotAuthorized) ----
+        public void CommitWallet(WalletState s)
+        {
+            var e = Reg.Commit(StateScope.Session, 0, WorldKeys.Wallet, s.ToBytes());
+            if (e != null) Outbox.Add(e);
+        }
+
         // A client transfer is valid only inside its own current CarBox session; it also counts as a lease renewal, so a
         // session is never expired while transfers are still arriving.
         public ProposalCode StorageTransfer(byte slot, StorageTxnRequest t, double now)

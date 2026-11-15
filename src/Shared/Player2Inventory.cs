@@ -22,12 +22,16 @@ namespace TS2MP.Shared
 {
     public sealed class P2Inventory
     {
-        public const int MaxItems = 150;                 // registry value limit 1024 B: v2 header 31 + 6 x 150 = 931 B
-        public const int HeaderV1 = 27, HeaderV2 = 31;   // version byte + fields + item count (an EMPTY backpack is exactly the header)
+        public const int MaxItems = 150;                 // registry value limit 1024 B: v3 header 39 + 6 x 150 = 939 B
+        public const int HeaderV1 = 27, HeaderV2 = 31, HeaderV3 = 39;   // version byte + fields + item count (an EMPTY backpack is exactly the header)
         public int Id;                                   // record identity = the host book's save history id (0.7.1, v2); a new host book = new id
         public uint Rev;                                 // host revision of the record (a client report names the revision it is based on)
         public uint AppliedTxn;                          // last CarBox transfer contained in this inventory
         public int Money, Bank, BatonLife = 100, CrowbarLife = 100;
+        // W4.1B shared money (v3): Wallet = cumulative net of Player 2's own original money changes (+ host-credited world money)
+        // that the host applied to the SHARED balance; Spend = cumulative Shop_Manager.Buy_Item prices (host affordability check).
+        // Money / Bank (v1/v2) are Player 2's legacy personal balances: kept untouched, never restored, never added (src/Shared/Wallet.cs).
+        public int Wallet, Spend;
         public readonly SortedDictionary<int, int> Items = new SortedDictionary<int, int>();   // item_ID -> backpack count (> 0)
 
         public int CountOf(int id) { int c; return Items.TryGetValue(id, out c) ? c : 0; }
@@ -40,21 +44,21 @@ namespace TS2MP.Shared
 
         public P2Inventory Clone()
         {
-            var c = new P2Inventory { Id = Id, Rev = Rev, AppliedTxn = AppliedTxn, Money = Money, Bank = Bank, BatonLife = BatonLife, CrowbarLife = CrowbarLife };
+            var c = new P2Inventory { Id = Id, Rev = Rev, AppliedTxn = AppliedTxn, Money = Money, Bank = Bank, BatonLife = BatonLife, CrowbarLife = CrowbarLife, Wallet = Wallet, Spend = Spend };
             foreach (var kv in Items) c.Items[kv.Key] = kv.Value;
             return c;
         }
 
         public bool SameContent(P2Inventory o)
         {
-            if (o == null || Money != o.Money || Bank != o.Bank || BatonLife != o.BatonLife || CrowbarLife != o.CrowbarLife || Items.Count != o.Items.Count) return false;
+            if (o == null || Money != o.Money || Bank != o.Bank || BatonLife != o.BatonLife || CrowbarLife != o.CrowbarLife || Wallet != o.Wallet || Spend != o.Spend || Items.Count != o.Items.Count) return false;
             foreach (var kv in Items) if (o.CountOf(kv.Key) != kv.Value) return false;
             return true;
         }
 
         public void Write(NetDataWriter w)
         {
-            w.Put((byte)2); w.Put(Id); w.Put(Rev); w.Put(AppliedTxn); w.Put(Money); w.Put(Bank); w.Put(BatonLife); w.Put(CrowbarLife);
+            w.Put((byte)3); w.Put(Id); w.Put(Rev); w.Put(AppliedTxn); w.Put(Money); w.Put(Bank); w.Put(BatonLife); w.Put(CrowbarLife); w.Put(Wallet); w.Put(Spend);
             w.Put((ushort)Items.Count);
             foreach (var kv in Items) { w.Put(kv.Key); w.Put((ushort)Math.Min(kv.Value, ushort.MaxValue)); }
         }
@@ -67,6 +71,8 @@ namespace TS2MP.Shared
             var w = new NetDataWriter(); Write(w); data = w.CopyData(); return true;
         }
 
+        // v3 (W4.1B): v2 + Wallet, Spend before the count; v2 records read with Wallet = Spend = 0 (the shared balance starts at
+        // the host's money; the legacy personal Money is never added).
         // v2 (0.7.1): version, Id, Rev, AppliedTxn, Money, Bank, BatonLife, CrowbarLife, count, items. v1 (0.7.0 p2inv files):
         // the same without Id. 0.7.0 required 31 bytes for v1, whose empty-backpack form is 27 bytes -> every record of a new
         // Player 2 was rejected (client never restored, host file "unusable" after a restart). The minimum is now the header.
@@ -77,11 +83,13 @@ namespace TS2MP.Shared
             {
                 if (r.AvailableBytes < HeaderV1) return false;
                 byte ver = r.GetByte();
-                if (ver != 1 && ver != 2) return false;
+                if (ver < 1 || ver > 3) return false;
                 if (ver == 2 && r.AvailableBytes < HeaderV2 - 1) return false;
+                if (ver == 3 && r.AvailableBytes < HeaderV3 - 1) return false;
                 var i = new P2Inventory();
-                if (ver == 2) i.Id = r.GetInt();
+                if (ver >= 2) i.Id = r.GetInt();
                 i.Rev = r.GetUInt(); i.AppliedTxn = r.GetUInt(); i.Money = r.GetInt(); i.Bank = r.GetInt(); i.BatonLife = r.GetInt(); i.CrowbarLife = r.GetInt();
+                if (ver >= 3) { i.Wallet = r.GetInt(); i.Spend = r.GetInt(); }
                 int n = r.GetUShort();
                 if (n > MaxItems || r.AvailableBytes < 6 * n) return false;
                 for (int k = 0; k < n; k++)
@@ -103,7 +111,7 @@ namespace TS2MP.Shared
             return TryRead(r, out inv) && r.AvailableBytes == 0;
         }
 
-        public override string ToString() { return "id " + Id + " rev " + Rev + " txn " + AppliedTxn + " money " + Money + " bank " + Bank + " tools " + BatonLife + "/" + CrowbarLife + " items " + Items.Count; }
+        public override string ToString() { return "id " + Id + " rev " + Rev + " txn " + AppliedTxn + " wallet " + Wallet + " spend " + Spend + " (legacy money " + Money + " bank " + Bank + ") tools " + BatonLife + "/" + CrowbarLife + " items " + Items.Count; }
     }
 
     // Original storage types (Inventory.storage_Type, verified IL Inventory.MoveItemToStorage): 0 = car storage (CarBox,
@@ -223,6 +231,14 @@ namespace TS2MP.Shared
         // host sequence numbers (watermark "TS2MP_HostTxn"), replayed after a load whose watermark predates them.
         public readonly List<WorldTakeEntry> World = new List<WorldTakeEntry>();
         public const int MaxWorld = 4096;
+        // W4.1B (p2inv v5): Player-2 money deltas applied to the host's shared balance, wallet sequence numbers (watermark
+        // "TS2MP_WalletTxn" written when the original writes "Money"), replayed after a load whose watermark predates them.
+        public readonly List<WalletEntry> WalletLog = new List<WalletEntry>();
+        public const int MaxWallet = 4096;
+        public uint WalletSeq;      // last wallet sequence handed out
+        public uint WalletApplied;  // host memory only: last wallet sequence contained in the live PlayerScript.moneyAm
+        public uint LastSavedWallet;
+        public long WalletRefused;
         public uint LastSavedTxn;  // watermark of the last host save known to have reached the disk
         public int HistoryId;      // random id written into the host save (SPrefs "TS2MP_P2History") when this record was created
         public bool HistoryConfirmed;   // that id is known to be in a save on disk (set after the first completed FBPP write)
@@ -237,6 +253,58 @@ namespace TS2MP.Shared
         // another record (new game / other save history), a missing transfer or an older revision (duplicate, delayed or
         // recovered old report) is Stale and never overwrites newer data. A report equal to the record is Unchanged whatever
         // its revision (retransmission after a lost acknowledgment: already committed, nothing to do).
+        // W4.1B: the same identity/revision rules, then the money side (WalletRules.DecideReport) - a refusal changes nothing;
+        // an accepted report with a money delta journals it (the caller applies it to moneyAm after the durable write).
+        public ProposalCode AcceptReport(P2Inventory rep, long balance, bool balanceKnown, out int delta, out uint walletSeq, out string why)
+        {
+            delta = 0; walletSeq = 0; why = null;
+            if (rep == null) return ProposalCode.Invalid;
+            if (rep.Id != Rec.Id || rep.AppliedTxn != Rec.AppliedTxn) { ReportsStale++; return ProposalCode.Stale; }
+            if (rep.SameContent(Rec)) { Reports++; return ProposalCode.Unchanged; }
+            if (rep.Rev != Rec.Rev) { ReportsStale++; return ProposalCode.Stale; }
+            int d;
+            var w = WalletRules.DecideReport(Rec, rep, balance, balanceKnown, out d, out why);
+            if (w != ProposalCode.Accepted) { if (w == ProposalCode.Stale) { ReportsStale++; WalletRefused++; } return w; }
+            if (d != 0 && WalletLog.Count >= MaxWallet) { why = "wallet journal full (host never saved)"; return ProposalCode.Busy; }
+            var code = AcceptReport(rep);
+            if (code != ProposalCode.Accepted) return code;
+            if (d != 0) { walletSeq = ++WalletSeq; WalletLog.Add(new WalletEntry { Seq = walletSeq, Delta = d }); delta = d; }
+            return code;
+        }
+
+        // W4.1B: Player 2 picked up host-validated world money: record Wallet += amount (exactly-once txn like ItemTxn) and a
+        // wallet journal entry (the host applies the amount to the shared balance after the durable write).
+        public ProposalCode MoneyTxn(uint txn, int amount, out uint walletSeq)
+        {
+            walletSeq = 0;
+            if (amount <= 0 || amount > WalletRules.MaxLootMoney) return ProposalCode.Invalid;
+            if (txn != 0 && txn <= Rec.AppliedTxn) return ProposalCode.Unchanged;
+            if (txn != Rec.AppliedTxn + 1) { ItemTxnsRefused++; return ProposalCode.Stale; }
+            if (WalletLog.Count >= MaxWallet) return ProposalCode.Busy;
+            var n = Rec.Clone();
+            n.Wallet = WalletRules.Apply(n.Wallet, amount);
+            n.AppliedTxn = txn; n.Rev = Rec.Rev + 1;
+            Rec = n;
+            walletSeq = ++WalletSeq; WalletLog.Add(new WalletEntry { Seq = walletSeq, Delta = amount });
+            ItemTxns++;
+            return ProposalCode.Accepted;
+        }
+
+        // W4.1B: wallet entries a loaded save does not contain (seq above its watermark), in sequence order.
+        public List<WalletEntry> ReplayWallet(uint mark, out uint max)
+        {
+            var l = new List<WalletEntry>(); max = mark;
+            foreach (var e in WalletLog) if (e.Seq > mark) { l.Add(e); if (e.Seq > max) max = e.Seq; }
+            l.Sort((a, b) => a.Seq.CompareTo(b.Seq));
+            return l;
+        }
+        // After an FBPP disk write whose "Money" key contained every delta up to savedWallet.
+        public void WalletSaved(uint savedWallet)
+        {
+            if (savedWallet > LastSavedWallet) LastSavedWallet = savedWallet;
+            WalletLog.RemoveAll(e => e.Seq <= savedWallet);
+        }
+
         public ProposalCode AcceptReport(P2Inventory rep)
         {
             if (rep == null) return ProposalCode.Invalid;
@@ -324,13 +392,14 @@ namespace TS2MP.Shared
         public long Prerequisites;
 
         // Undo point for a failed durable write (journal tail, record, host sequence, counters).
-        public struct BookMark { public P2Inventory Rec; public int Journal, World; public uint HostSeq; public long Transfers, Prerequisites, ItemTxns; }
-        public BookMark Mark() { return new BookMark { Rec = Rec, Journal = Journal.Count, World = World.Count, HostSeq = HostSeq, Transfers = Transfers, Prerequisites = Prerequisites, ItemTxns = ItemTxns }; }
+        public struct BookMark { public P2Inventory Rec; public int Journal, World, Wallet; public uint HostSeq, WalletSeq; public long Transfers, Prerequisites, ItemTxns; }
+        public BookMark Mark() { return new BookMark { Rec = Rec, Journal = Journal.Count, World = World.Count, Wallet = WalletLog.Count, HostSeq = HostSeq, WalletSeq = WalletSeq, Transfers = Transfers, Prerequisites = Prerequisites, ItemTxns = ItemTxns }; }
         public void Restore(BookMark m)
         {
             Rec = m.Rec; if (Journal.Count > m.Journal) Journal.RemoveRange(m.Journal, Journal.Count - m.Journal);
             if (World.Count > m.World) World.RemoveRange(m.World, World.Count - m.World);
-            HostSeq = m.HostSeq; Transfers = m.Transfers; Prerequisites = m.Prerequisites; ItemTxns = m.ItemTxns;
+            if (WalletLog.Count > m.Wallet) WalletLog.RemoveRange(m.Wallet, WalletLog.Count - m.Wallet);
+            HostSeq = m.HostSeq; WalletSeq = m.WalletSeq; Transfers = m.Transfers; Prerequisites = m.Prerequisites; ItemTxns = m.ItemTxns;
         }
 
         // W3.4: one replay pass in JOURNAL ORDER (= commit order) over every entry not yet contained in the loaded save:
@@ -446,15 +515,18 @@ namespace TS2MP.Shared
         {
             // v2 (W3): + HostSeq, LastSavedHost, a kind byte per journal entry. v3 (W3.4): same layout, journal kind HostCar
             // allowed (a v2 reader would misread it, so the version says so). v4 (W4.1): + world-take list after the journal.
-            // v1 / v2 / v3 files stay readable (migrated on write).
+            // v5 (W4.1B): record v3 (Wallet, Spend) + WalletSeq, LastSavedWallet and the wallet journal after the world list.
+            // v1 - v4 files stay readable (migrated on write).
             var w = new NetDataWriter();
-            w.Put((uint)0x32504D54); w.Put((byte)4); w.Put(profile); w.Put(LastSavedTxn); w.Put(HistoryId); w.Put(HistoryConfirmed);
+            w.Put((uint)0x32504D54); w.Put((byte)5); w.Put(profile); w.Put(LastSavedTxn); w.Put(HistoryId); w.Put(HistoryConfirmed);
             w.Put(HostSeq); w.Put(LastSavedHost);
             Rec.Write(w);
             w.Put(Journal.Count);
             foreach (var e in Journal) { w.Put(e.Txn); w.Put(e.ItemId); w.Put(e.StorageDelta); w.Put(e.Kind); }
             w.Put(World.Count);
             foreach (var e in World) { w.Put(e.Seq); e.Take.Write(w); }
+            w.Put(WalletSeq); w.Put(LastSavedWallet); w.Put(WalletLog.Count);
+            foreach (var e in WalletLog) { w.Put(e.Seq); w.Put(e.Delta); }
             var body = w.CopyData();
             var o = new NetDataWriter(); o.Put(body.Length); o.Put(body); o.Put(Fnv(body));
             return o.CopyData();
@@ -473,7 +545,7 @@ namespace TS2MP.Shared
                 var b = new NetDataReader(body);
                 if (b.GetUInt() != 0x32504D54) { err = "not a p2inv file"; return false; }
                 byte ver = b.GetByte();
-                if (ver < 1 || ver > 4) { err = "unknown p2inv version " + ver; return false; }
+                if (ver < 1 || ver > 5) { err = "unknown p2inv version " + ver; return false; }
                 if (b.GetInt() != profile) { err = "other profile"; return false; }
                 uint seen = b.GetUInt(); int hist = b.GetInt(); bool conf = b.GetBool();
                 uint hostSeq = 0, hostSaved = 0;
@@ -501,6 +573,19 @@ namespace TS2MP.Shared
                         uint seq = b.GetUInt(); LootTake t;
                         if (seq == 0 || !LootTake.TryRead(b, out t)) { err = "world take"; return false; }
                         bk.World.Add(new WorldTakeEntry { Seq = seq, Take = t });
+                    }
+                }
+                if (ver >= 5)
+                {
+                    bk.WalletSeq = b.GetUInt(); bk.LastSavedWallet = b.GetUInt();
+                    int m = b.GetInt();
+                    if (m < 0 || m > MaxWallet) { err = "wallet journal size"; return false; }
+                    uint prev = 0;
+                    for (int i = 0; i < m; i++)
+                    {
+                        var e = new WalletEntry { Seq = b.GetUInt(), Delta = b.GetInt() };
+                        if (e.Seq == 0 || e.Seq <= prev || e.Seq > bk.WalletSeq || e.Delta == 0 || e.Delta > WalletRules.MaxDelta || e.Delta < -WalletRules.MaxDelta) { err = "wallet entry"; return false; }
+                        prev = e.Seq; bk.WalletLog.Add(e);
                     }
                 }
                 if (b.AvailableBytes != 0) { err = "trailing data"; return false; }

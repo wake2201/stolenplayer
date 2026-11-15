@@ -237,6 +237,7 @@ namespace TS2MP.Shared
         public const string CarBoxItems = "carboxItems"; // Session scope (arg = storage kind): committed host storage contents (CarBoxItems)
         public const string CarBoxReq = "carboxReq";     // Session scope (arg = storage kind): client proposal {op, session}
         public const string WorldItems = "witems";       // Region scope (arg = region): committed dropped items of that region (WorldItemList, W3, protocol 17)
+        public const string Wallet = "wallet";           // Session scope (arg 0): host-committed shared money balance (WalletState 16 B, W4.1B protocol 27); never a proposal
         public const string LootTxn = "lootTxn";         // Session scope (arg 0): client proposal, Player 2 picks up one verified world object (LootTxnRequest, W4.1, protocol 20)
         // W4.1: taken world loot = Region scope (arg = namespace = region id), keys LootBook.Keys "wloot0".."wloot3" (hash chunks)
         public const string ObjectTxn = "objTxn";       // Session scope (arg 0): client proposal, one world-object operation (ObjectTxnRequest 19 B: set / reserve / release / NPC set, region epoch; W4.2B protocol 24)

@@ -12,8 +12,8 @@
 //   - all skill-tree skills learned: Skill_Manager.Start postfix -> the original Skill_Manager.Learn_Skill(i) per skill
 //     (SPrefs "Skill_<i>" = 1 + isLearned) and extra skills at their maximum upgrade (SPrefs <skill_name>, the value
 //     SkillPage.LearnSkillExtra writes). No story, mission, XP or level is touched.
-//   - money: PlayerScript.moneyAm topped up to 1,000,000 whenever it falls below 250,000 (checked every 2 s). Player 2's
-//     money travels to the host's (isolated) Player-2 record through the normal p2report path.
+//   - money: PlayerScript.moneyAm topped up to 2,000,000 whenever it falls below 1,000,000 (checked every 2 s), HOST ONLY since
+//     W4.1B (the host balance is the shared balance; Player 2 sees it through the wallet mirror).
 //   - tools are bought by the tester in the original shops.
 using System;
 using System.Collections;
@@ -139,7 +139,9 @@ namespace TS2MP.Plugin
                 var mgr = UnityEngine.Object.FindObjectOfType(_smT);
                 if (mgr != null) { try { UnlockSkills(mgr, "world load fallback"); } catch (Exception ex) { _log.Error("DEVTEST skill unlock failed", ex); } }
             }
-            if (_money != null && _setMoney != null && _money(ps) < MoneyFloor)
+            // W4.1B: money is one shared balance owned by the host: only the host tops it up (a client top-up would be credited)
+            var wal = WalletSync.Instance;
+            if (_money != null && _setMoney != null && !(wal != null && wal.IsClient) && _money(ps) < MoneyFloor)
             {
                 int before = _money(ps);
                 _setMoney(ps, MoneyTopUp); _topUps++;

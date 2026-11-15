@@ -260,7 +260,7 @@ static class Player2LifecycleTests
     {
         var r = P2Inventory.Initial(false); r.Id = 77; r.Rev = 1;
         byte[] d; Expect(r.TryEncode(out d), "encode");
-        Expect(d.Length == P2Inventory.HeaderV2, "empty v2 record = header only (" + d.Length + " B)");
+        Expect(d.Length == P2Inventory.HeaderV3, "empty v3 record = header only (" + d.Length + " B)");
         P2Inventory back; Expect(P2Inventory.TryParse(d, out back) && back.SameContent(r) && back.Id == 77 && back.Rev == 1, "empty v2 record parses (0.7.0 rejected every empty-backpack record)");
         var w = new NetDataWriter(); w.Put((byte)1); w.Put(5u); w.Put(0u); w.Put(200); w.Put(0); w.Put(100); w.Put(100); w.Put((ushort)0);
         Expect(w.Length == P2Inventory.HeaderV1, "v1 empty record is 27 bytes");

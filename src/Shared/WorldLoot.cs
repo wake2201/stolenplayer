@@ -14,6 +14,10 @@
 // original (name-based) meaning; a shared-name family is excluded from the Phase B subset (LootFlags.SharedName) because
 // one key serves several physical objects (strategy for Phase C: docs/PROGRESS.md "W4.1 Phase B", shared-name families).
 //
+// W4.1B: LootRules.Classify adds unique valuables (destroy_if_was_picked, Item_<name> = permanent removal) and world money
+// (is_money + add_money, credited to the shared balance, src/Shared/Wallet.cs); LootRules.PersistentlyTaken refuses a take
+// the host save already removed (respawn day in the future / unique item picked).
+//
 // Authority: host. Player 1 = the original pickup on the host; a claim is pending from Pickupable.PickUp until the original
 // reached SetDayRespawn for THAT instance (= the irreversible step), then the object is "taken". Player 2 = a lootTxn
 // proposal; the host validates against ITS OWN census catalog, commits the Player-2 record +1 and a durable world-take
@@ -53,15 +57,21 @@ namespace TS2MP.Shared
     // ItemID facts of the item type (player's ItemID list; same on both instances, read by the deciding instance itself).
     public struct ItemFacts
     {
-        public bool Known, Heavy, Car, Drone, Story, Mission, Tool, Special;
+        public bool Known, Heavy, Car, Drone, Story, Mission, Tool, Special, Key;
         public float Value, AddXp; public int MaxAmount;
     }
 
     public sealed class LootEntry
     {
         public uint Hash; public string Name; public int ItemId; public LootFlags Flags;
+        public int Money;       // W4.1B: Pickupable.add_money (serialized, read by the census; only meaningful with LootFlags.Money)
         public object Target;   // live Pickupable component (null after the scene unloaded; metadata stays)
     }
+
+    // W4.1B shared-loot classes (LootRules.Classify). Valuable = ordinary item (W4.1 Phase B); UniqueValuable = the same with
+    // destroy_if_was_picked (the original removes it for good once Item_<name> = 1); Money = is_money with add_money > 0
+    // (the original adds add_money to PlayerScript.moneyAm, IL_034d, and writes ItemDay_<name> (5 days) + Item_<name>).
+    public enum LootClass : byte { Excluded, Valuable, UniqueValuable, Money }
 
     public static class LootRules
     {
@@ -79,6 +89,42 @@ namespace TS2MP.Shared
             if (f == LootFlags.None) return null;
             for (int b = 0; b < 32; b++) { var x = (LootFlags)(1u << b); if ((f & x) != 0) return x.ToString(); }
             return f.ToString();
+        }
+
+        // W4.1B: which shared-loot class an object belongs to. Money ignores NoXp (SetDayRespawn writes the key for money
+        // regardless of XP) and ignores the item type (item 0, no backpack unit). DestroyIfPicked is the only extra flag an
+        // item may carry (unique valuable); a key with destroy_if_was_picked opens a lock (W4.2B lock state): excluded.
+        public static LootClass Classify(LootEntry e, ItemFacts it, out string why)
+        {
+            why = null;
+            if (e == null) { why = "unknown object"; return LootClass.Excluded; }
+            var f = e.Flags;
+            if ((f & LootFlags.Money) != 0)
+            {
+                var rest = f & ~(LootFlags.Money | LootFlags.NoXp);
+                if (rest != LootFlags.None) { why = Exclusion(rest); return LootClass.Excluded; }
+                if (e.Money <= 0 || e.Money > WalletRules.MaxLootMoney) { why = "money amount " + e.Money; return LootClass.Excluded; }
+                return LootClass.Money;
+            }
+            var r = f & ~LootFlags.DestroyIfPicked;
+            if (r != LootFlags.None) { why = Exclusion(r); return LootClass.Excluded; }
+            why = Exclusion(it);
+            if (why != null) return LootClass.Excluded;
+            if ((f & LootFlags.DestroyIfPicked) != 0)
+            {
+                if (it.Key) { why = "key with destroy_if_was_picked (lock state)"; return LootClass.Excluded; }
+                return LootClass.UniqueValuable;
+            }
+            return LootClass.Valuable;
+        }
+
+        // W4.1B: the host's save already says this object is gone: ItemDay_<name> lies in the future (original <Start>d__68
+        // destroys it) or, for a unique valuable, Item_<name> = 1 (destroy_if_was_picked). A pickup is then a duplicate.
+        public static bool PersistentlyTaken(LootClass c, int itemDayKey, int pickedKey, int today)
+        {
+            if (c == LootClass.Excluded) return false;
+            if (itemDayKey > today) return true;
+            return c == LootClass.UniqueValuable && pickedKey == 1;
         }
 
         public static string Exclusion(ItemFacts it)
@@ -122,13 +168,14 @@ namespace TS2MP.Shared
         public int Count { get { return _byHash.Count; } }
         public bool Live { get; private set; }
 
-        public bool Add(uint hash, string name, int itemId, LootFlags flags, object target, int instanceId)
+        public bool Add(uint hash, string name, int itemId, LootFlags flags, object target, int instanceId) { return Add(hash, name, itemId, flags, target, instanceId, 0); }
+        public bool Add(uint hash, string name, int itemId, LootFlags flags, object target, int instanceId, int money)
         {
             if (_byHash.Count >= MaxEntries) return false;
             if (_byHash.ContainsKey(hash)) { _byHash[hash].Flags |= LootFlags.Ambiguous; return false; }
             if (name == null || name.Length > LootRules.MaxNameChars) flags |= LootFlags.LongName;
             if (LootRules.IsNumeric(name)) flags |= LootFlags.NumericName;
-            _byHash[hash] = new LootEntry { Hash = hash, Name = name ?? "", ItemId = itemId, Flags = flags, Target = target };
+            _byHash[hash] = new LootEntry { Hash = hash, Name = name ?? "", ItemId = itemId, Flags = flags, Target = target, Money = money };
             if (target != null) { _byInstance[instanceId] = hash; Live = true; }
             return true;
         }
@@ -138,14 +185,19 @@ namespace TS2MP.Shared
         {
             var n = new Dictionary<string, int>(StringComparer.Ordinal);
             foreach (var e in _byHash.Values) { int c; n.TryGetValue(e.Name, out c); n[e.Name] = c + 1; }
-            Eligible = 0;
+            Eligible = 0; EligibleMoney = 0; EligibleUnique = 0;
             foreach (var e in _byHash.Values)
             {
                 if (n[e.Name] > 1) e.Flags |= LootFlags.SharedName;
                 if (ambiguous != null && ambiguous(e.Hash)) e.Flags |= LootFlags.Ambiguous;
                 if (e.Flags == LootFlags.None) Eligible++;
+                else if (e.Flags == LootFlags.DestroyIfPicked) EligibleUnique++;
+                else if ((e.Flags & ~(LootFlags.Money | LootFlags.NoXp)) == LootFlags.None && (e.Flags & LootFlags.Money) != 0 && e.Money > 0) EligibleMoney++;
             }
         }
+        // W4.1B flag-level counts (item facts are checked per pickup): unique valuables, money objects.
+        public int EligibleMoney { get; private set; }
+        public int EligibleUnique { get; private set; }
 
         public bool TryGet(uint hash, out LootEntry e) { return _byHash.TryGetValue(hash, out e); }
         public bool TryByInstance(int instanceId, out LootEntry e) { uint h; e = null; return _byInstance.TryGetValue(instanceId, out h) && _byHash.TryGetValue(h, out e); }
@@ -319,7 +371,17 @@ namespace TS2MP.Shared
         public static ProposalCode DecideP2(uint txn, uint appliedTxn, bool inRegion, LootCatalog cat, uint clientDigest, uint hash, int itemId,
                                             ItemFacts facts, LootState state, bool room, int recordCount, out string why)
         {
-            why = null;
+            LootClass cls;
+            return DecideP2(txn, appliedTxn, inRegion, cat, clientDigest, hash, itemId, facts, state, room, recordCount, false, out cls, out why);
+        }
+
+        // W4.1B: class-aware (ordinary valuable, unique valuable, money). persistTaken = LootRules.PersistentlyTaken on the
+        // host's own keys (an object the host save already removed is never handed out again, e.g. after the live taken list
+        // of an emptied region was cleared). Money has no backpack unit (no max_amount / count check).
+        public static ProposalCode DecideP2(uint txn, uint appliedTxn, bool inRegion, LootCatalog cat, uint clientDigest, uint hash, int itemId,
+                                            ItemFacts facts, LootState state, bool room, int recordCount, bool persistTaken, out LootClass cls, out string why)
+        {
+            why = null; cls = LootClass.Excluded;
             if (txn != 0 && txn <= appliedTxn) return ProposalCode.Unchanged;
             if (txn != appliedTxn + 1) { why = "out of order"; return ProposalCode.Stale; }
             if (!inRegion) { why = "not in that region"; return ProposalCode.NotAuthorized; }
@@ -328,13 +390,15 @@ namespace TS2MP.Shared
             if (cat.Digest != clientDigest) { why = "scene data differs between the instances (census digest)"; return ProposalCode.Invalid; }
             LootEntry e;
             if (!cat.TryGet(hash, out e)) { why = "unknown object"; return ProposalCode.Invalid; }
-            if (e.Flags != LootFlags.None) { why = "excluded: " + LootRules.Exclusion(e.Flags); return ProposalCode.Invalid; }
             if (e.ItemId != itemId) { why = "item type mismatch"; return ProposalCode.Invalid; }
-            var x = LootRules.Exclusion(facts);
-            if (x != null) { why = "excluded: " + x; return ProposalCode.Invalid; }
+            string x;
+            cls = LootRules.Classify(e, facts, out x);
+            if (cls == LootClass.Excluded) { why = "excluded: " + x; return ProposalCode.Invalid; }
             if (state == LootState.Taken) { why = "already taken"; return ProposalCode.Stale; }
             if (state == LootState.Pending) { why = "Player 1's pickup of it is in progress"; return ProposalCode.Busy; }
+            if (persistTaken) { why = "already taken (host save keys)"; return ProposalCode.Stale; }
             if (!room) { why = "region loot list full"; return ProposalCode.Busy; }
+            if (cls == LootClass.Money) return ProposalCode.Accepted;
             if (facts.MaxAmount > 0 && recordCount + 1 > facts.MaxAmount) { why = "max_amount"; return ProposalCode.Invalid; }
             if (recordCount >= ushort.MaxValue) { why = "count"; return ProposalCode.Invalid; }
             return ProposalCode.Accepted;

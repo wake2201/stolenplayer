@@ -36,7 +36,7 @@ namespace TS2MP.Plugin
         readonly Type[] _types = new Type[ObjectKinds.All.Length];
         Func<object, bool> _wasDropped;
         // W4.1 loot flags (serialized Pickupable fields)
-        Func<object, int> _pItem; Func<object, string> _pStory;
+        Func<object, int> _pItem, _pMoney; Func<object, string> _pStory;   // _pMoney: Pickupable.add_money (W4.1B)
         readonly List<KeyValuePair<LootFlags, Func<object, bool>>> _pFlags = new List<KeyValuePair<LootFlags, Func<object, bool>>>();
         Func<object, bool> _pAnyXp; Type _cabinetT;
         readonly Dictionary<int, LootCatalog> _loot = new Dictionary<int, LootCatalog>();
@@ -170,13 +170,13 @@ namespace TS2MP.Plugin
 
         void InitLootFlags(Type pick)
         {
-            _pItem = Fast.Getter<int>(pick, "item_ID"); _pStory = Fast.Getter<string>(pick, "story_name"); _pAnyXp = Fast.Getter<bool>(pick, "add_any_XP");
+            _pItem = Fast.Getter<int>(pick, "item_ID"); _pStory = Fast.Getter<string>(pick, "story_name"); _pAnyXp = Fast.Getter<bool>(pick, "add_any_XP"); _pMoney = Fast.Getter<int>(pick, "add_money");
             Flag(pick, "is_heavy_item", LootFlags.Heavy); Flag(pick, "is_money", LootFlags.Money); Flag(pick, "destroy_if_was_picked", LootFlags.DestroyIfPicked);
             Flag(pick, "deleteIfPref", LootFlags.DeleteIfPref); Flag(pick, "lock_parcel_after_pickup", LootFlags.Parcel); Flag(pick, "advance_story_if_picked", LootFlags.StoryPick);
             Flag(pick, "advance_story_if_placed_car", LootFlags.StoryCar); Flag(pick, "isContractItem", LootFlags.Contract); Flag(pick, "never_destroy", LootFlags.NeverDestroy);
             Flag(pick, "dontDestroyDays", LootFlags.NoDays); Flag(pick, "cant_pick_reason", LootFlags.CantPick);
             _cabinetT = AccessTools.TypeByName("RandomFileCabinet");
-            if (_pItem == null || _pStory == null || _pAnyXp == null || _pFlags.Count != 11) { _log.Warn("CENSUS loot flag fields incomplete: shared world loot disabled (no catalog)"); _pItem = null; }
+            if (_pItem == null || _pStory == null || _pAnyXp == null || _pMoney == null || _pFlags.Count != 11) { _log.Warn("CENSUS loot flag fields incomplete: shared world loot disabled (no catalog)"); _pItem = null; }
         }
         void Flag(Type t, string field, LootFlags f) { var g = Fast.Getter<bool>(t, field); if (g != null) _pFlags.Add(new KeyValuePair<LootFlags, Func<object, bool>>(f, g)); }
 
@@ -268,7 +268,7 @@ namespace TS2MP.Plugin
                         if (info.Kind == ObjectKind.Pickupable && catalog != null)
                         {
                             string lname = t.name;
-                            catalog.Add(hash, lname, _pItem(comp), FlagsOf(comp, cat == IdentityCategory.Dynamic), comp, comp.GetInstanceID());
+                            catalog.Add(hash, lname, _pItem(comp), FlagsOf(comp, cat == IdentityCategory.Dynamic), comp, comp.GetInstanceID(), _pMoney(comp));
                         }
                         if (lines != null) lines.Add(hash.ToString("X8") + "\t" + info.Kind + "\t" + cat + "\t" + res + "\t" + path);
                     }
@@ -346,7 +346,7 @@ namespace TS2MP.Plugin
             foreach (var e in c.Entries)
                 for (int b = 0; b < 32; b++) { var x = (LootFlags)(1u << b); if ((e.Flags & x) != 0) { int n; counts.TryGetValue(x, out n); counts[x] = n + 1; } }
             var sb = new StringBuilder("WORLD_LOOT_FLAGS ").Append(IdentityNamespace.Name(c.Namespace)).Append(" objects=").Append(c.Count)
-                .Append(" flagFree=").Append(c.Eligible).Append(" supportedRegion=").Append(LootRules.SupportedNamespace(c.Namespace) ? "yes" : "no");
+                .Append(" flagFree=").Append(c.Eligible).Append(" uniqueFlagOnly=").Append(c.EligibleUnique).Append(" money=").Append(c.EligibleMoney).Append(" supportedRegion=").Append(LootRules.SupportedNamespace(c.Namespace) ? "yes" : "no");
             foreach (var kv in counts) sb.Append(' ').Append(kv.Key).Append('=').Append(kv.Value);
             _log.Info(sb.ToString());
         }

@@ -1,4 +1,4 @@
-// W4.2 Phase A: host-owned campaign bootstrap for Player 2 + persistent Player-2 spawn (design: src/Shared/Campaign.cs).
+﻿// W4.2 Phase A: host-owned campaign bootstrap for Player 2 + persistent Player-2 spawn (design: src/Shared/Campaign.cs).
 //
 // HOST: on every client connection (after ClientReady) the host builds ONE CampaignSnapshot from its live FBPP model
 // (FBPP._latestData = what FBPP.GetSaveFileAsJson serialises; verified IL), filtered by CampaignPolicy, with Player 2's
@@ -191,7 +191,10 @@ namespace TS2MP.Plugin
             CampaignData model; string err;
             if (!FbppApi.ReadModel(out model, out err)) { _log.Error("CAMPAIGN snapshot NOT sent (" + why + "): host FBPP model unreadable (" + err + ")"); return; }
             int[] removed;
-            var snap = CampaignSnapshot.Build(model, p2.HostRecord, plan, p2.HostProfile, p2.HostHistoryId, (uint)new System.Random().Next(1, int.MaxValue), out removed);
+            // W4.1B: the client sandbox starts with the shared balance (live host money; the saved key if the wallet is not up yet)
+            int shared; var wal = WalletSync.Instance;
+            if (wal == null || !wal.TryHostBalance(out shared)) { if (!model.TryInt("Money", out shared)) shared = 0; }
+            var snap = CampaignSnapshot.Build(model, p2.HostRecord, plan, p2.HostProfile, p2.HostHistoryId, (uint)new System.Random().Next(1, int.MaxValue), shared, out removed);
             byte[] body = snap.Encode();
             _w.Reset(); _w.Put((byte)MsgType.CampaignSnapshot); _w.Put(body);   // raw body: no 64 KB length prefix (LiteNetLib fragments it)
             _node.Send(_w, DeliveryMethod.ReliableOrdered, 0);

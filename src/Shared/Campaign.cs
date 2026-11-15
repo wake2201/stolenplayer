@@ -270,6 +270,14 @@ namespace TS2MP.Shared
         public readonly CampaignData Data = new CampaignData();
 
         // Host: the live FBPP model of Player 1's save -> the Player-2 campaign base (see file header).
+        // W4.1B: the sandbox "Money" key = the shared balance (the host's live money); Player 2's legacy personal money is not used.
+        public static CampaignSnapshot Build(CampaignData host, P2Inventory p2, SpawnPlan plan, int profile, int historyId, uint id, int sharedMoney, out int[] removedByClass)
+        {
+            var s = Build(host, p2, plan, profile, historyId, id, out removedByClass);
+            s.Data.Ints["Money"] = sharedMoney;
+            return s;
+        }
+
         public static CampaignSnapshot Build(CampaignData host, P2Inventory p2, SpawnPlan plan, int profile, int historyId, uint id, out int[] removedByClass)
         {
             removedByClass = new int[6];

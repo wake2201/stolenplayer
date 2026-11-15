@@ -313,7 +313,7 @@ static class DurabilityTests
     static void CheckRoundTrip(P2Book b, string from)
     {
         var data = b.Serialize(0); P2Book back; string err;
-        Expect(data[8] == 4, from + " re-written as v4 (W4.1: + world-take list)");
+        Expect(data[8] == 5, from + " re-written as v5 (W4.1: + world-take list, W4.1B: + wallet journal)");
         Expect(P2Book.TryDeserialize(data, 0, out back, out err), from + " -> v4 loads: " + err);
         Expect(back.Rec.SameContent(b.Rec) && back.Rec.Id == b.Rec.Id && back.Rec.AppliedTxn == b.Rec.AppliedTxn && back.Rec.Rev == b.Rec.Rev && back.HostSeq == b.HostSeq && back.LastSavedHost == b.LastSavedHost
                && back.LastSavedTxn == b.LastSavedTxn && back.HistoryId == b.HistoryId && back.HistoryConfirmed == b.HistoryConfirmed && back.Journal.Count == b.Journal.Count, from + " -> v4: nothing lost");

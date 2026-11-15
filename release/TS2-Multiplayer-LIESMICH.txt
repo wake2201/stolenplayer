@@ -1,4 +1,4 @@
-TS2-Multiplayer 0.15.0 - Koop-Mod für Thief Simulator 2 (2 Spieler, Direktverbindung)
+TS2-Multiplayer 0.16.0 - Koop-Mod für Thief Simulator 2 (2 Spieler, Direktverbindung)
 ========================================================================================
 
 INSTALLATION
@@ -28,6 +28,7 @@ Mitspieler (Spieler 2):
   - Zurück ins Hauptmenü beendet die Sitzung; erneut beitreten wieder mit F8 im Hauptmenü.
   - Nach erfolgreicher Verbindung lädt das Spiel automatisch die Welt des Hosts (nie den eigenen Einzelspieler-
     Spielstand); das Inventar von Spieler 2 kommt vom Host.
+  - Beide Spieler teilen sich ein Geldkonto: das Geld des Hosts. Das Inventar bleibt pro Spieler getrennt.
   - Beim ersten Beitritt erscheint Spieler 2 neben dem Host, danach an seiner letzten Position - auch in einer
     anderen Region als der Host. Nach einem Abbruch mitten in einer Story-Mission: an einem sicheren Punkt der
     Region bzw. im Versteck.

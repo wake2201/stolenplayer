@@ -6,7 +6,7 @@ Authoritative detail lives in `docs/CODEBASE_MAP.md` §3.7 (vehicles), §3.9 (sc
 | Vehicle | Object | Identity | Ownership / unlock | Notes |
 |---|---|---|---|---|
 | Ranger (player car 1) | `MainScene:PLAYER CAR` | `carNr` 0, `VehiclesManager.firstCar`, `CurrentCar` 0 | always | 4 doors + hatch, heavy cargo (`VanHeavyItems`), `CarBox`, medkit |
-| Shadowhawk GT (player car 2) | `MainScene:MUSTANG` | `carNr` 1, `VehiclesManager.van` | `Tutorial.BuyVan` −25,000, `VanBought` | coupe, no heavy cargo |
+| Shadowhawk GT (player car 2) | `MainScene:MUSTANG` | `carNr` 1, `VehiclesManager.van` | `Tutorial.BuyVan` −25,000, `VanBought` (sign `BUY VAN OBJ` only in the Auto Shop, needs `garage`; car shown on a later hideout load; multiplayer: V1.2 `vbuy`) | coupe, no heavy cargo |
 | Stealable region cars | Madison `CAR 112`, `CAR 106`, `thunderdrive`; Hillville `BENC RS`, `VIXEN`, `PROSPECT`; Forestside `GOLF CART RED` | `car_name`, item ids `isCar` (7 types, e.g. 227 `mecenas_benc`, 233 prospect) | steal via `LockedCarDoor` + pick gun / `DrillingCarDoor` | delivered → hideout trophy (`StolenCarHideout`) + `CMS_Car` disassembly; sold at car service; story stages 46, 58, 59 |
 | Police | `CopCar` (spawned), `HelicopterAI` | dynamic | – | – |
 | Traffic | `TurnTheGameOn.SimpleTrafficSystem.AITrafficCar` (firstpass) | pooled | – | cosmetic |

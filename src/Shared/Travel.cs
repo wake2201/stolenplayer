@@ -20,6 +20,10 @@ namespace TS2MP.Shared
     {
         public const int Hideout = 0;
         public const int Jail = 93;
+        // V1.2: the Auto Shop scene (level5) has no MapBorder / LeavePoint / ExitMapDoor (scene scan): its only original travel
+        // opener is the car (GameManager.Start sets open_town_selection_on_car for CurrentLocation 3, car at SpawnGarageCar).
+        public const int AutoShop = 3;
+        public static bool CarOnlyTravel(int r) { return r == AutoShop; }
         public const float MaxFuel = 100f;                 // SaveGame.Update refills an empty tank to 60
         public const double ReservationTimeout = 180;      // safety net only; normal end = arrival / failure event
 
@@ -43,7 +47,7 @@ namespace TS2MP.Shared
         Real = 1,          // this instance simulates the real car (holder): original controller, driving, storage
         ParkedOther = 2,   // hideout: the real car is here but the other player simulates it -> frozen original object
                            //          following its pose; E requests the free driver seat (M4.2.2 handoff), no storage
-        AwayProxy = 3,     // hideout: the real car is in another region -> static travel access point, E opens the travel menu
+        AwayProxy = 3,     // hideout (and V1.2 Auto Shop): the real car is in another region -> static travel access point, E opens the travel menu
         RemoteVisual = 4   // outside the hideout: the other player simulates it here -> stripped visual (M4.1 proxy) with a
                            //          kinematic collision shell and the original enter trigger (M4.2.2)
     }
@@ -71,17 +75,42 @@ namespace TS2MP.Shared
 
     public static class PresentationRules
     {
-        public static CarPresentation Decide(VehicleRecord r, int localRegion, byte mySlot)
+        public static CarPresentation Decide(VehicleRecord r, int localRegion, byte mySlot) { return Decide(r, localRegion, mySlot, false); }
+
+        // V1.2: 'travelProxy' = this car is the travel-only access point of a car-only-travel region (AutoShopProxyCar).
+        public static CarPresentation Decide(VehicleRecord r, int localRegion, byte mySlot, bool travelProxy)
         {
             if (localRegion == Regions.None || !TravelRules.IsFleetRegion(localRegion) || r.Region == Regions.None) return CarPresentation.Hidden;
             bool here = r.Region == localRegion;
             if (here && r.Holder == mySlot && r.Unlocked) return CarPresentation.Real;
+            if (travelProxy && !here && r.Unlocked && TravelRules.CarOnlyTravel(localRegion)) return CarPresentation.AwayProxy;
             if (localRegion == TravelRules.Hideout)
             {
                 if (!r.Unlocked) return CarPresentation.Hidden;                 // never show an unbought car as owned
                 return here ? CarPresentation.ParkedOther : CarPresentation.AwayProxy;
             }
             return here && r.Holder != 0 ? CarPresentation.RemoteVisual : CarPresentation.Hidden;
+        }
+
+        // V1.2: in a car-only-travel region (Auto Shop) without any fleet car present, ONE owned car elsewhere is shown as a
+        // stationary travel-only proxy (AwayProxy: E opens the original travel menu, nothing else), so the player who stays can
+        // leave on their own. Preferred = the car last presented in this region (it stays where it stood), else the lowest id.
+        // Any owned car committed to the region (real or remote) replaces the proxy. Never a second drivable copy: the record,
+        // holder and region of the car are untouched; the proxy is purely local presentation.
+        public static ushort AutoShopProxyCar(IEnumerable<KeyValuePair<ushort, VehicleRecord>> fleet, int localRegion, ushort preferred)
+        {
+            if (!TravelRules.CarOnlyTravel(localRegion)) return VehicleIds.None;
+            ushort best = VehicleIds.None; bool pref = false;
+            foreach (var kv in fleet)
+            {
+                var r = kv.Value;
+                if (!r.Unlocked) continue;
+                if (r.Region == localRegion) return VehicleIds.None;          // a real car is here: no proxy
+                if (r.Region == Regions.None) continue;
+                if (kv.Key == preferred) pref = true;
+                if (best == VehicleIds.None || kv.Key < best) best = kv.Key;
+            }
+            return pref ? preferred : best;
         }
 
         // M5.0: every non-simulated presentation uses the ORIGINAL scene object of the car. ParkedOther (hideout) and

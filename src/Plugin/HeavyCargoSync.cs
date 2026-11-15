@@ -57,7 +57,7 @@ namespace TS2MP.Plugin
         readonly List<CargoEntry> _entries = new List<CargoEntry>();
         readonly HashSet<ushort> _refs = new HashSet<ushort>();
         readonly List<ushort> _drop = new List<ushort>();
-        uint _seenHead = uint.MaxValue, _seenEpoch, _cargoRev = uint.MaxValue, _heavyRev = uint.MaxValue; int _seenRegion = int.MinValue; bool _dirty = true;
+        uint _seenHead = uint.MaxValue, _seenEpoch, _cargoRev = uint.MaxValue, _heavyRev = uint.MaxValue; int _seenRegion = int.MinValue; bool _dirty = true, _seenProxy;
         readonly HashSet<string> _logged = new HashSet<string>();
         long _spawned, _placed, _destroyed, _adopted, _saves, _seeded, _loadSkipped, _saveSkipped, _refrozen;
         double _nextStats, _costMaxMs;
@@ -206,8 +206,10 @@ namespace TS2MP.Plugin
             if (_boundGm == null || !SupportedHere) return;
             if (_host && _world.Host != null && !_world.Host.Cargo.Seeded(_vid)) Seed();
             var reg = _world.Registry;
-            if (!_dirty && reg.HeadRev == _seenHead && reg.Epoch == _seenEpoch && _world.LocalRegion == _seenRegion && _drop.Count == 0 && !AnyPending()) return;
-            _seenHead = reg.HeadRev; _seenEpoch = reg.Epoch; _seenRegion = _world.LocalRegion;
+            bool proxy = OnTravelProxy();
+            if (!_dirty && reg.HeadRev == _seenHead && reg.Epoch == _seenEpoch && _world.LocalRegion == _seenRegion && proxy == _seenProxy && _drop.Count == 0 && !AnyPending()) return;
+            if (proxy != _seenProxy) _dirty = true;
+            _seenHead = reg.HeadRev; _seenEpoch = reg.Epoch; _seenRegion = _world.LocalRegion; _seenProxy = proxy;
             var ce = reg.Get(StateScope.Session, _vid, WorldKeys.Cargo);
             var he = _world.LocalRegion != Regions.None ? reg.Get(StateScope.Region, _world.LocalRegion, WorldKeys.Heavy) : null;
             uint crev = ce != null ? ce.Rev : 0u, hrev = he != null ? he.Rev : 0u;
@@ -215,6 +217,8 @@ namespace TS2MP.Plugin
             _cargoRev = crev; _heavyRev = hrev; _dirty = false;
             double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency; if (ms > _costMaxMs) _costMaxMs = ms;
         }
+
+        bool OnTravelProxy() { var v = VehicleSync.Current; return v != null && v.IsTravelProxy(_vid); }
 
         bool AnyPending() { foreach (var o in _objs.Values) if (o.UnrefSince >= 0) return true; return false; }
 
@@ -228,12 +232,14 @@ namespace TS2MP.Plugin
                 else LogOnce("bad:" + ce.Rev, "CARGO registry list of vehicle " + _vid + " unreadable (both PCs need mod " + ProtocolInfo.ModVersion + ")");
             }
             _refs.Clear();
-            foreach (var e in _entries) _refs.Add(e.Id);
+            // V1.2: a car that is only a local travel proxy here (hideout / Auto Shop AwayProxy) carries no cargo copies
+            bool show = !_seenProxy;
+            if (show) foreach (var e in _entries) _refs.Add(e.Id);
             // cargo objects out in the world are synthetic heavy records of this region (HeavySync presents them)
             List<HeavyRecord> hl;
             if (he != null && HeavyList.TryParse(he.Value, out hl)) foreach (var r in hl) if (r.Cargo) _refs.Add(HeavyCargo.IdOf(r.Hash));
             if (!_adoptChecked) { _adoptChecked = true; if (_vanLoaded(_van)) AdoptLoaded(); }
-            foreach (var e in _entries)
+            if (show) foreach (var e in _entries)
             {
                 var o = Ensure(e.Id, e.ItemId, ToV(e.Pos), ToQ(e.Rot), true);
                 if (o == null) continue;

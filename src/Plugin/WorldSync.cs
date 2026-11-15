@@ -402,7 +402,7 @@ namespace TS2MP.Plugin
             _proposals++;
             uint rev; int sleepRegion; float sleepHours;
             var code = _wh.HandleProposal(_node.RemoteInstanceId ?? "?", _remoteSlot, id, p, Now, out rev, out sleepRegion, out sleepHours);
-            if (p.Key == WorldKeys.VehicleTake && _wh.LastNote != null) _log.Info("VEHICLE " + _wh.LastNote);
+            if ((p.Key == WorldKeys.VehicleTake || p.Key == WorldKeys.VehicleBuy) && _wh.LastNote != null) _log.Info("VEHICLE " + _wh.LastNote);
             if ((p.Key == WorldKeys.ObjectTxn || p.Key == WorldKeys.ObjectScene || p.Key == WorldKeys.ObjectInit) && _wh.LastNote != null) _log.Info("WOBJ " + _wh.LastNote);   // W4.2B: every object decision (also accepted ones)
             if (p.Key == WorldKeys.HeavyTxn && _wh.LastNote != null) _log.Info("HEAVY " + _wh.LastNote);   // H1: every lease decision on Player 2's requests
             if (p.Key == WorldKeys.Region && code == ProposalCode.Accepted)

@@ -854,4 +854,47 @@ namespace TS2MP.Shared
             return SeatAction.Exit;
         }
     }
+
+    // V1.2: the original Shadowhawk purchase (verified IL, Tutorial.BuyVan / OpenBuyVan / DestroyIfPref, 1.27c):
+    //   Sign "BUY VAN OBJ" exists only in the Auto Shop scene (level5 "Auto Shop") and only while SPrefs garage >= 1 and
+    //   VanBought == 0 (two DestroyIfPref components). Tag "BuyVan" + E -> Tutorial.OpenBuyVan: buy button shown only when
+    //   PS.moneyAm >= 25000. Tutorial.BuyVan: TurnOff, GM.parcel_strings_to_set.Add(VehiclesManager.vanBoughtPref) (written
+    //   as 1 by the next SaveGameNewSystem), message "bought_van", BuySound, moneyAm -= 25000, achievement BUY_MUSTANG, sign
+    //   off. It does NOT activate the car: VehiclesManager.InitiateMainCar shows it at secondCarHideoutPos on the next hideout
+    //   load once VanBought == 1.
+    // Multiplayer: the host's moneyAm is the shared balance, the host's parcel list / save is the only durable purchase
+    // record. A client purchase is a host transaction (proposal "vbuy"); the host's own purchase runs the original and the
+    // fleet record follows the host's unlock state (pref or queued parcel string).
+    public interface IVehicleShopHost
+    {
+        bool TryBalance(out int balance);       // shared balance (host PlayerScript.moneyAm); false while the host scene loads
+        bool GarageOwned { get; }               // original sign condition: SPrefs garage >= 1 (or the garage purchase queued)
+        bool Charge(ushort vehicle, int price); // host: moneyAm -= price + the original unlock key queued (parcel string)
+    }
+
+    public static class VehicleShop
+    {
+        public const int Price = 25000;          // Tutorial.BuyVan: PS.moneyAm -= 25000; OpenBuyVan: button only if moneyAm >= 25000
+        public const int ShopRegion = 3;         // Auto Shop (CurrentLocation 3): the only scene with "BUY VAN OBJ"
+        public const int PurchasableCarNr = 1;   // VehiclesManager.van (Shadowhawk GT); the Ranger (0) is always owned
+        public static readonly ushort Vehicle = VehicleIds.FromCarNr(PurchasableCarNr);
+        public static bool Purchasable(byte kind) { return kind == PurchasableCarNr; }
+
+        // Host decision for one purchase request; nothing is changed here. Already owned -> Stale (never Unchanged: the
+        // client treats Unchanged as success and would show the purchase without a charge).
+        public static ProposalCode Decide(FleetBook fleet, ushort vehicle, int requesterRegion, IVehicleShopHost shop, out int balance, out string why)
+        {
+            balance = 0; why = null;
+            VehicleRecord r;
+            if (vehicle == VehicleIds.None || !fleet.TryGet(vehicle, out r)) { why = "unknown vehicle"; return ProposalCode.Invalid; }
+            if (!Purchasable(r.Kind)) { why = "not a purchasable car"; return ProposalCode.NotAuthorized; }
+            if (r.Unlocked) { why = "already owned"; return ProposalCode.Stale; }
+            if (requesterRegion != ShopRegion) { why = "buyer not at the Auto Shop (" + Regions.Name(requesterRegion) + ")"; return ProposalCode.NotAuthorized; }
+            if (shop == null) { why = "host shop not ready"; return ProposalCode.Busy; }
+            if (!shop.GarageOwned) { why = "no garage (the original sign is hidden)"; return ProposalCode.NotAuthorized; }
+            if (!shop.TryBalance(out balance)) { why = "host balance unavailable (scene loading)"; return ProposalCode.Busy; }
+            if (balance < Price) { why = "shared balance " + balance + " < " + Price; return ProposalCode.Stale; }
+            return ProposalCode.Accepted;
+        }
+    }
 }

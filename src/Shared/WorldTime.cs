@@ -479,6 +479,36 @@ namespace TS2MP.Shared
         // region still unknown this changes nothing (the later SetPlayerRegion assigns it, the launcher-proven order).
         public int FleetInitialized(double now) { _now = now; int before = Outbox.Count; AfterFleetChange(); return Outbox.Count - before; }
 
+        // ---- V1.2 vehicle purchase / unlock ----
+        public IVehicleShopHost Shop;   // host plugin: shared balance, garage condition, charge (original money + unlock key)
+        public long Purchases, PurchaseRefusals;
+
+        // One client purchase: validated completely, then charged and unlocked in this single host step (a retransmitted
+        // proposal gets the cached answer; a second request or the host's own click after the unlock is Stale -> one charge).
+        public ProposalCode BuyVehicle(byte slot, ushort vid, out string why)
+        {
+            int balance;
+            var code = VehicleShop.Decide(Fleet, vid, RegionOfSlot(slot), Shop, out balance, out why);
+            if (code == ProposalCode.Accepted)
+            {
+                if (!Shop.Charge(vid, VehicleShop.Price)) { why = "host charge failed"; code = ProposalCode.Busy; }
+                else { SetUnlocked(vid, true); why = "charged " + VehicleShop.Price + " of " + balance; Purchases++; }
+            }
+            if (code != ProposalCode.Accepted) PurchaseRefusals++;
+            return code;
+        }
+
+        // The host's own unlock state (save pref or queued parcel string) -> fleet record; holders re-established at once so
+        // the newly owned car is presented (FleetBook.ReassignHolders skips locked cars). True when the record changed.
+        public bool SetUnlocked(ushort vid, bool unlocked)
+        {
+            VehicleRecord r;
+            if (!Fleet.TryGet(vid, out r) || r.Unlocked == unlocked) return false;
+            if (Fleet.Register(vid, r.Kind, unlocked, Outbox) != ProposalCode.Accepted) return false;
+            AfterFleetChange();
+            return true;
+        }
+
         // ---- M5.0 car doors ----
         // A local or remote change of an original car door (car_door_L = 0 / car_door_R = 1). The car's simulation holder may
         // always change its own doors (its original CarController opens/closes them on entry/exit); anybody else in the
@@ -981,6 +1011,14 @@ namespace TS2MP.Shared
                 if (vid == VehicleIds.None || p.Value == null || p.Value.Length != 1 || p.Value[0] > 2) code = ProposalCode.Invalid;
                 else code = Ride(senderSlot, vid, p.Value[0], now, out why);
                 LastNote = "ride car#" + vid + " op " + (p.Value != null && p.Value.Length == 1 ? p.Value[0].ToString() : "?") + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
+            }
+            else if (p.Scope == StateScope.Session && p.Key == WorldKeys.VehicleBuy)
+            {
+                ushort vid = p.ScopeArg > 0 && p.ScopeArg <= ushort.MaxValue ? (ushort)p.ScopeArg : VehicleIds.None;
+                string why = null;
+                if (vid == VehicleIds.None || p.Value == null || p.Value.Length != 1 || p.Value[0] != 1) code = ProposalCode.Invalid;
+                else code = BuyVehicle(senderSlot, vid, out why);
+                LastNote = "buy car#" + vid + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
             }
             else if (p.Scope == StateScope.Session && p.Key == WorldKeys.VehicleDoor)
             {

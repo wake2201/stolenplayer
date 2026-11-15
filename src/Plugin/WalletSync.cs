@@ -71,6 +71,7 @@ namespace TS2MP.Plugin
             foreach (var w in WalletPolicy.Writers)
             {
                 if (w.Policy == MoneyPolicy.Count || w.Policy == MoneyPolicy.Load) continue;
+                if (w.Policy == MoneyPolicy.HostTxn && TravelHooks.BuyVanPatched && TravelHooks.Handler != null) { n++; continue; }   // V1.2: owned by the vbuy hook
                 var t = AccessTools.TypeByName(w.Type);
                 var m = t != null ? AccessTools.Method(t, w.Method) : null;
                 if (m == null) { missing.Add(w.Type + "." + w.Method); continue; }

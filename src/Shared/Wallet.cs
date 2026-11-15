@@ -152,6 +152,8 @@ namespace TS2MP.Shared
         Purchase,  // counted + purchase counter (host checks the balance; refused -> record restored, item and money return)
         Exclude,   // the original runs, its money change is reverted locally and never credited (system not shared yet)
         Refuse,    // the original method does nothing on the client (it buys host / world-owned state that Player 2 cannot own)
+        HostTxn,   // V1.2: a host transaction of another subsystem (TravelHooks: Tutorial.BuyVan -> "vbuy"); the host charges the
+                   // shared balance once, the client never changes money itself. Refused like Refuse when that hook is missing.
         Load       // original load/save plumbing: replaced by the mirror (never a delta)
     }
 
@@ -208,7 +210,7 @@ namespace TS2MP.Shared
             new MoneyWriter("StockManager", "SellShares", MoneyPolicy.Refuse, "IL_004e", "shares would be a second, separate holding"),
             new MoneyWriter("Darkbank", "DepositMoney", MoneyPolicy.Refuse, "IL_002d + SPrefs BankBalance", "bank would be a second, separate balance"),
             new MoneyWriter("Darkbank", "WithdrawMoney", MoneyPolicy.Refuse, "IL_002d + SPrefs BankBalance", "bank would be a second, separate balance"),
-            new MoneyWriter("Tutorial", "BuyVan", MoneyPolicy.Refuse, "IL_0063", "fleet unlock = host"),
+            new MoneyWriter("Tutorial", "BuyVan", MoneyPolicy.HostTxn, "IL_0063", "fleet unlock = host: V1.2 vbuy host transaction (VehicleSync)"),
             new MoneyWriter("BuyTip", "BuyTipp", MoneyPolicy.Refuse, "IL_0046 (TipPref, habits)", "tips are host campaign knowledge"),
             new MoneyWriter("Inventory", "EndCheatEdit", MoneyPolicy.Refuse, "IL_021b", "cheat edit"),
             // ---- load / save plumbing ----

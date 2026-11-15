@@ -7,6 +7,8 @@
 //   PlayerScript.OpenTownSelectionNoDelay() / OpenTownSelection() : M4.3 Phase B, the travel menu openers (MapBorder.OnTriggerEnter
 //                                           IL_003c calls OpenTownSelectionNoDelay for any collider tagged Player/PlayerMapTrigger,
 //                                           i.e. also for a seated mod passenger's own player child "Trigger Map")
+//   Tutorial.BuyVan()                     : V1.2, the original Shadowhawk purchase button (Auto Shop sign "BUY VAN OBJ"):
+//                                           host -> original + fleet unlock; client -> host transaction "vbuy" (fail closed)
 // Hooks fall back to the original behaviour if the handler throws, except menu travel clicks (held) and driver seating
 // on arrival (skipped). SelectJail is never patched (arrest path).
 using System;
@@ -26,6 +28,8 @@ namespace TS2MP.Plugin
         bool AllowEnterVehicle(object car);                      // false = hideout travel proxy (menu opened instead)
         bool AllowTownSelection(object ps);                      // M4.3 Phase B: false = seated passenger (only the driver travels)
         bool SelectFailSafe(object gm);                           // result when OnSelect threw
+        bool AllowBuyVan(object tutorial);                        // V1.2: false = the original purchase does not run here
+        void AfterBuyVan(object tutorial);                        // V1.2: the original purchase ran
         void HookError(string where, Exception ex);
     }
 
@@ -44,6 +48,7 @@ namespace TS2MP.Plugin
         static Harmony _h;
         public static int Patched;
         public static bool TownSelectionPatched;
+        public static bool BuyVanPatched;   // V1.2: WalletSync leaves Tutorial.BuyVan to this hook (else it refuses it on the client)
         // M4.3 Phase B: the exact patched Select* method per fleet destination (a joint passenger resumes its own original travel)
         public static readonly Dictionary<int, MethodInfo> SelectByDest = new Dictionary<int, MethodInfo>();
 
@@ -91,6 +96,13 @@ namespace TS2MP.Plugin
                 _h.Patch(townA, townPrefix); _h.Patch(townB, townPrefix);
                 Patched += 2; TownSelectionPatched = true;
             }
+            var tut = AccessTools.TypeByName("Tutorial");
+            var buyVan = tut != null ? AccessTools.Method(tut, "BuyVan", Type.EmptyTypes) : null;
+            if (buyVan != null)
+            {
+                _h.Patch(buyVan, new HarmonyMethod(AccessTools.Method(typeof(TravelHooks), "BuyVanPrefix")), new HarmonyMethod(AccessTools.Method(typeof(TravelHooks), "BuyVanPostfix")));
+                Patched++; BuyVanPatched = true;
+            }
             return null;
         }
 
@@ -101,7 +113,7 @@ namespace TS2MP.Plugin
         static void LoadCheckpointPrefix() { try { LastLoadReason = "caught screen Load (GameManager.LoadCheckpoint: MainScene reload, last checkpoint of this instance's save)"; if (Log != null) Log("LOAD GameManager.LoadCheckpoint: original reload of the last checkpoint"); } catch { } }
         static void LoadMenuPrefix() { try { LastLoadReason = "main menu + Continue"; } catch { } }
 
-        public static void Uninstall() { if (_h != null) { _h.UnpatchSelf(); _h = null; } Handler = null; Log = null; LastLoadReason = null; Patched = 0; TownSelectionPatched = false; SelectByDest.Clear(); }
+        public static void Uninstall() { if (_h != null) { _h.UnpatchSelf(); _h = null; } Handler = null; Log = null; LastLoadReason = null; Patched = 0; TownSelectionPatched = false; BuyVanPatched = false; SelectByDest.Clear(); }
 
         static bool SelectPrefix(object __instance, MethodBase __originalMethod)
         {
@@ -143,6 +155,19 @@ namespace TS2MP.Plugin
         {
             var h = Handler; if (h == null) return true;
             try { return h.AllowTownSelection(__instance); } catch (Exception ex) { h.HookError("OpenTownSelection", ex); return true; }   // fail open: original menu
+        }
+
+        // Fail closed: an exception never lets the original charge money without the host unlock (and vice versa).
+        static bool BuyVanPrefix(object __instance)
+        {
+            var h = Handler; if (h == null) return true;
+            try { return h.AllowBuyVan(__instance); } catch (Exception ex) { h.HookError("BuyVan", ex); return false; }
+        }
+
+        static void BuyVanPostfix(object __instance)
+        {
+            var h = Handler; if (h == null) return;
+            try { h.AfterBuyVan(__instance); } catch (Exception ex) { h.HookError("BuyVan postfix", ex); }
         }
 
         static bool SpawnAtCarPrefix(object __instance)

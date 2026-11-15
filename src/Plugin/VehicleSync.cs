@@ -36,7 +36,7 @@ namespace TS2MP.Plugin
         public bool GroundDiagnostics = true;   // W4.2B.3 VEHICLE_GROUND lines (driver + observer, <= 1 per car per 5 s while it moves, capped)
     }
 
-    internal sealed class VehicleSync : IDisposable, ITravelHandler
+    internal sealed partial class VehicleSync : IDisposable, ITravelHandler
     {
         readonly SessionNode _node;
         readonly InstanceLog _log;
@@ -137,6 +137,7 @@ namespace TS2MP.Plugin
             public Vector3 GroundLogPos; public double GroundLogAt = -100; public WheelVis[] DiagWheels; public int RayGround, RayOwnSkipped, RayKept, RayMiss;
             public readonly double[] SlowAt = { -1, -1 }; public readonly bool[] SlowRep = new bool[2];
             public bool Active { get { return Go != null && Go.activeInHierarchy; } }
+            public bool Placed;   // V1.2: the original (InitiateMainCar) or the mod gave the object a valid pose in this scene
         }
 
         // One original wheel transform (EVP.Wheel.wheelTransform) in car-local terms: rest rotation, axle and steering axis of
@@ -216,6 +217,8 @@ namespace TS2MP.Plugin
             _host = node.Role == Role.Host;
             _me = world.LocalSlot; _other = world.RemoteSlot;
             ResolveApi();
+            Current = this;
+            try { ResolveShopApi(); } catch (Exception ex) { _log.Warn("VEHICLE purchase API unavailable: " + ex.Message); }
             node.MessageReceived += OnMessage;
             node.RemoteDisconnected += OnRemoteDisconnected;
             node.RemoteConnected += OnRemoteConnected;
@@ -229,7 +232,7 @@ namespace TS2MP.Plugin
             }
             world.ProposalResultHook = OnProposalResult;
             SleepPresenter.PassengerSeated = () => _ride != null && _ride.Stage == RideStage.Seated;   // M4.3.3 sleep presentation context
-            if (_host && world.Host != null) world.Host.LivePark = LivePark;
+            if (_host && world.Host != null) { world.Host.LivePark = LivePark; world.Host.Shop = this; }
             InstallLegsHook();
             _log.Info("VEHICLE_INIT role=" + node.Role + " api=" + (_ok ? "ok" : "MISSING") + " travelHooks=" + (_hooks ? TravelHooks.Patched + " methods" : "off")
                 + " carFields=" + string.Join(",", _vmCars.Select(k => k.Key).ToArray()) + " travelMenuKey=" + _cfg.TravelMenuKey
@@ -438,12 +441,14 @@ namespace TS2MP.Plugin
             long t1 = Stopwatch.GetTimestamp(), t2 = t1, t3 = t1;
             bool footRan = false;
             if (_take != null && !_take.Granted && now - _take.At > TakeTimeout) EndTake("the host did not answer", true);
+            BuyFrame(now);
             if (gm != null && _local.Count > 0 && region != Regions.None)
             {
                 var ps = _gmPS(gm);
                 if (_gmLoaded(gm) && TravelRules.IsFleetRegion(region))
                 {
                     if (_reconcile || NeedsExitRetry()) { _reconcile = false; Reconcile(gm, ps, region); }
+                    SignFrame(gm, region, now);
                     t2 = Stopwatch.GetTimestamp();
                     FuelFrame(ps);
                     if (_take != null && _take.Granted) EnterFrame(now, ps);
@@ -531,6 +536,7 @@ namespace TS2MP.Plugin
             foreach (var lc in _local) if (lc.Observed) ExitObserved(lc);
             _observedBodies.Clear(); _filter.Clear();
             _region = region; _regionAt = now; _placed = false; _reconcile = true;
+            _shopSeen = VehicleIds.None; _signGm = null; _signTries = 0; _signNext = 0; DropBuy("region changed");
             _fallRecoveriesHere = 0; _fallGaveUp = false; _airSince = -1;   // _safeFeet is only used while _safeRegion == region
             foreach (var lc in _local) { lc.Mine = false; lc.FuelLoaded = false; lc.Policy.Reset(); lc.Park.Reset(); lc.Follow.Clear(); lc.FollowRecv = -100; lc.Latch.Reset(); lc.Remote.Clear(); }
             _fuelCar = null;
@@ -562,11 +568,12 @@ namespace TS2MP.Plugin
                 // Verified unlock rule (VehiclesManager.InitiateMainCar / Tutorial.BuyVan): 'van' needs SPrefs vanBoughtPref == 1.
                 bool unlocked = kv.Key != "van" || (vanPref != null && Pref(vanPref) == 1);
                 var lc = new LocalCar { Id = id, Kind = (byte)nr, Field = kv.Key, Car = car, Go = car.gameObject, T = car.transform, Rb = car.GetComponent<Rigidbody>(), Unlocked = unlocked };
+                lc.Placed = lc.Active;   // activated by the original InitiateMainCar = placed at its original spot
                 _local.Add(lc);
                 parts.Add(kv.Key + ":" + car.gameObject.name + "#" + id + (unlocked ? "" : "(locked)") + (lc.Active ? "(active)" : ""));
             }
             ProbeSeats();
-            if (_host) EnsureHostFleet(vm);
+            if (_host) { EnsureHostFleet(vm); SyncHostUnlock("scene bound"); }
             _reconcile = true;
             _log.Info("VEHICLE_BIND " + string.Join(" ", parts.ToArray()));
         }
@@ -818,6 +825,7 @@ namespace TS2MP.Plugin
 
         bool OnProposalResult(uint id, ProposalCode code)
         {
+            if (BuyResult(id, code)) return true;   // V1.2 vehicle purchase
             if (!_host && _take != null && !_take.Granted && id == _take.ProposalId)
             {
                 _log.Info("VEHICLE " + CarName(_take.Id) + " driver handoff #" + id + " -> " + code);
@@ -1023,6 +1031,7 @@ namespace TS2MP.Plugin
             if (!_world.Synced) return;
             if (_ride != null && _ride.Stage == RideStage.Seated && !JointHolds(_ride.Id) && !RideStillValid(_ride, region)) ForceExitRide("the car is no longer presented as another player's car here", true);   // before any presentation change: the player is parented to the car
             var cur = ps != null ? _psVehicle(ps) as Component : null;
+            ushort shopProxy = PresentationRules.AutoShopProxyCar(_view.All, region, _shopSeen);   // V1.2: Auto Shop travel-only proxy
             foreach (var lc in _local)
             {
                 if (lc.Go == null) continue;
@@ -1036,6 +1045,7 @@ namespace TS2MP.Plugin
                     lc.Policy.Reset(); lc.Park.Reset(); lc.Latch.Reset(); lc.Remote.Clear();   // fresh movement history per holder change
                 }
                 lc.Mine = mine;
+                if (mine && region == TravelRules.AutoShop) _shopSeen = lc.Id;
                 if (mine)
                 {
                     if (lc.Pres != CarPresentation.Real) _log.Info("VEHICLE " + CarName(lc.Id) + " presentation " + lc.Pres + " -> Real (" + r + ")");
@@ -1056,7 +1066,7 @@ namespace TS2MP.Plugin
                     continue;
                 }
                 if (lc == _fuelCar) { if (ps != null) lc.Fuel = ReadGas(ps); _fuelCar = null; }
-                var pres = PresentationRules.Decide(r, region, _me);
+                var pres = PresentationRules.Decide(r, region, _me, lc.Id == shopProxy);
                 bool inside = lc.Active && ReferenceEquals(cur, lc.Car) && _sitting(lc.Car);
                 if (inside)
                 {
@@ -1070,9 +1080,10 @@ namespace TS2MP.Plugin
                     if (lc.Observed) ExitObserved(lc);
                     bool was = lc.IsProxy;
                     if (!lc.Active) ActivateProxyObject(gm, lc, region);
+                    if (!was && region == TravelRules.AutoShop) PlaceShopProxy(gm, lc);   // before EnterProxy: its ghost check needs the final spot
                     if (!lc.IsProxy) EnterProxy(lc, ps);
-                    if (!was) KeepClearOfOtherCars(gm, lc);
-                    if (lc.Pres != pres) _log.Info("VEHICLE " + CarName(lc.Id) + " hideout presentation " + lc.Pres + " -> " + pres + " (" + r + "): E opens the travel menu");
+                    if (!was && region == TravelRules.Hideout) KeepClearOfOtherCars(gm, lc);
+                    if (lc.Pres != pres) _log.Info("VEHICLE " + CarName(lc.Id) + " travel proxy presentation " + lc.Pres + " -> " + pres + " in " + Regions.Name(region) + " (" + r + "): E opens the travel menu");
                     lc.Pres = pres;
                     continue;
                 }
@@ -1081,6 +1092,7 @@ namespace TS2MP.Plugin
                     if (lc.IsProxy && !lc.Observed) ExitProxy(lc);              // away proxy -> observed (the car came home)
                     if (!lc.Active) ActivateProxyObject(gm, lc, region);
                     if (!lc.Observed) EnterObserved(lc, region, ps);
+                    if (region == TravelRules.AutoShop) _shopSeen = lc.Id;
                     if (lc.Pres != pres) _log.Info("VEHICLE " + CarName(lc.Id) + " presentation " + lc.Pres + " -> " + pres + " (" + r + "): original object observed, simulated by P" + r.Holder);
                     lc.Pres = pres;
                     continue;
@@ -1105,9 +1117,15 @@ namespace TS2MP.Plugin
             {
                 lc.T.SetPositionAndRotation(new Vector3(p.Pos.X, p.Pos.Y, p.Pos.Z), new Quaternion(p.Rot.X, p.Rot.Y, p.Rot.Z, p.Rot.W));
                 if (lc.Rb != null) { lc.Rb.velocity = Vector3.zero; lc.Rb.angularVelocity = Vector3.zero; }
+                lc.Placed = true;
             }
+            else if (!lc.Placed && region == TravelRules.Hideout) PlaceNewHideoutCar(gm, lc);   // V1.2: e.g. bought during this session
             try { _startVoid(lc.Car); } catch (Exception ex) { _log.Warn("VEHICLE StartVoid failed for " + CarName(lc.Id) + ": " + ex.Message); }
-            if (gm != null) { _setGmCar(gm, lc.Go); var tr = _carTrunk(lc.Car); _setGmTrunk(gm, tr != null ? tr : lc.T); }
+            // V1.2: like InitiateMainCar's second hideout car, a car added next to this instance's own simulated car does not
+            // replace GameManager.Car (the current car of this scene)
+            bool keepCurrent = false;
+            if (region == TravelRules.Hideout && gm != null) { var cg = _gmCar(gm) as GameObject; foreach (var o in _local) if (o != lc && o.Mine && o.Active && !o.IsProxy && ReferenceEquals(o.Go, cg)) keepCurrent = true; }
+            if (gm != null && !keepCurrent) { _setGmCar(gm, lc.Go); var tr = _carTrunk(lc.Car); _setGmTrunk(gm, tr != null ? tr : lc.T); }
             _activations++;
             _log.Info("VEHICLE " + CarName(lc.Id) + " activated in " + Regions.Name(region) + (pose ? " at its parking pose " + p : " at its original position"));
         }
@@ -1315,6 +1333,8 @@ namespace TS2MP.Plugin
         void ActivateProxyObject(UnityEngine.Object gm, LocalCar lc, int region)
         {
             lc.Go.SetActive(true);
+            ParkRecord pk;
+            if (!lc.Placed && region == TravelRules.Hideout && !(_view.TryGetPark(lc.Id, out pk) && pk.HasPose && pk.Region == region)) PlaceNewHideoutCar(gm, lc);
             try { _startVoid(lc.Car); } catch (Exception ex) { _log.Warn("VEHICLE StartVoid failed for " + CarName(lc.Id) + ": " + ex.Message); }
             _activations++;
         }
@@ -2892,6 +2912,7 @@ namespace TS2MP.Plugin
         {
             _filter.Clear(); _remotePark.Clear(); _ownIds.Clear(); _changes.Clear(); _lastSnap.Clear(); _doorIds.Clear();
             if (_take != null) EndTake("disconnected", false);
+            DropBuy("disconnected");
             if (_ride != null) ForceExitRide("disconnected", true);
             _enterResume = null;
             if (_host && _world.Host != null) _world.Host.Motion.Clear();
@@ -3228,6 +3249,7 @@ namespace TS2MP.Plugin
                 + " entryPromptShown=" + _hintShows + " exitBlocked=" + _exitBlocked + " canInteractKept=" + _canInteractKept + " logOnlyFeedback=" + _quiet
                 + " seat+foot avg=" + (_frames > 0 ? (_rideFootTicks * 1e6 / Stopwatch.Frequency / _frames).ToString("0.0") : "0") + "us"
                 + " | handoff req/granted/denied/entered=" + _takeRequests + "/" + _takeGranted + "/" + _takeDenied + "/" + _takeEntered + " solidSwitches=" + _solidSwitches + " seatFrames=" + _seatPosed
+                + ShopStats
                 + (_host ? " fleetWrites=" + _fleetWrites + "/" + (_writer != null ? _writer.Writes + " fail=" + _writer.Failures : "-") + " reservations=" + _world.Host.Travel.Pending
                     + " decisions/commits/rollbacks=" + _world.Host.Travel.Decisions + "/" + _world.Host.Travel.Commits + "/" + _world.Host.Travel.Rollbacks : "")
                 + " | joint holds/departures/departFailed/seated/onFoot/recovered/menuBlocked=" + _jHolds + "/" + _jDepartures + "/" + _jDepartFailed + "/" + _jSeated + "/" + _jOnFoot + "/" + _jRecovered + "/" + _jTownBlocked
@@ -3273,6 +3295,7 @@ namespace TS2MP.Plugin
         public void Dispose()
         {
             if (ReferenceEquals(_legsOwner, this)) _legsOwner = null;   // the postfix becomes a no-op (vanilla legs)
+            if (ReferenceEquals(Current, this)) Current = null;
             _node.MessageReceived -= OnMessage;
             _node.RemoteDisconnected -= OnRemoteDisconnected;
             _node.RemoteConnected -= OnRemoteConnected;

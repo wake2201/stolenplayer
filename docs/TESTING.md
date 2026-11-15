@@ -151,6 +151,26 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 40. V1.2 checklist — Shadowhawk purchase / unlock + Auto Shop travel proxy (release `TS2-Multiplayer-0.20.0.zip` on BOTH PCs, protocol 31)
+Both PCs need 0.20.0. Use the F8 test campaign with the hideout garage bought (`garage`) and the Shadowhawk NOT bought; shared money ≥ 50,000. Grep tags: `VEHICLE purchase`, `buy car#`, `unlocked in the shared fleet`, `placed at the original hideout spot`, `Auto Shop travel proxy`, `travel proxy presentation`, `Auto Shop purchase sign`, `VEHICLE_STATS … buy req`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | P2 goes to the Auto Shop, presses E on the Shadowhawk sign, clicks Buy | Original window; after the click: original `bought_van` message + sound, window closes. Client `VEHICLE purchase … requested #N`, `accepted`; host `VEHICLE buy car#2 by P2 -> Accepted (charged 25000 of …)`. Money on BOTH PCs −25,000 exactly once | NOT TESTED |
+| 2 | P1 (host) at the Auto Shop during row 1 | Host's sign disappears (`Auto Shop purchase sign switched off`); E/Buy no longer possible | NOT TESTED |
+| 3 | P2 clicks Buy repeatedly / both players click at the same time (fresh campaign copy) | One charge only; the later click logs `already owned` / `refused … Stale`; no money lost | NOT TESTED |
+| 4 | With < 25,000: open the window | No buy button (original); nothing charged | NOT TESTED |
+| 5 | Fresh copy: P1 (host) buys at the Auto Shop | Original purchase on P1; host `unlocked in the shared fleet (host purchase …)`; P2's sign disappears if P2 is there | NOT TESTED |
+| 6 | After the purchase: both travel to the hideout (separately, then together) | Shadowhawk at the original second hideout spot on BOTH PCs, same place; one player simulates it, the other sees it parked (no second copy, no car inside a player) | NOT TESTED |
+| 7 | One player is already in the hideout while the other buys | The Shadowhawk appears in the hideout during the session (`placed at the original hideout spot`), Ranger unaffected | NOT TESTED |
+| 8 | Drive the Shadowhawk: driver handoff, passenger seat, first/third person, doors; then the Ranger (doors + slow doors + tailgate) | Unchanged behaviour (M4.2–M5.0) | NOT TESTED |
+| 9 | Host saves (travel), quits, restarts, hosts; P2 rejoins | Shadowhawk still owned on both PCs, money stays deducted once. Fresh copy: buy, then caught-screen Load without travelling → car locked again AND money back (original checkpoint rule) | NOT TESTED |
+| 10 | Auto Shop: P2 goes there first (on foot), then P1 arrives with the Ranger | P2 first sees a frozen Ranger at the Auto Shop car spot (`Auto Shop travel proxy … original Auto Shop car spawn`); when P1 arrives it becomes the real Ranger in place (no second car) | NOT TESTED |
+| 11 | P1 starts the engine and travels away with the Ranger | On P2 the Ranger stays where it stood as a frozen car (`travel proxy presentation … AutoShop`); P2 can walk around it / is never pushed | NOT TESTED |
+| 12 | P2 opens the proxy door and presses E | Original travel menu; P2 travels on foot; P1 keeps driving the real Ranger (no teleport, no seat, no storage, no cargo on the proxy) | NOT TESTED |
+| 13 | Roles reversed (P2 drives away, P1 stays); reconnect P2 while P1 stands at the proxy | Same proxy behaviour on the host; after the rejoin still exactly one real Ranger | NOT TESTED |
+| 14 | Ranger cargo (H2) + CarBox while it is a proxy, then back as a real car | Proxy shows no cargo and no storage; the real car shows its cargo again; H1/H2 rows 1–6 unchanged; F7 still works | NOT TESTED |
+
 ## 39. H2 checklist — shared heavy cargo in the Ranger (release `TS2-Multiplayer-0.19.0.zip` on BOTH PCs, protocol 30)
 Both PCs need 0.19.0 (0.18.x is refused). Use the F8 test campaign (isolated host save copy). Grep tags: host + client `CARGO`, `HEAVY … loaded into vehicle`, `HEAVY Load`, `CARGO_STATS`, `HEAVY_STATS … cargo loads`. Shared cargo = the Ranger's open cargo bed (drop the object into it); the separate trunk trigger / heavy shop are not part of H2.
 

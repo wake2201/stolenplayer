@@ -381,6 +381,6 @@ static class V161Tests
         Expect(cb.Contains("if (region == _plan.Region) PlaceSpawn(gm);"), "placement only where the original loaded the planned region (travel / vehicle arrivals untouched)");
         var c = Shared("Campaign.cs");
         Expect(c.Contains("PlayerScript.Quicksave") && c.Contains("SaveGameNewSystem(savePos, time)") && c.Contains("Inventory.autoSaveToggle"), "verified save rules documented next to the code");
-        Expect(Shared("Protocol.cs").Contains("public const int ProtocolVersion = 29;"), "v0.16.1 spawn changes added no wire values (protocol 28 = W4.2D loot namespaces, 29 = H1 heavy leases)");
+        Expect(Shared("Protocol.cs").Contains("public const int ProtocolVersion = 30;"), "v0.16.1 spawn changes added no wire values (protocol 28 = W4.2D loot namespaces, 29 = H1 heavy leases, 30 = H2 heavy cargo)");
     }
 }

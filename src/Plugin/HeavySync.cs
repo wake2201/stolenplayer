@@ -18,10 +18,12 @@
 //  - End of a carry without a drop (scene unloaded / reloaded, object destroyed): the lease is released -> previous rest
 //    pose or the original scene pose. Region change / disconnect: the host releases the slot's leases (HeavyBook.ReleaseSlot);
 //    an emptied region loses its records (original reload).
-//  - Downstream deposits stay out of scope (H1): Player 2's trunk / shop triggers are blocked while it carries a leased object
-//    and its drop is refused when the object would land on / in a vehicle; Player 1's original deposits run unchanged and the
-//    object leaves shared tracking (Removed: hidden for Player 2, never a second copy). The associate's heavy carry
-//    (CodenameAI.PickHeavy) is refused for supported objects in a session (it would move one instance's copy only).
+//  - Deposits: H2 shares the Ranger cargo bed (HeavyCargoSync): an object of this instance that comes to rest in the original
+//    cargo sensor commits its rest pose and asks the host to Load it into the car (both players); a cargo object picked up
+//    again is leased under its synthetic id (HeavyCargo.Synthetic) and follows every H1 rule. Player 2's drop next to the
+//    Ranger is the original drop; next to any other car it stays refused. Trunk / shop triggers (single trunk slot, heavy
+//    shop) stay H1: blocked for Player 2, Player 1's original deposit leaves shared tracking (Removed). The associate's heavy
+//    carry (CodenameAI.PickHeavy) is refused for supported objects in a session (it would move one instance's copy only).
 // Harmony (this class): Pickupable.DropHeavy (post), Pickupable.PlacedInTrunk (post, host), Place_Heavy_Trigger.OnTriggerEnter /
 // Shop_Heavy_Trigger.OnTriggerEnter (pre, client), PlayerScript.StopCarryingItem(float) (pre, client), CodenameAI.PickHeavy (pre).
 // Per frame: field reads only; the registry is parsed only when its head revision / region / scene changes; held objects are
@@ -55,6 +57,7 @@ namespace TS2MP.Plugin
             public readonly List<Renderer> HiddenRenderers = new List<Renderer>(); public readonly List<Collider> HiddenColliders = new List<Collider>();
             public HeavyRules.Show Shown = HeavyRules.Show.ScenePose; public Vector3 ShownPos; public Quaternion ShownRot;
             public bool InterpOff; public RigidbodyInterpolation OrigInterp;   // H1.1: interpolation off while followed (transform-driven kinematic)
+            public bool Synthetic;   // H2: a cargo object outside its car (no scene pose: without a record it is hidden, HeavyCargoSync owns it)
         }
         readonly Dictionary<uint, Obj> _objs = new Dictionary<uint, Obj>();
         int _objNs = Regions.None;
@@ -68,6 +71,8 @@ namespace TS2MP.Plugin
             public bool Reported; public Vector3 LastPos; public Quaternion LastRot; public double DropAt, LastTick, UnpausedFor, NextCheck; public string Name;
             public readonly VehicleSendPolicy Policy = new VehicleSendPolicy { RateHz = MotionHz, MoveEpsilon = 0.01f, AngleEpsilon = 1f, HeartbeatSeconds = double.MaxValue };
             public int Sent;
+            public bool LoadTried;   // H2: one Load request per rest (a refused Load keeps the H1 rest state)
+            public bool Cargo;       // H2: a cargo object outside its car (synthetic id, requests carry the cargo flag)
         }
         readonly Dictionary<uint, Sim> _sims = new Dictionary<uint, Sim>();
         readonly List<uint> _scratch = new List<uint>();
@@ -90,7 +95,7 @@ namespace TS2MP.Plugin
         double _correctionMax;
 
         // client: one pending Lease request; other proposals are fire-and-forget (results logged)
-        sealed class Req { public uint Id; public int Ns; public uint Hash; public Component Pick; public float Dist; public double At; public string Name; }
+        sealed class Req { public uint Id; public int Ns; public uint Hash; public Component Pick; public float Dist; public double At; public string Name; public bool Cargo; }
         Req _req;
         readonly Dictionary<uint, HeavyTxnRequest> _sent = new Dictionary<uint, HeavyTxnRequest>();
         readonly Dictionary<uint, Req> _abandoned = new Dictionary<uint, Req>();
@@ -101,6 +106,7 @@ namespace TS2MP.Plugin
         readonly HashSet<int> _logged = new HashSet<int>();
 
         long _p1Leases, _p2Requests, _p2Granted, _p2Refused, _grantAborted, _drops, _settles, _moves, _releases, _removes, _hidden, _placed, _restored, _dropRefused, _depositBlocked, _associateBlocked, _forcedEnds, _lost;
+        long _loadsSent, _loadsDone, _loadsRefused, _cargoPicks;
         double _costMaxMs, _nextStats;
         static double Now { get { return Time.realtimeSinceStartup; } }
         bool Live { get { return _node.IsConnected && _world.Synced; } }
@@ -188,21 +194,28 @@ namespace TS2MP.Plugin
             {
                 int ns; var e = Resolve(pick, out ns);
                 string name = e != null ? e.Name : pick.transform.name;
+                // H2: a cargo object (in the car, or out of it as a synthetic record) is leased under its synthetic id
+                uint hash = e != null ? e.Hash : 0u; bool cargo = false;
+                if (e == null && HeavyCargoSync.Instance != null && HeavyCargoSync.Instance.TryCargoObject(pick, out hash))
+                {
+                    cargo = true; ns = _world.LocalRegion;
+                    if (ns == Regions.None || ns == IdentityNamespace.MainScene) { LogOnce("cns:" + name, "HEAVY pickup of cargo object '" + name + "' refused: no region"); return false; }
+                }
                 if (_host)
                 {
-                    if (e == null || _world.Host == null) return true;          // not shared: original local carry (Player 2 cannot pick it)
+                    if ((e == null && !cargo) || _world.Host == null) return true;          // not shared: original local carry (Player 2 cannot pick it)
                     string why; ushort lease;
-                    var code = _world.Host.HeavyTransaction(1, new HeavyTxnRequest { Op = HeavyOp.Lease, Ns = ns, Hash = e.Hash }, _world.Clock, out lease, out why);
+                    var code = _world.Host.HeavyTransaction(1, new HeavyTxnRequest { Op = HeavyOp.Lease, Ns = ns, Hash = hash, Cargo = cargo }, _world.Clock, out lease, out why);
                     _world.FlushOutbox();
-                    if (code != ProposalCode.Accepted && code != ProposalCode.Unchanged) { _log.Info("HEAVY Player-1 pickup of '" + name + "' (" + e.Hash.ToString("X8") + ") refused: " + why); return false; }
-                    CaptureBeforePickup(ns, e.Hash);
-                    AddSim(ns, e.Hash, pick, lease, name);
-                    _p1Leases++; _dirty = true;
-                    _log.Info("HEAVY Player 1 carries '" + name + "' (" + IdentityNamespace.Name(ns) + ":" + e.Hash.ToString("X8") + ", lease " + lease + "): original PickUpHeavy");
+                    if (code != ProposalCode.Accepted && code != ProposalCode.Unchanged) { _log.Info("HEAVY Player-1 pickup of '" + name + "' (" + hash.ToString("X8") + ") refused: " + why); return false; }
+                    CaptureBeforePickup(ns, hash, cargo);
+                    AddSim(ns, hash, pick, lease, name, cargo);
+                    _p1Leases++; _dirty = true; if (cargo) _cargoPicks++;
+                    _log.Info("HEAVY Player 1 carries '" + name + "' (" + IdentityNamespace.Name(ns) + ":" + hash.ToString("X8") + ", lease " + lease + (cargo ? ", " + why : "") + "): original PickUpHeavy");
                     return true;
                 }
                 if (!Live) { LogOnce("off:" + name, "HEAVY Player-2 heavy pickup of '" + name + "' refused: not connected (a local carry could never be reconciled)"); return false; }
-                if (e == null)
+                if (e == null && !cargo)
                 {
                     _p2Refused++;
                     LogOnce("ns:" + name, "HEAVY Player-2 heavy pickup of '" + name + "' refused: not a verified heavy object of the current region (MainScene / runtime / ambiguous object) - a local carry would duplicate it");
@@ -210,13 +223,13 @@ namespace TS2MP.Plugin
                 }
                 if (_req != null) return false;                                // one request at a time (the click is simply ignored)
                 HeavyRecord r;
-                if (TryRecord(ns, e.Hash, out r) && (r.State == HeavyState.Removed || (r.State == HeavyState.Carried && r.Actor != Me))) return false;
-                var cat = LiveCatalog(ns);
-                var req = new HeavyTxnRequest { Op = HeavyOp.Lease, Ns = ns, Hash = e.Hash, Digest = cat != null ? cat.Digest : 0u, Rot = new Quat16 { W = 32767 } };
-                _req = new Req { Ns = ns, Hash = e.Hash, Pick = pick, Dist = dist, At = Now, Name = name };
+                if (TryRecord(ns, hash, out r) && (r.State == HeavyState.Removed || (r.State == HeavyState.Carried && r.Actor != Me))) return false;
+                var cat = cargo ? null : LiveCatalog(ns);
+                var req = new HeavyTxnRequest { Op = HeavyOp.Lease, Ns = ns, Hash = hash, Digest = cat != null ? cat.Digest : 0u, Rot = new Quat16 { W = 32767 }, Cargo = cargo };
+                _req = new Req { Ns = ns, Hash = hash, Pick = pick, Dist = dist, At = Now, Name = name, Cargo = cargo };
                 _req.Id = _world.SendProposal(new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.HeavyTxn, Value = req.Encode() });
-                _p2Requests++;
-                _log.Info("HEAVY pickup of '" + name + "' (" + IdentityNamespace.Name(ns) + ":" + e.Hash.ToString("X8") + ") requested from the host (proposal " + _req.Id + ")");
+                _p2Requests++; if (cargo) _cargoPicks++;
+                _log.Info("HEAVY pickup of " + (cargo ? "cargo object " : "") + "'" + name + "' (" + IdentityNamespace.Name(ns) + ":" + hash.ToString("X8") + ") requested from the host (proposal " + _req.Id + ")");
                 return false;
             }
             finally { double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency; if (ms > _costMaxMs) _costMaxMs = ms; }
@@ -224,16 +237,16 @@ namespace TS2MP.Plugin
 
         // Scene pose of an object before the original pickup changes it (PickUpHeavy sets parent null): needed to restore it
         // exactly when the lease ends without any rest pose (host deletes the record = original scene pose everywhere).
-        void CaptureBeforePickup(int ns, uint hash)
+        void CaptureBeforePickup(int ns, uint hash, bool cargo)
         {
             var cat = LiveCatalog(ns); if (cat == null || ns != _world.LocalRegion) return;
             if (ns != _objNs) { RestoreAll(); _objs.Clear(); _objNs = ns; }
-            var o = Get(cat, hash); if (o != null) Capture(o);
+            var o = Get(cat, hash, cargo); if (o != null) Capture(o);
         }
 
-        void AddSim(int ns, uint hash, Component pick, ushort lease, string name)
+        void AddSim(int ns, uint hash, Component pick, ushort lease, string name, bool cargo)
         {
-            _sims[hash] = new Sim { Ns = ns, Hash = hash, Pick = pick, Rb = pick.GetComponent<Rigidbody>(), Lease = lease, Phase = Phase.Carrying, LastTick = Now, Name = name };
+            _sims[hash] = new Sim { Ns = ns, Hash = hash, Pick = pick, Rb = pick.GetComponent<Rigidbody>(), Lease = lease, Phase = Phase.Carrying, LastTick = Now, Name = name, Cargo = cargo };
             Obj o; if (_objs.TryGetValue(hash, out o)) o.Shown = HeavyRules.Show.Own;   // the original owns its state now
         }
 
@@ -245,12 +258,13 @@ namespace TS2MP.Plugin
             if (_abandoned.TryGetValue(id, out ab))
             {
                 _abandoned.Remove(id);
-                if (code == ProposalCode.Accepted || code == ProposalCode.Unchanged) { HeavyRecord r; if (TryRecord(ab.Ns, ab.Hash, out r) && r.CarriedBy(Me)) SendTxn(HeavyOp.Release, ab.Ns, ab.Hash, r.Lease, default(Vector3), Quaternion.identity, "late grant of an abandoned request"); }
+                if (code == ProposalCode.Accepted || code == ProposalCode.Unchanged) { HeavyRecord r; if (TryRecord(ab.Ns, ab.Hash, out r) && r.CarriedBy(Me)) SendTxn(HeavyOp.Release, ab.Ns, ab.Hash, r.Lease, default(Vector3), Quaternion.identity, 0u, r.Cargo, "late grant of an abandoned request"); }
                 return true;
             }
             HeavyTxnRequest t;
             if (!_sent.TryGetValue(id, out t)) return false;
             _sent.Remove(id);
+            if (t.Op == HeavyOp.Load) { OnLoadResult(t, code); return true; }
             if (code != ProposalCode.Accepted && code != ProposalCode.Unchanged)
             {
                 _log.Info("HEAVY " + t + " -> " + code + ": the host record decides (presentation follows the registry)");
@@ -275,11 +289,11 @@ namespace TS2MP.Plugin
             if (block != null)
             {
                 _grantAborted++;
-                SendTxn(HeavyOp.Release, q.Ns, q.Hash, r.Lease, default(Vector3), Quaternion.identity, "grant no longer usable: " + block);
+                SendTxn(HeavyOp.Release, q.Ns, q.Hash, r.Lease, default(Vector3), Quaternion.identity, 0u, r.Cargo, "grant no longer usable: " + block);
                 _log.Info("HEAVY pickup of '" + q.Name + "' granted (lease " + r.Lease + ") but " + block + ": released, nothing happens");
                 return;
             }
-            CaptureBeforePickup(q.Ns, q.Hash);
+            CaptureBeforePickup(q.Ns, q.Hash, r.Cargo);
             _resume = q.Pick;
             try { _pickUpHeavy(q.Pick, q.Dist); }
             catch (Exception ex) { _log.Error("HEAVY original PickUpHeavy after the grant failed", ex); }
@@ -287,25 +301,36 @@ namespace TS2MP.Plugin
             if (!_psCarrying(ps) || !ReferenceEquals(_psCarryItem(ps), q.Pick.transform))
             {
                 _grantAborted++;
-                SendTxn(HeavyOp.Release, q.Ns, q.Hash, r.Lease, default(Vector3), Quaternion.identity, "original pickup did not start");
+                SendTxn(HeavyOp.Release, q.Ns, q.Hash, r.Lease, default(Vector3), Quaternion.identity, 0u, r.Cargo, "original pickup did not start");
                 _log.Warn("HEAVY pickup of '" + q.Name + "': the original PickUpHeavy did not start a carry - lease released");
                 return;
             }
             _p2Granted++;
-            AddSim(q.Ns, q.Hash, q.Pick, r.Lease, q.Name);
+            AddSim(q.Ns, q.Hash, q.Pick, r.Lease, q.Name, r.Cargo);
             _log.Info("HEAVY Player 2 carries '" + q.Name + "' (lease " + r.Lease + ", " + ((Now - q.At) * 1000).ToString("0") + " ms after the click): original PickUpHeavy ran once");
         }
 
         // one lease operation: host in place, client proposal
         void SendTxn(HeavyOp op, int ns, uint hash, ushort lease, Vector3 p, Quaternion q, string why)
         {
-            var t = new HeavyTxnRequest { Op = op, Ns = ns, Hash = hash, Lease = lease, Pos = new Vec3(p.x, p.y, p.z), Rot = Quat16.From(q.x, q.y, q.z, q.w) };
+            SendTxn(op, ns, hash, lease, p, q, 0u, IsCargo(hash), why);
+        }
+        // H2: whether this id is a cargo object outside its car (held here, or listed so in the last reconciled records)
+        bool IsCargo(uint hash)
+        {
+            Sim s; if (_sims.TryGetValue(hash, out s)) return s.Cargo;
+            HeavyRecord r; return _records.TryGetValue(hash, out r) && r.Cargo;
+        }
+        void SendTxn(HeavyOp op, int ns, uint hash, ushort lease, Vector3 p, Quaternion q, uint digest, bool cargo, string why)
+        {
+            var t = new HeavyTxnRequest { Op = op, Ns = ns, Hash = hash, Digest = digest, Lease = lease, Pos = new Vec3(p.x, p.y, p.z), Rot = Quat16.From(q.x, q.y, q.z, q.w), Cargo = cargo };
             if (op == HeavyOp.Release) _releases++; else if (op == HeavyOp.Remove) _removes++;
             if (_host)
             {
                 if (_world.Host == null) return;
                 string w; ushort l; var code = _world.Host.HeavyTransaction(1, t, _world.Clock, out l, out w); _world.FlushOutbox();
                 bool place = op == HeavyOp.Drop || op == HeavyOp.Settle;
+                if (op == HeavyOp.Load) { OnLoadResult(t, code, w); return; }
                 if (!place || (code != ProposalCode.Accepted && code != ProposalCode.Unchanged)) _log.Info("HEAVY " + t + " (" + why + ") -> " + code + (w != null ? " (" + w + ")" : ""));
                 Sim hs; if (place && code == ProposalCode.Stale && _sims.TryGetValue(hash, out hs) && hs.Lease == lease) { _sims.Remove(hash); _dirty = true; }
                 return;
@@ -314,6 +339,22 @@ namespace TS2MP.Plugin
             uint id = _world.SendProposal(new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.HeavyTxn, Value = t.Encode() });
             if (_sent.Count < 64) _sent[id] = t;
             if (op != HeavyOp.Drop && op != HeavyOp.Settle) _log.Info("HEAVY " + t + " (" + why + ") sent (proposal " + id + ")");
+        }
+
+        // H2: the host's decision on a Load (host in place, client from its proposal result). Accepted: the object is the car's
+        // cargo now (the registry hides / replaces it); refused: nothing changes, the object keeps its committed rest pose here.
+        void OnLoadResult(HeavyTxnRequest t, ProposalCode code, string why = null)
+        {
+            Sim s; bool mine = _sims.TryGetValue(t.Hash, out s) && s.Lease == t.Lease;
+            if (code == ProposalCode.Accepted)
+            {
+                _loadsDone++;
+                if (mine) { _sims.Remove(t.Hash); _dirty = true; }
+                _log.Info("HEAVY " + (mine ? "'" + s.Name + "' " : "") + "loaded into vehicle " + t.Digest + " (" + t.Hash.ToString("X8") + ", lease " + t.Lease + (why != null ? ", " + why : "") + "): left the shared world once, now committed cargo");
+                return;
+            }
+            _loadsRefused++;
+            _log.Info("HEAVY " + t + " -> " + code + (why != null ? " (" + why + ")" : "") + ": not loaded - the object stays where it rests (H1 rest pose)");
         }
 
         // H1.1: one movement snapshot of an object this instance simulates (final = the exact rest pose, sent with the Settle).
@@ -334,7 +375,7 @@ namespace TS2MP.Plugin
         void StartMoving(Sim s, double now, string why)
         {
             var t = s.Pick.transform;
-            s.Phase = Phase.Falling; s.DropAt = now; s.LastTick = now; s.UnpausedFor = 0; s.NextCheck = now + 0.2; s.Sent = 0;
+            s.Phase = Phase.Falling; s.DropAt = now; s.LastTick = now; s.UnpausedFor = 0; s.NextCheck = now + 0.2; s.Sent = 0; s.LoadTried = false;
             s.Policy.Reset();
             SendTxn(HeavyOp.Drop, s.Ns, s.Hash, s.Lease, t.position, t.rotation, why);
             if (s.Reported) _moves++;
@@ -365,7 +406,7 @@ namespace TS2MP.Plugin
         static void TrunkPostfix(object __instance)
         {
             var i = Instance; var c = __instance as Component;
-            if (i == null || c == null) return;
+            if (i == null || c == null || HeavyCargoSync.Applying) return;   // H2: our own cargo presentation, not a deposit
             try { i.OnDeposit(c, "original deposit (PlacedInTrunk: car trunk / shop)"); } catch (Exception ex) { i._log.Error("HEAVY deposit hook failed", ex); }
         }
         void OnDeposit(Component pick, string why)
@@ -405,7 +446,8 @@ namespace TS2MP.Plugin
         }
 
         // client: the original drop is refused (keeps carrying, like an obstructed drop) when the object would land on or in a
-        // vehicle (Ranger cargo / trunk / any car body): vehicle loading is not shared in H1.
+        // vehicle without a shared cargo bed. H2: next to the Ranger (shared cargo bed) the original drop runs; at rest in its bed
+        // the object is loaded through the host, elsewhere on the car it is fixed at its rest pose (H1 rule).
         static readonly Collider[] _overlap = new Collider[32];
         static bool StopPrefix(object __instance)
         {
@@ -413,10 +455,11 @@ namespace TS2MP.Plugin
             try
             {
                 Sim s; if (!i.CarriesLeased(out s) || s.Pick == null) return true;
-                string car = i.VehicleNear(s.Pick.gameObject, 0.3f, true);
+                var car = i.VehicleNear(s.Pick.gameObject, 0.3f, true);
                 if (car == null) return true;
+                if (HeavyCargoSync.Instance != null && HeavyCargoSync.Instance.IsCargoCar(car)) return true;   // H2: shared cargo bed
                 i._dropRefused++;
-                i.LogOnce("drop:" + car, "HEAVY Player-2 drop of '" + s.Name + "' refused: it would land on / in the vehicle '" + car + "' (vehicle loading is not shared yet) - keeps carrying");
+                i.LogOnce("drop:" + car.name, "HEAVY Player-2 drop of '" + s.Name + "' refused: it would land on / in the vehicle '" + car.name + "' (no shared cargo bed) - keeps carrying");
                 return false;
             }
             catch (Exception ex) { i._log.Error("HEAVY drop guard failed (original drop allowed)", ex); return true; }
@@ -437,8 +480,8 @@ namespace TS2MP.Plugin
             catch (Exception ex) { i._log.Error("HEAVY associate guard failed (refused)", ex); return false; }
         }
 
-        // A vehicle collider within 'margin' of the object's collider bounds (EnterCar door triggers ignored); its name or null.
-        string VehicleNear(GameObject go, float margin, bool triggers)
+        // A vehicle collider within 'margin' of the object's collider bounds (EnterCar door triggers ignored); its CarController or null.
+        Component VehicleNear(GameObject go, float margin, bool triggers)
         {
             Bounds b; if (!Bounds(go, out b)) return null;
             int n = Physics.OverlapBoxNonAlloc(b.center, b.extents + new Vector3(margin, margin, margin), _overlap, Quaternion.identity, ~0, triggers ? QueryTriggerInteraction.Collide : QueryTriggerInteraction.Ignore);
@@ -450,7 +493,7 @@ namespace TS2MP.Plugin
                 var car = c.GetComponentInParent(_carT) as Component;
                 if (car == null) continue;
                 if (c.isTrigger && _enterCarT != null && c.GetComponent(_enterCarT) != null) continue;
-                return car.name;
+                return car;
             }
             return null;
         }
@@ -558,12 +601,12 @@ namespace TS2MP.Plugin
                 _records[r.Hash] = r;
                 Sim s; bool sim = _sims.TryGetValue(r.Hash, out s);
                 if (sim && !(r.Actor == Me && r.Lease == s.Lease && r.State != HeavyState.Removed)) { EndSim(s, r); sim = false; }
-                Obj o = Get(cat, r.Hash);
+                Obj o = Get(cat, r.Hash, r.Cargo);
                 if (!sim && r.MovingBy(Me))
                 {
                     // the host handed this moving object to us (its simulator left): continue the original physics here
                     if (o != null) { Adopt(o, r, region); sim = true; }
-                    else SendTxn(HeavyOp.Release, region, r.Hash, r.Lease, default(Vector3), Quaternion.identity, "handed over but not in this census");
+                    else SendTxn(HeavyOp.Release, region, r.Hash, r.Lease, default(Vector3), Quaternion.identity, 0u, r.Cargo, "handed over but not in this census");
                 }
                 if (o == null) continue;
                 var show = HeavyRules.Present(true, r, Me, sim);
@@ -594,10 +637,20 @@ namespace TS2MP.Plugin
             _log.Info("HEAVY '" + s.Name + "' no longer held here (registry: " + r + "): presented from the registry");
         }
 
-        Obj Get(LootCatalog cat, uint hash)
+        Obj Get(LootCatalog cat, uint hash, bool cargo)
         {
             Obj o;
-            if (_objs.TryGetValue(hash, out o)) { if (o.Go != null) return o; _objs.Remove(hash); }
+            if (_objs.TryGetValue(hash, out o)) { if (o.Go != null && o.Synthetic == cargo) return o; _objs.Remove(hash); }
+            if (cargo)
+            {
+                // H2: a cargo object outside its car - this instance's object for it (HeavyCargoSync creates one if needed)
+                var sp = HeavyCargoSync.Instance != null ? HeavyCargoSync.Instance.SyntheticObject(hash) : null;
+                if (sp == null) return null;
+                o = new Obj { Hash = hash, ItemId = HeavyCargo.ItemOf(hash), Pick = sp, Go = sp.gameObject, Rb = sp.GetComponent<Rigidbody>(), Synthetic = true };
+                _objs[hash] = o;
+                return o;
+            }
+            if (cat == null) return null;
             LootEntry le; if (!cat.TryGet(hash, out le)) return null;
             var pick = le.Target as Component; if (pick == null) return null;
             o = new Obj { Hash = hash, ItemId = le.ItemId, Pick = pick, Go = pick.gameObject, Rb = pick.GetComponent<Rigidbody>() };
@@ -668,7 +721,7 @@ namespace TS2MP.Plugin
             Unhide(o);
             if (o.Rb != null) { o.Rb.isKinematic = false; o.Rb.useGravity = true; }
             double now = Now;
-            var s = new Sim { Ns = region, Hash = r.Hash, Pick = o.Pick, Rb = o.Rb, Lease = r.Lease, Phase = Phase.Falling, DropAt = now, LastTick = now, NextCheck = now + 0.2, Name = o.Go.name, Reported = true };
+            var s = new Sim { Ns = region, Hash = r.Hash, Pick = o.Pick, Rb = o.Rb, Lease = r.Lease, Phase = Phase.Falling, DropAt = now, LastTick = now, NextCheck = now + 0.2, Name = o.Go.name, Reported = true, Cargo = r.Cargo };
             s.LastPos = o.Go.transform.position; s.LastRot = o.Go.transform.rotation;
             _sims[r.Hash] = s;
             o.Shown = HeavyRules.Show.Own; _adopted++;
@@ -699,7 +752,7 @@ namespace TS2MP.Plugin
             Motion mo;
             if (!_motions.TryGetValue(m.Hash, out mo) || mo.Lease != m.Lease || mo.Sender != Other)
             {
-                var cat = LiveCatalog(_objNs); var o = cat != null ? Get(cat, m.Hash) : null;
+                var cat = LiveCatalog(_objNs); var o = cat != null ? Get(cat, m.Hash, has && rec.Cargo) : null;
                 if (o == null || (_motions.Count >= 16 && !_motions.ContainsKey(m.Hash))) { _motionUnknown++; return; }
                 EndMotion(m.Hash);
                 mo = new Motion { Hash = m.Hash, Lease = m.Lease, Sender = Other, Obj = o, Start = Now };
@@ -768,6 +821,15 @@ namespace TS2MP.Plugin
         void Restore(Obj o)
         {
             if (o.Go == null) return;
+            if (o.Synthetic)
+            {
+                // no scene pose: a cargo object without a record is not in this world (HeavyCargoSync puts it back into its car
+                // when the host list says so, or removes it)
+                if (o.Go.transform.parent != null) o.Go.transform.SetParent(null, true);
+                Freeze(o);
+                if (o.HiddenRenderers.Count == 0 && o.HiddenColliders.Count == 0) Hide(o);
+                return;
+            }
             Unhide(o);
             if (!o.Captured) return;
             var t = o.Go.transform;
@@ -817,11 +879,13 @@ namespace TS2MP.Plugin
                     // moved and already at rest again between two checks: the new exact pose
                     s.LastPos = t.position; s.LastRot = t.rotation; _moves++;
                     SendTxn(HeavyOp.Settle, s.Ns, s.Hash, s.Lease, t.position, t.rotation, "moved");
+                    TryLoad(s, t);
                     continue;
                 }
                 if (!resting && !paused && now - s.DropAt > 8.0) { resting = true; why = "still moving after 8 s"; }   // bounded stream; a later real movement restarts it
                 if (!resting) continue;
-                string car = RestsOnVehicle(s.Pick.gameObject);
+                bool bed = InCargoBed(s);
+                string car = bed ? null : RestsOnVehicle(s.Pick.gameObject);
                 if (car != null)
                 {
                     if (_host) { _scratch.Add(s.Hash); SendTxn(HeavyOp.Remove, s.Ns, s.Hash, s.Lease, default(Vector3), Quaternion.identity, "rests on / in the vehicle '" + car + "' (host-local cargo)"); _dirty = true; continue; }
@@ -837,7 +901,8 @@ namespace TS2MP.Plugin
                 if (stream) Stream(s, t, now, true);                               // final snapshot = the exact rest pose
                 SendTxn(HeavyOp.Settle, s.Ns, s.Hash, s.Lease, t.position, t.rotation, first ? "rest pose" : "rest pose after a movement");
                 if (first) _settles++;
-                _log.Info("HEAVY '" + s.Name + "' at rest after " + (now - s.DropAt).ToString("0.0") + " s (" + why + ") at " + V3(t.position) + ": exact pose committed (lease " + s.Lease + ", " + s.Sent + " movement snapshot(s) sent)");
+                _log.Info("HEAVY '" + s.Name + "' at rest after " + (now - s.DropAt).ToString("0.0") + " s (" + why + ") at " + V3(t.position) + ": exact pose committed (lease " + s.Lease + ", " + s.Sent + " movement snapshot(s) sent)" + (bed ? " - in the cargo bed" : ""));
+                if (bed) TryLoad(s, t);
             }
             foreach (var h in _scratch)
             {
@@ -849,6 +914,48 @@ namespace TS2MP.Plugin
         }
 
         static string V3(Vector3 v) { return v.x.ToString("0.00") + "," + v.y.ToString("0.00") + "," + v.z.ToString("0.00"); }
+
+        // ======================================================================== H2 cargo bed
+        bool InCargoBed(Sim s)
+        {
+            ushort vid; Vector3 lp; Quaternion lq;
+            return HeavyCargoSync.Instance != null && s.Pick != null && HeavyCargoSync.Instance.InBed(s.Pick.gameObject, out vid, out lp, out lq);
+        }
+        // The held object rests in the original cargo bed (its rest pose is already committed): ask the host to load it, once per
+        // rest. Host: decided in place; client: proposal (result in OnLoadResult). Same request for both players.
+        void TryLoad(Sim s, Transform t)
+        {
+            if (s.LoadTried || HeavyCargoSync.Instance == null) return;
+            ushort vid; Vector3 lp; Quaternion lq;
+            if (!HeavyCargoSync.Instance.InBed(s.Pick.gameObject, out vid, out lp, out lq)) return;
+            s.LoadTried = true; _loadsSent++;
+            SendTxn(HeavyOp.Load, s.Ns, s.Hash, s.Lease, lp, lq, vid, s.Cargo, "rests in the cargo bed of vehicle " + vid);
+        }
+
+        // H2 API for HeavyCargoSync
+        // This instance runs the original carry / physics of that object (never removed by the cargo presenter).
+        public bool HoldsLocally(Component pick)
+        {
+            if (pick == null) return false;
+            foreach (var s in _sims.Values) if (ReferenceEquals(s.Pick, pick)) return true;
+            return false;
+        }
+        // The object has (or had) shared heavy state here (host save: such objects are saved through their record, not the sensor).
+        public bool Knows(Component pick)
+        {
+            if (pick == null) return false;
+            if (HoldsLocally(pick)) return true;
+            foreach (var o in _objs.Values) if (ReferenceEquals(o.Pick, pick)) return true;
+            return false;
+        }
+        // The cargo presenter takes this synthetic object back into its car: stop presenting / simulating it here.
+        public void Forget(uint hash)
+        {
+            if (!_ok) return;
+            EndMotion(hash);
+            _sims.Remove(hash); _records.Remove(hash);
+            Obj o; if (_objs.TryGetValue(hash, out o)) { Unhide(o); RestoreInterp(o); _objs.Remove(hash); }
+        }
 
         // ======================================================================== host catalog check (WorldHost.HeavyCatalog)
         ProposalCode HostCatalog(int ns, uint hash, uint digest, out string why)
@@ -872,7 +979,8 @@ namespace TS2MP.Plugin
                     + " shown hidden/placed/restored " + _hidden + "/" + _placed + "/" + _restored + " tracked " + _objs.Count
                     + " | motion sent " + _motionSent + " (" + _motionSentBytes + " B) recv " + _motionRecv + " (" + _motionRecvBytes + " B) stale " + _filter.Stale + " rejected " + _filter.Rejected + " malformed " + _motionMalformed + " unknown " + _motionUnknown
                     + " following " + _motions.Count + " followed " + _followed + " maxCorrection " + _correctionMax.ToString("0.000") + "m adopted " + _adopted
-                    + (b != null ? " | book total " + b.Total + " leases " + b.Leases + " drops " + b.Drops + " settles " + b.Settles + " releases " + b.Releases + " removes " + b.Removes + " refused " + b.Refused + " cleared " + b.Cleared + " slotReleases " + b.SlotReleases + " handovers " + b.Handovers : "")
+                    + " | cargo loads sent " + _loadsSent + " done " + _loadsDone + " refused " + _loadsRefused + " picks " + _cargoPicks
+                    + (b != null ? " | book total " + b.Total + " leases " + b.Leases + " drops " + b.Drops + " settles " + b.Settles + " releases " + b.Releases + " removes " + b.Removes + " refused " + b.Refused + " cleared " + b.Cleared + " slotReleases " + b.SlotReleases + " handovers " + b.Handovers + " stowed " + b.Stowed : "")
                     + " frameMax " + _costMaxMs.ToString("0.00") + "ms";
             }
         }
@@ -889,7 +997,7 @@ namespace TS2MP.Plugin
                 foreach (var o in _objs.Values)
                 {
                     if (o.Go == null) continue;
-                    if (o.Shown == HeavyRules.Show.Hidden) Restore(o);
+                    if (o.Shown == HeavyRules.Show.Hidden && !o.Synthetic) Restore(o);
                     else if (o.Shown == HeavyRules.Show.AtPose) { Unhide(o); if (o.Rb != null) { o.Rb.isKinematic = false; o.Rb.useGravity = true; } }
                 }
                 _objs.Clear(); _sims.Clear();

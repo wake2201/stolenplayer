@@ -151,6 +151,26 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 39. H2 checklist — shared heavy cargo in the Ranger (release `TS2-Multiplayer-0.19.0.zip` on BOTH PCs, protocol 30)
+Both PCs need 0.19.0 (0.18.x is refused). Use the F8 test campaign (isolated host save copy). Grep tags: host + client `CARGO`, `HEAVY … loaded into vehicle`, `HEAVY Load`, `CARGO_STATS`, `HEAVY_STATS … cargo loads`. Shared cargo = the Ranger's open cargo bed (drop the object into it); the separate trunk trigger / heavy shop are not part of H2.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Both in Madison, Ranger parked there. P1 picks up a TV and drops it into the Ranger's cargo bed | P1: original drop, the TV settles in the bed. Host: `HEAVY 'tv…' at rest … - in the cargo bed`, `HEAVY 'tv…' loaded into vehicle 1 (… cargo #N item …)`, `CARGO #N (item …) in PLAYER CAR at local …`. Exactly one TV visible on P1 (no second copy) | NOT TESTED |
+| 2 | P2 looks at the Ranger | P2 sees the TV in the bed at the same place/orientation (same model); the TV is gone from the house. Client `CARGO #N … in PLAYER CAR` | NOT TESTED |
+| 3 | P2 picks up a second heavy object (printer / painting) and drops it into the bed | P2: original drop (no refusal next to the Ranger). Client `HEAVY Load … sent`, then `loaded into vehicle 1`; host `heavyTxn Load … by P2 -> Accepted` | NOT TESTED |
+| 4 | P1 looks at the bed | Both objects in the bed on both PCs at the same poses; no duplicate anywhere | NOT TESTED |
+| 5 | P2 takes the TV out of the bed (E) and carries it; P1 tries to take the same TV at the same moment | One carries it, the other's E does nothing. P1 sees the TV on P2's avatar (CarryRun), not in the bed. Client `HEAVY Player 2 carries … cargo #N taken out` | NOT TESTED |
+| 6 | P2 drops the TV on the ground next to the car, then puts it back into the bed | Ground: both PCs show the fall/settle (H1.1 path). Back in the bed: `loaded into vehicle 1` again with the same cargo # | NOT TESTED |
+| 7 | Repeat loading/unloading several times by both players; then fill the bed (if enough heavy objects are around) | Every load appears once on both PCs. At 24 objects the next one stays where it lies: `HEAVY Load … -> Busy (cargo bed full (24))`, object still pickable | NOT TESTED |
+| 8 | P1 drives the Ranger with cargo (P2 as passenger, then P2 standing outside watching) | Cargo moves with the car on both PCs, never falls through or stays behind; after P1 exits, the cargo stays in place (`CARGO_STATS … refrozen`) | NOT TESTED |
+| 9 | Travel with the cargo to another region (joint trip, then P1 alone) and back | Cargo still in the bed at the destination on both PCs (`CARGO #N … in PLAYER CAR` after the scene load); a P2 still in Madison cannot take cargo out of a car that is elsewhere | NOT TESTED |
+| 10 | P2 takes an object out and, while carrying it, disconnects; P2 reconnects | P1: the object goes back into the bed (host `restores 1` in `CARGO_STATS`). After the rejoin P2 sees exactly the host's cargo, no extra objects | NOT TESTED |
+| 11 | P1 saves (sleep / save point), quits, restarts and hosts again; P2 joins | Host `CARGO host save: vehicle 1 cargo written … (N shared)`; after the restart `CARGO vehicle 1 seeded from the host save: N heavy object(s)` and the same objects on both PCs. P2's sandbox never logs a cargo save (`SaveItems skipped`) | NOT TESTED |
+| 12 | Story / counters: note `StolenBigItems` (stats screen) and the current story objective before loading; load 2 objects | No counter, money, XP or story change from loading (original bed loading has none); the heavy-shop sale and the trunk trigger are not part of H2 | NOT TESTED |
+| 13 | H1.1 regression: pick up / carry / drop / throw / settle heavy objects away from the car (§38 rows 1–6) | Unchanged behaviour; `PERF` lines: mod cost and FPS comparable to 0.18.0 (report the numbers) | NOT TESTED |
+| 14 | P2 drops a heavy object next to the Shadowhawk (if unlocked) or onto the Ranger's roof | Shadowhawk: P2 keeps carrying (`refused … no shared cargo bed`). Ranger roof: the object stays where it lies on both PCs (fixed, H1 rule), not loaded | NOT TESTED |
+
 ## 38. H1 / H1.1 checklist — heavy objects: pickup / carry / drop for both players (release `TS2-Multiplayer-0.18.0.zip` built with H1.1 on BOTH PCs, protocol 29)
 Both PCs need 0.18.0 (0.17.x is refused: protocol / mod mismatch). **H1.1: both PCs must run the same H1.1 package** — an earlier H1 build has the same version number and is not refused, but cannot read the v2 `wheavy` list (`HEAVY registry list … unreadable`). Back up the host save. Run in Madison Street (48 heavy objects: TVs, printers, computers, paintings). Keep both `LogOutput.log` files. Log tag `HEAVY` (+ `HEAVY_STATS` every 30 s while active, `AVATAR_GEAR carried item …`).
 

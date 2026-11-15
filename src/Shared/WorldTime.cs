@@ -439,6 +439,9 @@ namespace TS2MP.Shared
         public readonly HeavyBook Heavy = new HeavyBook();           // H1: heavy-object leases + rest poses (host-authoritative)
         public delegate ProposalCode HeavyCatalogFn(int ns, uint hash, uint digest, out string why);
         public HeavyCatalogFn HeavyCatalog;                          // H1 host plugin: Accepted = supported census heavy object (host scene-file catalog + digest), Busy = catalog building
+        public readonly CargoBook Cargo = new CargoBook();           // H2: shared heavy vehicle cargo (host-authoritative, registry "hcargo")
+        public readonly HashSet<ushort> CargoVehicles = new HashSet<ushort>();   // H2 host plugin: vehicle ids whose original car has a VanHeavyItems cargo bed (verified at runtime)
+        public Func<int, uint, int> HeavyItemId;                     // H2 host plugin: ItemID of a census heavy object (host scene-file catalog), <= 0 unknown
         public readonly RegionStateBook Objects = new RegionStateBook(); // W4.2/W4.2B: host-owned region epochs + door / lock / window states
         public Func<ObjectKind, int, uint, bool?> ObjectCatalog { get { return Objects.Catalog; } set { Objects.Catalog = value; } }   // host census check (null result = no census of that region)
         public Func<P2PosReport, ProposalCode> P2PosHook;            // W4.2 host plugin: Player-2 spawn store (p2spawn-<profile>.dat)
@@ -456,6 +459,8 @@ namespace TS2MP.Shared
             Reg = StateRegistry.CreateHost(epoch); Clocks = new RegionClockBook(Reg); Fleet = new FleetBook(Reg); Travel = new TravelDesk(Reg, Fleet);
             Joint = new JointTravel(Reg, Fleet, Travel.Notes);
             Travel.Finished = (slot, reqId, committed) => Joint.OnReservationEnded(slot, reqId, committed, _now, Outbox);
+            // H2: a cargo object taken out of its car whose carry ended without a drop pose goes back into the car (never lost)
+            Heavy.CarryAbandoned = (ns, r) => { if (r.Cargo) Cargo.Restore(HeavyCargo.IdOf(r.Hash), Reg, Outbox); };
         }
 
         int RegionOfSlot(byte s) { return RegionDirectory.RegionOf(Reg, s); }
@@ -759,6 +764,8 @@ namespace TS2MP.Shared
             {
                 case HeavyOp.Lease:
                 {
+                    if (t.Cargo) return CargoLease(slot, region, t, out lease, out why);
+                    HeavyRecord cr; if (Heavy.TryGet(t.Ns, t.Hash, out cr) && cr.Cargo) { why = "id belongs to a cargo object"; return ProposalCode.Stale; }
                     bool known = slot == 1;
                     if (slot == 2)
                     {
@@ -769,12 +776,79 @@ namespace TS2MP.Shared
                     }
                     return Heavy.Lease(slot, region, t.Ns, t.Hash, known, Reg, Outbox, out lease, out why);
                 }
-                case HeavyOp.Drop: lease = t.Lease; return Heavy.Drop(slot, region, t.Ns, t.Hash, t.Lease, t.Pos, t.Rot, Reg, Outbox, out why);
+                case HeavyOp.Drop:
+                {
+                    lease = t.Lease; var dc = Heavy.Drop(slot, region, t.Ns, t.Hash, t.Lease, t.Pos, t.Rot, Reg, Outbox, out why);
+                    if (dc == ProposalCode.Accepted && t.Cargo) Cargo.Placed(HeavyCargo.IdOf(t.Hash));   // out in the world now
+                    return dc;
+                }
+                case HeavyOp.Load: lease = t.Lease; return CargoLoad(slot, region, t, out why);
                 case HeavyOp.Settle: lease = t.Lease; return Heavy.Settle(slot, region, t.Ns, t.Hash, t.Lease, t.Pos, t.Rot, Reg, Outbox, out why);
                 case HeavyOp.Release: lease = t.Lease; return Heavy.Release(slot, t.Ns, t.Hash, t.Lease, RegionOfSlot((byte)(slot == 1 ? 2 : 1)), Reg, Outbox, out why);   // H1.1: a moving object goes to the other player if it is there
                 case HeavyOp.Remove: lease = t.Lease; return Heavy.Remove(slot, t.Ns, t.Hash, t.Lease, Reg, Outbox, out why);
                 default: why = "op"; return ProposalCode.Invalid;
             }
+        }
+
+        // ---- H2 heavy vehicle cargo (HeavyCargo.cs): Load (held record -> car cargo list), Unload (= Lease of a synthetic id) ----
+        // Load: the requester holds the record (lease), the car has an original cargo bed (CargoVehicles), the car, the requester
+        // and the object are in the same region, the pose is car-local, the bed has room (VanHeavyItems.SaveItems keeps 24).
+        // Validated completely first, then: record out of the shared world (Stow) + entry into the car - one host step.
+        ProposalCode CargoLoad(byte slot, int region, HeavyTxnRequest t, out string why)
+        {
+            why = null;
+            ushort car = (ushort)t.Digest;
+            if (t.Digest > ushort.MaxValue || !CargoVehicles.Contains(car)) { Cargo.Refused++; why = "vehicle " + t.Digest + " has no shared cargo bed"; return ProposalCode.NotAuthorized; }
+            if (!HeavyCargo.LocalPoseOk(t.Pos)) { Cargo.Refused++; why = "car-local pose outside the car"; return ProposalCode.Invalid; }
+            VehicleRecord vr;
+            if (!Fleet.TryGet(car, out vr) || vr.Region == Regions.None) { Cargo.Refused++; why = "vehicle " + car + " not placed"; return ProposalCode.Stale; }
+            if (region == Regions.None || region != t.Ns || vr.Region != region) { Cargo.Refused++; why = "requester / object / vehicle not in one region"; return ProposalCode.NotAuthorized; }
+            if (!Heavy.Holds(slot, t.Ns, t.Hash, t.Lease, t.Cargo, out why)) { Cargo.Refused++; return ProposalCode.Stale; }
+            int item; ushort id;
+            if (t.Cargo) { item = HeavyCargo.ItemOf(t.Hash); id = HeavyCargo.IdOf(t.Hash); }
+            else
+            {
+                item = HeavyItemId != null ? HeavyItemId(t.Ns, t.Hash) : 0;
+                var used = new HashSet<ushort>(); Heavy.SyntheticIds(used);
+                id = Cargo.NextId(used);
+            }
+            if (item <= 0 || item > 0x7FFF || id == 0) { Cargo.Refused++; why = "item id of " + t.Hash.ToString("X8") + " unknown"; return ProposalCode.NotAuthorized; }
+            if (Cargo.Full(car)) { Cargo.Refused++; why = "cargo bed full (" + HeavyCargo.Capacity + ")"; return ProposalCode.Busy; }
+            Heavy.Stow(t.Ns, t.Hash, Reg, Outbox);
+            Cargo.Add(car, new CargoEntry { Id = id, ItemId = (ushort)item, Pos = t.Pos, Rot = t.Rot }, Reg, Outbox);
+            why = "cargo #" + id + " item " + item + " in vehicle " + car;
+            return ProposalCode.Accepted;
+        }
+
+        // Lease of a synthetic id: an existing record (cargo object already out in the world) follows the H1 lease rules; else the
+        // id names a cargo entry -> Unload: the entry leaves its car and becomes a record carried by the requester (first wins).
+        ProposalCode CargoLease(byte slot, int region, HeavyTxnRequest t, out ushort lease, out string why)
+        {
+            lease = 0; why = null;
+            HeavyRecord r;
+            if (Heavy.TryGet(t.Ns, t.Hash, out r))
+            {
+                if (!r.Cargo) { Cargo.Refused++; why = "id belongs to a census object"; return ProposalCode.Stale; }
+                return Heavy.Lease(slot, region, t.Ns, t.Hash, true, Reg, Outbox, out lease, out why);
+            }
+            ushort id = HeavyCargo.IdOf(t.Hash), car; CargoEntry e;
+            if (!Cargo.TryFind(id, out car, out e) || e.ItemId != HeavyCargo.ItemOf(t.Hash)) { Cargo.Refused++; why = "cargo object " + id + " not in any car"; return ProposalCode.Stale; }
+            VehicleRecord vr;
+            if (region == Regions.None || region != t.Ns || !Fleet.TryGet(car, out vr) || vr.Region != region) { Cargo.Refused++; why = "requester / vehicle not in one region"; return ProposalCode.NotAuthorized; }
+            // a synthetic id equal to a census object's hash of this region could never be presented unambiguously (~1e-8): refused,
+            // the object simply stays in the car
+            if (HeavyItemId != null && HeavyItemId(t.Ns, t.Hash) > 0) { Cargo.Refused++; why = "cargo id collides with a census object of " + IdentityNamespace.Name(t.Ns); return ProposalCode.Stale; }
+            if (!Heavy.AddCarried(slot, t.Ns, t.Hash, Reg, Outbox, out lease)) { Cargo.Refused++; why = "region heavy-object limit " + HeavyList.MaxPerRegion + " reached"; return ProposalCode.Busy; }
+            Cargo.Take(car, id, Reg, Outbox, out e);
+            why = "cargo #" + id + " taken out of vehicle " + car;
+            return ProposalCode.Accepted;
+        }
+
+        // Host start: the car's cargo from the host's own saved keys (once per vehicle and host session).
+        public bool CargoSeed(ushort car, List<CargoEntry> fromSave)
+        {
+            var used = new HashSet<ushort>(); Heavy.SyntheticIds(used);
+            return Cargo.Seed(car, fromSave, used, Reg, Outbox);
         }
 
         // ---- W4.2 region-independent object state (host in place for its own interactions, or client proposal "objTxn") ----

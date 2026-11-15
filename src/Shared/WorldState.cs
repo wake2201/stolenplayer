@@ -241,6 +241,7 @@ namespace TS2MP.Shared
         public const string LootTxn = "lootTxn";         // Session scope (arg 0): client proposal, Player 2 picks up one verified world object (LootTxnRequest, W4.1, protocol 20)
         // W4.1: taken world loot = Region scope (arg = namespace = region id), keys LootBook.Keys "wloot0".."wloot3" (hash chunks)
         public const string Heavy = "wheavy";           // Region scope (arg = region namespace): committed heavy-object leases / rest poses (HeavyList, H1 protocol 29)
+        public const string Cargo = "hcargo";           // Session scope (arg = vehicle id): committed heavy cargo of that car (HeavyCargo list, H2 protocol 30)
         public const string HeavyTxn = "heavyTxn";      // Session scope (arg 0): client proposal, one heavy-object lease operation (HeavyTxnRequest 35 B, H1 protocol 29)
         public const string ObjectTxn = "objTxn";       // Session scope (arg 0): client proposal, one world-object operation (ObjectTxnRequest 19 B: set / reserve / release / NPC set, region epoch; W4.2B protocol 24)
         public const string ObjectScene = "objScene";   // Player scope (arg = sender slot): client proposal, scene instance of a region loaded (ObjectSceneReport, W4.2B), never stored

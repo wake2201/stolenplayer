@@ -13,9 +13,11 @@
 //    AddForce(forward * power) + AddForce(up * power / 2), then CarryItem = null; GetTazed: AddForce(forward * 100)).
 //    The dropped object keeps its Rigidbody (deleteRigidInTime is false for heavy items) and is NOT saved: a scene reload
 //    restores the scene object at its original pose.
-//  - Deposits (out of scope for H1): Place_Heavy_Trigger / Shop_Heavy_Trigger.OnTriggerEnter -> PlayerScript.HeavyItemPlacedInCar
+//  - Deposits: Place_Heavy_Trigger / Shop_Heavy_Trigger.OnTriggerEnter -> PlayerScript.HeavyItemPlacedInCar
 //    -> Pickupable.PlacedInTrunk (+ CarController.HeavyItemPlaced / shop pose); VanHeavyItems (Ranger cargo, sensor at save);
 //    HeavyItemsShed (sensor at save); CodenameAI.PickHeavy (associate carries it to the car).
+//    H2: the Ranger cargo bed (VanHeavyItems) is shared (src/Shared/HeavyCargo.cs): Load moves a held record into the car's
+//    host cargo list; a cargo object taken out again is a record with a synthetic id (HeavyCargo.Synthetic) - same lease rules.
 // Multiplayer model: one record per touched census heavy object of a region (registry "wheavy", Region scope, arg = region
 // namespace). The host grants exactly one lease per object (first committed wins: the host's own pickup is decided inside its
 // PickUpHeavy call, the client's proposal when it arrives). The lease holder runs the ORIGINAL carry and, after DropHeavy, the
@@ -37,7 +39,8 @@ namespace TS2MP.Shared
 {
     public enum HeavyState : byte { Carried = 1, Placed = 2, Removed = 3 }
     // Drop = the original release happened at Pos (H1.1: committed at once, the object is Moving); Settle = exact rest pose.
-    public enum HeavyOp : byte { Lease = 1, Drop = 2, Release = 3, Remove = 4, Settle = 5 }
+    // Load (H2) = the holder's object came to rest in a supported car's cargo bed (Digest = vehicle id, Pos / Rot = car-local pose).
+    public enum HeavyOp : byte { Lease = 1, Drop = 2, Release = 3, Remove = 4, Settle = 5, Load = 6 }
 
     // One touched heavy object. Actor: Carried -> carrier slot; Placed -> simulating slot (0 = nobody, presented at rest);
     // Removed -> 0. HasPose: the object has a committed pose (Carried keeps the previous one: restored if the carry ends
@@ -54,29 +57,31 @@ namespace TS2MP.Shared
         public bool Moving;
         public Vec3 Pos;
         public Quat16 Rot;
+        public bool Cargo;      // H2: a cargo object taken out of its car (Hash = HeavyCargo.Synthetic id, not a census hash)
         public const int WireSize = 29;
-        const byte PoseBit = 1, MovingBit = 2;
+        const byte PoseBit = 1, MovingBit = 2, CargoBit = 4;
 
-        public void Write(NetDataWriter w) { w.Put(Hash); w.Put((byte)State); w.Put(Actor); w.Put(Lease); w.Put((byte)((HasPose ? PoseBit : 0) | (Moving ? MovingBit : 0))); w.Put(Pos.X); w.Put(Pos.Y); w.Put(Pos.Z); Rot.Write(w); }
+        public void Write(NetDataWriter w) { w.Put(Hash); w.Put((byte)State); w.Put(Actor); w.Put(Lease); w.Put((byte)((HasPose ? PoseBit : 0) | (Moving ? MovingBit : 0) | (Cargo ? CargoBit : 0))); w.Put(Pos.X); w.Put(Pos.Y); w.Put(Pos.Z); Rot.Write(w); }
         public static bool TryRead(NetDataReader r, out HeavyRecord h)
         {
             h = new HeavyRecord { Hash = r.GetUInt(), State = (HeavyState)r.GetByte(), Actor = r.GetByte(), Lease = r.GetUShort() };
             byte f = r.GetByte();
-            h.HasPose = (f & PoseBit) != 0; h.Moving = (f & MovingBit) != 0;
+            h.HasPose = (f & PoseBit) != 0; h.Moving = (f & MovingBit) != 0; h.Cargo = (f & CargoBit) != 0;
             h.Pos = new Vec3(r.GetFloat(), r.GetFloat(), r.GetFloat()); h.Rot = Quat16.Read(r);
-            return (f & ~(PoseBit | MovingBit)) == 0 && (!h.Moving || (h.State == HeavyState.Placed && h.HasPose && h.Actor != 0));
+            return (f & ~(PoseBit | MovingBit | CargoBit)) == 0 && (!h.Moving || (h.State == HeavyState.Placed && h.HasPose && h.Actor != 0))
+                && (!h.Cargo || (HeavyCargo.IsSynthetic(h.Hash) && h.State != HeavyState.Removed));
         }
         public bool CarriedBy(byte slot) { return State == HeavyState.Carried && Actor == slot; }
         // the slot's original physics still moves it (observers follow its snapshots)
         public bool MovingBy(byte slot) { return State == HeavyState.Placed && Moving && Actor == slot; }
-        public override string ToString() { return Hash.ToString("X8") + " " + State + (State == HeavyState.Removed ? "" : " P" + Actor) + " lease " + Lease + (Moving ? " moving" : "") + (HasPose ? " at " + Pos : " (scene pose)"); }
+        public override string ToString() { return Hash.ToString("X8") + (Cargo ? " cargo" : "") + " " + State + (State == HeavyState.Removed ? "" : " P" + Actor) + " lease " + Lease + (Moving ? " moving" : "") + (HasPose ? " at " + Pos : " (scene pose)"); }
     }
 
-    // Registry value of one region: version 2 (H1.1: Moving bit), count, records. 2 + 29 x 32 = 930 B (registry value limit 1024 B).
+    // Registry value of one region: version 3 (H1.1: Moving bit, H2: Cargo bit), count, records. 2 + 29 x 32 = 930 B (limit 1024 B).
     public static class HeavyList
     {
         public const int MaxPerRegion = 32;
-        const byte Version = 2;
+        const byte Version = 3;
         public static byte[] Encode(List<HeavyRecord> l)
         {
             var w = new NetDataWriter(); w.Put(Version); w.Put((byte)l.Count);
@@ -106,31 +111,36 @@ namespace TS2MP.Shared
         }
     }
 
-    // Client proposal "heavyTxn" (Session scope, arg 0). Digest = the requester's census digest of that region (Lease only).
+    // Client proposal "heavyTxn" (Session scope, arg 0). Digest = the requester's census digest of that region (Lease of a census
+    // object; 0 for a synthetic cargo id) or the vehicle id (Load: Pos / Rot are then car-local).
+    // Cargo (H2, bit 0x80 of the op byte): Hash is a synthetic cargo id (HeavyCargo.Synthetic), never a census hash.
     public struct HeavyTxnRequest
     {
-        public HeavyOp Op; public int Ns; public uint Hash; public uint Digest; public ushort Lease; public Vec3 Pos; public Quat16 Rot;
+        public HeavyOp Op; public int Ns; public uint Hash; public uint Digest; public ushort Lease; public Vec3 Pos; public Quat16 Rot; public bool Cargo;
         public const int WireSize = 35;
+        const byte CargoFlag = 0x80;
         public byte[] Encode()
         {
-            var w = new NetDataWriter(); w.Put((byte)Op); w.Put(Ns); w.Put(Hash); w.Put(Digest); w.Put(Lease);
+            var w = new NetDataWriter(); w.Put((byte)((byte)Op | (Cargo ? CargoFlag : 0))); w.Put(Ns); w.Put(Hash); w.Put(Digest); w.Put(Lease);
             w.Put(Pos.X); w.Put(Pos.Y); w.Put(Pos.Z); Rot.Write(w);
             return w.CopyData();
         }
         public static bool TryParse(byte[] v, out HeavyTxnRequest t)
         {
             t = default(HeavyTxnRequest);
-            if (v == null || v.Length != WireSize || v[0] < 1 || v[0] > 5) return false;
+            if (v == null || v.Length != WireSize) return false;
+            int op = v[0] & ~CargoFlag;
+            if (op < 1 || op > 6) return false;
             try
             {
                 var r = new NetDataReader(v);
-                t.Op = (HeavyOp)r.GetByte(); t.Ns = r.GetInt(); t.Hash = r.GetUInt(); t.Digest = r.GetUInt(); t.Lease = r.GetUShort();
+                r.GetByte(); t.Op = (HeavyOp)op; t.Cargo = (v[0] & CargoFlag) != 0; t.Ns = r.GetInt(); t.Hash = r.GetUInt(); t.Digest = r.GetUInt(); t.Lease = r.GetUShort();
                 t.Pos = new Vec3(r.GetFloat(), r.GetFloat(), r.GetFloat()); t.Rot = Quat16.Read(r);
-                return WorldItemList.Finite(t.Pos);
+                return WorldItemList.Finite(t.Pos) && (!t.Cargo || HeavyCargo.IsSynthetic(t.Hash));
             }
             catch { return false; }
         }
-        public override string ToString() { return Op + " " + IdentityNamespace.Name(Ns) + ":" + Hash.ToString("X8") + (Op == HeavyOp.Lease ? "" : " lease " + Lease) + (Op == HeavyOp.Drop || Op == HeavyOp.Settle ? " at " + Pos : ""); }
+        public override string ToString() { return Op + " " + IdentityNamespace.Name(Ns) + ":" + (Cargo ? "cargo " : "") + Hash.ToString("X8") + (Op == HeavyOp.Lease ? "" : " lease " + Lease) + (Op == HeavyOp.Drop || Op == HeavyOp.Settle ? " at " + Pos : "") + (Op == HeavyOp.Load ? " into vehicle " + Digest + " at local " + Pos : ""); }
     }
 
     // H1.1 movement snapshot of one heavy object from its simulating holder (MsgType.HeavyMotion, unreliable: the per-object
@@ -238,7 +248,10 @@ namespace TS2MP.Shared
     {
         readonly Dictionary<int, List<HeavyRecord>> _byRegion = new Dictionary<int, List<HeavyRecord>>();
         ushort _nextLease;
-        public long Leases, Drops, Settles, Releases, Removes, Refused, Cleared, SlotReleases, Handovers;
+        public long Leases, Drops, Settles, Releases, Removes, Refused, Cleared, SlotReleases, Handovers, Stowed;
+        // H2: a record whose carry ended without any pose (grant unusable, disconnect, region change) was deleted - the host
+        // puts a synthetic cargo object back into its car (WorldHost); args: region, record.
+        public Action<int, HeavyRecord> CarryAbandoned;
 
         public int CountIn(int ns) { List<HeavyRecord> l; return _byRegion.TryGetValue(ns, out l) ? l.Count : 0; }
         public int Total { get { int n = 0; foreach (var l in _byRegion.Values) n += l.Count; return n; } }
@@ -326,7 +339,7 @@ namespace TS2MP.Shared
             if (i < 0) { why = "no record"; return ProposalCode.Unchanged; }
             var r = l[i];
             if (r.Actor != slot || r.Lease != lease || r.State == HeavyState.Removed) { why = "lease " + lease + " not held (" + r + ")"; return ProposalCode.Stale; }
-            Revert(l, i, Other(slot), otherRegion == ns);
+            _revertNs = ns; Revert(l, i, Other(slot), otherRegion == ns);
             Releases++;
             Commit(ns, l, reg, outbox);
             return ProposalCode.Accepted;
@@ -361,7 +374,7 @@ namespace TS2MP.Shared
                 for (int i = l.Count - 1; i >= 0; i--)
                 {
                     if (l[i].Actor != slot || l[i].State == HeavyState.Removed) continue;
-                    Revert(l, i, Other(slot), otherRegion == kv.Key && otherRegion != Regions.None); changed = true; n++;
+                    _revertNs = kv.Key; Revert(l, i, Other(slot), otherRegion == kv.Key && otherRegion != Regions.None); changed = true; n++;
                 }
                 if (changed) Commit(kv.Key, l, reg, outbox);
             }
@@ -380,11 +393,51 @@ namespace TS2MP.Shared
         }
 
         static byte Other(byte slot) { return (byte)(slot == 1 ? 2 : 1); }
+        int _revertNs;
+
+        // ---- H2 vehicle cargo (WorldHost.HeavyTransaction validates vehicle / capacity first, then calls these) ----
+        // The slot holds this record (carrying it, or simulating it after its own drop) with this lease.
+        public bool Holds(byte slot, int ns, uint hash, ushort lease, bool cargo, out string why)
+        {
+            why = null; HeavyRecord r;
+            if (!TryGet(ns, hash, out r) || r.Cargo != cargo) { why = "no lease (region reset or released)"; return false; }
+            if (r.Actor != slot || r.Lease != lease || r.State == HeavyState.Removed) { why = "lease " + lease + " not held (" + r + ")"; return false; }
+            return true;
+        }
+        // Load committed: the object leaves the shared world exactly once. A census object becomes Removed (hidden everywhere;
+        // the original region reload restores it like in single player); a synthetic cargo object's record is deleted (its
+        // object is the car's cargo again). Caller checked Holds.
+        public void Stow(int ns, uint hash, StateRegistry reg, List<StateEntry> outbox)
+        {
+            var l = List(ns); int i = Find(l, hash);
+            if (i < 0) return;
+            if (l[i].Cargo) l.RemoveAt(i);
+            else { var r = l[i]; r.State = HeavyState.Removed; r.Actor = 0; r.HasPose = false; r.Moving = false; l[i] = r; }
+            Stowed++;
+            Commit(ns, l, reg, outbox);
+        }
+        // Unload: a cargo object taken out of the car = a new record carried by the slot (no pose yet: an abandoned carry puts
+        // it back into the car through CarryAbandoned). False = region list full.
+        public bool AddCarried(byte slot, int ns, uint hash, StateRegistry reg, List<StateEntry> outbox, out ushort lease)
+        {
+            lease = 0;
+            var l = List(ns);
+            if (Find(l, hash) >= 0 || l.Count >= HeavyList.MaxPerRegion) return false;
+            var r = new HeavyRecord { Hash = hash, State = HeavyState.Carried, Actor = slot, Lease = NextLease(), Rot = new Quat16 { W = 32767 }, Cargo = true };
+            l.Add(r); lease = r.Lease; Leases++;
+            Commit(ns, l, reg, outbox);
+            return true;
+        }
+        // every synthetic id still present in a region list (host id allocation must not reuse them)
+        public void SyntheticIds(HashSet<ushort> into)
+        {
+            foreach (var l in _byRegion.Values) foreach (var r in l) if (r.Cargo) into.Add(HeavyCargo.IdOf(r.Hash));
+        }
 
         void Revert(List<HeavyRecord> l, int i, byte other, bool otherHere)
         {
             var r = l[i];
-            if (r.State == HeavyState.Carried && !r.HasPose) { l.RemoveAt(i); return; }
+            if (r.State == HeavyState.Carried && !r.HasPose) { l.RemoveAt(i); if (CarryAbandoned != null) CarryAbandoned(_revertNs, r); return; }
             if (r.State == HeavyState.Placed && r.Moving)
             {
                 // the committed pose of a moving object is its release pose (possibly in the air): never frozen there

@@ -1,0 +1,1105 @@
+{
+"meta": {
+"schema": "game-atlas/1",
+"catalog": "world_object_instances",
+"description": "Scene instances of world-object classes in DrugFarm",
+"game_version": "1.27c (Unity 2020.3.33f1, Mono)",
+"generated_by": "tools/research/build_atlas_data.py",
+"evidence_levels": [
+"VERIFIED_IL",
+"VERIFIED_ASSET",
+"VERIFIED_RUNTIME",
+"INFERRED",
+"UNKNOWN"
+],
+"scene": "DrugFarm",
+"region_id": 90,
+"count": 149,
+"path_note": "display paths without [siblingIndex]; census identity disambiguates duplicates (WorldIdentity.IdentityPath)"
+},
+"instances": [
+{
+"class": "Mission_Item",
+"path": "GameObject (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "Crash_Crate_0 (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "Chair_wooden (3)/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "Chair_wooden (2)/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "Crash_Crate_0 (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Mission_Item",
+"path": "GameObject (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "Crash_Crate_0 (5)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Mission_Item",
+"path": "MISSION PLANT/Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "safe_01/safe_01_door",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "safe_01 (1)/safe_01_door",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"rotateOpen": true
+},
+{
+"class": "DestroyObject",
+"path": "Crash_Crate_0 (4)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SafeCrack",
+"path": "safe_01 (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "Chair_wooden (1)/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "SafeCrack",
+"path": "safe_01",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "House/Door_interior/Door_2_frame",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_interior (1)/Door_2_frame",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_exterior (1)/Door_1_frame",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_exterior/Door_1_frame",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_2 (18)/Door_2_frame",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_2 (17)/Door_2_frame",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_2 (16)/Door_2_frame",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_2 (15)/Door_2_frame",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_2 (14)/Door_2_frame",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_2 (13)/Door_2_frame",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_2 (12)/Door_2_frame",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_2 (11)/Door_2_frame",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_2 (10)/Door_2_frame",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_2 (9)/Door_2_frame",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_2 (8)/Door_2_frame",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_2 (6)/Door_2_frame",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "House/Door_2 (5)/Door_2_frame",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Lockpick",
+"path": "House/Door_exterior (1)/Door_1_frame",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "House/Door_2 (2)/Door_2_frame",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Lockpick",
+"path": "House/Door_exterior/Door_1_frame",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "TimedDestroy",
+"path": "Chair_wooden/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "PlantEvidence",
+"path": "MISSION PLANT/Fake",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Conference phone_ferukyc",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 242,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "decentSSD_rm8jxmx",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 249,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L/15$_jjz59$1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Pickupable",
+"path": "Dresser_C (1)/Dresser_drawer_B_L_parent/Dresser_drawer_B_L/15$_fz7spzn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Door",
+"path": "Dresser_C/Dresser_drawer_C_L_parent/Dresser_drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Dresser_C (1)/Dresser_drawer_C_L_parent/Dresser_drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Dresser_C/Dresser_drawer_A_R_parent/Dresser_drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Dresser_C (1)/Dresser_drawer_A_R_parent/Dresser_drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "Bong_Colored_o$ky2nl",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 447
+},
+{
+"class": "Pickupable",
+"path": "Bong_Colored_oocytnm",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 447
+},
+{
+"class": "Pickupable",
+"path": "Bong_Colored_jn933ac",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 447
+},
+{
+"class": "Pickupable",
+"path": "Bong_Colored_d4zaopu",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 447
+},
+{
+"class": "Pickupable",
+"path": "Bong_Colored_n12v4gs",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 447
+},
+{
+"class": "Pickupable",
+"path": "Bong_Colored_jvs$jsy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 447
+},
+{
+"class": "Pickupable",
+"path": "Bong_Colored_tssj1nt",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 447
+},
+{
+"class": "Lockpick",
+"path": "_Garage_Cabinet_Openable/Garage_Cabinet_Door",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "Pickupable",
+"path": "headphones4_ugk8og1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 300
+},
+{
+"class": "Door",
+"path": "Workdesk/Drawer_B_L_parent/Drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "Wine1_usmfnqs",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 61
+},
+{
+"class": "Door",
+"path": "Dresser_C (1)/Dresser_drawer_A_L_parent/Dresser_drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Dresser_C/Dresser_drawer_A_L_parent/Dresser_drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "Projector1_gcurros",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 64,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Camera_$l$z8km",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 93,
+"destroy_if_was_picked": true
+},
+{
+"class": "DestroyObject",
+"path": "Chair_wooden",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "Chair_wooden (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "Chair_wooden (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "Chair_wooden (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Radio_bmwwy$v",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 151,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "Dresser_C (1)/Dresser_drawer_C_R_parent/Dresser_drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Dresser_C/Dresser_drawer_C_R_parent/Dresser_drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "Cocaine_Brick_White_g$jvp9e",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 446
+},
+{
+"class": "Pickupable",
+"path": "Cocaine_Brick_White_o5xdony",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 446
+},
+{
+"class": "Pickupable",
+"path": "Cocaine_Brick_White_n$$upm$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 446
+},
+{
+"class": "Pickupable",
+"path": "Cocaine_Brick_White_yac$$62",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 446
+},
+{
+"class": "Pickupable",
+"path": "Cocaine_Brick_White_oo$9kp$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 446
+},
+{
+"class": "Pickupable",
+"path": "Crash_Crate_0 (2)/Crash_Crate_Fractured_LOD_0/Cocaine_Brick_White_z$3y5$x",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 446,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Cocaine_Brick_White_d1$zevb",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 446
+},
+{
+"class": "Pickupable",
+"path": "Cocaine_Brick_White_$u6uyoy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 446
+},
+{
+"class": "Pickupable",
+"path": "Cocaine_Brick_White_k$mof3g",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 446
+},
+{
+"class": "Pickupable",
+"path": "Cocaine_Brick_White_6eq1y6z",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 446
+},
+{
+"class": "Pickupable",
+"path": "Crash_Crate_0 (2)/Crash_Crate_Fractured_LOD_0/Cocaine_Brick_White_1lvxysf",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 446,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Dresser_C (1)/Dresser_drawer_B_R_parent/Dresser_drawer_B_R/Hard drive item_c51g9m9",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 37
+},
+{
+"class": "Door",
+"path": "Dresser_B/Dresser_drawer_A_parent/Dresser_drawer_A",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Powder_Blue_4$zf4sk",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 448
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Powder_Blue_5yt8ekz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 448
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Powder_Blue_vsb$l6v",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 448
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Powder_Blue_cd8xvdm",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 448
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Powder_Blue_yt$$mmc",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 448
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Powder_Blue_y53$$$e",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 448
+},
+{
+"class": "Pickupable",
+"path": "Acoustic Guitar_zmjblx$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 80
+},
+{
+"class": "Pickupable",
+"path": "flyp_smartphone_locked_namuld$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 94,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "CashRegister_dnnnmyc",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 152
+},
+{
+"class": "Pickupable",
+"path": "50$_a930$n8",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_0$a4sg0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "50$_9umvu9r",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_us$kf0j",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "Workdesk/Drawer_C_R_parent/Drawer_C_R/50$_d31gq0t",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_p5moe9p",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "RadioSet_tycpau$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 68,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Weed_gdezsmo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 449
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Weed_u5mgrtn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 449
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Weed_my5pu1$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 449
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Weed_9s8dds8",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 449
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Weed_c2mu9v$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 449
+},
+{
+"class": "Pickupable",
+"path": "Dresser_B/Dresser_drawer_C_parent/Dresser_drawer_C/Zip_Bag_Weed_$o99kjo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 449
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Weed_dyoc9kb",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 449
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Weed_rx$yku$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 449
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Weed_6snpwes",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 449
+},
+{
+"class": "Pickupable",
+"path": "Zip_Bag_Weed_kn$22v7",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 449
+},
+{
+"class": "Door",
+"path": "Dresser_C (1)/Dresser_drawer_B_R_parent/Dresser_drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Dresser_C/Dresser_drawer_B_R_parent/Dresser_drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "Router item_oaav0gn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 40,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Dresser_C/Dresser_drawer_B_R_parent/Dresser_drawer_B_R/150bucks_qzuargp",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 150,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "150bucks_l$ur1qb",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 150,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "150bucks_4m1w6ly",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 150,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Crash_Crate_0 (4)/Crash_Crate_Fractured_LOD_0/CoffeeMachine_gp$vpo8",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 290,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "regular_wallet_drop_t$gz9la",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 20
+},
+{
+"class": "Pickupable",
+"path": "Candelabra_q$1y5l$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 31
+},
+{
+"class": "Pickupable",
+"path": "30$_uk9g45m",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$_cvymsso",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$_uny7fd$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$_eggmz73",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$_wvlnsfa",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "MediumLock",
+"path": "_Garage_Cabinet_Openable/Garage_Cabinet_Door",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "Crash_Crate_0 (3)/Crash_Crate_Fractured_LOD_0/GuitarE_black_s$lmbo9",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 194,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "Dresser_B/Dresser_drawer_C_parent/Dresser_drawer_C",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Workdesk/Drawer_B_R_parent/Drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "_Garage_Cabinet_Openable/Garage_Cabinet_Door",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Side_table_C/Side_table_C_drawer_parent/Side_table_C_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Workdesk/Drawer_C_L_parent/Drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "Crash_Crate_0 (5)/Crash_Crate_Fractured_LOD_0/Projector2_dyu7l1$",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 303,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "15$_3yyfoss",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Pickupable",
+"path": "Wine3_smfufwx",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 32
+},
+{
+"class": "Door",
+"path": "Workdesk/Drawer_A_L_parent/Drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Dresser_B/Dresser_drawer_B_parent/Dresser_drawer_B",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Workdesk/Drawer_C_R_parent/Drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Dresser_C (1)/Dresser_drawer_B_L_parent/Dresser_drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "LP_Vase_B_xkmto8c",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 34
+},
+{
+"class": "Pickupable",
+"path": "Phone_2_$s11ajo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 268,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Dresser_C (1)/Dresser_drawer_A_L_parent/Dresser_drawer_A_L/UsbFlashDrive_r50fe6j",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 73
+},
+{
+"class": "Pickupable",
+"path": "Dresser_C (1)/Dresser_drawer_A_L_parent/Dresser_drawer_A_L/UsbFlashDrive_kjks69u",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 73
+},
+{
+"class": "Pickupable",
+"path": "Joint_lnumxsz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 450
+},
+{
+"class": "Pickupable",
+"path": "Joint_bld$5as",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 450
+},
+{
+"class": "Pickupable",
+"path": "Joint_mrnzsey",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 450
+},
+{
+"class": "Pickupable",
+"path": "Joint_12$notd",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 450
+},
+{
+"class": "Pickupable",
+"path": "Joint_uxdsswy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 450
+},
+{
+"class": "Pickupable",
+"path": "Joint_upgt7ao",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 450
+},
+{
+"class": "Pickupable",
+"path": "Joint_2$c67ty",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 450
+},
+{
+"class": "Pickupable",
+"path": "Joint_0a7ujzw",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 450
+},
+{
+"class": "Pickupable",
+"path": "KP_Vase_6sn$urj",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 158
+},
+{
+"class": "Pickupable",
+"path": "LP_CandleHolder_Triple_o7$odn4",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 374
+},
+{
+"class": "Door",
+"path": "Workdesk/Drawer_A_R_parent/Drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+}
+]
+}

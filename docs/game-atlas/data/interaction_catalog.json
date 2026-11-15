@@ -1,0 +1,443 @@
+{
+ "meta": {
+  "schema": "game-atlas/1",
+  "game_version": "1.27c",
+  "generated_by": "tools/research/build_sync_data.py",
+  "catalog": "interaction_catalog",
+  "description": "Gameplay action families with original entry points"
+ },
+ "interactions": [
+  {
+   "id": "act:move",
+   "action": "walk/run/crouch/jump",
+   "original_entry": "PlayerMotorBehavior.CalculateMovement",
+   "trigger": "input",
+   "state": "pose, move flags",
+   "persistence": "XPlayer.. at save",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:carry_heavy",
+   "action": "pick up / carry / drop heavy object",
+   "original_entry": "Pickupable.PickUpHeavy / DropHeavy",
+   "trigger": "ray tag Pickupable (heavy) + E",
+   "state": "PlayerScript.isCarrying, object pose",
+   "persistence": "trunk/van/shed keys",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:loot_pick",
+   "action": "pick up ordinary loot / money / unique",
+   "original_entry": "Pickupable.PickUp -> <PickingItem>",
+   "trigger": "ray tag Pickupable + E",
+   "state": "object removed, backpack +1 / money",
+   "persistence": "ItemDay_<name>, Item_<name>, Item_<id>",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:loot_story",
+   "action": "pick up story / drone / special item",
+   "original_entry": "Pickupable.<PickingItem> (advance_story_if_picked, DronePickedUp, specialAdd)",
+   "trigger": "ray + E",
+   "state": "story index, drone equip",
+   "persistence": "Story, Item_<id>",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:drop_item",
+   "action": "drop inventory item",
+   "original_entry": "Inventory.DropItemNewSystem",
+   "trigger": "inventory UI",
+   "state": "runtime object 'dropped'",
+   "persistence": "locker at hideout checkpoint",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:storage",
+   "action": "car storage / hideout locker",
+   "original_entry": "Inventory.OpenStorage / MoveItemToStorage",
+   "trigger": "ray tag CarBox",
+   "state": "Storage_/Locker_ counts",
+   "persistence": "Storage_Item_<id>, Locker_Item_<id>",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:door",
+   "action": "open/close door, furniture, sliding window",
+   "original_entry": "Door.Use / Door.Update (slow)",
+   "trigger": "ray tag Door + E (hold = slow)",
+   "state": "isOpen, motion",
+   "persistence": "none",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:lockpick",
+   "action": "pick / key / padlock / crowbar break-in",
+   "original_entry": "Lockpick.StartLockpicking / DoorUnlock / BreakPadlock; PlayerScript.BreakinCrowbar",
+   "trigger": "ray + minigame",
+   "state": "lock state, alarm",
+   "persistence": "none",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:window_glass",
+   "action": "cut / break / unlock window",
+   "original_entry": "LockedWindow.BeginCut / BrokeWindow / UnlockWindow(NoAlarm)",
+   "trigger": "ray + tool",
+   "state": "glass, Door enabled, alarm",
+   "persistence": "none",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:window_climb",
+   "action": "climb through window",
+   "original_entry": "WindowUse.UseWindow",
+   "trigger": "ray tag WindowEnter",
+   "state": "local player lerp",
+   "persistence": "none",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:breakable",
+   "action": "smash breakable / planks",
+   "original_entry": "DestroyObject",
+   "trigger": "crowbar hit",
+   "state": "destroyed",
+   "persistence": "none (Mission_Item)",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:blinds_lights",
+   "action": "blinds, light switch, fuse box",
+   "original_entry": "Window_Blinds / LightSwitch / FuseBoxSwitch",
+   "trigger": "ray + E",
+   "state": "toggle",
+   "persistence": "none",
+   "evidence": "VERIFIED_IL (class existence); method detail INFERRED"
+  },
+  {
+   "id": "act:camera_disable",
+   "action": "disable security camera / panel",
+   "original_entry": "SecurityCamera.DisableCamera / SecurityPanel.PanelDeactivate",
+   "trigger": "drone / minigame",
+   "state": "isDisabled",
+   "persistence": "discovered_camera_prefs",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:alarm",
+   "action": "trigger alarm (window, lock, camera, panel, car)",
+   "original_entry": "LockedWindow.CheckAlarm, CameraTrigger, Security_Panel_Minigame.Failure, car alarms",
+   "trigger": "event",
+   "state": "police chase",
+   "persistence": "location alert",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:safe",
+   "action": "crack safe",
+   "original_entry": "SafeCrack / PlayerScript.SafeEnable",
+   "trigger": "minigame",
+   "state": "open",
+   "persistence": "SafesOpened",
+   "evidence": "VERIFIED_IL (existence)"
+  },
+  {
+   "id": "act:hide",
+   "action": "hide in spot",
+   "original_entry": "HidingSpot.GetIn / Unhide",
+   "trigger": "ray tag HidingSpot",
+   "state": "PS.isHiding",
+   "persistence": "none",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:read_note",
+   "action": "read note",
+   "original_entry": "ReadNote.BeginRead",
+   "trigger": "ray",
+   "state": "XP once, story",
+   "persistence": "<name>=1",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:dig",
+   "action": "dig hole",
+   "original_entry": "DigHole",
+   "trigger": "shovel",
+   "state": "hole, item",
+   "persistence": "DugHoles",
+   "evidence": "VERIFIED_IL (existence)"
+  },
+  {
+   "id": "act:parcel",
+   "action": "open parcel locker",
+   "original_entry": "ParcelMinigame / ParcelLocker",
+   "trigger": "code",
+   "state": "open",
+   "persistence": "parcel_code_pref",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:mission_accept",
+   "action": "accept residence mission",
+   "original_entry": "Inventory.ResidenceClicked / StoryScript.accept_job_on_start",
+   "trigger": "phone UI / story",
+   "state": "<house>_mission_<i>=1",
+   "persistence": "key",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:mission_complete",
+   "action": "complete residence mission",
+   "original_entry": "Mission_Item.Mission_Complete -> MissionComplete1",
+   "trigger": "photo/plant/destroy/knock-out/feed",
+   "state": "key=2, money, XP",
+   "persistence": "key, MissionsCompleted",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:story_advance",
+   "action": "advance story stage",
+   "original_entry": "StoryManager.AdvanceStory / direct story++",
+   "trigger": "29 callers + polls",
+   "state": "Story index",
+   "persistence": "Story",
+   "evidence": "VERIFIED_IL+VERIFIED_ASSET"
+  },
+  {
+   "id": "act:contract",
+   "action": "accept / claim contract",
+   "original_entry": "ContractManager.ActivateContract / ContractUIObj.ClaimReward",
+   "trigger": "phone",
+   "state": "contract state",
+   "persistence": "Contract*, <pref>_complete",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:job",
+   "action": "accept / claim job offer",
+   "original_entry": "JobOffer.AcceptJob / ClaimRewards",
+   "trigger": "phone",
+   "state": "job_pref",
+   "persistence": "job_pref, Jobs_Complete",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:payphone",
+   "action": "payphone mission",
+   "original_entry": "Payphone.TryActivate / Success / Failure",
+   "trigger": "payphone",
+   "state": "timer, spawned item",
+   "persistence": "Payphone<Region>, PayphoneActive..",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:heist",
+   "action": "start heist",
+   "original_entry": "HeistManager.StartHeist",
+   "trigger": "heist board",
+   "state": "story++, travel",
+   "persistence": "Story",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:blackbay",
+   "action": "sell on BlackBay",
+   "original_entry": "BlackBay_Object.SellIt",
+   "trigger": "phone",
+   "state": "money, story",
+   "persistence": "BlackbayLists",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:pickpocket",
+   "action": "pickpocket NPC",
+   "original_entry": "Pickpocket_Manager.Begin_Pickpocket / Success",
+   "trigger": "minigame",
+   "state": "money/items",
+   "persistence": "<target>_week",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:atm",
+   "action": "hack ATM",
+   "original_entry": "ATM_Object.Begin_Minigame / SpawnMoney",
+   "trigger": "minigame",
+   "state": "money spawned",
+   "persistence": "prefs_to_set",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:shop_buy",
+   "action": "buy in shop / phone",
+   "original_entry": "Shop_Manager.Buy_Item",
+   "trigger": "UI",
+   "state": "item, money",
+   "persistence": "at checkpoint",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:sell",
+   "action": "sell at pawn / car service",
+   "original_entry": "Inventory.Sell_Item_NewSystem",
+   "trigger": "UI",
+   "state": "money, stolen counters",
+   "persistence": "MoneyMade, StolenItems",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:upgrade_buy",
+   "action": "garage, van, car/drone/hideout upgrades, tips, bank, stocks",
+   "original_entry": "Inventory.BuyGarage, Tutorial.BuyVan, Whiplist.*, DroneUpgradePanel.BuyUpgrade, HouseRenovator.*, BuyTip.BuyTipp, Darkbank, StockManager",
+   "trigger": "UI",
+   "state": "unlock flags, money",
+   "persistence": "various",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:skill_learn",
+   "action": "learn skill / ability",
+   "original_entry": "Skill_Manager.Learn_Skill / AbilitiesManager",
+   "trigger": "skill UI",
+   "state": "skill flags, timers",
+   "persistence": "skill prefs, points",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:xp",
+   "action": "gain XP / level up",
+   "original_entry": "GameManager.AddXP / PlayerScript.RefreshXP",
+   "trigger": "rewards",
+   "state": "XP, level",
+   "persistence": "XP keys",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:gas",
+   "action": "use sleeping gas",
+   "original_entry": "SleepingGas.Release / SleepGasCloud",
+   "trigger": "tool",
+   "state": "particles, clouds, NPC sleep",
+   "persistence": "GasAmount",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:knockout",
+   "action": "knock out NPC (crowbar, baton, tranquilizer)",
+   "original_entry": "AI.FallAsleep",
+   "trigger": "melee / dart",
+   "state": "NPC unconscious",
+   "persistence": "KnockedOutPeople",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:drone",
+   "action": "equip / fly drone",
+   "original_entry": "DroneManager.AssignDrone / ActivateDrone",
+   "trigger": "inventory / key",
+   "state": "drone object, camera",
+   "persistence": "Item_<id>, upgrades",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:npc_routine",
+   "action": "NPC schedules / movement",
+   "original_entry": "AI.<Startt> / AI.Update",
+   "trigger": "game hour",
+   "state": "NPC pose/behaviour",
+   "persistence": "none (daily events keyed)",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:npc_perception",
+   "action": "NPC sees / hears player",
+   "original_entry": "SensorToolkit + AI.HeardSound / Player_Is_Seen",
+   "trigger": "sensors",
+   "state": "suspicion, flee, call police",
+   "persistence": "none",
+   "evidence": "VERIFIED_IL (wiring INFERRED)"
+  },
+  {
+   "id": "act:police",
+   "action": "police chase / stars / arrest",
+   "original_entry": "PlayerScript.StartPoliceChase -> Police_Manager.Activate_Chase / End_Chase; GameManager.GotCaught",
+   "trigger": "crimes",
+   "state": "chase, units, stars",
+   "persistence": "location alert, residence alert",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:vehicle_drive",
+   "action": "enter / drive / exit player car",
+   "original_entry": "CarController.EnterVehicle / RunCar / ExitCar",
+   "trigger": "ray tag SitCar",
+   "state": "car pose, seat",
+   "persistence": "CurrentCar, XCar..",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:vehicle_passenger",
+   "action": "ride as passenger",
+   "original_entry": "(mod) VehicleSync passenger adapter",
+   "trigger": "E on car",
+   "state": "seat",
+   "persistence": "none",
+   "evidence": "mod"
+  },
+  {
+   "id": "act:vehicle_steal",
+   "action": "steal / deliver region car",
+   "original_entry": "LockedCarDoor / DrillingCarDoor / OpenTownSelectionNoDelay delivery",
+   "trigger": "minigame / travel",
+   "state": "car item",
+   "persistence": "Item_<car_name>, CarCompleted_",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:travel",
+   "action": "travel between regions",
+   "original_entry": "PlayerScript.ShowTownSelection -> GameManager.Select<Map>",
+   "trigger": "menu / border",
+   "state": "scene, CurrentLocation",
+   "persistence": "full save",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:sleep",
+   "action": "sleep / pass time",
+   "original_entry": "PassTime.Begin/PassStart (Parking.Activate)",
+   "trigger": "bed / car",
+   "state": "time",
+   "persistence": "time keys at checkpoint",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:save",
+   "action": "save game",
+   "original_entry": "SaveGame.SaveGameNewSystem",
+   "trigger": "travel/quicksave/autosave/ending",
+   "state": "disk",
+   "persistence": "all",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:associate",
+   "action": "associate companion",
+   "original_entry": "CodenameAI",
+   "trigger": "story stage 29",
+   "state": "follow/modes",
+   "persistence": "AssociateUnlocked",
+   "evidence": "VERIFIED_IL"
+  },
+  {
+   "id": "act:cat",
+   "action": "pet cat",
+   "original_entry": "CatAI.TouchCat",
+   "trigger": "E",
+   "state": "XP",
+   "persistence": "catty1",
+   "evidence": "VERIFIED_IL"
+  }
+ ]
+}

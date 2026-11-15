@@ -222,6 +222,8 @@ Verify an entry against the current binaries before patching it. Method names/si
 - No static singletons on `GameManager`/`PlayerScript`; lookups go through Find/tag.
 
 ## 5. Re-running the inspection
+**2026-11-15 (Game Atlas):** ILSpy CLI 11.2 is now installed (`C:\Users\wake\.dotnet\tools\ilspycmd.cmd`). The reusable index and tools are documented in `docs/game-atlas/00_README.md` / `01_SOURCE_INDEX.md`. Use them before decompiling again. The statement below about missing ILSpy is historical.
+
 M0 used an ad-hoc reflection helper (C# compiled with PowerShell `Add-Type`, loading `Managed/` with an AssemblyResolve hook) with four modes: type list, members of named types, string literals in method bodies, call/field-reference scans. It was kept in the session scratchpad, not the repo. No .NET SDK/ILSpy is installed (only the `dotnet` host, no SDKs); full method decompilation will need `ilspycmd` or the ILSpy GUI (user approval to install).
 
 ## 6. M2 multiplayer protocol (protocol 2, mod 0.2.0)

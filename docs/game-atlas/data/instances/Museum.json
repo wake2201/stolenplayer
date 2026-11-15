@@ -1,0 +1,1370 @@
+{
+"meta": {
+"schema": "game-atlas/1",
+"catalog": "world_object_instances",
+"description": "Scene instances of world-object classes in Museum",
+"game_version": "1.27c (Unity 2020.3.33f1, Mono)",
+"generated_by": "tools/research/build_atlas_data.py",
+"evidence_levels": [
+"VERIFIED_IL",
+"VERIFIED_ASSET",
+"VERIFIED_RUNTIME",
+"INFERRED",
+"UNKNOWN"
+],
+"scene": "Museum",
+"region_id": 96,
+"count": 173,
+"path_note": "display paths without [siblingIndex]; census identity disambiguates duplicates (WorldIdentity.IdentityPath)"
+},
+"instances": [
+{
+"class": "Pickupable",
+"path": "Stone_02_amte4y$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 417,
+"is_heavy_item": true,
+"destroy_if_was_picked": true,
+"dontDestroyDays": true
+},
+{
+"class": "Pickupable",
+"path": "dragon_statue_pa7unqa",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 424,
+"destroy_if_was_picked": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (5)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "TutorialTrigger",
+"path": "P1 (3)",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "SecurityCamera",
+"path": "Museum_01/CCTV_Camera/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"discovered_camera_prefs": "Camera_CCTV1"
+},
+{
+"class": "WindowUse",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (11)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_209_8"
+},
+{
+"class": "WindowUse",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (4)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"discovered_camera_prefs": "Camera_209_1"
+},
+{
+"class": "MediumLock",
+"path": "B1 (1)/Wall_0_Door_0/Door_0_Base/Door_0_Mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Lockpick",
+"path": "B1 (1)/Wall_0_Door_0/Door_0_Base/Door_0_Mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (6)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"discovered_camera_prefs": "Camera_209_3"
+},
+{
+"class": "Door",
+"path": "B1/Wall_0_O-Widndow_0/WindowHolder/O-Window-0_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "LockedWindow",
+"path": "B1/Wall_0_O-Widndow_0/WindowHolder/O-Window-0_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "B1/Wall_0_O-Widndow_0/WindowHolder/O-Window-0_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "LockedWindow",
+"path": "B1/Wall_0_O-Widndow_0/WindowHolder/O-Window-0_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "DestroyObject",
+"path": "Container_Main (2)/Crash_Crate_0 (4)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "B1/Wall_0_O-Widndow_0/WindowHolder/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (8)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (10)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (7)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_209_4"
+},
+{
+"class": "WindowUse",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "DestroyObject",
+"path": "Container_Main (2)/Crash_Crate_0 (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "Museum_01/CCTV_Camera/Camera_Secity/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "PaintingBlue_c2f$k0v",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 398,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "WindowUse",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (9)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_209_6"
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (10)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_209_7"
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (11)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Statue_Women_s0o0pnl",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 419,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (4)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "Statue_God_mlau0t8",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 418,
+"is_heavy_item": true,
+"destroy_if_was_picked": true,
+"dontDestroyDays": true
+},
+{
+"class": "WindowUse",
+"path": "B1/Wall_0_O-Widndow_0/WindowHolder/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "Container_Main (3)/Crash_Crate_0 (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (8)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_209_5"
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (6)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/O-Window-0_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "LockedWindow",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/O-Window-0_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/O-Window-0_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "LockedWindow",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/O-Window-0_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (7)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (5)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"discovered_camera_prefs": "Camera_209_2"
+},
+{
+"class": "DestroyObject",
+"path": "Container_Main (4)/Crash_Crate_0 (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick",
+"path": "B1/Wall_0_Door_0/Door_3 Variant/Door_0_Mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "B1/Wall_0_O-Widndow_0/WindowHolder/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "B1/Wall_0_O-Widndow_0/WindowHolder/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Props/P_Stand_02/GLASS",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 2,
+"noDoor": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (9)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/O-Window-0_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "LockedWindow",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/O-Window-0_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "LockedWindow",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/O-Window-0_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/O-Window-0_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "WindowUse",
+"path": "B1 (1)/Wall_0_O-Widndow_0/WindowHolder/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "PhoneOld_gksb9mg",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 426,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "Museum_01/Level_Part_02/P_Wall_Door_01/Wall_Door_01/Door_Right",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Level_Part_02/P_Wall_Window_01/WINDOW/window",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 3,
+"noDoor": true,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "Museum_01/Level_Part_01/P_Wall_Door_01/Wall_Door_01/Door_Left",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "B1 (1)/interior/Workdesk_extension/Drawer_B_parent/Drawer_B",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "B1/interior/sanny_phone_norf7uy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 85,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Container_Main (2)/Crash_Crate_0 (3)/Crash_Crate_Fractured_LOD_0/pc_tlq56mf",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 294,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Level_Part_02/P_Wall_Window_01/WINDOW/window",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 3,
+"noDoor": true,
+"unlockFromInside": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Level_Part_02/P_Wall_Window_01/WINDOW/window",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 3,
+"noDoor": true,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "B1 (1)/Wall_0_Door_0/Door_0_Base/Door_0_Mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "B1/interior/Multimeter_UQ_$sf1m60",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 191,
+"destroy_if_was_picked": true
+},
+{
+"class": "LightSwitch",
+"path": "B1 (1)/Light_switch (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "B1/interior/Light_switch (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick",
+"path": "B1/interior/_Garage_Cabinet_Openable (1)/Garage_Cabinet_Door",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 2
+},
+{
+"class": "Pickupable",
+"path": "Container_Main (3)/Crash_Crate_0 (3)/Crash_Crate_Fractured_LOD_0/blu-ray_disc_player_3ufg66d",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 260,
+"destroy_if_was_picked": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Level_Part_02/P_Wall_Window_01/WINDOW/window",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 3,
+"noDoor": true,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "PaintingEye_pm3$5mz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 401,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "mayan_statue_0$0nuco",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 425,
+"destroy_if_was_picked": true
+},
+{
+"class": "Lockpick",
+"path": "Museum_01/Level_Part_01/P_Wall_Door_01/Wall_Door_01/Door_Left",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"hasAlarm": true,
+"LockpickDifficulty": 2
+},
+{
+"class": "Pickupable",
+"path": "B1 (1)/interior/Wall Clock_aa4sjs5",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 130,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "Museum_01/Level_Part_02/P_Wall_Door_01/Wall_Door_01/Door_Left",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Museum_01/Level_Part_01/P_Wall_Door_01/Wall_Door_01/Door_Right",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "Painting Castle_6l8tpsz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 403,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "B1 (1)/interior/Workdesk_extension/Drawer_C_parent/Drawer_C",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "WeldDoor",
+"path": "Container_Main (3)/weld",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WeldDoor",
+"path": "Container_Main (4)/weld (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WeldDoor",
+"path": "Container_Main (2)/weld (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WeldDoor",
+"path": "Container_Main (2)/weld",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WeldDoor",
+"path": "Container_Main (3)/weld (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WeldDoor",
+"path": "Container_Main (4)/weld",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "Container_Main (4)/Door_A (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (2)/Door_A (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (3)/Door_A (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (3)/Door_A",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (4)/Door_A",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (2)/Door_A",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (4)/Door_B (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (2)/Door_B (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (3)/Door_B (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (2)/Door_B",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (4)/Door_B",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (3)/Door_B",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Lockpick",
+"path": "Museum_01/Level_Part_01/P_Wall_Door_01/Wall_Door_01/Door_Right",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"hasAlarm": true,
+"LockpickDifficulty": 2
+},
+{
+"class": "Pickupable",
+"path": "Painting Autumn_ngn6s8s",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 399,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Torus Knot_zpyejyg",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 421,
+"destroy_if_was_picked": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Level_Part_01/P_Wall_Window_01/WINDOW/window",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 3,
+"noDoor": true,
+"unlockFromInside": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Level_Part_01/P_Wall_Window_01/WINDOW/window",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 3,
+"noDoor": true,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "PaintingCockatoo_btvz7yw",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 402,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "B1 (1)/Laptop_A_4pe5n8s",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "B1/interior/Laptop_A_cb$cve2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Stone_01_rt2b8nf",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 416,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Level_Part_02/P_Wall_Window_01/WINDOW/window",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 3,
+"noDoor": true,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "PaintingVolcano_8$76$vn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 411,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Spiral Sphere_anv9mc$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 423,
+"destroy_if_was_picked": true
+},
+{
+"class": "Lockpick",
+"path": "Museum_01/Level_Part_02/P_Wall_Door_01/Wall_Door_01/Door_Left",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"hasAlarm": true,
+"LockpickDifficulty": 2
+},
+{
+"class": "Pickupable",
+"path": "B1/interior/GumBallMachine_2ea5a80",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 188,
+"destroy_if_was_picked": true
+},
+{
+"class": "Lockpick",
+"path": "Museum_01/Level_Part_02/P_Wall_Door_01/Wall_Door_01/Door_Right",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"hasAlarm": true,
+"LockpickDifficulty": 2
+},
+{
+"class": "Pickupable",
+"path": "Container_Main (4)/Crash_Crate_0 (3)/Crash_Crate_Fractured_LOD_0/Monitor_1_0ajuef8",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 199,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "B1 (1)/interior/Workdesk_extension/Drawer_C_parent/Drawer_C/Scanner_n$0coam",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "PaintingWaterfall_2js01xz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 414,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "B1/interior/50$_omu8$rf",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Puramid_yt6814z",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 420,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "PaintingWindow_$efve4a",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 405,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Lockpick",
+"path": "Museum_01/Level_Part_01/P_Wall_Door_01/Wall_Door_01/Door_Left",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"hasAlarm": true,
+"LockpickDifficulty": 2
+},
+{
+"class": "Door",
+"path": "Museum_01/Level_Part_02/P_Wall_Door_01/Wall_Door_01/Door_Left",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "PaintingAutumnValley_$suskxo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 408,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "B1/Wall_0_Door_0/Door_3 Variant/Door_0_Mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "CameraTrigger",
+"path": "Museum_01/CCTV_Camera (4)/Camera_Secity/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "Museum_01/CCTV_Camera (1)/Camera_Secity/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "Museum_01/CCTV_Camera (3)/Camera_Secity/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "Museum_01/CCTV_Camera (4)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"discovered_camera_prefs": "Camera_CCTV5"
+},
+{
+"class": "SecurityCamera",
+"path": "Museum_01/CCTV_Camera (3)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"discovered_camera_prefs": "Camera_CCTV4"
+},
+{
+"class": "SecurityCamera",
+"path": "Museum_01/CCTV_Camera (1)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"discovered_camera_prefs": "Camera_CCTV2"
+},
+{
+"class": "CameraTrigger",
+"path": "Museum_01/CCTV_Camera (2)/Camera_Secity/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "Museum_01/CCTV_Camera (2)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"discovered_camera_prefs": "Camera_CCTV3"
+},
+{
+"class": "Lockpick",
+"path": "fence_wood_B_doorway_2m/fence_wood_B_door_1m/fence_wood_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockType": 1
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Level_Part_01/P_Wall_Window_01/WINDOW/window",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 3,
+"noDoor": true,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "TapeRecorder_sts8tob",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 427,
+"destroy_if_was_picked": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Level_Part_01/P_Wall_Window_01/WINDOW/window",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 3,
+"noDoor": true,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "B1/interior/_Garage_Cabinet_Openable (1)/Garage_Cabinet_Door",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "fence_wood_B_doorway_2m/fence_wood_B_door_1m/fence_wood_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "PaintingArtisticSunset_amn$an8",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 409,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "Museum_01/Level_Part_01/P_Wall_Door_01/Wall_Door_01/Door_Left",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Level_Part_01/P_Wall_Window_01/WINDOW/window",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 3,
+"noDoor": true,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "Painting Red_mep3ooy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 404,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Painting Grudge_on3$sa$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 406,
+"destroy_if_was_picked": true
+},
+{
+"class": "SecurityPanel",
+"path": "B1 (1)/SECURITY PANEL HARD (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityPanel",
+"path": "B1/SECURITY PANEL HARD",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityPanel",
+"path": "B1 (1)/SECURITY PANEL HARD",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityPanel",
+"path": "B1 (1)/SECURITY PANEL HARD (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick",
+"path": "Museum_01/Level_Part_02/P_Wall_Door_01/Wall_Door_01/Door_Left",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"hasAlarm": true,
+"LockpickDifficulty": 2
+},
+{
+"class": "Pickupable",
+"path": "Painting Butterfly_lsso8y6",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 413,
+"destroy_if_was_picked": true
+},
+{
+"class": "Lockpick",
+"path": "Museum_01/Level_Part_02/P_Wall_Door_01/Wall_Door_01/Door_Right",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"hasAlarm": true,
+"LockpickDifficulty": 2
+},
+{
+"class": "Pickupable",
+"path": "Painting Ships_n43agpd",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 400,
+"destroy_if_was_picked": true
+},
+{
+"class": "HidingSpot",
+"path": "Trash Can 2 (1)/Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "HidingSpot",
+"path": "Trash Can 2/Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "HidingSpot",
+"path": "Trash Can 2 (2)/Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Expensive Router_m596o$$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 372,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "B1/interior/usb_flash_egojyo2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 178,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "Museum_01/Level_Part_02/P_Wall_Door_01/Wall_Door_01/Door_Right",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Level_Part_02/P_Wall_Window_01/WINDOW/window",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 3,
+"noDoor": true,
+"unlockFromInside": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Level_Part_01/P_Wall_Window_01/WINDOW/window",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 3,
+"noDoor": true,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "Orderly Tangle_so$cul2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 422,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "PaintingWinter_2q$$uow",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 410,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "PaintingPassage_go34krk",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 412,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "PaintingMessy_m$3eg1c",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 415,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Props/P_Stand_02/GLASS",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 2,
+"noDoor": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Props/P_Stand_02 (1)/GLASS",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 2,
+"noDoor": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Props/P_Stand_02 (2)/GLASS",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 2,
+"noDoor": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Props/P_Stand_02/GLASS",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 2,
+"noDoor": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Props/P_Stand_02/GLASS",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 2,
+"noDoor": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Props/P_Stand_02/GLASS",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 2,
+"noDoor": true
+},
+{
+"class": "LockedWindow",
+"path": "Museum_01/Props/P_Stand_02/GLASS",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"hasAlarm": true,
+"starsAmount": 2,
+"noDoor": true
+},
+{
+"class": "Door",
+"path": "B1 (1)/interior/Workdesk_extension/Drawer_A_parent/Drawer_A",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Museum_01/Level_Part_01/P_Wall_Door_01/Wall_Door_01/Door_Right",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "Printer_86nc11n",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 84,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Lockpick",
+"path": "Museum_01/Level_Part_01/P_Wall_Door_01/Wall_Door_01/Door_Right",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"hasAlarm": true,
+"LockpickDifficulty": 2
+}
+]
+}

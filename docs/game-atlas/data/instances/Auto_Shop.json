@@ -1,0 +1,54 @@
+{
+"meta": {
+"schema": "game-atlas/1",
+"catalog": "world_object_instances",
+"description": "Scene instances of world-object classes in Auto Shop",
+"game_version": "1.27c (Unity 2020.3.33f1, Mono)",
+"generated_by": "tools/research/build_atlas_data.py",
+"evidence_levels": [
+"VERIFIED_IL",
+"VERIFIED_ASSET",
+"VERIFIED_RUNTIME",
+"INFERRED",
+"UNKNOWN"
+],
+"scene": "Auto Shop",
+"region_id": 3,
+"count": 5,
+"path_note": "display paths without [siblingIndex]; census identity disambiguates duplicates (WorldIdentity.IdentityPath)"
+},
+"instances": [
+{
+"class": "ShopTrigger",
+"path": "Junkyard Guy/Shop_Activate_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ShopTrigger",
+"path": "Mechanik/mechanik",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Lockpick",
+"path": "fence_concrete_A_door_1m/fence_concrete_A/fence_concrete_A 1",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 2
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKER",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "fence_concrete_A_door_1m/fence_concrete_A/fence_concrete_A 1",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+}
+]
+}

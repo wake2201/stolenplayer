@@ -1,0 +1,472 @@
+{
+ "meta": {
+  "schema": "game-atlas/1",
+  "catalog": "npc_catalog",
+  "description": "NPC / police / animal classes",
+  "game_version": "1.27c (Unity 2020.3.33f1, Mono)",
+  "generated_by": "tools/research/build_atlas_data.py",
+  "evidence_levels": [
+   "VERIFIED_IL",
+   "VERIFIED_ASSET",
+   "VERIFIED_RUNTIME",
+   "INFERRED",
+   "UNKNOWN"
+  ],
+  "police": {
+   "stars_cap": "Police_Manager.AddNewStar increments only while current_stars < 2 (VERIFIED_IL)",
+   "chase_flag": "PlayerScript.isPoliceChase (per player instance)",
+   "persistent": "Location_Manager.location_string alert level, <residence>_alert (queued parcel string)",
+   "end": "Police_Manager.End_Chase: DailyEventManager.SetTodayAsBurglarDay, StoryManager.CheckPoliceEscaped, PS.tryToSave (autosave)",
+   "steam_remote_play": "GameManager.steamRemotePlay + otherPlayerDrone (PlayerRemoteDrone): original second-player drone mode (VERIFIED_IL existence; runtime use UNKNOWN)"
+  }
+ },
+ "npcs": [
+  {
+   "id": "npc:AI",
+   "class": "AI",
+   "role": "resident/tenant",
+   "spawn": "fixed scene object bound to SelectResidence.AIs[]",
+   "schedule": "hour schedule BehaviourNumber[hour] + DailyEventManager events",
+   "perception": "RaySensor sight + RangeSensor hearing + light (ShadowDetector)",
+   "reactions": "flee home + call police (EscapeHomeAndCallCops/Delayed_Police_Call), catch, pepper spray, armed",
+   "instances_per_scene": {
+    "MainScene": 100
+   },
+   "field_count": 252,
+   "methods": [
+    "Awake",
+    "ApplyEvent",
+    "DisableEvent",
+    "SpawnRandomSound",
+    "LoadVoices",
+    "Start",
+    "GuardAlert",
+    "ReloadHabits",
+    "DiscoverAllHabits",
+    "DiscoverWhenNotHome",
+    "DogsRange",
+    "DogSmellMeat",
+    "Spawn_Warning",
+    "FallAsleep",
+    "OnEnable",
+    "DiscoverHabit",
+    "Startt",
+    "AllBoolsFalse",
+    "StartExplore",
+    "ChangeBehaviour",
+    "SurpriseMotherfucka",
+    "RandomFootstep",
+    "OnTriggerEnter",
+    "OnTriggerExit",
+    "Discover_Breakin",
+    "Delayed_Police_Call",
+    "HeardSoundAction",
+    "RotateTowardsCaught",
+    "RandomPoint",
+    "HeardSound",
+    "EnableRVO",
+    "SpotNPC",
+    "Player_Is_Seen",
+    "Player_Lost",
+    "Player_In_Hear_Range",
+    "Player_Out_Hear_Range",
+    "BrokenWindowCallCops",
+    "EscapeHomeAndCallCops",
+    "CheckMood",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:GuardAI",
+   "class": "GuardAI",
+   "role": "patrol guard",
+   "spawn": "no decoded scene instance (prefab or spawned; UNKNOWN)",
+   "schedule": "waypoint patrol pointsWalk",
+   "perception": "RayCast look + HeardNoise",
+   "reactions": "chase/shoot (StartChase), HitSleep",
+   "instances_per_scene": {},
+   "field_count": 43,
+   "methods": [
+    "Start",
+    "NextPoint",
+    "HeardNoiseObject",
+    "HeardNoise",
+    "RotateTowards",
+    "RotateTowardsCaught",
+    "RandomFootstep",
+    "StartChase",
+    "HitSleep",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:PolicemanAI",
+   "class": "PolicemanAI",
+   "role": "police officer",
+   "spawn": "spawned by Police_Manager.SpawnNewPoliceCar/SpawnPoliceSimple (dynamic)",
+   "schedule": "chase/check-out last_known_location",
+   "perception": "Player_Is_Seen/Player_In_Hear_Range sensor events",
+   "reactions": "taser/shoot -> PlayerScript.GetTazed -> GotCaught",
+   "instances_per_scene": {
+    "MainScene": 3
+   },
+   "field_count": 94,
+   "methods": [
+    "Player_Is_Seen",
+    "ShowIconColor",
+    "Player_Is_SeenChase",
+    "Player_LostChase",
+    "WearMask",
+    "Player_Lost",
+    "NewHouse",
+    "NewLocation",
+    "AllBoolsFalse",
+    "Player_In_Hear_Range",
+    "Player_Out_Hear_Range",
+    "OnEnable",
+    "AddRandomCloseSpots",
+    "StartCheckOut",
+    "WasShot",
+    "RandomFootstep",
+    "OnTriggerEnter",
+    "HighlightMe",
+    "SeenPlayer",
+    "RotateTowardsCaught",
+    "RandomPoint",
+    "WasAlerted",
+    "SendBackToCar",
+    "ActivateRagdoll",
+    "PlaceTracker",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:CopCar",
+   "class": "CopCar",
+   "role": "police car",
+   "spawn": "spawned dynamic",
+   "schedule": "drive to scene / at player / away",
+   "perception": "PlayerIsSeen",
+   "reactions": "deliver officers",
+   "instances_per_scene": {
+    "MainScene": 1
+   },
+   "field_count": 60,
+   "methods": [
+    "Awake",
+    "GetClosestLeavePoint",
+    "OnEnable",
+    "PlayerIsSeen",
+    "PlayerLost",
+    "DriveToNewPlace",
+    "MinimapEnable",
+    "StartCheckOut",
+    "GoToPoint",
+    "DriveAway",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:SidewalkAI",
+   "class": "SidewalkAI",
+   "role": "pedestrian",
+   "spawn": "SidewalkSpawner pool (random)",
+   "schedule": "walk sidewalk points by time of day",
+   "perception": "SpotMe/IsSeen",
+   "reactions": "surprised/escape/catch -> StartPoliceChase(starsAmount)",
+   "instances_per_scene": {
+    "MadisonSt": 6,
+    "Hillville": 4
+   },
+   "field_count": 101,
+   "methods": [
+    "OnEnable",
+    "CheckRecognize",
+    "Begin_Walk",
+    "SetTriggerRange",
+    "PlayAngry",
+    "CheckTimeOfDay",
+    "ActivateRagdoll",
+    "SpotMe",
+    "IsSeen",
+    "IsNotSeen",
+    "Surprised",
+    "ChasePlayer",
+    "ChooseNewPoint",
+    "RandomFootstep",
+    "RotateTowards",
+    "BackToSidewalk",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:DogAI",
+   "class": "DogAI",
+   "role": "dog",
+   "spawn": "no decoded scene instance (prefab or spawned; UNKNOWN)",
+   "schedule": "behaviours",
+   "perception": "SpotDog",
+   "reactions": "bark -> alert",
+   "instances_per_scene": {},
+   "field_count": 7,
+   "methods": [
+    "Start",
+    "SpotDog",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:CatAI",
+   "class": "CatAI",
+   "role": "cat",
+   "spawn": "scene object",
+   "schedule": "idle",
+   "perception": "n/a",
+   "reactions": "TouchCat weekly XP reward (catty1 key)",
+   "instances_per_scene": {
+    "PlayerHideout": 1,
+    "Forestside Resort": 1
+   },
+   "field_count": 14,
+   "methods": [
+    "Start",
+    "TouchCat",
+    "FindRandomPoint",
+    "BeginIdle",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:CodenameAI",
+   "class": "CodenameAI",
+   "role": "associate (companion)",
+   "spawn": "scene object (MainScene/Jail)",
+   "schedule": "follows player; modes openLocks/heavyCarry/mark",
+   "perception": "n/a",
+   "reactions": "helps player; CallOffPolice",
+   "instances_per_scene": {
+    "MainScene": 1
+   },
+   "field_count": 65,
+   "methods": [
+    "Start",
+    "CheckActiveAIs",
+    "OnEnable",
+    "GetPlayerCar",
+    "CheckCurrentMode",
+    "DisableIE",
+    "CheckIcons",
+    "PickHeavy",
+    "SendOff",
+    "EnableMode",
+    "UnlockedSomething",
+    "CheckActionsLeft",
+    "EnableUI",
+    "DisableUI",
+    "CallOffPolice",
+    "DisplayActionDesc",
+    "HideActionDesc",
+    "OnTriggerEnter",
+    "EnterCar",
+    "ExitCar",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:MobGuyAI",
+   "class": "MobGuyAI",
+   "role": "special NPC",
+   "spawn": "scene object",
+   "schedule": "UNKNOWN",
+   "perception": "UNKNOWN",
+   "reactions": "UNKNOWN",
+   "instances_per_scene": {
+    "IntroHouse": 3
+   },
+   "field_count": 33,
+   "methods": [
+    "Start",
+    "StartChase",
+    "IsSeen",
+    "OnTriggerEnter",
+    "RotateTowardsCaught",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:PriestAI",
+   "class": "PriestAI",
+   "role": "special NPC",
+   "spawn": "scene object",
+   "schedule": "UNKNOWN",
+   "perception": "UNKNOWN",
+   "reactions": "UNKNOWN",
+   "instances_per_scene": {
+    "HauntedMansion": 1
+   },
+   "field_count": 37,
+   "methods": [
+    "Start",
+    "WasAttacked",
+    "AllBoolsFalse",
+    "GoToPlayer",
+    "PlayerCaught",
+    "BeginExploring",
+    "OnTriggerEnter",
+    "AddRandomCloseSpots",
+    "SetGroupsNormal",
+    "SetGroupsMuted",
+    "RotateTowardsCaught",
+    "CheckIfSeesMe",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:MannequinAI",
+   "class": "MannequinAI",
+   "role": "special NPC (mannequin)",
+   "spawn": "scene object",
+   "schedule": "UNKNOWN",
+   "perception": "UNKNOWN",
+   "reactions": "UNKNOWN",
+   "instances_per_scene": {
+    "HauntedMansion": 4
+   },
+   "field_count": 10,
+   "methods": [
+    "Start",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:DemonAI",
+   "class": "DemonAI",
+   "role": "scripted/special",
+   "spawn": "scene object",
+   "schedule": "UNKNOWN",
+   "perception": "UNKNOWN",
+   "reactions": "UNKNOWN",
+   "instances_per_scene": {
+    "MadisonSt": 1
+   },
+   "field_count": 11,
+   "methods": [
+    "Start",
+    "Attack",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:ImpAI",
+   "class": "ImpAI",
+   "role": "scripted/special",
+   "spawn": "scene object",
+   "schedule": "UNKNOWN",
+   "perception": "UNKNOWN",
+   "reactions": "UNKNOWN",
+   "instances_per_scene": {
+    "HauntedMansion": 1
+   },
+   "field_count": 5,
+   "methods": [
+    "Start",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:HelicopterAI",
+   "class": "HelicopterAI",
+   "role": "police helicopter",
+   "spawn": "spawned by Police_Manager (helicopter field)",
+   "schedule": "follow",
+   "perception": "UNKNOWN",
+   "reactions": "spotlight",
+   "instances_per_scene": {
+    "MainScene": 1
+   },
+   "field_count": 21,
+   "methods": [
+    "Start",
+    "PlayerSeen",
+    "RotateSmoothly",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  },
+  {
+   "id": "npc:Ambulance",
+   "class": "Ambulance",
+   "role": "ambulance",
+   "spawn": "AmbulanceManager",
+   "schedule": "drive",
+   "perception": "n/a",
+   "reactions": "n/a",
+   "instances_per_scene": {},
+   "field_count": 12,
+   "methods": [
+    "Start",
+    "GoToBody",
+    "Update"
+   ],
+   "persistence": "none (positions/AI state reset on scene load)",
+   "player_binding": "single local PlayerScript via FindGameObjectWithTag(\"Player\") (VERIFIED_IL, WORLD_SYNC_AUDIT E.5)",
+   "mod_status": "MISSING (each instance simulates its own NPCs against its own player)",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods); role/reaction text from IL and WORLD_SYNC_AUDIT E; UNKNOWN where marked"
+  }
+ ]
+}

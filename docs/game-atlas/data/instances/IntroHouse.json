@@ -1,0 +1,1085 @@
+{
+"meta": {
+"schema": "game-atlas/1",
+"catalog": "world_object_instances",
+"description": "Scene instances of world-object classes in IntroHouse",
+"game_version": "1.27c (Unity 2020.3.33f1, Mono)",
+"generated_by": "tools/research/build_atlas_data.py",
+"evidence_levels": [
+"VERIFIED_IL",
+"VERIFIED_ASSET",
+"VERIFIED_RUNTIME",
+"INFERRED",
+"UNKNOWN"
+],
+"scene": "IntroHouse",
+"region_id": -1,
+"count": 149,
+"path_note": "display paths without [siblingIndex]; census identity disambiguates duplicates (WorldIdentity.IdentityPath)"
+},
+"instances": [
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Cabinet_B/Cabinet_B_door_R_parent/Cabinet_B_door_R",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Cabinet_B/Cabinet_B_door_L_parent/Cabinet_B_door_L",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "TutorialTrigger",
+"path": "STORY 3 ESCAPE TO CAR/X/Tut",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STORY 3 ESCAPE TO CAR",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick",
+"path": "fence_brick_B_doorway_5m/fence_brick_B_door_2m/gate_door_left",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "Door",
+"path": "fence_brick_B_doorway_5m/fence_brick_B_door_2m/gate_door_left",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "fence_brick_B_doorway_5m/fence_brick_B_door_2m/gate_door_right",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "Lockpick",
+"path": "fence_brick_B_doorway_5m/fence_brick_B_door_2m/gate_door_right",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "Lockpick",
+"path": "fence_brick_B_doorway_5m/fence_brick_B_door_2m/gate_door_left",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "Door",
+"path": "fence_brick_B_doorway_5m/fence_brick_B_door_2m/gate_door_left",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true,
+"key_item_ID": 126
+},
+{
+"class": "Door",
+"path": "fence_brick_B_doorway_5m/fence_brick_B_door_2m/gate_door_right",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true,
+"key_item_ID": 126
+},
+{
+"class": "Lockpick",
+"path": "fence_brick_B_doorway_5m/fence_brick_B_door_2m/gate_door_right",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "HidingSpot",
+"path": "HOUSE2406/PROPS/Cabinet_B/Hide Trigger",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "StoryObject",
+"path": "STORY 2 ARROWS TEXTS",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STORY 1 BLOCKER",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Pickup Items/crowbar_drop",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_A/Drawer_B_R_parent/Drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_A/Drawer_C_R_parent/Drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Workdesk/Drawer_B_R_parent/Drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/TV_Table/GameObject/Bed_drawer_openable_part (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_A/Wine1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 61
+},
+{
+"class": "DestroyObject",
+"path": "HOUSE2406/PROPS/Washing_machine",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LockedWindow",
+"path": "HOUSE2406/BUILDING/WallOut_3x_windowsmall_vinyl/Window_singlesmall_vinyl/Window_singlesmall_vinyl_openable",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Workdesk/Drawer_C_L_parent/Drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_A/Drawer_A_R_parent/Drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_A/Drawer_B_L_parent/Drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/BUILDING/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "LightSwitch",
+"path": "Light_switch (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (4)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (3)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "LockedWindow",
+"path": "HOUSE2406/BUILDING/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (3)/Security Camera",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_Intro"
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_C/Dresser_drawer_B_R_parent/Dresser_drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_C (1)/Dresser_drawer_B_R_parent/Dresser_drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Lockpick",
+"path": "HOUSE2406/BUILDING/WallOut_3x_door/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "SimpleOpenClose",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_B/Kitchen_cabinet_door_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CheckCameras",
+"path": "CAMERA VIEW PC",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "HOUSE2406/PROPS/Computer_keyboard",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 131
+},
+{
+"class": "Pickupable",
+"path": "Pickup Items/flashlight_drop",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 3
+},
+{
+"class": "TimedDestroy",
+"path": "CAMERA VIEW PC/Destroyed/Blowtorch Sparkles",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/BUILDING/WallOut_3x_windowsmall_vinyl/Window_singlesmall_vinyl/Window_singlesmall_vinyl_openable",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "LockedWindow",
+"path": "HOUSE2406/BUILDING/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Workdesk/Drawer_A_R_parent/Drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "HOUSE2406/PROPS/Computer_screen",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 133
+},
+{
+"class": "Door",
+"path": "HOUSE2406/BUILDING/WallOut_6x_windowtriple/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/BUILDING/WallOut_6x_windowtriple/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Workdesk/Drawer_A_L_parent/Drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Bookshelf/Door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Bookshelf/Door_D_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_A/Drawer_A_L_parent/Drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_A/Kitchen_cabinet_door_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "StoryObject",
+"path": "STORY 3 ESCAPE TO CAR/X/STORY MARKER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "StoryObject",
+"path": "STORY 2 ARROWS TEXTS/X/STORY MARKER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Workdesk/Drawer_C_R_parent/Drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "MediumLock",
+"path": "fence_brick_B_doorway_5m/fence_brick_B_door_2m/gate_door_left",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "MediumLock",
+"path": "fence_brick_B_doorway_5m/fence_brick_B_door_2m/gate_door_left",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/TV_Table/GameObject/Bed_drawer_openable_part",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_C (1)/Dresser_drawer_B_L_parent/Dresser_drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (1)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "ClimbIvy",
+"path": "HOUSE2406/BUILDING/Porch_A_6x_entrance_separate/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_counter_dishwasher/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/BUILDING/WallOut_3x_door/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "SimpleOpenClose",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_B/Kitchen_cabinet_door_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_C (1)/Dresser_drawer_A_R_parent/Dresser_drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_C/Dresser_drawer_A_R_parent/Dresser_drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_C/Dresser_drawer_A_L_parent/Dresser_drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_C (1)/Dresser_drawer_A_L_parent/Dresser_drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_A/Drawer_C_L_parent/Drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Window_Blinds",
+"path": "HOUSE2406/BUILDING/WallOut_3x_window_vinyl/Window_single_vinyl/Blinds_Short_Closed",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "HOUSE2406/PROPS/Kitchen_counter_A/Pot",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 30
+},
+{
+"class": "Pickupable",
+"path": "30$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$ (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Workdesk/Drawer_B_L_parent/Drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_A/Kitchen_cabinet_door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Lockpick",
+"path": "fence_wood_B_2m/fence_wood_B_doorway_2m/fence_wood_B_door_1m/fence_wood_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockType": 1
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_C/Dresser_drawer_C_L_parent/Dresser_drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_C (1)/Dresser_drawer_C_L_parent/Dresser_drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "HOUSE2406/PROPS/Dresser_C (1)/Dresser_drawer_B_L_parent/Dresser_drawer_B_L/15$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Pickupable",
+"path": "HOUSE2406/PROPS/Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L/15$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "HidingSpot",
+"path": "HOUSE2406/PROPS/Bed_king/HideSpot",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "HOUSE2406/PROPS/Toilet",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "HidingSpot",
+"path": "HOUSE2406/PROPS/Bed_twin/HideSpot",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Cabinet_B/Cabinet_B_door_R_parent/Cabinet_B_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Cabinet_B/Cabinet_B_door_L_parent/Cabinet_B_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "HidingSpot",
+"path": "HOUSE2406/PROPS/Cabinet_B/Hide Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "TimedDestroy",
+"path": "HOUSE2406/PROPS/Chair_wooden/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "fence_wood_B_2m/fence_wood_B_doorway_2m/fence_wood_B_door_1m/fence_wood_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "HOUSE2406/PROPS/Kitchen_counter_A/Frying_pan",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 12
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_counter_dishwasher/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Bookshelf/Door_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "HOUSE2406/PROPS/Computer_mouse",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 132
+},
+{
+"class": "Pickupable",
+"path": "HOUSE2406/PROPS/Computer_central_unit",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 134,
+"is_heavy_item": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/TV_Table/GameObject/Bed_drawer_openable_part (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/TV_Table/GameObject/Bed_drawer_openable_part (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "ClimbIvy",
+"path": "HOUSE2406/BUILDING/Porch_A_6x_entrance_separate/Plant_Climber_Long (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Bookshelf/Door_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_counter_A/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/BUILDING/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_C/Kitchen_cabinet_door_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (2)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "HOUSE2406/BUILDING/Lightswitch/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "HOUSE2406/BUILDING/Lightswitch (4)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "HOUSE2406/BUILDING/Lightswitch (5)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "HOUSE2406/BUILDING/Lightswitch (3)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "HOUSE2406/BUILDING/Lightswitch (1)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "HOUSE2406/BUILDING/Lightswitch (2)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_counter_A/Kitchen_counter_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "HOUSE2406/PROPS/Workdesk/Drawer_B_R_parent/Drawer_B_R/15$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Side_table_D (1)/Door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Side_table_D/Door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "LockedWindow",
+"path": "HOUSE2406/BUILDING/WallOut_6x_windowtriple/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "LockedWindow",
+"path": "HOUSE2406/BUILDING/WallOut_6x_windowtriple/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "HOUSE2406/PROPS/Decor9",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 69
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_corner/Kitchen_cabinet_door_parent_A_L/Kitchen_cabinet_door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_corner/Kitchen_cabinet_door_parent_A_L/Kitchen_cabinet_door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/BUILDING/WallIn_A_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_6x_windowtriple/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_6x_windowtriple/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_C/Kitchen_cabinet_door_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "MediumLock",
+"path": "fence_brick_B_doorway_5m/fence_brick_B_door_2m/gate_door_right",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "MediumLock",
+"path": "fence_brick_B_doorway_5m/fence_brick_B_door_2m/gate_door_right",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "DestroyObject",
+"path": "HOUSE2406/PROPS/Chair_wooden",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/BUILDING/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/BUILDING/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_6x_windowtriple/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_6x_windowtriple/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "DestroyObject",
+"path": "HOUSE2406/PROPS/Kitchen_cabinet_A/Plate1_stack",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_counter_A/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Side_table_D/Door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Side_table_D (1)/Door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "LockedWindow",
+"path": "HOUSE2406/BUILDING/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "Pickup Items/Key_IntroGate",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 126
+},
+{
+"class": "WindowUse",
+"path": "HOUSE2406/BUILDING/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_counter_A/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_counter_sink/Kitchen_counter_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_C/Dresser_drawer_C_R_parent/Dresser_drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Dresser_C (1)/Dresser_drawer_C_R_parent/Dresser_drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "HOUSE2406/PROPS/Kitchen_counter_sink/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+}
+]
+}

@@ -1,0 +1,468 @@
+{
+"meta": {
+"schema": "game-atlas/1",
+"catalog": "world_object_instances",
+"description": "Scene instances of world-object classes in SwatRange",
+"game_version": "1.27c (Unity 2020.3.33f1, Mono)",
+"generated_by": "tools/research/build_atlas_data.py",
+"evidence_levels": [
+"VERIFIED_IL",
+"VERIFIED_ASSET",
+"VERIFIED_RUNTIME",
+"INFERRED",
+"UNKNOWN"
+],
+"scene": "SwatRange",
+"region_id": 98,
+"count": 62,
+"path_note": "display paths without [siblingIndex]; census identity disambiguates duplicates (WorldIdentity.IdentityPath)"
+},
+"instances": [
+{
+"class": "SecurityCamera",
+"path": "Camera_Secity (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_210_4"
+},
+{
+"class": "Mission_Item",
+"path": "PHOTOGRAPH 210",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "DestroyObject",
+"path": "Container_Main (4)/Crash_Crate_0 (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Mission_Item",
+"path": "PHOTOGRAPH 210",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "DestroyObject",
+"path": "Container_Main (5)/Crash_Crate_0 (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (4)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_210_1"
+},
+{
+"class": "FuseBoxSwitch",
+"path": "ElectricBox/Switcher",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (5)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CarGate",
+"path": "Cargate_low (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick",
+"path": "Hangar/Interior210/SM_door_01/SM_door_01_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "Hangar/Interior210/SM_door_01/SM_door_01_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "SecurityCamera",
+"path": "Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_210_3"
+},
+{
+"class": "CameraTrigger",
+"path": "Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Garage_Switch",
+"path": "Budka_straznicza_export (1)/Garage Switch (1)",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Mission_Item",
+"path": "PHOTOGRAPH 210",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "safe_01/safe_01_door",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"rotateOpen": true
+},
+{
+"class": "Lockpick",
+"path": "ElectricBox/BODY",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "MediumLock",
+"path": "Hangar/Interior210/SM_ExtDoors1/SM_ExtDoors1_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Lockpick",
+"path": "Hangar/Interior210/SM_ExtDoors1/SM_ExtDoors1_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "Hangar/Interior210/SM_ExtDoors1/SM_ExtDoors1_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "CameraTrigger",
+"path": "Camera_Secity (1)/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "ElectricBox/BODY/Door2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (5)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_210_2"
+},
+{
+"class": "Door",
+"path": "ElectricBox/BODY/Door1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (4)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SafeCrack",
+"path": "safe_01",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick",
+"path": "fence_brick_A_door_2m/hinge",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 2
+},
+{
+"class": "Door",
+"path": "fence_brick_A_door_2m/hinge",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "Glock_$rnza5p",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 439,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Glock_x8vvo58",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 439,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "SilencedGlock_qvk1un6",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 438,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "headphones3_a$kdo2g",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 299
+},
+{
+"class": "Pickupable",
+"path": "Revolver_gapce$z",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 440,
+"destroy_if_was_picked": true
+},
+{
+"class": "WeldDoor",
+"path": "Container_Main (4)/weld",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WeldDoor",
+"path": "Container_Main (5)/weld (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WeldDoor",
+"path": "Container_Main (5)/weld",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WeldDoor",
+"path": "Container_Main (4)/weld (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "Container_Main (4)/Door_A (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (4)/Door_A",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (5)/Door_A",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (4)/Door_B (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (5)/Door_B",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Container_Main (4)/Door_B",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "FA Superhawk_dd4oq8p",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 442,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "laptop_u2$$9vk",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 167,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Container_Main (4)/Crash_Crate_0 (3)/Crash_Crate_Fractured_LOD_0/CoffeeMaker_gsaoq0$",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 59,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Container_Main (5)/Crash_Crate_0 (3)/Crash_Crate_Fractured_LOD_0/Scanner_wmxt$fv",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Container_Main (5)/Crash_Crate_0 (3)/Crash_Crate_Fractured_LOD_0/Scanner_n8sa7j6",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "50$_xj$n$sy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Landline Phone_2smr42b",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "motoloco_phone_gjvn2om",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 87
+},
+{
+"class": "Pickupable",
+"path": "Basement_Tools_CordlessDrill_qu0ys$y",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 145
+},
+{
+"class": "Pickupable",
+"path": "Basement_Tools_CordlessDrill_aj6ojnx",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 145
+},
+{
+"class": "Pickupable",
+"path": "AmmoCrate_0qlakry",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 441,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "AmmoCrate_pso2m4c",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 441,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "AmmoCrate_scgec3s",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 441,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Container_Main (4)/Crash_Crate_0 (3)/Crash_Crate_Fractured_LOD_0/ElectricKettle_yqwdd4x",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 58,
+"destroy_if_was_picked": true
+},
+{
+"class": "SecurityPanel",
+"path": "SECURITY PANEL HARD",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Projector2_u$$tbmm",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 303,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Transistor_ON_LOD1_mos$y3m",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 190,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "usb_flash_n1je56r",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 178,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Automatic_Shotgun_02_573osw5",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 443,
+"destroy_if_was_picked": true
+}
+]
+}

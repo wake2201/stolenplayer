@@ -1,0 +1,1777 @@
+{
+"meta": {
+"schema": "game-atlas/1",
+"catalog": "world_object_instances",
+"description": "Scene instances of world-object classes in MainScene",
+"game_version": "1.27c (Unity 2020.3.33f1, Mono)",
+"generated_by": "tools/research/build_atlas_data.py",
+"evidence_levels": [
+"VERIFIED_IL",
+"VERIFIED_ASSET",
+"VERIFIED_RUNTIME",
+"INFERRED",
+"UNKNOWN"
+],
+"scene": "MainScene",
+"region_id": -1000,
+"count": 279,
+"path_note": "display paths without [siblingIndex]; census identity disambiguates duplicates (WorldIdentity.IdentityPath)"
+},
+"instances": [
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/100/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/100/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/309/Possesion_Info 2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/309/NPC (6)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/203/Possesion_Trigger (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/201/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/201/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/115/Possesion_Trigger (4)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "PLAYER CAR/PLAYER CAR/RealisticCar04_Driving_Prefab01/RealisticCar04_HD_Complete/Car04_Body/Car04_Door_Back/Car04_Door_Back_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCarDoor": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/200/NPC Points/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/116/NPC (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/205/Possesion_Trigger (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/202/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/204/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/204/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/205/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "StoryObject",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/PROSPECT showcase/PLAYER CAR/Story Arrow Indicator",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/203/Possesion_Trigger (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SafeCrack",
+"path": "IMPORTANT OBJECTS/Safe_01 (1)/safe_01",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/204/NPC (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/204/NPC (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Bed",
+"path": "SCENE OBJECTS/HIDEOUT/Bed",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/100/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_01_Front_windows (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/116/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "IMPORTANT OBJECTS/Canvases/HIDE CANVAS OBJECT/Computer Canvas/COMPUTER/ContentCanvas/ContentWrapper/MAIN WINDOW/MAIN PAGE/bg/GRID/robtips/GameObject",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/204/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/204/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/200/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_02_Front_window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/309/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "StoryObject",
+"path": "IMPORTANT OBJECTS/Canvases/HIDE CANVAS OBJECT/Computer Canvas/COMPUTER/ContentCanvas/ContentWrapper/MAIN WINDOW/blackbay.xyz/blackbay/BG/WINDOW RIGHT/OTHERS/Viewport/Content/BRACELET",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/114/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/105/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/DOOR/House_01_Door",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"reqEq": "Standard lockpicking kit"
+},
+{
+"class": "Door",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/DOOR/House_01_Door",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/107/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "NPCs/203/dd",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/402/Possesion_Info 2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/309/NPC (5)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/113/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/101/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/209/Possesion_Info 2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/115/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/PROSPECT showcase/PLAYER CAR/door_r",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"isCarDoor": true,
+"rotateOpen": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/100/Possesion_Info 2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/115/Possesion_Trigger (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/203/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/107/NPC_Dog 2",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/102/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/112/Possesion_Trigger (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/112/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/108/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/209/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/116/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "StoryObject",
+"path": "IMPORTANT OBJECTS/Canvases/HIDE CANVAS OBJECT/Computer Canvas/COMPUTER/ContentCanvas/ContentWrapper/MAIN WINDOW/blackbay.xyz/blackbay/BG/WINDOW RIGHT/VALUABLES/Viewport/Content/activate bars",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/406/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/TV_Cardboard",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 28,
+"is_heavy_item": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/BLT_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 1
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/202/Possesion_Trigger (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/Lockpick_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 2
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/201/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/205/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "MINIGAMES CONTAINER/Stealing Car Minigames/CableMinigame/CABLE MINIGAME/Sparks/GameObject",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/401/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/114/Possesion_Trigger (7)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/111/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/110/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/pixar_smartphone_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 21
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/203/Possesion_Trigger (5)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/207/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "IMPORTANT OBJECTS/Safe_01 (1)/safe_01/safe_01_door",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "WindowUse",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_01_Front_windows/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/204/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/114/Possesion_Trigger (6)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/103/Possesion_Info 2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/teapot_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 13
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/114/NPC (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/114/NPC (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "LockedCarDoor",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/RiderShowcase/door_fl",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/RiderShowcase/door_fl",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"isCarDoor": true,
+"useVectorRotation": true
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/209/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/209/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/101/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/205/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "IMPORTANT OBJECTS/Canvases/HIDE CANVAS OBJECT/Computer Canvas/COMPUTER/ContentCanvas/ContentWrapper/MAIN WINDOW/blackbay.xyz/blackbay/BG/WINDOW RIGHT/OTHERS/Viewport/Content",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/202/NPC (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/203/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/113/Possesion_Trigger (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/202/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/203/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/110/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/210/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/200/NPC Points/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/200/NPC Points/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "StoryObject",
+"path": "IMPORTANT OBJECTS/Canvases/HIDE CANVAS OBJECT/Computer Canvas/COMPUTER/ContentCanvas/ContentWrapper/MAIN WINDOW/robtips.cvm/ROBTIPS/MADISON/Viewport/Content/104/GameObject",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "CarBox",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/PROSPECT showcase/PLAYER CAR/CarBox",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/autoLockpick_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 10
+},
+{
+"class": "StoryObject",
+"path": "IMPORTANT OBJECTS/Canvases/HIDE CANVAS OBJECT/Computer Canvas/COMPUTER/ContentCanvas/ContentWrapper/MAIN WINDOW/blackbay.xyz/blackbay/BG/WINDOW RIGHT/CAR_PARTS/Viewport/Content/STORY CAR",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/202/Possesion_Trigger (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LockedWindow",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_01_Front_windows/WINDOW",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_01_Front_windows/WINDOW",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/205/Possesion_Trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/109/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/203/Possesion_Trigger (6)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/109/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/205/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/205/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/202/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/110/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/103/Possesion_Info 2 (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/113/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/105/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_01_Front_windows (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/207/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/210/Possesion_Info 2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/114/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/202/Possesion_Trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "IMPORTANT OBJECTS/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/406/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/406/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "IMPORTANT OBJECTS/Real Car 4/X/Door LF",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/206/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LockedWindow",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_01_Front_windows (1)/WINDOW",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_01_Front_windows (1)/WINDOW",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "StoryObject",
+"path": "IMPORTANT OBJECTS/Canvases/HIDE CANVAS OBJECT/Computer Canvas/COMPUTER/ContentCanvas/ContentWrapper/MAIN WINDOW/blackbay.xyz/blackbay/BG/WINDOW RIGHT/VALUABLES/Viewport/Content/EARRINGS",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/309/NPC (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/406/NPC (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/406/NPC (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/114/Possesion_Trigger (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/gloves_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 9
+},
+{
+"class": "CarBox",
+"path": "IMPORTANT OBJECTS/Real Car 4/X/CivilCar_Driving03/CivilCar_Complete/CivilCar/CivilCar_Body/CAR BOX",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/Coffee_Machine_Drop",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"item_ID": 14
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/106/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/respirator_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 27
+},
+{
+"class": "LockedWindow",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_02_Front_window/WINDOW",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_02_Front_window/WINDOW",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/101/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/116/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/208/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/210/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/204/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/pan_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 12
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/112/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/102/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/107/Possesion_Trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/106/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "StoryObject",
+"path": "IMPORTANT OBJECTS/Canvases/HIDE CANVAS OBJECT/Computer Canvas/COMPUTER/ContentCanvas/ContentWrapper/MAIN WINDOW/MAIN PAGE/bg/GRID/dronetech/GameObject",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "MINIGAMES CONTAINER/Cutboard Minigame/ACTIVATE/TUTORIAL",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/104/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/207/Possesion_Trigger (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/103/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Place_Heavy_Trigger",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/PROSPECT showcase/PLAYER CAR/Place Heavy Trigger",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_01_Front_windows/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/105/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/Laptop_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 11
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/114/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/207/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/Computer_keyboard",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 131
+},
+{
+"class": "StoryObject",
+"path": "IMPORTANT OBJECTS/Canvases/HIDE CANVAS OBJECT/Computer Canvas/COMPUTER/ContentCanvas/ContentWrapper/MAIN WINDOW/blackbay.xyz/blackbay/BG/WINDOW RIGHT/ELECTRONICS/Viewport/Content/CONF LAPTOP",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/ATM_Hacking_Tool Drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 21
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/114/Possesion_Trigger (4)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Place_Heavy_Trigger",
+"path": "PLAYER CAR/PLAYER CAR/Place Heavy Trigger",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/Jewelery tools_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 16
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/105/Possesion_Trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/108/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/105/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/101/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/CardboardBox1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 25,
+"is_heavy_item": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/107/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/309/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/105/Possesion_Trigger (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/113/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/666/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/201/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/112/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/Bracelet_1_Drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 17,
+"destroy_if_was_picked": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/203/Possesion_Trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/206/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/Lockpick Automatic Drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 19
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/103/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/114/Possesion_Trigger (5)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_02_Front_window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/OBJ SOLD TXT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/106/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "IMPORTANT OBJECTS/Real Car 4/X/Boot",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/206/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/107/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_02_Front_window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/baton_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 8
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/115/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "IMPORTANT OBJECTS/Canvases/HIDE CANVAS OBJECT/Computer Canvas/COMPUTER/ContentCanvas/ContentWrapper/MAIN WINDOW/TopBar/Buttons Page 1",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/208/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/201/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/113/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/203/Possesion_Trigger (4)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/PROSPECT showcase/PLAYER CAR/door_l",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"isCarDoor": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/Hacking PDA tool_Drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 7
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/204/NPC (5)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/204/NPC (5)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "CarBox",
+"path": "PLAYER CAR/PLAYER CAR/CarBox",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/105/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/114/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/116/Possesion_Info 2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "PLAYER CAR/PLAYER CAR/RealisticCar04_Driving_Prefab01/RealisticCar04_HD_Complete/Car04_Body/Car04_Door_Front_Left/Car04_Door_Front_Left_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCarDoor": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/201/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/208/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/208/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/Bracelet_1_Cut_Drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 18
+},
+{
+"class": "StoryObject",
+"path": "IMPORTANT OBJECTS/Canvases/HIDE CANVAS OBJECT/Pass Time Canvas/CAUGHT /Buttons Jail",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "IMPORTANT OBJECTS/Camera_Secity",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_101_1"
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/111/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/205/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/202/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/207/NPC_Dog 2",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/104/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/206/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/200/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/666/Possesion_Info 2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/401/Possesion_Info 2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/206/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/102/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/111/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/109/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/111/Possesion_Trigger (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/206/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "IMPORTANT OBJECTS/TRAILER HOUSE/WINDOWS/House_02_Front_window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/flashlight_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 3
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/104/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/114/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/109/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/309/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/202/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Mission_Item",
+"path": "NPCs/202/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/108/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/106/Possesion_Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/112/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "StoryObject",
+"path": "IMPORTANT OBJECTS/Canvases/HIDE CANVAS OBJECT/Computer Canvas/COMPUTER/ContentCanvas/ContentWrapper/MAIN WINDOW/blackbay.xyz/blackbay/BG/WINDOW RIGHT/OTHERS/Viewport/Content/BRIEFCASE",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/208/Possesion_Trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/206/Possesion_Trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/202/NPC",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/107/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/203/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/104/Possesion_Info 2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/113/NPC (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/203/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/116/NPC (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "NPCs/111/NPC (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/106/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CarBox",
+"path": "MUSTANG/CarBox",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/401/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/BINOCULARS_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 4
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/402/Possesion_Info",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/406/Possesion_Info 2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CarAlarm",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/benc rs showcase/bumper_f",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/105/Possesion_Trigger (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "OnPossesion",
+"path": "NPCs/207/Possesion_Trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "IMPORTANT OBJECTS/Real Car 4/X/CivilCar_Driving03/CivilCar_Complete/CivilCar/CivilCar_Flap/CivilCar_Flap_LOD0",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "PLAYER CAR/PLAYER CAR/RealisticCar04_Driving_Prefab01/RealisticCar04_HD_Complete/Car04_Body/Car04_Door_Front_Right/Car04_Door_Front_Right_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCarDoor": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "IMPORTANT OBJECTS/Real Car 4/X/CivilCar_Driving03/CivilCar_Complete/CivilCar/CivilCar_Door_Front_Left/CivilCar_Door_Front_Left_LOD0",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "MUSTANG/RealisticCar05_Driving_Prefab04/RealisticCar05_HD_Complete/Car05_Body/Car05_Door_Left",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"isCarDoor": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/NV Drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 15
+},
+{
+"class": "Pickupable",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/Computer_mouse",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 132
+},
+{
+"class": "Pickupable",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/Wall Clock",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 130
+},
+{
+"class": "Pickupable",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/globe",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 135
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/sleeping_gas_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 26
+},
+{
+"class": "Pickupable",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/PaintingHorizontal-LakeSunset",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 310
+},
+{
+"class": "Pickupable",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/DropableItems/Toaster",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 41
+},
+{
+"class": "Pickupable",
+"path": "DRONE CONTROLLER/flyby drone pickup",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 89,
+"advance_story_if_picked": true,
+"story_name": "story23"
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/crowbar_drop",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/blowtorch drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 24
+},
+{
+"class": "Pickupable",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/Coffee_Machine_Showcase",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 59
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/Coffee_Machine_Drop",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"item_ID": 59
+},
+{
+"class": "StoryObject",
+"path": "PLAYER CAR/STORY MARKER",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/Glass_Knife_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 5
+},
+{
+"class": "Pickupable",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/PaintingSquare-DarkAbstract",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 283
+},
+{
+"class": "Pickupable",
+"path": "DROPABLE ITEMS/stethoscope_drop",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 6
+},
+{
+"class": "Pickupable",
+"path": "IMPORTANT OBJECTS/First-Person Character/Tilt/Head/HandsCam/HANDS/Nowe Łapy/ZAKLADANIE MASKI/PRAWA REKA/arms@throwing/R_arm/R_elbow/R_wrist/Phone_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 268
+},
+{
+"class": "Pickupable",
+"path": "IMPORTANT OBJECTS/Canvases/PAUSE MENU CANVAS/ITEMS SHOWCASE/telescope_part2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 312
+}
+]
+}

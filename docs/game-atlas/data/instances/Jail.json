@@ -1,0 +1,1942 @@
+{
+"meta": {
+"schema": "game-atlas/1",
+"catalog": "world_object_instances",
+"description": "Scene instances of world-object classes in Jail",
+"game_version": "1.27c (Unity 2020.3.33f1, Mono)",
+"generated_by": "tools/research/build_atlas_data.py",
+"evidence_levels": [
+"VERIFIED_IL",
+"VERIFIED_ASSET",
+"VERIFIED_RUNTIME",
+"INFERRED",
+"UNKNOWN"
+],
+"scene": "Jail",
+"region_id": 93,
+"count": 266,
+"path_note": "display paths without [siblingIndex]; census identity disambiguates duplicates (WorldIdentity.IdentityPath)"
+},
+"instances": [
+{
+"class": "Lockpick",
+"path": "Doors/Door_Bronze_Metal/Door_Bronze_Metal_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "Doors/Door_Bronze_Metal/Door_Bronze_Metal_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true,
+"key_item_ID": 340
+},
+{
+"class": "Door",
+"path": "Doors/Door_Metal_Dark (3)/Door_Metal_Dark_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true,
+"key_item_ID": 340
+},
+{
+"class": "Lockpick",
+"path": "Doors/Door_Metal_Dark (3)/Door_Metal_Dark_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "Doors/Door_Metal_Dark (1)/Door_Metal_Dark_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true,
+"key_item_ID": 340
+},
+{
+"class": "Lockpick",
+"path": "Doors/Door_Metal_Dark (1)/Door_Metal_Dark_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "Doors/Door_Metal_Dark/Door_Metal_Dark_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true,
+"key_item_ID": 340
+},
+{
+"class": "Lockpick",
+"path": "Doors/Door_Metal_Dark/Door_Metal_Dark_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "ContractItem",
+"path": "contract item",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_407_1"
+},
+{
+"class": "CameraTrigger",
+"path": "Camera_Secity (1)/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "Camera_Secity (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_407_3"
+},
+{
+"class": "Lockpick",
+"path": "Doors/Door_Metal_Gray (5)/Door_Metal_Gray_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "Doors/Door_Metal_Gray (5)/Door_Metal_Gray_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true,
+"key_item_ID": 340
+},
+{
+"class": "Door",
+"path": "Doors/Door_Metal_Dark (2)/Door_Metal_Dark_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true,
+"key_item_ID": 340
+},
+{
+"class": "Lockpick",
+"path": "Doors/Door_Metal_Dark (2)/Door_Metal_Dark_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "Props/crowbar_drop",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "StoryObject",
+"path": "GIRL ACTIVATE",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "CameraTrigger",
+"path": "Camera_Secity (2)/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "Camera_Secity (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_407_2"
+},
+{
+"class": "Pickupable",
+"path": "Conference phone_$tnsazd",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 242,
+"destroy_if_was_picked": true
+},
+{
+"class": "HiddenItem",
+"path": "HIDDEN ITEM",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "decentSSD_9zt8wax",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 249,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "sanny_phone_yksaq$n",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 85,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Keyboard_ya$nsxm",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 76,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_z5rn33j",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_xe5neox",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_3wjnsto",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_svpoaow",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_0oz9ja8",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_y7u$f8l",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_5nox220",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_rr5$onq",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_5ao1$48",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_bglcn6o",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_f9ngzyo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_u$0qu1s",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_$ptpxu3",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_omwbf60",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_nnf$b4t",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_vy$3n3o",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_4$qm766",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_4kndm6s",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_keyboard_wy4w4$d",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 342
+},
+{
+"class": "Pickupable",
+"path": "blu-ray_disc_player_dnnnsye",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 260,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A (1)/Closet_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A/Closet_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A (1)/Closet_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A (3)/Closet_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A (2)/Closet_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A (4)/Closet_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A (1)/Closet_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A/Closet_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A/Closet_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "keyboard_581r2z6",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 306,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_uaed1bn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_xojsubq",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_ev75e$$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_av$7nyp",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_o25nntu",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_2dqqv$e",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_bruy0$e",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_$qayb1v",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_kz$zy4d",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_zm8wfux",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_8fmd5nt",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_$$tynog",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_n1n7ab$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_bmc$qpf",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_osonmoz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_emopud7",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_ys4c64p",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_$f8yuy6",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_bnyn4o5",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Pickupable",
+"path": "Props/PC_mouse_96m$7nm",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 345
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B (3)/Cabinet_B_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B (1)/Cabinet_B_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B/Cabinet_B_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B (1)/Cabinet_B_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B/Cabinet_B_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B (2)/Cabinet_B_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B/Cabinet_B_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "headphones2_au8ym7f",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 298
+},
+{
+"class": "Door",
+"path": "Walls/Walls_Basement/Cell (6)/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Walls/Walls_Basement/Cell (8)/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Walls/Walls_Basement/Cell (9)/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Walls/Walls_Basement/Cell (1)/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Walls/Walls_Basement/Cell/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone/Landline Phone_tdjsnnn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (3)/Landline Phone_n2y$uad",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone/Landline Phone_ycl9mo7",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (6)/Landline Phone_5u1s9a3",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (5)/Landline Phone_t48yunc",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (5)/Landline Phone_s8$ndto",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (2)/Landline Phone_wakjp5a",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (4)/Landline Phone_n3loysf",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (1)/Landline Phone_ofk$8$y",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (2)/Landline Phone_$bjbt$s",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (3)/Landline Phone_ou59298",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (4)/Landline Phone_5a$yox$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone/Landline Phone_yo5$o1a",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone/Landline Phone_oytsylt",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (3)/Landline Phone_rnmn0d7",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (1)/Landline Phone_$sp$pya",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (1)/Landline Phone_6$ob$oo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Props/Phone (2)/Landline Phone_bbo8qs6",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "DrugFarmPlan_o$utzwu",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 451
+},
+{
+"class": "Pickupable",
+"path": "Projector1_a590$u$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 64,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Camera_aum3m$4",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 93,
+"destroy_if_was_picked": true
+},
+{
+"class": "ReadNote",
+"path": "pPlane3",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "pPlane3 (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Props/pPlane3",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "SM_WalkieTalkie_01_$os$6go",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 189,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Radio_47souau",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 151,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A/Cabinet_A_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A (1)/Cabinet_A_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A (1)/Cabinet_A_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A (2)/Cabinet_A_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A (4)/Cabinet_A_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A (3)/Cabinet_A_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A/Cabinet_A_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A/Cabinet_A_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "audio_speakers_1_3_nqu7$j8",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 263,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Hard drive item_9$41aoy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 37,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Props/Laptop_A_nnp8ozb",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341
+},
+{
+"class": "Pickupable",
+"path": "Props/Laptop_A_tqo3tdy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341
+},
+{
+"class": "Pickupable",
+"path": "Props/Laptop_A_cuc6ywn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341
+},
+{
+"class": "Pickupable",
+"path": "Props/Laptop_A_pt65$se",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341
+},
+{
+"class": "Pickupable",
+"path": "Props/Laptop_A_n1b$xu3",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341
+},
+{
+"class": "Pickupable",
+"path": "Props/Laptop_A_r$no$l6",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341
+},
+{
+"class": "Pickupable",
+"path": "UsbWlanAdapter_3t$bnud",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 72
+},
+{
+"class": "Pickupable",
+"path": "iMak_ondwuxs",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 75,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "uPhone Damaged_m5uo7j$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 55
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_B_6z01j4m",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_B_n1$fwk$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_B_nsr0mgy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_B_wcwvv84",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_B_lowos4m",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_B_seoyzt0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_B_nym4qu9",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_B_ezey$nj",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "flyp_smartphone_l07fun$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 86,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "tab_2_unsm17o",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 240,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Scanner_g5stn$y",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Scanner_zyo2a0q",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "50$_y4nb6mb",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_fy5xr8p",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_o4orb25",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_reaf7nl",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "Props/50$_5sjoytn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_ppdgqn2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_zn$k5nm",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_0cd93so",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "RadioSet_nseb1$$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 68,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "RadioSet_coy4sby",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 68,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "RadioSet_ms$vj7z",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 68,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_sx9k9er",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_6k$9ztr",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_nxx0535",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_g0zfu84",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_rlot5v$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_e3r0$v4",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_ndz7f1u",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_$nenoau",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_nkun792",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_ungycm3",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_mnobonn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_oyp7rje",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_qmno8gx",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_zu1zuk$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Props/Monitor_A_u2pmacy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 343
+},
+{
+"class": "Pickupable",
+"path": "Router item_dbms5ox",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 40
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B (3)/Cabinet_B_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B (1)/Cabinet_B_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B/Cabinet_B_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B (1)/Cabinet_B_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B/Cabinet_B_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B (2)/Cabinet_B_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_B/Cabinet_B_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "regular_wallet_drop_opxl67u",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 20
+},
+{
+"class": "SecurityPanel",
+"path": "Security Panel Gas",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "30$_gr40w63",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$_$z4nyuu",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$_23mxymx",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$_zpb8r53",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$_47y0my3",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$_p8qyyjo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$_u2ao3ro",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "Props/Laptop_B_9s$y$3b",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341
+},
+{
+"class": "Pickupable",
+"path": "Props/Laptop_B_btlvykj",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341
+},
+{
+"class": "Pickupable",
+"path": "Props/Laptop_B_bt7lynr",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341
+},
+{
+"class": "Pickupable",
+"path": "Props/Laptop_B_vkao51l",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341
+},
+{
+"class": "Pickupable",
+"path": "Props/Laptop_B_9un$x$f",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341
+},
+{
+"class": "Pickupable",
+"path": "Props/Laptop_B_bj3$v83",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A/Cabinet_A_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A (1)/Cabinet_A_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A (1)/Cabinet_A_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A (2)/Cabinet_A_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A (4)/Cabinet_A_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A/Cabinet_A_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A (3)/Cabinet_A_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Cabinet_A/Cabinet_A_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "15$_trn80u2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "MediumLock",
+"path": "Walls/Walls_Basement/Cell (8)/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "MediumLock",
+"path": "Walls/Walls_Basement/Cell (6)/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "MediumLock",
+"path": "Walls/Walls_Basement/Cell (9)/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "MediumLock",
+"path": "Walls/Walls_Basement/Cell/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "MediumLock",
+"path": "Walls/Walls_Basement/Cell (1)/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "MediumLock",
+"path": "Walls/Walls_Basement/Cell (7)/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Key Police Exit_ny$goo$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 340,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Key Police Exit_o3yo9q8",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 340
+},
+{
+"class": "Pickupable",
+"path": "Key Police Exit_lv4rcm4",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 340,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "usb_flash_a75uogj",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 178,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "usb_flash_$uryo5u",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 178,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "contract item/Clown Mask_wqom$jp",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 363,
+"isContractItem": true
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_yutuut7",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_60y37k$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_oaaju$o",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_z$uvo3k",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_uropcmn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_3fxa1$l",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_s0jy7or",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_fdsdmrr",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_xsurr$u",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_aabn$zn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_tbsrxt0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_dpxu17q",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_y78ffxr",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_no24lpq",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Props/Fan_table_ofstn4y",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 344
+},
+{
+"class": "Pickupable",
+"path": "Wallet woman_nnxcdmm",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 197
+},
+{
+"class": "Pickupable",
+"path": "mouse_318p3ou",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 307
+},
+{
+"class": "Pickupable",
+"path": "mouse_l$mcrov",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 307
+},
+{
+"class": "Pickupable",
+"path": "headset_kro6$um",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 65,
+"destroy_if_was_picked": true
+},
+{
+"class": "HidingSpot",
+"path": "Props/Closet_A/Hide Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "HidingSpot",
+"path": "Props/Closet_A (1)/Hide Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "HidingSpot",
+"path": "Props/Closet_A (4)/Hide Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "HidingSpot",
+"path": "Props/Closet_A/Hide Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "HidingSpot",
+"path": "Props/Closet_A/Hide Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "HidingSpot",
+"path": "Props/Closet_A (3)/Hide Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "HidingSpot",
+"path": "Props/Closet_A (1)/Hide Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "HidingSpot",
+"path": "Props/Closet_A (2)/Hide Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "HidingSpot",
+"path": "Props/Closet_A (1)/Hide Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "Wallet brown_mv36rue",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Door",
+"path": "Props/Closet_A (1)/Closet_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A/Closet_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A (4)/Closet_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A (1)/Closet_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A/Closet_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A (1)/Closet_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A (3)/Closet_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A/Closet_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "Props/Closet_A (2)/Closet_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "UsbFlashDrive_pnoozez",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 73
+},
+{
+"class": "Pickupable",
+"path": "UsbFlashDrive_e2cnomn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 73
+},
+{
+"class": "Pickupable",
+"path": "tab_1 classic 3 101_$pzk$g$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 149,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Props/tab_1 classic 3 101_uxmlntm",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 149,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "pc_speaker_L_$f7vamz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 305,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "noisyTalkie_k7jnd$8",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 338,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Mouse_oppopww",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 77,
+"destroy_if_was_picked": true
+},
+{
+"class": "Lockpick",
+"path": "Walls/Walls_Basement/Cell (6)/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "Lockpick",
+"path": "Walls/Walls_Basement/Cell (8)/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "Lockpick",
+"path": "Walls/Walls_Basement/Cell (9)/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "Lockpick",
+"path": "Walls/Walls_Basement/Cell (1)/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "Lockpick",
+"path": "Walls/Walls_Basement/Cell/Door_Cell/Door_Cell_mesh",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+}
+]
+}

@@ -1,0 +1,1124 @@
+{
+"meta": {
+"schema": "game-atlas/1",
+"catalog": "world_object_instances",
+"description": "Scene instances of world-object classes in PlayerHideout",
+"game_version": "1.27c (Unity 2020.3.33f1, Mono)",
+"generated_by": "tools/research/build_atlas_data.py",
+"evidence_levels": [
+"VERIFIED_IL",
+"VERIFIED_ASSET",
+"VERIFIED_RUNTIME",
+"INFERRED",
+"UNKNOWN"
+],
+"scene": "PlayerHideout",
+"region_id": 0,
+"count": 170,
+"path_note": "display paths without [siblingIndex]; census identity disambiguates duplicates (WorldIdentity.IdentityPath)"
+},
+"instances": [
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/mannequin",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/lockpick",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "Beer_bottle_open",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickpocket_Object",
+"path": "PICKPOCKET TUTORIAL",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/lockpick2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/pc drone",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/heist",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/quick select",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "QS Tut",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/heist 2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "safe_01/safe_01_door",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"rotateOpen": true
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/box1",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/safe",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "AdvanceStoryTrigger",
+"path": "STORY MARKERS/heist/Object/Cube",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/pc",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CarBox",
+"path": "Basement_Locker/Basement_Locker_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/heist 3",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SafeCrack",
+"path": "safe_01",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LockedWindow",
+"path": "Bathroom_mirror (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "GARAGE TO ENABLE/Wooden_Garage/Garage_Door (1)",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "GARAGE TO ENABLE/Wooden_Garage/Garage_Door",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "CheckCameras",
+"path": "CAMERA VIEW PC",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/pc2",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/heist warehouse",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick",
+"path": "LOCK TUTORIAL LVL1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"story_name": "story13"
+},
+{
+"class": "ShopTrigger",
+"path": "HarbourBox",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "Stash Hideout/Lid",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"isFileCabinet": true,
+"useVectorRotation": true,
+"key_item_ID": 127
+},
+{
+"class": "Lockpick",
+"path": "Stash Hideout/Lid",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "SafeCrack",
+"path": "Safe Tutorial",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "Plate1_stack/destroyed/Plate1_LOD0_root (1)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick_Pin",
+"path": "LOCK LVL 2 TUTORIAL/Lock_export/tarcza_low/sprezynka_1_low.001",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "domek1/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (2)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "domek1/Lightswitch (1)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "domek1/Lightswitch (2)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "domek1/Lightswitch/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ClimbIvy",
+"path": "domek1/PORCH CLEAN/Porch_A_3x_end_R/Plant_Climber_Long",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "MailBox",
+"path": "Mailbox/Cube",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_cabinet_corner/Kitchen_cabinet_door_parent_A_L/Kitchen_cabinet_door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_cabinet_C/Kitchen_cabinet_door_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_cabinet_C (1)/Kitchen_cabinet_door_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "domek1/WallIn_B_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "domek1/WallIn_A_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (11)/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (3)/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (2)/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (9)/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (13)/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "domek1/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick_Pin",
+"path": "LOCK LVL 2 TUTORIAL/Lock_export/tarcza_low/sprezynka_1_low.003",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "domek1/Chair_wooden",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "domek1/Chair_wooden (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "GARAGE TO ENABLE/Light_switch (1)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "Light_switch (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "domek1/Bathroom_sink/Bathroom_sink_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "CameraTrigger",
+"path": "Security Cams/Security Camera/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "Security Cams/SECURITY CAM BOUGHT/Security Camera",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_Hideout2"
+},
+{
+"class": "CameraTrigger",
+"path": "Security Cams/SECURITY CAM BOUGHT/Security Camera/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "Security Cams/Security Camera",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_Hideout"
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "DestroyObject",
+"path": "domek1/Kitchen_cabinet_A/Plate1_stack",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "domek1/Cabinet_A/Door_R",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "domek1/Cabinet_A (1)/Door_R",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (3)/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (11)/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (13)/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (2)/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (9)/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "Workdesk/Drawer_B_L_parent/Drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "DigHole",
+"path": "DIGGY/DIG",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StashTrigger",
+"path": "DIGGY/stash icon",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_counter_sink/Kitchen_counter_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "CheckCameras",
+"path": "Security Cams/SECURITY CAM BOUGHT/CAMERA VIEW PC 2",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_counter_sink/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "TutorialTrigger",
+"path": "Mailbox/Tutorial Trigger",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "Security Cams/SECURITY CAM BOUGHT/CAMERA VIEW PC 2/Destroyed/Blowtorch Sparkles",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (11)/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (3)/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (2)/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (9)/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (13)/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Note Read",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "GARAGE TO ENABLE/Honda Player/Note Read",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Note Read (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Stash Hideout/Note Read",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Note Read (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "domek1/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (2)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "Plate1_stack/destroyed/Plate1_LOD0_root (4)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "Side_table_D/Door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "Dresser_B/Dresser_drawer_A_parent/Dresser_drawer_A",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "domek1/Bathroom_sink/Bathroom_sink_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_cabinet_A/Kitchen_cabinet_door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "Plate1_stack/destroyed/Plate1_LOD0_root (3)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "domek1/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "ClimbIvy",
+"path": "domek1/PORCH BROKEN/Porch_A_3x_end_R/Plant_Climber_Long",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "domek1/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "domek1/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "Side_table_D/Door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "domek1/Chair_wooden (2)/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "domek1/Cabinet_B/Cabinet_B_door_R_parent/Cabinet_B_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "domek1/Cabinet_B/Cabinet_B_door_L_parent/Cabinet_B_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "domek1/Chair_wooden/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "domek1/Toilet",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "HidingSpot",
+"path": "domek1/Cabinet_B/Hide Trigger",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "STOLEN CARS/MECENAS/Old Classic Sedan/STORY MARKER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "StoryObject",
+"path": "STORY MARKERS/STORY MARKER",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "TimedDestroy",
+"path": "CAMERA VIEW PC/Destroyed/Blowtorch Sparkles",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_cabinet_C/Kitchen_cabinet_door_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_cabinet_C (1)/Kitchen_cabinet_door_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_counter_B/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "DestroyObject",
+"path": "Plate1_stack",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityPanel",
+"path": "Security Panel Gas",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "Dresser_B/Dresser_drawer_C_parent/Dresser_drawer_C",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "Plate1_stack/destroyed/Plate1_LOD0_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Workdesk/Drawer_B_R_parent/Drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "domek1/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (3)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "domek1/Kitchen_cabinet_A/Kitchen_cabinet_door_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "domek1/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (4)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "ClimbIvy",
+"path": "domek1/PORCH CLEAN/Porch_A_3x_end_L/Plant_Climber_Long",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick_Pin",
+"path": "LOCK LVL 2 TUTORIAL/Lock_export/tarcza_low/sprezynka_1_low.002",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick_Pin",
+"path": "LOCK LVL 2 TUTORIAL/Lock_export/tarcza_low/sprezynka_1_low.004",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "Workdesk/Drawer_C_L_parent/Drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "LOCK LVL 2 TUTORIAL/Lock_export/tarcza_low",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Lockpick",
+"path": "LOCK LVL 2 TUTORIAL/Lock_export/tarcza_low",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1,
+"on_unlock_advance_story": true,
+"story_name": "story20"
+},
+{
+"class": "MediumLock",
+"path": "LOCK LVL 2 TUTORIAL/Lock_export/tarcza_low",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Lockpick_Pin",
+"path": "LOCK LVL 2 TUTORIAL/Lock_export/tarcza_low/sprezynka_1_low",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "Plate1_stack/destroyed/Plate1_LOD0_root (2)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "domek1/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (1)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Lore Compedium/enable/lore1",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Lore Compedium/enable/lore6",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Lore Compedium/enable/lore5",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Lore Compedium/enable/lore2",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Lore Compedium/enable/lore3",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Lore Compedium/enable/lore4",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Stash Hideout/usb_flash_g9an8no",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 178,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "Workdesk/Drawer_A_L_parent/Drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "domek1/Kitchen_cabinet_A/Wine1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 61
+},
+{
+"class": "Door",
+"path": "Dresser_B/Dresser_drawer_B_parent/Dresser_drawer_B",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "Workdesk/Drawer_C_R_parent/Drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "domek1/Side_table_C/Side_table_C_drawer_parent/Side_table_C_drawer",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "domek1/Cabinet_A (1)/Door_L",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "domek1/Cabinet_A/Door_L",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "ClimbIvy",
+"path": "domek1/PORCH BROKEN/Porch_A_3x_end_L/Plant_Climber_Long",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "domek1/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (3)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (2)/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (9)/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (13)/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (11)/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "domek1/WallOut_3x_windowdouble_vinyl (3)/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "domek1/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (4)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "domek1/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (1)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "CarBox",
+"path": "GARAGE TO ENABLE/Basement_Locker/Basement_Locker_LOD0",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "Workdesk/Drawer_A_R_parent/Drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+}
+]
+}

@@ -1,0 +1,3380 @@
+{
+"meta": {
+"schema": "game-atlas/1",
+"catalog": "world_object_instances",
+"description": "Scene instances of world-object classes in BankScene",
+"game_version": "1.27c (Unity 2020.3.33f1, Mono)",
+"generated_by": "tools/research/build_atlas_data.py",
+"evidence_levels": [
+"VERIFIED_IL",
+"VERIFIED_ASSET",
+"VERIFIED_RUNTIME",
+"INFERRED",
+"UNKNOWN"
+],
+"scene": "BankScene",
+"region_id": 92,
+"count": 459,
+"path_note": "display paths without [siblingIndex]; census identity disambiguates duplicates (WorldIdentity.IdentityPath)"
+},
+"instances": [
+{
+"class": "MediumLock",
+"path": "BankBuild/SM_Doors (1)",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Lockpick",
+"path": "BankBuild/SM_Doors (1)",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "ElectricLock",
+"path": "Pad_5_black",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SafeCrack",
+"path": "safe_01",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "INTERIOR CAMERAS/Camera_Secity (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_406_In_2"
+},
+{
+"class": "CameraTrigger",
+"path": "INTERIOR CAMERAS/Camera_Secity (4)/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (5)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_406_6"
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (5)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "INTERIOR CAMERAS/Camera_Secity (3)/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (4)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_406_5"
+},
+{
+"class": "SecurityCamera",
+"path": "INTERIOR CAMERAS/Camera_Secity (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_406_In_3"
+},
+{
+"class": "Door",
+"path": "safe_01/safe_01_door",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"rotateOpen": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (2)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_406_1"
+},
+{
+"class": "Lockpick",
+"path": "BankBuild/DoorsSmallFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 2
+},
+{
+"class": "SecurityCamera",
+"path": "INTERIOR CAMERAS/Camera_Secity (4)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_406_In_4"
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (6)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ElectricLock",
+"path": "Pad_5_black (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "FENCE/SnoneFence_iron rail/Door/Gate001",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "CameraTrigger",
+"path": "INTERIOR CAMERAS/Camera_Secity (1)/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "Camera_Secity (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_406_8"
+},
+{
+"class": "FuseBoxSwitch",
+"path": "ElectricBox/Switcher",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick",
+"path": "BankBuild/DoorsLargeFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 2
+},
+{
+"class": "Lockpick",
+"path": "BankBuild/DoorsLargeFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 2
+},
+{
+"class": "CameraTrigger",
+"path": "Camera_Secity (2)/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (3)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_406_2"
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (6)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"discovered_camera_prefs": "Camera_406_7"
+},
+{
+"class": "Pickupable",
+"path": "Landline_$a8gs",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 63
+},
+{
+"class": "ATM_Object",
+"path": "ATM Normal/ATM Collider",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ATM_Object",
+"path": "ATM Normal (1)/ATM Collider",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "INTERIOR CAMERAS/Camera_Secity (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_406_In_1"
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (4)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "Camera_Secity (1)/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"discovered_camera_prefs": "Camera_406_3"
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (2)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "ElectricBox/BODY/Door1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "ElectricBox/BODY/Door2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Mission_Item",
+"path": "PHOTOGRAPH",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (3)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "Camera_Secity (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"discovered_camera_prefs": "Camera_406_X"
+},
+{
+"class": "Lockpick",
+"path": "ElectricBox/BODY",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "INTERIOR CAMERAS/Camera_Secity (2)/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "BankBuild/SM_Safe_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isContainer": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "Conference phone_7zwon",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 242,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (6)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (12)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (4)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (21)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (26)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (23)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (8)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (19)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (24)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (3)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (17)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (5)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (15)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (13)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (10)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (9)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (20)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (25)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (2)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (22)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (16)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (7)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (1)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (11)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (18)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (14)/GameObject/SM_File_Cabinet_Drawer (3)/Keyboard1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 137
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (20)/GameObject/SM_File_Cabinet_Drawer (2)/50$_$tbssa8",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (25)/GameObject/SM_File_Cabinet_Drawer (2)/50$_4xf$o4$",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (2)/GameObject/SM_File_Cabinet_Drawer (2)/50$_kannynk",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (15)/GameObject/SM_File_Cabinet_Drawer (2)/50$_0tm$f$b",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (10)/GameObject/SM_File_Cabinet_Drawer (2)/50$_fdu4da8",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (13)/GameObject/SM_File_Cabinet_Drawer (2)/50$_xgt06nd",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (9)/GameObject/SM_File_Cabinet_Drawer (2)/50$_f0sm5xj",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (16)/GameObject/SM_File_Cabinet_Drawer (2)/50$_ooy$le0",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (22)/GameObject/SM_File_Cabinet_Drawer (2)/50$_$a$e5rz",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (18)/GameObject/SM_File_Cabinet_Drawer (2)/50$_aoybr$e",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (14)/GameObject/SM_File_Cabinet_Drawer (2)/50$_z$lsm5y",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (7)/GameObject/SM_File_Cabinet_Drawer (2)/50$_4n0y$at",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (11)/GameObject/SM_File_Cabinet_Drawer (2)/50$_y8xn0s5",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (1)/GameObject/SM_File_Cabinet_Drawer (2)/50$_2jzj90a",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (12)/GameObject/SM_File_Cabinet_Drawer (2)/50$_1ue3nsy",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (6)/GameObject/SM_File_Cabinet_Drawer (2)/50$_z7$r3yp",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (4)/GameObject/SM_File_Cabinet_Drawer (2)/50$_a7ylyfn",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (21)/GameObject/SM_File_Cabinet_Drawer (2)/50$_pf$88$4",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (8)/GameObject/SM_File_Cabinet_Drawer (2)/50$_yasygna",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (19)/GameObject/SM_File_Cabinet_Drawer (2)/50$_owmeeoo",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (26)/GameObject/SM_File_Cabinet_Drawer (2)/50$_$kqeum4",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (23)/GameObject/SM_File_Cabinet_Drawer (2)/50$_6yr65$1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull/GameObject/SM_File_Cabinet_Drawer (2)/50$_s0drs8y",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (5)/GameObject/SM_File_Cabinet_Drawer (2)/50$_nsc3yn1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (24)/GameObject/SM_File_Cabinet_Drawer (2)/50$_rg$clnn",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (3)/GameObject/SM_File_Cabinet_Drawer (2)/50$_mjmuvy$",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (17)/GameObject/SM_File_Cabinet_Drawer (2)/50$_aur4bb6",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Door",
+"path": "fence_metal_C_doorway_4m/fence_metal_C_door_2m/fence_metal_C",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (11)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (1)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (7)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (14)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (18)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (9)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (15)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (10)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (13)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (25)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (2)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (20)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (22)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (16)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (23)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (26)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (8)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (19)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (3)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (17)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (24)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (5)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (6)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (12)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (4)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (21)/GameObject/SM_File_Cabinet_Drawer (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsLargeFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsSmallFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsSmallFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsSmallFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsSmallFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsSmallFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsSmallFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsSmallFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "Keyboard_k5jz1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 76,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Keyboard_rvlpz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 236
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Keyboard_7$uv$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 236
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Keyboard_cd9ao",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 236
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Keyboard_gl$nj",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 236
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Keyboard_br5ra",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 236
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Keyboard_g1jay",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 236
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Keyboard_pmy$p",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 236
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Keyboard_0wm91",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 236
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Keyboard_o7n$y",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 236
+},
+{
+"class": "Pickupable",
+"path": "headphones_ntd3a",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 70
+},
+{
+"class": "Lockpick",
+"path": "FENCE/fence_chainlink_A_2m/fence_chainlink_A_doorway_4m/fence_chainlink_A_door_1m/hinge",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 2
+},
+{
+"class": "Lockpick",
+"path": "fence_metal_C_doorway_4m/fence_metal_C_door_2m/fence_metal_C",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockType": 1,
+"LockpickDifficulty": 2
+},
+{
+"class": "DigHole",
+"path": "DIGGY (2)/DIG",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DigHole",
+"path": "DIGGY (1)/DIG",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StashTrigger",
+"path": "DIGGY (1)/stash icon",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "StashTrigger",
+"path": "DIGGY (2)/stash icon",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "DigHole",
+"path": "DIGGY/DIG",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StashTrigger",
+"path": "DIGGY/stash icon",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsLargeFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "PhoneA_ckmu0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 241,
+"destroy_if_was_picked": true
+},
+{
+"class": "Vent",
+"path": "AirVentGrid (1)",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Vent",
+"path": "AirVentGrid",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "Laptop_6s$va",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 66,
+"destroy_if_was_picked": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (22)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (16)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (9)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (15)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (10)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (13)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (25)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (20)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (11)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (7)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (14)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (18)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (4)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (21)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (6)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (12)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (17)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (24)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (5)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (23)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (26)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (8)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "RandomFileCabinet",
+"path": "BankBuild/FileCabinetFull (19)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (17)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (3)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (24)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (5)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (23)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (26)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (8)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (19)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (21)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (4)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (6)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (12)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (11)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (1)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (7)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (14)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (18)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (22)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (16)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (9)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (15)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (10)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (13)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (25)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (2)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (20)/GameObject/SM_File_Cabinet_Drawer (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "Radio_c$ow$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 151,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Hard drive item_ozwb3",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 37
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsSmallFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "Laptop_A",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 341
+},
+{
+"class": "Pickupable",
+"path": "iMak_2$gk$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 75,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (23)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (26)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (8)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (19)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (3)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (17)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (24)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (5)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (6)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (12)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (4)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (21)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (11)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (1)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (7)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (14)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (18)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (9)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (15)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (10)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (13)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (25)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (2)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (20)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (22)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (16)/GameObject/SM_File_Cabinet_Drawer (1)/Wallet brown",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "D_AlarmClock_$vte4",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 38
+},
+{
+"class": "Pickupable",
+"path": "CoffeeMaker_e5bsf",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 59,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "tab_2_ow8oc",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 240,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Scanner_qpf$5",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsLargeFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsLargeFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "50$_nb4qeo$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_yaf$usd",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_m2ssn61",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_ayblorp",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Mouse_mv8md",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 237
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Mouse_cd8m$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 237
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Mouse_8vsp9",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 237
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Mouse_y02ur",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 237
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Mouse_48$f1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 237
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Mouse_09osj",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 237
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Mouse_sn5fn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 237
+},
+{
+"class": "Pickupable",
+"path": "Headphones_xmsn$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 238,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Headphones_$xf8p",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 238,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Headphones",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 238
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsLargeFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "BankBuild/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "BankBuild/SM_Doors (1)",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "BankBuild/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "BankBuild/DoorsLargeFull/SM_Doors",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "RadioSet_et4yk",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 68,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Calculator_r$0mz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 60
+},
+{
+"class": "Pickupable",
+"path": "Receiver1_4dboq",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 140
+},
+{
+"class": "Pickupable",
+"path": "Landline Phone_m4519",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Landline Phone_6womo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Landline Phone_cy84r",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Landline Phone_gon52",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Landline Phone_y5pjl",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Landline Phone_knuo0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "Landline Phone_oqtsm",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (14)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (18)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (11)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (1)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (7)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (25)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (2)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (20)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (9)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (15)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (10)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (13)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (16)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (22)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (8)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (19)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (23)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (26)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (5)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (3)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (17)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (24)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (12)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (6)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (4)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (21)/GameObject/SM_File_Cabinet_Drawer (3)/tab_2",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 240
+},
+{
+"class": "Lockpick",
+"path": "fence_chainlink_B_doorway_5m/fence_chainlink_B_door_2m/hinge/fence_chainlink_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "Pickupable",
+"path": "150bucks_mpcc7py",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 150
+},
+{
+"class": "Pickupable",
+"path": "150bucks_butsg$$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 150
+},
+{
+"class": "Door",
+"path": "FENCE/fence_chainlink_A_2m/fence_chainlink_A_doorway_4m/fence_chainlink_A_door_1m/hinge",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "FENCE/fence_chainlink_A_2m/fence_chainlink_A_door_1m/hinge",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "SecurityPanel",
+"path": "Security Panel Gas",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "30$_znonrey",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (1)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (11)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (7)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (14)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (18)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (9)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (15)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (13)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (10)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (25)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (2)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (20)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (22)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (16)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (23)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (26)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (8)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (19)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (17)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (3)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (24)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (5)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (6)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (12)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (21)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (4)/GameObject/SM_File_Cabinet_Drawer (2)/Scanner",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "fence_chainlink_B_doorway_5m/fence_chainlink_B_door_2m/hinge/fence_chainlink_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Monitor_cj8kf",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 235
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Monitor_13drn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 235
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Monitor_j2f4j",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 235
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Monitor_n23es",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 235
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Monitor_9m7cx",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 235
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Monitor_ynj51",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 235
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Monitor_dse6k",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 235
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Monitor_dpoly",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 235
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Monitor_sgmns",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 235
+},
+{
+"class": "Pickupable",
+"path": "ElectricKettle_p6$am",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 58
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (19)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (8)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (26)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (23)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (5)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (24)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (17)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (3)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (12)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (6)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (21)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (4)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (18)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (14)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (7)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (11)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (1)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (20)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (2)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (25)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (10)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (13)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (15)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (9)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (16)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (22)/GameObject/SM_File_Cabinet_Drawer (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Gold_Bar_$s4ga",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 239,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Gold_Bar_ocbjy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 239,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Gold_Bar_3nuau",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 239,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Gold_Bar_$y7$p",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 239,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Gold_Bar_yuo91",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 239,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Gold_Bar_0snku",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 239,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Gold_Bar_0$n1$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 239,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/SM_Gold_Bar_ng9rn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 239,
+"destroy_if_was_picked": true
+},
+{
+"class": "SecurityPanel",
+"path": "SECURITY PANEL HARD BIG DOOR",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityPanel",
+"path": "SECURITY PANEL HARD lasers",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityPanel",
+"path": "SECURITY PANEL HARD inside cameras",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "WatchGoldSilver_$laso2$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 282,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "15$_sfaos$j",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Pickupable",
+"path": "VacuumCleaner_goclu",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 153,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Transistor_ON_LOD1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 190
+},
+{
+"class": "HidingSpot",
+"path": "Trash Can 2/Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (6)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (12)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (4)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (21)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (23)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (26)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (8)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (19)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (3)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (17)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (24)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (5)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (9)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (15)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (13)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (10)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (25)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (2)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (20)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (22)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (16)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (1)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (11)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (7)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (14)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "BankBuild/FileCabinetFull (18)/GameObject/SM_File_Cabinet_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isFileCabinet": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "usb_flash_oa$nz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 178
+},
+{
+"class": "Pickupable",
+"path": "VR Headset White_o1n9n",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 170,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Wallet woman_4uy0o",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 197,
+"destroy_if_was_picked": true
+},
+{
+"class": "ClimbIvy",
+"path": "Plant_Climber_Long (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ClimbIvy",
+"path": "Plant_Climber_Long (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ClimbIvy",
+"path": "Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "headset_oxona",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 65
+},
+{
+"class": "Pickupable",
+"path": "500_bucks_bvoplyo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 500,
+"never_destroy": true,
+"dontDestroyDays": true
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (4)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (21)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (12)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (6)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (5)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (24)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (3)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (17)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (19)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (8)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (26)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (23)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (16)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (22)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (20)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (2)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (25)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (10)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (13)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (15)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (9)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (18)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (14)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (7)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (11)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "Pickupable",
+"path": "BankBuild/FileCabinetFull (1)/GameObject/SM_File_Cabinet_Drawer (1)/Projector1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "MediumLock",
+"path": "fence_chainlink_B_doorway_5m/fence_chainlink_B_door_2m/hinge/fence_chainlink_B",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "Microphone_rn4$g",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 67
+},
+{
+"class": "Pickupable",
+"path": "Mouse_m53fg",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 77,
+"destroy_if_was_picked": true
+}
+]
+}

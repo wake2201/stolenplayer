@@ -1,0 +1,127 @@
+{
+ "meta": {
+  "generator": "tools/research/atlas_index.py",
+  "source": "ilspycmd 11.2.0.10050 -p of Assembly-CSharp.dll (game 1.27c)",
+  "evidence": "VERIFIED_IL (decompiled source; brace parsing heuristic)",
+  "type_count": 1258,
+  "method_count": 5527
+ },
+ "choke_callers": {
+  "GameManager.AddXP": [
+   "GameManager.AddXP (GameManager.cs:1707)",
+   "ReadNote.BeginRead (ReadNote.cs:63)"
+  ],
+  "GameManager.PlayMissionComplete": [
+   "GameManager.PlayMissionComplete (GameManager.cs:644)"
+  ],
+  "Inventory.AddMoneyMade": [
+   "BlackBay_Object.SellIt (BlackBay_Object.cs:79)",
+   "Inventory.AddMoneyMade (Inventory.cs:3991)",
+   "Inventory.Sell_Item_NewSystem (Inventory.cs:4028)",
+   "Mission_Item.MissionComplete1 (Mission_Item.cs:126)"
+  ],
+  "ItemID.Item_Picked": [
+   "ItemID.Item_Picked (ItemID.cs:338)",
+   "Pickpocket_Manager.Success (Pickpocket_Manager.cs:85)",
+   "Pickupable.PickingItem (Pickupable.cs:391)"
+  ],
+  "Mission_Item.MissionComplete1": [
+   "Mission_Item.MissionComplete1 (Mission_Item.cs:126)",
+   "Mission_Item.Mission_Complete (Mission_Item.cs:151)"
+  ],
+  "Mission_Item.Mission_Complete": [
+   "AI.DogSmellMeat (AI.cs:983)",
+   "AI.FallAsleep (AI.cs:1008)",
+   "DestroyObject.Destroy_Thing (DestroyObject.cs:27)",
+   "LockedWindow.BrokeWindow (LockedWindow.cs:145)",
+   "LockedWindow.UnlockWindow (LockedWindow.cs:113)",
+   "LockedWindow.UnlockWindowNoAlarm (LockedWindow.cs:99)",
+   "Mission_Item.Mission_Complete (Mission_Item.cs:151)",
+   "Photograph.Update (Photograph.cs:18)",
+   "PlantEvidence.Planted (PlantEvidence.cs:16)",
+   "SecurityPanel.PanelDeactivate (SecurityPanel.cs:129)"
+  ],
+  "Pickupable.DropHeavy": [
+   "Pickupable.DropHeavy (Pickupable.cs:580)",
+   "PlayerScript.GetTazed (PlayerScript.cs:3510)",
+   "PlayerScript.StopCarryingItem (PlayerScript.cs:3830)"
+  ],
+  "Pickupable.PickUp": [
+   "Pickupable.PickUp (Pickupable.cs:520)"
+  ],
+  "Pickupable.PickUpHeavy": [
+   "Pickupable.PickUpHeavy (Pickupable.cs:551)"
+  ],
+  "SaveGame.LoadGame": [
+   "SaveGame.LoadGame (SaveGame.cs:300)",
+   "SaveGame.Start (SaveGame.cs:59)"
+  ],
+  "SaveGame.SaveGameNewSystem": [
+   "GameManager.EndingFade (GameManager.cs:809)",
+   "GameManager.SelectAutoShop (GameManager.cs:2016)",
+   "GameManager.SelectBank (GameManager.cs:2030)",
+   "GameManager.SelectDrugFarm (GameManager.cs:2114)",
+   "GameManager.SelectForestside (GameManager.cs:2044)",
+   "GameManager.SelectGunRange (GameManager.cs:2086)",
+   "GameManager.SelectHauntedMansion (GameManager.cs:2058)",
+   "GameManager.SelectHideout (GameManager.cs:2284)",
+   "GameManager.SelectHillville (GameManager.cs:1989)",
+   "GameManager.SelectJail (GameManager.cs:2248)",
+   "GameManager.SelectMuseum (GameManager.cs:2072)",
+   "GameManager.SelectOffice (GameManager.cs:2003)",
+   "GameManager.SelectParking (GameManager.cs:2128)",
+   "GameManager.SelectTestMap (GameManager.cs:1975)",
+   "GameManager.SelectVerwood (GameManager.cs:1961)",
+   "GameManager.SelectWarehouse (GameManager.cs:2100)",
+   "PlayerScript.Quicksave (PlayerScript.cs:3935)",
+   "SaveGame.SaveGame1 (SaveGame.cs:291)",
+   "SaveGame.SaveGameNewSystem (SaveGame.cs:97)"
+  ],
+  "Skill_Manager.Learn_Skill": [
+   "SkillPage.LearnSkill (SkillPage.cs:201)",
+   "Skill_Manager.Learn_Skill (Skill_Manager.cs:20)"
+  ],
+  "StoryManager.AdvanceStory": [
+   "AI.DiscoverHabit (AI.cs:1058)",
+   "ATM_Object.SpawnMoney (ATM_Object.cs:59)",
+   "ActivateAssociateJail.Update (ActivateAssociateJail.cs:28)",
+   "AdvanceStoryTrigger.OnTriggerEnter (AdvanceStoryTrigger.cs:14)",
+   "AdvanceTrigger.OnTriggerEnter (AdvanceTrigger.cs:18)",
+   "Bed.Stand (Bed.cs:48)",
+   "BlackBay_Object.SellIt (BlackBay_Object.cs:79)",
+   "CarController.RunCar (CarController.cs:590)",
+   "ColorButton.BuyColor (ColorButton.cs:35)",
+   "DroneUpgradePanel.BuyUpgrade (DroneUpgradePanel.cs:94)",
+   "IntroMap.Update (IntroMap.cs:38)",
+   "Inventory.Sell_Item_NewSystem (Inventory.cs:4028)",
+   "Lockpick.DoorUnlock (Lockpick.cs:176)",
+   "MediumLockMaster.Unlocked (MediumLockMaster.cs:154)",
+   "Mission_Item.MissionComplete1 (Mission_Item.cs:126)",
+   "Pickpocket_Manager.Success (Pickpocket_Manager.cs:85)",
+   "Pickupable.PickingItem (Pickupable.cs:391)",
+   "Pickupable.WasPlacedInCar (Pickupable.cs:360)",
+   "PlayerScript.RefreshXP (PlayerScript.cs:2031)",
+   "PlayerScript.Update (PlayerScript.cs:4090)",
+   "ReadNote.BeginRead (ReadNote.cs:63)",
+   "SecurityCamera.DisableCamera (SecurityCamera.cs:161)",
+   "SecurityPanel.PanelDeactivate (SecurityPanel.cs:129)",
+   "Shop_Manager.Buy_Item (Shop_Manager.cs:118)",
+   "StoryManager.AdvanceItem (StoryManager.cs:392)",
+   "StoryManager.AdvanceStory (StoryManager.cs:342)",
+   "StoryManager.CheckPoliceEscaped (StoryManager.cs:334)",
+   "StoryManager.Update (StoryManager.cs:142)",
+   "Tutorial_PC.Update (Tutorial_PC.cs:92)"
+  ],
+  "StoryManager.InitiateStory": [
+   "StoryManager.AdvanceStory (StoryManager.cs:342)",
+   "StoryManager.BeginStory (StoryManager.cs:114)",
+   "StoryManager.InitiateStory (StoryManager.cs:398)"
+  ],
+  "StoryManager.SaveStory": [
+   "StoryManager.SaveStory (StoryManager.cs:130)"
+  ],
+  "StoryManager.SetStory": [
+   "StoryManager.SetStory (StoryManager.cs:95)"
+  ]
+ }
+}

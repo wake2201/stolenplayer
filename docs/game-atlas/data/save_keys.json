@@ -1,0 +1,4046 @@
+{
+ "meta": {
+  "generator": "tools/research/atlas_index.py",
+  "source": "ilspycmd 11.2.0.10050 -p of Assembly-CSharp.dll (game 1.27c)",
+  "evidence": "VERIFIED_IL (decompiled source; brace parsing heuristic)",
+  "type_count": 1258,
+  "method_count": 5527
+ },
+ "keys": {
+  "": {
+   "read": [],
+   "write": [
+    "MainMenu.StartNewGame (MainMenu.cs:430)",
+    "MainMenu.StartFreeMode (MainMenu.cs:474)",
+    "SPrefs.DeleteAll (SPrefs.cs:130)",
+    "TestClass.GeneralTest (TestClass.cs:85)",
+    "TestClass.TestKeySystem (TestClass.cs:95)",
+    "TestClass.TestIntStoring (TestClass.cs:105)",
+    "TestClass.TestSPrefsDeleteKey (TestClass.cs:133)",
+    "TestClass.TestDefaultValues (TestClass.cs:168)",
+    "TestClass.TestExtremeValues (TestClass.cs:213)"
+   ],
+   "other": [
+    "Credits.Start (Credits.cs:15)",
+    "GameManager.SaveAll (GameManager.cs:1697)",
+    "InitializePrefs.RestoreSaveData (InitializePrefs.cs:36)",
+    "KeyBinding.SaveKeyCode (KeyBinding.cs:162)",
+    "MainMenu.StartNewGame (MainMenu.cs:468)",
+    "MainMenu.StartFreeMode (MainMenu.cs:475)",
+    "MainMenu.StartFreeMode (MainMenu.cs:493)",
+    "MainMenu.Continue (MainMenu.cs:507)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:272)",
+    "SPrefs.Save (SPrefs.cs:143)",
+    "SPrefsExampleUsage.MakeProgress (SPrefsExampleUsage.cs:26)"
+   ]
+  },
+  "\"AA\"": {
+   "read": [
+    "Inventory.SetAAs (Inventory.cs:1810)",
+    "Inventory.Start (Inventory.cs:2042)"
+   ],
+   "write": [
+    "Inventory.DropdownAA (Inventory.cs:1851)",
+    "MainMenu.Start (MainMenu.cs:138)"
+   ],
+   "other": []
+  },
+  "\"Ability\" + i + \"_active\"": {
+   "read": [
+    "AbilitiesManager.LoadAbilities (AbilitiesManager.cs:40)"
+   ],
+   "write": [
+    "AbilitiesManager.SaveAbilities (AbilitiesManager.cs:27)"
+   ],
+   "other": []
+  },
+  "\"Ability\" + i + \"_cooldown\"": {
+   "read": [
+    "AbilitiesManager.LoadAbilities (AbilitiesManager.cs:41)"
+   ],
+   "write": [
+    "AbilitiesManager.SaveAbilities (AbilitiesManager.cs:28)"
+   ],
+   "other": []
+  },
+  "\"Ability\" + i + \"_cooldownMin\"": {
+   "read": [
+    "AbilitiesManager.LoadAbilities (AbilitiesManager.cs:44)"
+   ],
+   "write": [
+    "AbilitiesManager.SaveAbilities (AbilitiesManager.cs:31)"
+   ],
+   "other": []
+  },
+  "\"Ability\" + i + \"_cooldownSec\"": {
+   "read": [
+    "AbilitiesManager.LoadAbilities (AbilitiesManager.cs:45)"
+   ],
+   "write": [
+    "AbilitiesManager.SaveAbilities (AbilitiesManager.cs:32)"
+   ],
+   "other": []
+  },
+  "\"Ability\" + i + \"_timeMin\"": {
+   "read": [
+    "AbilitiesManager.LoadAbilities (AbilitiesManager.cs:42)"
+   ],
+   "write": [
+    "AbilitiesManager.SaveAbilities (AbilitiesManager.cs:29)"
+   ],
+   "other": []
+  },
+  "\"Ability\" + i + \"_timeSec\"": {
+   "read": [
+    "AbilitiesManager.LoadAbilities (AbilitiesManager.cs:43)"
+   ],
+   "write": [
+    "AbilitiesManager.SaveAbilities (AbilitiesManager.cs:30)"
+   ],
+   "other": []
+  },
+  "\"AcceptTasks\"": {
+   "read": [],
+   "write": [
+    "MainMenu.StartFreeMode (MainMenu.cs:477)"
+   ],
+   "other": []
+  },
+  "\"Aniso\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2067)"
+   ],
+   "write": [
+    "Inventory.SliderValueAniso (Inventory.cs:1868)",
+    "MainMenu.Start (MainMenu.cs:161)"
+   ],
+   "other": []
+  },
+  "\"AntiTheft\"": {
+   "read": [
+    "HeavyItemsShed.LoadItems (HeavyItemsShed.cs:31)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"AssociateUnlocked\"": {
+   "read": [
+    "StoryManager.InitiateStory (StoryManager.cs:430)"
+   ],
+   "write": [
+    "StoryManager.InitiateStory (StoryManager.cs:433)"
+   ],
+   "other": []
+  },
+  "\"AutoExit\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2210)"
+   ],
+   "write": [
+    "Inventory.AutoExitToggle (Inventory.cs:1065)",
+    "Inventory.AutoExitToggle (Inventory.cs:1069)",
+    "MainMenu.Start (MainMenu.cs:149)"
+   ],
+   "other": []
+  },
+  "\"AutoSave\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2234)"
+   ],
+   "write": [
+    "Inventory.AutoSaveToggle (Inventory.cs:1091)",
+    "Inventory.AutoSaveToggle (Inventory.cs:1095)"
+   ],
+   "other": []
+  },
+  "\"BLTHealth\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:328)"
+   ],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:149)"
+   ],
+   "other": []
+  },
+  "\"BankBalance\"": {
+   "read": [
+    "AchievementManager.Refresh (AchievementManager.cs:72)",
+    "Darkbank.ReloadValues (Darkbank.cs:35)",
+    "DayNightTime.Update (DayNightTime.cs:397)"
+   ],
+   "write": [
+    "Darkbank.DepositMoney (Darkbank.cs:69)",
+    "Darkbank.WithdrawMoney (Darkbank.cs:80)",
+    "DayNightTime.Update (DayNightTime.cs:413)"
+   ],
+   "other": []
+  },
+  "\"BankIncrease\"": {
+   "read": [
+    "Darkbank.ReloadValues (Darkbank.cs:34)"
+   ],
+   "write": [
+    "Darkbank.DepositMoney (Darkbank.cs:68)",
+    "Darkbank.WithdrawMoney (Darkbank.cs:79)",
+    "DayNightTime.Update (DayNightTime.cs:412)"
+   ],
+   "other": []
+  },
+  "\"BatonLife\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:322)"
+   ],
+   "write": [
+    "MainMenu.StartNewGame (MainMenu.cs:454)",
+    "MainMenu.StartFreeMode (MainMenu.cs:483)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:155)"
+   ],
+   "other": []
+  },
+  "\"BlackbayLists\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2636)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2672)"
+   ],
+   "other": []
+  },
+  "\"Bloom\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2307)"
+   ],
+   "write": [
+    "Inventory.BloomToggle1 (Inventory.cs:999)",
+    "Inventory.BloomToggle1 (Inventory.cs:1003)",
+    "MainMenu.Start (MainMenu.cs:142)"
+   ],
+   "other": []
+  },
+  "\"Bool1\"": {
+   "read": [],
+   "write": [
+    "TrySave.Start (TrySave.cs:8)"
+   ],
+   "other": []
+  },
+  "\"CA\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2296)"
+   ],
+   "write": [
+    "Inventory.AbberationToggle1 (Inventory.cs:1192)",
+    "Inventory.AbberationToggle1 (Inventory.cs:1196)",
+    "MainMenu.Start (MainMenu.cs:140)"
+   ],
+   "other": []
+  },
+  "\"CameToHome\"": {
+   "read": [
+    "HeavyItemsShed.LoadItems (HeavyItemsShed.cs:30)"
+   ],
+   "write": [
+    "GameManager.SelectHideout (GameManager.cs:2293)",
+    "HeavyItemsShed.LoadItems (HeavyItemsShed.cs:35)"
+   ],
+   "other": []
+  },
+  "\"CarCompleted_\" + assignedCar.car_name": {
+   "read": [],
+   "write": [
+    "CMS_Manager.CalculateTotalValue (CMS_Manager.cs:177)"
+   ],
+   "other": []
+  },
+  "\"CarCompleted_\" + item_name": {
+   "read": [
+    "ItemID.Start (ItemID.cs:169)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"CarRadioVol\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2429)"
+   ],
+   "write": [
+    "Inventory.SetCarRadioVolume (Inventory.cs:2916)",
+    "MainMenu.Start (MainMenu.cs:156)"
+   ],
+   "other": []
+  },
+  "\"CarTurnSensitivity\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2392)"
+   ],
+   "write": [
+    "Inventory.CarTurnSChange (Inventory.cs:2016)",
+    "MainMenu.Start (MainMenu.cs:151)"
+   ],
+   "other": []
+  },
+  "\"CatStuff\"": {
+   "read": [
+    "CatAI.Start (CatAI.cs:38)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Climbing\"": {
+   "read": [
+    "Inventory.CheckSkills (Inventory.cs:3285)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"CloakCooldown\"": {
+   "read": [
+    "CloakDevice.LoadCloak (CloakDevice.cs:37)"
+   ],
+   "write": [
+    "CloakDevice.SaveCloak (CloakDevice.cs:31)"
+   ],
+   "other": []
+  },
+  "\"CloakCooldownTime\"": {
+   "read": [
+    "CloakDevice.LoadCloak (CloakDevice.cs:38)"
+   ],
+   "write": [
+    "CloakDevice.SaveCloak (CloakDevice.cs:32)"
+   ],
+   "other": []
+  },
+  "\"Contract\"": {
+   "read": [
+    "ContractManager.LoadContract (ContractManager.cs:215)"
+   ],
+   "write": [
+    "ContractManager.SaveContract (ContractManager.cs:253)"
+   ],
+   "other": []
+  },
+  "\"ContractActive\"": {
+   "read": [
+    "ContractManager.LoadContract (ContractManager.cs:220)"
+   ],
+   "write": [
+    "ContractManager.SaveContract (ContractManager.cs:257)"
+   ],
+   "other": []
+  },
+  "\"ContractLevel\"": {
+   "read": [
+    "ContractManager.LoadContract (ContractManager.cs:217)"
+   ],
+   "write": [
+    "ContractManager.SaveContract (ContractManager.cs:254)"
+   ],
+   "other": []
+  },
+  "\"ContractStatus\"": {
+   "read": [
+    "ContractManager.LoadContract (ContractManager.cs:216)"
+   ],
+   "write": [
+    "ContractManager.SaveContract (ContractManager.cs:252)"
+   ],
+   "other": []
+  },
+  "\"ContractsComplete\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2637)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2673)"
+   ],
+   "other": []
+  },
+  "\"Contrast\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2076)"
+   ],
+   "write": [
+    "Inventory.SliderContrast (Inventory.cs:1881)",
+    "MainMenu.Start (MainMenu.cs:152)"
+   ],
+   "other": []
+  },
+  "\"ControlsPanelShow\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2364)"
+   ],
+   "write": [
+    "Inventory.ShowControlsPanelToggle (Inventory.cs:1312)",
+    "Inventory.ShowControlsPanelToggle (Inventory.cs:1324)",
+    "MainMenu.Start (MainMenu.cs:145)"
+   ],
+   "other": []
+  },
+  "\"CrimeFollow\"": {
+   "read": [
+    "MainMenu.TryActivatePlayway (MainMenu.cs:240)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Crosshair\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2193)"
+   ],
+   "write": [
+    "Inventory.CrosshairToggle1 (Inventory.cs:1018)",
+    "Inventory.CrosshairToggle1 (Inventory.cs:1022)"
+   ],
+   "other": []
+  },
+  "\"CrosshairSimple\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2201)"
+   ],
+   "write": [
+    "Inventory.CrosshairSimpleToggle1 (Inventory.cs:1039)",
+    "Inventory.CrosshairSimpleToggle1 (Inventory.cs:1043)"
+   ],
+   "other": []
+  },
+  "\"CrowbarLife\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:323)"
+   ],
+   "write": [
+    "MainMenu.StartNewGame (MainMenu.cs:455)",
+    "MainMenu.StartFreeMode (MainMenu.cs:484)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:156)"
+   ],
+   "other": []
+  },
+  "\"CurrentCar\"": {
+   "read": [
+    "VehiclesManager.InitiateMainCar (VehiclesManager.cs:33)"
+   ],
+   "write": [
+    "PlayerScript.SaveCurrentCar (PlayerScript.cs:1692)"
+   ],
+   "other": []
+  },
+  "\"CurrentCarOnLift\"": {
+   "read": [
+    "CMS_Car.Start (CMS_Car.cs:45)"
+   ],
+   "write": [
+    "CMS_Car.Use (CMS_Car.cs:77)"
+   ],
+   "other": []
+  },
+  "\"CurrentDayHotItem\"": {
+   "read": [
+    "HotItemManager.InitializeThis (HotItemManager.cs:76)"
+   ],
+   "write": [
+    "HotItemManager.NewRandomItem (HotItemManager.cs:35)"
+   ],
+   "other": []
+  },
+  "\"CurrentHotItem\"": {
+   "read": [
+    "HotItemManager.InitializeThis (HotItemManager.cs:77)"
+   ],
+   "write": [
+    "HotItemManager.NewRandomItem (HotItemManager.cs:43)"
+   ],
+   "other": []
+  },
+  "\"CurrentLocation\"": {
+   "read": [
+    "GameManager.Start (GameManager.cs:1185)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1751)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1762)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1771)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1782)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1793)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1804)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1810)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1816)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1824)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1830)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1836)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1842)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1850)",
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1850)",
+    "SaveGame.LoadGame (SaveGame.cs:309)",
+    "StoryManager.InitiateStory (StoryManager.cs:411)",
+    "StoryManager.InitiateStory (StoryManager.cs:416)",
+    "VehiclesManager.InitiateMainCar (VehiclesManager.cs:35)"
+   ],
+   "write": [
+    "Credits.Start (Credits.cs:13)",
+    "GameManager.SelectVerwood (GameManager.cs:1971)",
+    "GameManager.SelectTestMap (GameManager.cs:1984)",
+    "GameManager.SelectHillville (GameManager.cs:1998)",
+    "GameManager.SelectOffice (GameManager.cs:2006)",
+    "GameManager.SelectAutoShop (GameManager.cs:2020)",
+    "GameManager.SelectBank (GameManager.cs:2034)",
+    "GameManager.SelectForestside (GameManager.cs:2048)",
+    "GameManager.SelectHauntedMansion (GameManager.cs:2062)",
+    "GameManager.SelectMuseum (GameManager.cs:2076)",
+    "GameManager.SelectGunRange (GameManager.cs:2090)",
+    "GameManager.SelectWarehouse (GameManager.cs:2104)",
+    "GameManager.SelectDrugFarm (GameManager.cs:2118)",
+    "GameManager.SelectParking (GameManager.cs:2134)",
+    "GameManager.SelectJail (GameManager.cs:2256)",
+    "GameManager.SelectHideout (GameManager.cs:2295)",
+    "MainMenu.StartNewGame (MainMenu.cs:433)",
+    "MainMenu.StartNewGame (MainMenu.cs:437)",
+    "MainMenu.StartFreeMode (MainMenu.cs:476)"
+   ],
+   "other": []
+  },
+  "\"CurrentRep\"": {
+   "read": [
+    "ContractManager.LoadContract (ContractManager.cs:218)"
+   ],
+   "write": [
+    "ContractManager.SaveContract (ContractManager.cs:255)"
+   ],
+   "other": []
+  },
+  "\"DailyEvent\" + currentDay": {
+   "read": [],
+   "write": [
+    "DailyEventManager.SetTodayAsBurglarDay (DailyEventManager.cs:130)"
+   ],
+   "other": []
+  },
+  "\"DailyEvent\" + i": {
+   "read": [
+    "DailyEventManager.LoadEvents (DailyEventManager.cs:160)"
+   ],
+   "write": [
+    "DailyEventManager.GenerateMonthEvents (DailyEventManager.cs:152)"
+   ],
+   "other": []
+  },
+  "\"DailyEvent\" + num2": {
+   "read": [],
+   "write": [
+    "DailyEventManager.SetTodayAsBurglarDay (DailyEventManager.cs:133)"
+   ],
+   "other": []
+  },
+  "\"Day\"": {
+   "read": [
+    "MainMenu.TryActivatePlayway (MainMenu.cs:238)",
+    "SaveGame.LoadGame (SaveGame.cs:331)"
+   ],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:152)"
+   ],
+   "other": []
+  },
+  "\"DaysInGame\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2631)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2667)"
+   ],
+   "other": []
+  },
+  "\"Deadzone\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2396)"
+   ],
+   "write": [
+    "Inventory.DeadzoneChange (Inventory.cs:1994)",
+    "MainMenu.Start (MainMenu.cs:146)"
+   ],
+   "other": []
+  },
+  "\"Debt\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:327)"
+   ],
+   "write": [
+    "MainMenu.StartNewGame (MainMenu.cs:451)",
+    "MainMenu.StartFreeMode (MainMenu.cs:482)",
+    "PlayerScript.SaveMoneyAmount (PlayerScript.cs:1650)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:250)"
+   ],
+   "other": []
+  },
+  "\"Demon\"": {
+   "read": [
+    "DemonAI.Start (DemonAI.cs:32)",
+    "DemonSpawn.Start (DemonSpawn.cs:18)"
+   ],
+   "write": [
+    "DemonAI.Update (DemonAI.cs:98)"
+   ],
+   "other": []
+  },
+  "\"DemonShow\"": {
+   "read": [
+    "DemonFile.Start (DemonFile.cs:9)",
+    "DemonFile.Start (DemonFile.cs:15)",
+    "DemonSpawn.Start (DemonSpawn.cs:18)"
+   ],
+   "write": [
+    "DemonFile.Start (DemonFile.cs:17)",
+    "DemonFile.Start (DemonFile.cs:23)"
+   ],
+   "other": []
+  },
+  "\"DisableController\"": {
+   "read": [
+    "GameManager.OnControllerConnected (GameManager.cs:993)",
+    "Inventory.Start (Inventory.cs:2156)"
+   ],
+   "write": [
+    "Inventory.DisableControllerClick (Inventory.cs:1278)",
+    "Inventory.DisableControllerClick (Inventory.cs:1286)"
+   ],
+   "other": []
+  },
+  "\"Drone\"": {
+   "read": [
+    "DroneManager.FindDrone (DroneManager.cs:115)"
+   ],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:224)"
+   ],
+   "other": []
+  },
+  "\"DrunkLevel\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:321)"
+   ],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:150)"
+   ],
+   "other": []
+  },
+  "\"DugHoles\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2639)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2675)"
+   ],
+   "other": []
+  },
+  "\"Energy\"": {
+   "read": [
+    "SurvivalMode.LoadValues (SurvivalMode.cs:97)"
+   ],
+   "write": [
+    "SurvivalMode.SaveValues (SurvivalMode.cs:104)"
+   ],
+   "other": []
+  },
+  "\"EventDay\"": {
+   "read": [
+    "DailyEventManager.Start (DailyEventManager.cs:29)"
+   ],
+   "write": [
+    "DailyEventManager.SetNextDay (DailyEventManager.cs:106)"
+   ],
+   "other": []
+  },
+  "\"Exposure\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2077)"
+   ],
+   "write": [
+    "Inventory.SliderExposure (Inventory.cs:1887)"
+   ],
+   "other": []
+  },
+  "\"ExposureNight\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2078)"
+   ],
+   "write": [
+    "Inventory.SliderExposureNight (Inventory.cs:1893)",
+    "MainMenu.Start (MainMenu.cs:154)"
+   ],
+   "other": []
+  },
+  "\"ExtraPoints\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:346)"
+   ],
+   "write": [
+    "SaveGame.Save_XP_And_Level (SaveGame.cs:288)"
+   ],
+   "other": []
+  },
+  "\"FPSToggle\"": {
+   "read": [
+    "GraphicsSettingsMenu.LoadMenuVariables (GraphicsSettingsMenu.cs:436)"
+   ],
+   "write": [
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:43)",
+    "GraphicsSettingsMenu.SaveMenuVariables (GraphicsSettingsMenu.cs:391)"
+   ],
+   "other": []
+  },
+  "\"FadeLoad\"": {
+   "read": [
+    "FadeOnLoad.Start (FadeOnLoad.cs:11)"
+   ],
+   "write": [
+    "FadeOnLoad.Start (FadeOnLoad.cs:15)",
+    "MainMenu.StartNewGame (MainMenu.cs:459)",
+    "MainMenu.StartFreeMode (MainMenu.cs:490)",
+    "MainMenu.Continue (MainMenu.cs:506)"
+   ],
+   "other": []
+  },
+  "\"FirstGame\"": {
+   "read": [
+    "MainMenu.Start (MainMenu.cs:133)"
+   ],
+   "write": [
+    "MainMenu.Start (MainMenu.cs:137)"
+   ],
+   "other": []
+  },
+  "\"FloorBedroom\"": {
+   "read": [
+    "CheckRenovations.CheckAll (CheckRenovations.cs:88)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"FloorLivingRoom\"": {
+   "read": [
+    "CheckRenovations.CheckAll (CheckRenovations.cs:98)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"FloorStorage\"": {
+   "read": [
+    "CheckRenovations.CheckAll (CheckRenovations.cs:103)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"FoV\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2384)",
+    "Inventory.Start (Inventory.cs:2404)"
+   ],
+   "write": [
+    "Inventory.SliderValueFoV (Inventory.cs:1744)",
+    "Inventory.Start (Inventory.cs:2386)"
+   ],
+   "other": []
+  },
+  "\"Framerate\"": {
+   "read": [
+    "Inventory.DropdownFramerate (Inventory.cs:1769)",
+    "Inventory.Start (Inventory.cs:2040)"
+   ],
+   "write": [
+    "Inventory.DropdownFramerate (Inventory.cs:1768)",
+    "MainMenu.Start (MainMenu.cs:147)"
+   ],
+   "other": []
+  },
+  "\"FreeMode\"": {
+   "read": [
+    "Diamond_Marker.Start (Diamond_Marker.cs:38)",
+    "ItemID.Start (ItemID.cs:147)",
+    "StoryManager.Start (StoryManager.cs:80)",
+    "StoryObject.UpdateObject (StoryObject.cs:64)",
+    "StoryObject.UpdateObject (StoryObject.cs:117)"
+   ],
+   "write": [
+    "MainMenu.StartFreeMode (MainMenu.cs:480)"
+   ],
+   "other": []
+  },
+  "\"GameTime\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:358)"
+   ],
+   "write": [
+    "MainMenu.StartNewGame (MainMenu.cs:456)",
+    "MainMenu.StartFreeMode (MainMenu.cs:489)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:142)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:146)"
+   ],
+   "other": []
+  },
+  "\"GasAmount\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:347)"
+   ],
+   "write": [
+    "MainMenu.StartNewGame (MainMenu.cs:450)",
+    "MainMenu.StartFreeMode (MainMenu.cs:478)",
+    "PlayerScript.SaveMoneyAmount (PlayerScript.cs:1655)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:151)"
+   ],
+   "other": []
+  },
+  "\"GasTankLeftCar\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:329)"
+   ],
+   "write": [
+    "MainMenu.StartNewGame (MainMenu.cs:452)",
+    "MainMenu.StartFreeMode (MainMenu.cs:487)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:153)"
+   ],
+   "other": []
+  },
+  "\"GeneratedEvents\"": {
+   "read": [
+    "DailyEventManager.Start (DailyEventManager.cs:30)"
+   ],
+   "write": [
+    "DailyEventManager.Start (DailyEventManager.cs:32)"
+   ],
+   "other": []
+  },
+  "\"GeneratedInfinite\"": {
+   "read": [
+    "ContractManager.LoadContract (ContractManager.cs:242)"
+   ],
+   "write": [
+    "ContractManager.LoadContract (ContractManager.cs:244)"
+   ],
+   "other": []
+  },
+  "\"Grass\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2337)"
+   ],
+   "write": [
+    "Inventory.GrassToggle1 (Inventory.cs:1244)",
+    "Inventory.GrassToggle1 (Inventory.cs:1248)",
+    "MainMenu.Start (MainMenu.cs:144)"
+   ],
+   "other": []
+  },
+  "\"HackingDifficulty\"": {
+   "read": [
+    "HackingPuzzleLoadLevel.Start (HackingPuzzleLoadLevel.cs:16)",
+    "HackingPuzzleLoadLevel.Start (HackingPuzzleLoadLevel.cs:21)"
+   ],
+   "write": [
+    "HackingLaptop.FoundPanel (HackingLaptop.cs:75)",
+    "HackingLaptop.Update (HackingLaptop.cs:118)",
+    "Inventory.HackElectronic (Inventory.cs:4515)",
+    "PlayerScript.Update (PlayerScript.cs:6535)",
+    "PlayerScript.Update (PlayerScript.cs:6576)"
+   ],
+   "other": []
+  },
+  "\"Hacking_Puzzle_Item\"": {
+   "read": [
+    "HackingPuzzleLoadLevel.Start (HackingPuzzleLoadLevel.cs:15)"
+   ],
+   "write": [
+    "HackingLaptop.Update (HackingLaptop.cs:119)",
+    "Inventory.HackElectronic (Inventory.cs:4514)",
+    "PlayerScript.Update (PlayerScript.cs:6536)",
+    "PlayerScript.Update (PlayerScript.cs:6577)"
+   ],
+   "other": []
+  },
+  "\"HardMode\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2081)"
+   ],
+   "write": [
+    "GameManager.Awake (GameManager.cs:694)",
+    "Inventory.HardModeClick (Inventory.cs:965)",
+    "Inventory.HardModeClick (Inventory.cs:970)",
+    "MainMenu.StartNewGame (MainMenu.cs:458)",
+    "MainMenu.StartFreeMode (MainMenu.cs:486)"
+   ],
+   "other": []
+  },
+  "\"Headbob\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2140)"
+   ],
+   "write": [
+    "Inventory.HeadbobClick (Inventory.cs:636)",
+    "Inventory.HeadbobClick (Inventory.cs:640)"
+   ],
+   "other": []
+  },
+  "\"HeavyItemShed\" + i": {
+   "read": [
+    "HeavyItemsShed.LoadItems (HeavyItemsShed.cs:43)",
+    "HeavyItemsShed.LoadItems (HeavyItemsShed.cs:48)"
+   ],
+   "write": [
+    "HeavyItemsShed.SaveItems (HeavyItemsShed.cs:83)"
+   ],
+   "other": []
+  },
+  "\"HeavyItemShed\" + j": {
+   "read": [],
+   "write": [
+    "HeavyItemsShed.SaveItems (HeavyItemsShed.cs:89)"
+   ],
+   "other": []
+  },
+  "\"HeistTutorial\"": {
+   "read": [],
+   "write": [
+    "MainMenu.StartFreeMode (MainMenu.cs:491)"
+   ],
+   "other": []
+  },
+  "\"HiddenItems\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2638)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2674)"
+   ],
+   "other": []
+  },
+  "\"HillvillePoint\"": {
+   "read": [
+    "GameManager.ContinueButtonActivate (GameManager.cs:1092)",
+    "GameManager.ContinueButtonActivate (GameManager.cs:1093)"
+   ],
+   "write": [
+    "GameManager.SetClosestPointSpawn (GameManager.cs:636)"
+   ],
+   "other": []
+  },
+  "\"Hours\"": {
+   "read": [],
+   "write": [
+    "SaveGame.LoadGame (SaveGame.cs:307)"
+   ],
+   "other": []
+  },
+  "\"HouseRepairs\"": {
+   "read": [
+    "CheckRenovations.CheckAll (CheckRenovations.cs:46)",
+    "HouseRenovator.CheckRepair (HouseRenovator.cs:214)"
+   ],
+   "write": [
+    "HouseRenovator.BuyRepairs (HouseRenovator.cs:249)"
+   ],
+   "other": []
+  },
+  "\"Hunger\"": {
+   "read": [
+    "SurvivalMode.LoadValues (SurvivalMode.cs:95)"
+   ],
+   "write": [
+    "SurvivalMode.SaveValues (SurvivalMode.cs:102)"
+   ],
+   "other": []
+  },
+  "\"InfiniteMultiplier\"": {
+   "read": [
+    "ContractManager.LoadContract (ContractManager.cs:229)"
+   ],
+   "write": [
+    "ContractManager.SaveContract (ContractManager.cs:258)"
+   ],
+   "other": []
+  },
+  "\"InvertY\"": {
+   "read": [
+    "Inventory.InvertYClick (Inventory.cs:1269)",
+    "Inventory.Start (Inventory.cs:2148)",
+    "PlayerCameraBehavior.Start (PlayerCameraBehavior.cs:108)"
+   ],
+   "write": [
+    "Inventory.InvertYClick (Inventory.cs:1261)",
+    "Inventory.InvertYClick (Inventory.cs:1265)"
+   ],
+   "other": []
+  },
+  "\"InvertYCar\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2175)"
+   ],
+   "write": [
+    "Inventory.InvertYCarClick (Inventory.cs:1299)",
+    "Inventory.InvertYCarClick (Inventory.cs:1303)"
+   ],
+   "other": []
+  },
+  "\"ItemCardboard\"": {
+   "read": [
+    "CardboardMinigame.Start (CardboardMinigame.cs:49)"
+   ],
+   "write": [
+    "CardboardMinigame.TrySaveItem (CardboardMinigame.cs:60)",
+    "CardboardMinigame.TrySaveItem (CardboardMinigame.cs:64)"
+   ],
+   "other": []
+  },
+  "\"ItemDay_\" + transform.name": {
+   "read": [
+    "Pickupable.Start (Pickupable.cs:334)"
+   ],
+   "write": [
+    "Pickupable.SetDayRespawn (Pickupable.cs:199)"
+   ],
+   "other": []
+  },
+  "\"ItemJail\" + i": {
+   "read": [
+    "JailItems.LoadItems (JailItems.cs:18)",
+    "JailItems.LoadItems (JailItems.cs:23)"
+   ],
+   "write": [
+    "GameManager.SelectJail (GameManager.cs:2261)"
+   ],
+   "other": []
+  },
+  "\"ItemJail\" + k": {
+   "read": [],
+   "write": [
+    "GameManager.SelectJail (GameManager.cs:2276)"
+   ],
+   "other": []
+  },
+  "\"Item_\" + ResidenceScript.loot_items[k].loot_prefs": {
+   "read": [
+    "OnPossesion.Info1 (OnPossesion.cs:106)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Item_\" + SCM.stolen_cars[assignedCarNr].car_name": {
+   "read": [
+    "CarController.Start (CarController.cs:276)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Item_\" + SR.loot_items[j].loot_prefs": {
+   "read": [
+    "Inventory.ResidenceClicked (Inventory.cs:3060)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Item_\" + component.picked_items[l].item_name": {
+   "read": [],
+   "write": [
+    "GameManager.SaveAll (GameManager.cs:1646)"
+   ],
+   "other": []
+  },
+  "\"Item_\" + component.picked_money[i].item_name": {
+   "read": [],
+   "write": [
+    "GameManager.SaveAll (GameManager.cs:1622)"
+   ],
+   "other": []
+  },
+  "\"Item_\" + currentStoryScript.item_name": {
+   "read": [
+    "StoryManager.Update (StoryManager.cs:168)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Item_\" + current_vehicle.car_name": {
+   "read": [],
+   "write": [
+    "PlayerScript.OpenTownSelectionNoDelay (PlayerScript.cs:1716)"
+   ],
+   "other": []
+  },
+  "\"Item_\" + itemPrefs[0]": {
+   "read": [
+    "RandomVan.Start (RandomVan.cs:17)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Item_\" + itemPrefs[1]": {
+   "read": [
+    "RandomVan.Start (RandomVan.cs:21)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Item_\" + itemPrefs[2]": {
+   "read": [
+    "RandomVan.Start (RandomVan.cs:25)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Item_\" + itemPrefs[3]": {
+   "read": [
+    "RandomVan.Start (RandomVan.cs:29)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Item_\" + item_ID": {
+   "read": [
+    "ItemID.Start (ItemID.cs:156)"
+   ],
+   "write": [
+    "DroneTech.RestoreDrone (DroneTech.cs:98)",
+    "ItemID.Start (ItemID.cs:137)",
+    "ItemID.Save_Item_Amount (ItemID.cs:235)"
+   ],
+   "other": []
+  },
+  "\"Item_\" + loot_items[i].loot_prefs": {
+   "read": [
+    "SelectResidence.RefreshIfComplete (SelectResidence.cs:195)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Item_\" + object_name": {
+   "read": [],
+   "write": [
+    "ItemID.Item_Picked (ItemID.cs:349)"
+   ],
+   "other": []
+  },
+  "\"Item_\" + picked_object_name": {
+   "read": [
+    "DroneShopScript.CheckButton (DroneShopScript.cs:80)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Item_\" + residence_script.loot_items[i].loot_prefs": {
+   "read": [
+    "Loot_Manager.Load_Loot_Info (Loot_Manager.cs:25)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Item_\" + transform.name": {
+   "read": [
+    "Pickupable.Start (Pickupable.cs:253)",
+    "Pickupable.Start (Pickupable.cs:289)"
+   ],
+   "write": [
+    "Pickupable.PickingItem (Pickupable.cs:483)"
+   ],
+   "other": []
+  },
+  "\"Item_Discovered_\" + item_ID": {
+   "read": [
+    "ItemID.Start (ItemID.cs:143)"
+   ],
+   "write": [
+    "ItemID.DiscoverItem (ItemID.cs:212)"
+   ],
+   "other": []
+  },
+  "\"Item_Value_\" + item_ID": {
+   "read": [
+    "ItemID.Start (ItemID.cs:139)"
+   ],
+   "write": [
+    "ItemID.DiscoverValue (ItemID.cs:206)"
+   ],
+   "other": []
+  },
+  "\"Jobs_Complete\"": {
+   "read": [
+    "JobOffer.ClaimRewards (JobOffer.cs:105)"
+   ],
+   "write": [
+    "JobOffer.ClaimRewards (JobOffer.cs:105)"
+   ],
+   "other": []
+  },
+  "\"KEY\"": {
+   "read": [
+    "TestClass.GeneralTest (TestClass.cs:66)",
+    "TestClass.TestKeySystem (TestClass.cs:91)",
+    "TestClass.TestIntStoring (TestClass.cs:101)",
+    "TestClass.TestSPrefsDeleteKey (TestClass.cs:110)",
+    "TestClass.TestSPrefsDeleteKey (TestClass.cs:115)",
+    "TestClass.TestSPrefsDeleteKey (TestClass.cs:119)",
+    "TestClass.TestSPrefsDeleteKey (TestClass.cs:125)",
+    "TestClass.TestDefaultValues (TestClass.cs:138)",
+    "TestClass.TestDefaultValues (TestClass.cs:142)",
+    "TestClass.TestDefaultValues (TestClass.cs:146)",
+    "TestClass.TestDefaultValues (TestClass.cs:151)",
+    "TestClass.TestDefaultValues (TestClass.cs:155)",
+    "TestClass.TestDefaultValues (TestClass.cs:159)",
+    "TestClass.TestDefaultValues (TestClass.cs:164)"
+   ],
+   "write": [
+    "TestClass.GeneralTest (TestClass.cs:65)",
+    "TestClass.TestKeySystem (TestClass.cs:90)",
+    "TestClass.TestIntStoring (TestClass.cs:100)",
+    "TestClass.TestSPrefsDeleteKey (TestClass.cs:114)",
+    "TestClass.TestSPrefsDeleteKey (TestClass.cs:124)",
+    "TestClass.TestDefaultValues (TestClass.cs:150)",
+    "TestClass.TestDefaultValues (TestClass.cs:163)"
+   ],
+   "other": []
+  },
+  "\"KEY\u00d6\u00e4\u00dc$!?@\"": {
+   "read": [
+    "TestClass.TestExtremeValues (TestClass.cs:174)",
+    "TestClass.TestExtremeValues (TestClass.cs:179)",
+    "TestClass.TestExtremeValues (TestClass.cs:184)",
+    "TestClass.TestExtremeValues (TestClass.cs:190)",
+    "TestClass.TestExtremeValues (TestClass.cs:195)",
+    "TestClass.TestExtremeValues (TestClass.cs:200)"
+   ],
+   "write": [
+    "TestClass.TestExtremeValues (TestClass.cs:173)",
+    "TestClass.TestExtremeValues (TestClass.cs:178)",
+    "TestClass.TestExtremeValues (TestClass.cs:183)",
+    "TestClass.TestExtremeValues (TestClass.cs:188)",
+    "TestClass.TestExtremeValues (TestClass.cs:189)",
+    "TestClass.TestExtremeValues (TestClass.cs:194)",
+    "TestClass.TestExtremeValues (TestClass.cs:199)",
+    "TestClass.TestExtremeValues (TestClass.cs:204)"
+   ],
+   "other": []
+  },
+  "\"KnockedOutPeople\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2635)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2671)"
+   ],
+   "other": []
+  },
+  "\"LOD\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2065)"
+   ],
+   "write": [
+    "Inventory.LODSliderChange (Inventory.cs:1858)",
+    "MainMenu.Start (MainMenu.cs:160)"
+   ],
+   "other": []
+  },
+  "\"LODInterior\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2064)"
+   ],
+   "write": [
+    "Inventory.InteriorLODSliderChange (Inventory.cs:1863)",
+    "MainMenu.Start (MainMenu.cs:159)"
+   ],
+   "other": []
+  },
+  "\"LanguageString\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2035)",
+    "MainMenu.Start (MainMenu.cs:164)",
+    "MainMenu.PauseMenuDelayEnable (MainMenu.cs:363)"
+   ],
+   "write": [
+    "Inventory.SetLanguage (Inventory.cs:717)",
+    "Inventory.SetLanguage (Inventory.cs:723)",
+    "Inventory.SetLanguage (Inventory.cs:729)",
+    "Inventory.SetLanguage (Inventory.cs:735)",
+    "Inventory.SetLanguage (Inventory.cs:741)",
+    "Inventory.SetLanguage (Inventory.cs:747)",
+    "Inventory.SetLanguage (Inventory.cs:753)",
+    "Inventory.SetLanguage (Inventory.cs:759)",
+    "Inventory.SetLanguage (Inventory.cs:765)",
+    "Inventory.SetLanguage (Inventory.cs:771)",
+    "Inventory.SetLanguage (Inventory.cs:777)",
+    "Inventory.SetLanguage (Inventory.cs:783)",
+    "Inventory.SetLanguage (Inventory.cs:789)",
+    "Inventory.NextLanguage (Inventory.cs:2721)",
+    "Inventory.PrevLanguage (Inventory.cs:2730)"
+   ],
+   "other": []
+  },
+  "\"LoadMinigame1\"": {
+   "read": [],
+   "write": [
+    "MainMenu.ToggleMinigame (MainMenu.cs:307)",
+    "MainMenu.ToggleMinigame (MainMenu.cs:312)"
+   ],
+   "other": []
+  },
+  "\"LoadingProfile\"": {
+   "read": [
+    "GameManager.ContinueButtonActivate (GameManager.cs:1105)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Locker_Item_\" + item_ID": {
+   "read": [
+    "ItemID.Start (ItemID.cs:158)"
+   ],
+   "write": [
+    "ItemID.Save_Item_Amount (ItemID.cs:237)"
+   ],
+   "other": []
+  },
+  "\"Lockpick\"": {
+   "read": [
+    "Inventory.CheckSkills (Inventory.cs:3282)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"LocksOpened\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2628)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2664)"
+   ],
+   "other": []
+  },
+  "\"Lvl\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:303)",
+    "SaveGame.LoadGame (SaveGame.cs:344)"
+   ],
+   "write": [
+    "PlayerScript.SaveMoneyAmount (PlayerScript.cs:1654)",
+    "SaveGame.Save_XP_And_Level (SaveGame.cs:282)",
+    "SaveGame.LoadGame (SaveGame.cs:305)"
+   ],
+   "other": []
+  },
+  "\"MB\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2318)"
+   ],
+   "write": [
+    "Inventory.MotionBlurToggle1 (Inventory.cs:980)",
+    "Inventory.MotionBlurToggle1 (Inventory.cs:984)",
+    "MainMenu.Start (MainMenu.cs:143)"
+   ],
+   "other": []
+  },
+  "\"MMExampleMapID\"": {
+   "read": [
+    "bl_MMExampleManager.Awake (bl_MMExampleManager.cs:20)"
+   ],
+   "write": [
+    "bl_MMExampleManager.ChangeMap (bl_MMExampleManager.cs:70)"
+   ],
+   "other": []
+  },
+  "\"MadisonPoint\"": {
+   "read": [
+    "GameManager.ContinueButtonActivate (GameManager.cs:1087)",
+    "GameManager.ContinueButtonActivate (GameManager.cs:1088)"
+   ],
+   "write": [
+    "GameManager.SetClosestPointSpawn (GameManager.cs:640)"
+   ],
+   "other": []
+  },
+  "\"MainDifficulty\"": {
+   "read": [
+    "GameManager.Awake (GameManager.cs:688)",
+    "GameManager.Awake (GameManager.cs:697)",
+    "Inventory.ReloadStats (Inventory.cs:2640)",
+    "ItemID.Start (ItemID.cs:151)",
+    "PlayerScript.Start (PlayerScript.cs:1190)",
+    "StoryManager.CheckAchievement (StoryManager.cs:359)"
+   ],
+   "write": [
+    "MainMenu.StartNewGame (MainMenu.cs:460)",
+    "MainMenu.StartFreeMode (MainMenu.cs:492)"
+   ],
+   "other": []
+  },
+  "\"MainVol\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2428)"
+   ],
+   "write": [
+    "Inventory.SetMasterVolume (Inventory.cs:2896)"
+   ],
+   "other": []
+  },
+  "\"MaxXP\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:343)"
+   ],
+   "write": [
+    "PlayerScript.SaveMoneyAmount (PlayerScript.cs:1653)",
+    "SaveGame.Save_XP_And_Level (SaveGame.cs:285)",
+    "SaveGame.LoadGame (SaveGame.cs:306)"
+   ],
+   "other": []
+  },
+  "\"Medkit\"": {
+   "read": [
+    "Medkit.Start (Medkit.cs:13)"
+   ],
+   "write": [
+    "GameManager.SelectHideout (GameManager.cs:2290)",
+    "PlayerScript.Update (PlayerScript.cs:7121)"
+   ],
+   "other": []
+  },
+  "\"Messages\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2258)"
+   ],
+   "write": [
+    "Inventory.MessagesToggle1 (Inventory.cs:1134)",
+    "Inventory.MessagesToggle1 (Inventory.cs:1138)"
+   ],
+   "other": []
+  },
+  "\"Minimap\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2104)"
+   ],
+   "write": [
+    "Inventory.MinimapToggleClick (Inventory.cs:919)",
+    "Inventory.MinimapToggleClick (Inventory.cs:927)"
+   ],
+   "other": []
+  },
+  "\"MinimapCameraHeight\"": {
+   "read": [
+    "bl_MiniMap.Awake (bl_MiniMap.cs:331)",
+    "bl_MiniMap.ToggleSize (bl_MiniMap.cs:621)"
+   ],
+   "write": [
+    "bl_MiniMap.ChangeHeight (bl_MiniMap.cs:729)"
+   ],
+   "other": []
+  },
+  "\"MissionsCompleted\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2627)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2663)"
+   ],
+   "other": []
+  },
+  "\"Money\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:326)"
+   ],
+   "write": [
+    "MainMenu.StartNewGame (MainMenu.cs:444)",
+    "MainMenu.StartNewGame (MainMenu.cs:448)",
+    "MainMenu.StartFreeMode (MainMenu.cs:481)",
+    "PlayerScript.SaveMoneyAmount (PlayerScript.cs:1649)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:249)"
+   ],
+   "other": []
+  },
+  "\"MoneyMade\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2633)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2669)",
+    "Inventory.AddMoneyMade (Inventory.cs:3995)"
+   ],
+   "other": []
+  },
+  "\"MoneyMinigame\"": {
+   "read": [
+    "LoadMinigame.SpawnMoneyText (LoadMinigame.cs:69)",
+    "SaveGame.LoadGame (SaveGame.cs:350)",
+    "SaveGame.LoadGame (SaveGame.cs:352)"
+   ],
+   "write": [
+    "LoadMinigame.SpawnMoneyText (LoadMinigame.cs:69)",
+    "MainMenu.Start (MainMenu.cs:118)",
+    "SaveGame.LoadGame (SaveGame.cs:354)"
+   ],
+   "other": []
+  },
+  "\"MouseSensitivity\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2394)",
+    "MainMenu.Start (MainMenu.cs:128)"
+   ],
+   "write": [
+    "Inventory.MouseSChange (Inventory.cs:1988)",
+    "MainMenu.Start (MainMenu.cs:130)"
+   ],
+   "other": []
+  },
+  "\"MouseSensitivityCar\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2395)"
+   ],
+   "write": [
+    "Inventory.MouseSCarChange (Inventory.cs:2023)",
+    "MainMenu.Start (MainMenu.cs:131)"
+   ],
+   "other": []
+  },
+  "\"MouseSmooth\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2403)",
+    "PlayerCameraBehavior.WaitSmooth (PlayerCameraBehavior.cs:145)"
+   ],
+   "write": [
+    "Inventory.MouseSmoothChange (Inventory.cs:2029)",
+    "MainMenu.Start (MainMenu.cs:162)"
+   ],
+   "other": []
+  },
+  "\"MusicVol\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2427)"
+   ],
+   "write": [
+    "Inventory.SetMusicVolume (Inventory.cs:2906)",
+    "MainMenu.Start (MainMenu.cs:157)"
+   ],
+   "other": []
+  },
+  "\"NewDay\"": {
+   "read": [
+    "DayNightTime.Update (DayNightTime.cs:374)"
+   ],
+   "write": [
+    "DayNightTime.Update (DayNightTime.cs:377)",
+    "DayNightTime.Update (DayNightTime.cs:419)"
+   ],
+   "other": []
+  },
+  "\"NextLevelRep\"": {
+   "read": [
+    "ContractManager.LoadContract (ContractManager.cs:219)"
+   ],
+   "write": [
+    "ContractManager.SaveContract (ContractManager.cs:256)",
+    "MainMenu.StartNewGame (MainMenu.cs:457)",
+    "MainMenu.StartFreeMode (MainMenu.cs:485)"
+   ],
+   "other": []
+  },
+  "\"PadToggled\"": {
+   "read": [
+    "ControllerMenu.OnControllerConnected (ControllerMenu.cs:33)"
+   ],
+   "write": [
+    "ControllerMenu.ActivatePad (ControllerMenu.cs:20)"
+   ],
+   "other": []
+  },
+  "\"ParcelsOpened\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2630)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2666)"
+   ],
+   "other": []
+  },
+  "\"PauseGameAuto\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2242)"
+   ],
+   "write": [
+    "Inventory.PauseGameToggle (Inventory.cs:1104)",
+    "Inventory.PauseGameToggle (Inventory.cs:1108)"
+   ],
+   "other": []
+  },
+  "\"PayphoneActive\"": {
+   "read": [
+    "Payphone.Start (Payphone.cs:38)"
+   ],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:124)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:130)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:136)"
+   ],
+   "other": []
+  },
+  "\"PayphoneMinutes\"": {
+   "read": [
+    "Payphone.Start (Payphone.cs:40)"
+   ],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:125)"
+   ],
+   "other": []
+  },
+  "\"PayphoneName\"": {
+   "read": [
+    "Payphone.Start (Payphone.cs:38)"
+   ],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:123)"
+   ],
+   "other": []
+  },
+  "\"PayphoneSeconds\"": {
+   "read": [
+    "Payphone.Start (Payphone.cs:40)"
+   ],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:126)"
+   ],
+   "other": []
+  },
+  "\"Perception\"": {
+   "read": [
+    "Inventory.CheckSkills (Inventory.cs:3283)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"PickpocketedPeople\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2626)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2662)"
+   ],
+   "other": []
+  },
+  "\"PlayerProgress\"": {
+   "read": [
+    "SPrefsExampleUsage.Start (SPrefsExampleUsage.cs:9)",
+    "SPrefsExampleUsage.Start (SPrefsExampleUsage.cs:11)"
+   ],
+   "write": [
+    "SPrefsExampleUsage.MakeProgress (SPrefsExampleUsage.cs:25)"
+   ],
+   "other": []
+  },
+  "\"Playtime\"": {
+   "read": [
+    "Inventory.returnPlaytime (Inventory.cs:2710)",
+    "SaveGame.LoadGame (SaveGame.cs:317)"
+   ],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:99)"
+   ],
+   "other": []
+  },
+  "\"PlaywayFollowed\"": {
+   "read": [
+    "UpgradeIt.OnEnable (UpgradeIt.cs:58)"
+   ],
+   "write": [
+    "MainMenu.ActivateThanks (MainMenu.cs:193)"
+   ],
+   "other": []
+  },
+  "\"PosX_item\" + i": {
+   "read": [
+    "VanHeavyItems.LoadItems (VanHeavyItems.cs:75)"
+   ],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:131)"
+   ],
+   "other": []
+  },
+  "\"PosX_item\" + j": {
+   "read": [],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:144)"
+   ],
+   "other": []
+  },
+  "\"PosY_item\" + i": {
+   "read": [
+    "VanHeavyItems.LoadItems (VanHeavyItems.cs:75)"
+   ],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:132)"
+   ],
+   "other": []
+  },
+  "\"PosY_item\" + j": {
+   "read": [],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:145)"
+   ],
+   "other": []
+  },
+  "\"PosZ_item\" + i": {
+   "read": [
+    "VanHeavyItems.LoadItems (VanHeavyItems.cs:75)"
+   ],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:133)"
+   ],
+   "other": []
+  },
+  "\"PosZ_item\" + j": {
+   "read": [],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:146)"
+   ],
+   "other": []
+  },
+  "\"PrevPoints\"": {
+   "read": [],
+   "write": [
+    "PlayerScript.SaveMoneyAmount (PlayerScript.cs:1656)"
+   ],
+   "other": []
+  },
+  "\"Profile\"": {
+   "read": [
+    "GameManager.ContinueButtonActivate (GameManager.cs:1107)",
+    "InitializePrefs.Reinitialize (InitializePrefs.cs:43)",
+    "InitializePrefs.Reinitialize (InitializePrefs.cs:47)",
+    "InitializePrefs.Reinitialize (InitializePrefs.cs:51)",
+    "InitializePrefs.Reinitialize (InitializePrefs.cs:55)",
+    "InitializePrefs.Reinitialize (InitializePrefs.cs:59)"
+   ],
+   "write": [
+    "MainMenu.SetProfile (MainMenu.cs:319)"
+   ],
+   "other": []
+  },
+  "\"ProfileSave\"": {
+   "read": [
+    "PlayerScript.Quicksave (PlayerScript.cs:3941)"
+   ],
+   "write": [
+    "GameManager.SaveToProfile (GameManager.cs:743)",
+    "GameManager.SaveToProfile (GameManager.cs:748)"
+   ],
+   "other": []
+  },
+  "\"Quality\"": {
+   "read": [
+    "GameManager.Start (GameManager.cs:1170)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"QuickBuyEnabled\"": {
+   "read": [
+    "PhoneControls.OnEnable (PhoneControls.cs:70)"
+   ],
+   "write": [
+    "StoryManager.InitiateStory (StoryManager.cs:542)"
+   ],
+   "other": []
+  },
+  "\"RadioStation\"": {
+   "read": [
+    "RadioManager.Start (RadioManager.cs:30)"
+   ],
+   "write": [
+    "RadioManager.EnableRadio (RadioManager.cs:49)"
+   ],
+   "other": []
+  },
+  "\"RandomVan\"": {
+   "read": [
+    "RandomVan.Start (RandomVan.cs:11)"
+   ],
+   "write": [
+    "GameManager.SelectTestMap (GameManager.cs:1982)",
+    "GameManager.SelectHillville (GameManager.cs:1997)"
+   ],
+   "other": []
+  },
+  "\"Random_BG\"": {
+   "read": [
+    "GameManager.Start (GameManager.cs:1179)"
+   ],
+   "write": [
+    "GameManager.LoadWait (GameManager.cs:2225)",
+    "MainMenu.LoadNewSceneAsync (MainMenu.cs:407)"
+   ],
+   "other": []
+  },
+  "\"Rating1\"": {
+   "read": [
+    "ThiefRating.LoadThings (ThiefRating.cs:53)"
+   ],
+   "write": [
+    "ThiefRating.SaveThings (ThiefRating.cs:65)"
+   ],
+   "other": []
+  },
+  "\"Rating2\"": {
+   "read": [
+    "ThiefRating.LoadThings (ThiefRating.cs:54)"
+   ],
+   "write": [
+    "ThiefRating.SaveThings (ThiefRating.cs:66)"
+   ],
+   "other": []
+  },
+  "\"Rating3\"": {
+   "read": [
+    "ThiefRating.LoadThings (ThiefRating.cs:55)"
+   ],
+   "write": [
+    "ThiefRating.SaveThings (ThiefRating.cs:67)"
+   ],
+   "other": []
+  },
+  "\"Rating4\"": {
+   "read": [
+    "ThiefRating.LoadThings (ThiefRating.cs:56)"
+   ],
+   "write": [
+    "ThiefRating.SaveThings (ThiefRating.cs:68)"
+   ],
+   "other": []
+  },
+  "\"Rating5\"": {
+   "read": [
+    "ThiefRating.LoadThings (ThiefRating.cs:57)"
+   ],
+   "write": [
+    "ThiefRating.SaveThings (ThiefRating.cs:69)"
+   ],
+   "other": []
+  },
+  "\"Rating6\"": {
+   "read": [
+    "ThiefRating.LoadThings (ThiefRating.cs:58)"
+   ],
+   "write": [
+    "ThiefRating.SaveThings (ThiefRating.cs:70)"
+   ],
+   "other": []
+  },
+  "\"ReduceLights\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2050)"
+   ],
+   "write": [
+    "Inventory.ReduceLightsToggle (Inventory.cs:1380)",
+    "Inventory.ReduceLightsToggle (Inventory.cs:1384)"
+   ],
+   "other": []
+  },
+  "\"RefreshStock\"": {
+   "read": [
+    "StockManager.RefreshStock (StockManager.cs:59)"
+   ],
+   "write": [
+    "StockManager.RefreshStock (StockManager.cs:58)",
+    "StockManager.RefreshStock (StockManager.cs:61)"
+   ],
+   "other": []
+  },
+  "\"RemoteCamSlider\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2412)"
+   ],
+   "write": [
+    "Inventory.RemoteCamSlider (Inventory.cs:1916)",
+    "MainMenu.Start (MainMenu.cs:155)"
+   ],
+   "other": []
+  },
+  "\"RentTimer\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:330)"
+   ],
+   "write": [
+    "MainMenu.StartNewGame (MainMenu.cs:453)",
+    "MainMenu.StartFreeMode (MainMenu.cs:488)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:154)"
+   ],
+   "other": []
+  },
+  "\"Reputation\"": {
+   "read": [
+    "PlayerScript.Start (PlayerScript.cs:1244)"
+   ],
+   "write": [
+    "PlayerScript.IncreaseReputation (PlayerScript.cs:1603)"
+   ],
+   "other": []
+  },
+  "\"ResX\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2416)",
+    "Inventory.Start (Inventory.cs:2418)"
+   ],
+   "write": [
+    "ResolutionButton.SetRes (ResolutionButton.cs:28)"
+   ],
+   "other": []
+  },
+  "\"ResY\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2418)"
+   ],
+   "write": [
+    "ResolutionButton.SetRes (ResolutionButton.cs:29)"
+   ],
+   "other": []
+  },
+  "\"Ringtone\"": {
+   "read": [
+    "PhoneControls.AssignRingtone (PhoneControls.cs:102)"
+   ],
+   "write": [
+    "PhoneControls.ChangeRingtone (PhoneControls.cs:113)"
+   ],
+   "other": []
+  },
+  "\"RotX_item\" + i": {
+   "read": [
+    "VanHeavyItems.LoadItems (VanHeavyItems.cs:76)"
+   ],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:134)"
+   ],
+   "other": []
+  },
+  "\"RotX_item\" + j": {
+   "read": [],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:147)"
+   ],
+   "other": []
+  },
+  "\"RotY_item\" + i": {
+   "read": [
+    "VanHeavyItems.LoadItems (VanHeavyItems.cs:76)"
+   ],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:135)"
+   ],
+   "other": []
+  },
+  "\"RotY_item\" + j": {
+   "read": [],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:148)"
+   ],
+   "other": []
+  },
+  "\"RotZ_item\" + i": {
+   "read": [
+    "VanHeavyItems.LoadItems (VanHeavyItems.cs:76)"
+   ],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:136)"
+   ],
+   "other": []
+  },
+  "\"RotZ_item\" + j": {
+   "read": [],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:149)"
+   ],
+   "other": []
+  },
+  "\"SSAO\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2329)"
+   ],
+   "write": [
+    "Inventory.SSAOToggle1 (Inventory.cs:1211)",
+    "Inventory.SSAOToggle1 (Inventory.cs:1215)",
+    "MainMenu.Start (MainMenu.cs:139)"
+   ],
+   "other": []
+  },
+  "\"SSR\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2183)"
+   ],
+   "write": [
+    "Inventory.SSRToggle1 (Inventory.cs:1173)",
+    "Inventory.SSRToggle1 (Inventory.cs:1177)",
+    "MainMenu.Start (MainMenu.cs:141)"
+   ],
+   "other": []
+  },
+  "\"SafesOpened\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2629)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2665)"
+   ],
+   "other": []
+  },
+  "\"Saturation\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2079)"
+   ],
+   "write": [
+    "Inventory.SliderSaturation (Inventory.cs:1899)"
+   ],
+   "other": []
+  },
+  "\"SaveExtra\"": {
+   "read": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:270)"
+   ],
+   "write": [
+    "GameManager.SaveToProfile (GameManager.cs:744)",
+    "GameManager.SaveToProfile (GameManager.cs:749)",
+    "GameManager.LoadProfile (GameManager.cs:755)"
+   ],
+   "other": []
+  },
+  "\"Saved_Pos\"": {
+   "read": [
+    "GameManager.ContinueButtonActivate (GameManager.cs:1085)",
+    "GameManager.ContinueButtonActivate (GameManager.cs:1090)",
+    "GameManager.Start (GameManager.cs:1229)",
+    "GameManager.Start (GameManager.cs:1246)"
+   ],
+   "write": [
+    "GameManager.SelectTestMap (GameManager.cs:1983)",
+    "GameManager.SelectHillville (GameManager.cs:1996)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:120)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:135)"
+   ],
+   "other": []
+  },
+  "\"SecurityPanelTut\"": {
+   "read": [
+    "Security_Panel_Minigame.Begin_Minigame (Security_Panel_Minigame.cs:307)"
+   ],
+   "write": [
+    "Security_Panel_Minigame.Success (Security_Panel_Minigame.cs:52)"
+   ],
+   "other": []
+  },
+  "\"ShadowDistance\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2410)"
+   ],
+   "write": [
+    "Inventory.SliderValueShadow (Inventory.cs:1910)",
+    "MainMenu.Start (MainMenu.cs:158)"
+   ],
+   "other": []
+  },
+  "\"ShadowQuality\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2383)",
+    "Inventory.RefreshOptionsTexts (Inventory.cs:2547)",
+    "Inventory.RefreshOptionsTexts (Inventory.cs:2551)",
+    "Inventory.RefreshOptionsTexts (Inventory.cs:2555)",
+    "Inventory.RefreshOptionsTexts (Inventory.cs:2559)",
+    "Inventory.ShadowUp (Inventory.cs:2754)",
+    "Inventory.ShadowUp (Inventory.cs:2756)",
+    "Inventory.ShadowUp (Inventory.cs:2758)",
+    "Inventory.ShadowUp (Inventory.cs:2759)",
+    "Inventory.ShadowUp (Inventory.cs:2763)",
+    "Inventory.ShadowUp (Inventory.cs:2767)",
+    "Inventory.ShadowUp (Inventory.cs:2771)",
+    "Inventory.ShadowDown (Inventory.cs:2780)",
+    "Inventory.ShadowDown (Inventory.cs:2782)",
+    "Inventory.ShadowDown (Inventory.cs:2784)",
+    "Inventory.ShadowDown (Inventory.cs:2785)",
+    "Inventory.ShadowDown (Inventory.cs:2789)",
+    "Inventory.ShadowDown (Inventory.cs:2793)",
+    "Inventory.ShadowDown (Inventory.cs:2797)"
+   ],
+   "write": [
+    "Inventory.SetDefaultsDeck (Inventory.cs:2485)",
+    "Inventory.ShadowUp (Inventory.cs:2756)",
+    "Inventory.ShadowDown (Inventory.cs:2782)",
+    "MainMenu.Start (MainMenu.cs:136)"
+   ],
+   "other": []
+  },
+  "\"Sharp\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2128)"
+   ],
+   "write": [
+    "Inventory.SharpToggleClick (Inventory.cs:902)",
+    "Inventory.SharpToggleClick (Inventory.cs:906)"
+   ],
+   "other": []
+  },
+  "\"ShowTips\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2266)"
+   ],
+   "write": [
+    "Inventory.ShowTipsToggle (Inventory.cs:1147)",
+    "Inventory.ShowTipsToggle (Inventory.cs:1151)"
+   ],
+   "other": []
+  },
+  "\"SpawnWarningHardcore\"": {
+   "read": [
+    "GameManager.ContinueButtonActivate (GameManager.cs:1076)"
+   ],
+   "write": [
+    "GameManager.ContinueButtonActivate (GameManager.cs:1078)",
+    "GameManager.GotCaught (GameManager.cs:1433)"
+   ],
+   "other": []
+  },
+  "\"SpecialPoints\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:348)"
+   ],
+   "write": [
+    "SaveGame.Save_XP_And_Level (SaveGame.cs:286)",
+    "SkillPage.LearnSkill (SkillPage.cs:218)"
+   ],
+   "other": []
+  },
+  "\"SpecialSkillsLearned\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2634)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2670)"
+   ],
+   "other": []
+  },
+  "\"SpottedPeople\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2625)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2661)"
+   ],
+   "other": []
+  },
+  "\"StealCars\"": {
+   "read": [
+    "Inventory.CheckSkills (Inventory.cs:3284)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"StealthRating\"": {
+   "read": [
+    "GameManager.SaveAll (GameManager.cs:1625)"
+   ],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:219)"
+   ],
+   "other": []
+  },
+  "\"SteamRemotePlay\"": {
+   "read": [
+    "GameManager.Awake (GameManager.cs:652)"
+   ],
+   "write": [
+    "GameManager.ActivateRemotePlay (GameManager.cs:715)",
+    "GameManager.ActivateRemotePlay (GameManager.cs:735)",
+    "MainMenu.Start (MainMenu.cs:117)"
+   ],
+   "other": []
+  },
+  "\"StolenBigItems\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2623)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2659)"
+   ],
+   "other": []
+  },
+  "\"StolenItems\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2622)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2658)",
+    "ItemID.Item_Picked (ItemID.cs:366)"
+   ],
+   "other": []
+  },
+  "\"Storage_Item_\" + item_ID": {
+   "read": [
+    "ItemID.Start (ItemID.cs:157)"
+   ],
+   "write": [
+    "ItemID.Save_Item_Amount (ItemID.cs:236)"
+   ],
+   "other": []
+  },
+  "\"Story\"": {
+   "read": [
+    "ActivateObjectStory.Start (ActivateObjectStory.cs:11)",
+    "ActivateStory.Start (ActivateStory.cs:16)",
+    "Credits.Start (Credits.cs:14)",
+    "GameManager.Awake (GameManager.cs:676)",
+    "GameManager.Start (GameManager.cs:1227)",
+    "Heist.CheckStory (Heist.cs:93)",
+    "IntroSequence.Start (IntroSequence.cs:29)",
+    "ItemID.Load_Item (ItemID.cs:389)",
+    "PhoneButton.CheckIfCanBuy (PhoneButton.cs:127)",
+    "Pickpocket_Object.Start (Pickpocket_Object.cs:74)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:104)",
+    "SaveGame.LoadGame (SaveGame.cs:356)",
+    "SelectResidence.Start (SelectResidence.cs:111)",
+    "Shop_Button.CheckStory (Shop_Button.cs:148)",
+    "Shop_Manager.SelectedNew (Shop_Manager.cs:259)",
+    "StoryManager.BeginStory (StoryManager.cs:116)",
+    "StoryObject.UpdateObject (StoryObject.cs:84)",
+    "StoryObject.UpdateObject (StoryObject.cs:108)"
+   ],
+   "write": [
+    "Credits.Start (Credits.cs:14)",
+    "Inventory.EndCheatEdit (Inventory.cs:4562)",
+    "Inventory.EndCheatEdit (Inventory.cs:4607)",
+    "MainMenu.StartNewGame (MainMenu.cs:438)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:106)",
+    "StoryManager.SaveStory (StoryManager.cs:132)"
+   ],
+   "other": []
+  },
+  "\"StoryBackup\"": {
+   "read": [
+    "Inventory.EndCheatEdit (Inventory.cs:4606)",
+    "Inventory.EndCheatEdit (Inventory.cs:4607)",
+    "Inventory.EndCheatEdit (Inventory.cs:4608)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:100)"
+   ],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:102)"
+   ],
+   "other": []
+  },
+  "\"StreamerMode\"": {
+   "read": [
+    "Credits.Start (Credits.cs:16)",
+    "DisableCopyright.Start (DisableCopyright.cs:7)",
+    "GameManager.Awake (GameManager.cs:664)",
+    "HideoutRadio.Start (HideoutRadio.cs:38)",
+    "MainMenu.Start (MainMenu.cs:119)",
+    "OnPossesion.Start (OnPossesion.cs:56)",
+    "Radio.Start (Radio.cs:29)",
+    "RadioStation.ReloadSongs (RadioStation.cs:47)"
+   ],
+   "write": [
+    "MainMenu.ToggleStreamer (MainMenu.cs:293)",
+    "MainMenu.ToggleStreamer (MainMenu.cs:298)"
+   ],
+   "other": []
+  },
+  "\"Subtitles\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2218)"
+   ],
+   "write": [
+    "Inventory.SubtitlesToggle (Inventory.cs:1078)",
+    "Inventory.SubtitlesToggle (Inventory.cs:1082)"
+   ],
+   "other": []
+  },
+  "\"SurvivalDays\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2632)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2668)"
+   ],
+   "other": []
+  },
+  "\"SurvivalMode\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2093)",
+    "SurvivalMode.CheckUI (SurvivalMode.cs:81)"
+   ],
+   "write": [
+    "Inventory.SurvivalModeClick (Inventory.cs:940)",
+    "Inventory.SurvivalModeClick (Inventory.cs:948)"
+   ],
+   "other": []
+  },
+  "\"Sway\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2120)"
+   ],
+   "write": [
+    "Inventory.CameraSwayClick (Inventory.cs:889)",
+    "Inventory.CameraSwayClick (Inventory.cs:893)"
+   ],
+   "other": []
+  },
+  "\"TPP\"": {
+   "read": [
+    "CarController.RunCar (CarController.cs:650)",
+    "GameManager.Update (GameManager.cs:1881)"
+   ],
+   "write": [
+    "CarController.Update (CarController.cs:1138)",
+    "MainMenu.StartNewGame (MainMenu.cs:441)",
+    "MainMenu.StartFreeMode (MainMenu.cs:479)"
+   ],
+   "other": []
+  },
+  "\"TestSave\"": {
+   "read": [],
+   "write": [
+    "TrySave.Start (TrySave.cs:7)"
+   ],
+   "other": []
+  },
+  "\"TextureQuality\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2382)",
+    "Inventory.RefreshOptionsTexts (Inventory.cs:2563)",
+    "Inventory.RefreshOptionsTexts (Inventory.cs:2567)",
+    "Inventory.RefreshOptionsTexts (Inventory.cs:2571)",
+    "Inventory.RefreshOptionsTexts (Inventory.cs:2575)",
+    "Inventory.RefreshOptionsTexts (Inventory.cs:2579)",
+    "Inventory.TextureUp (Inventory.cs:2806)",
+    "Inventory.TextureUp (Inventory.cs:2808)",
+    "Inventory.TextureUp (Inventory.cs:2810)",
+    "Inventory.TextureUp (Inventory.cs:2811)",
+    "Inventory.TextureUp (Inventory.cs:2815)",
+    "Inventory.TextureUp (Inventory.cs:2819)",
+    "Inventory.TextureUp (Inventory.cs:2823)",
+    "Inventory.TextureDown (Inventory.cs:2832)",
+    "Inventory.TextureDown (Inventory.cs:2834)",
+    "Inventory.TextureDown (Inventory.cs:2836)",
+    "Inventory.TextureDown (Inventory.cs:2837)",
+    "Inventory.TextureDown (Inventory.cs:2841)",
+    "Inventory.TextureDown (Inventory.cs:2845)",
+    "Inventory.TextureDown (Inventory.cs:2849)",
+    "Inventory.TextureDown (Inventory.cs:2853)"
+   ],
+   "write": [
+    "Inventory.SetDefaultsDeck (Inventory.cs:2505)",
+    "Inventory.TextureUp (Inventory.cs:2808)",
+    "Inventory.TextureDown (Inventory.cs:2834)",
+    "MainMenu.Start (MainMenu.cs:150)"
+   ],
+   "other": []
+  },
+  "\"ThiefScore\"": {
+   "read": [
+    "MainMenu.CheckProfile (MainMenu.cs:347)",
+    "SaveGame.LoadGame (SaveGame.cs:349)"
+   ],
+   "write": [
+    "SaveGame.Save_XP_And_Level (SaveGame.cs:287)"
+   ],
+   "other": []
+  },
+  "\"Thirst\"": {
+   "read": [
+    "SurvivalMode.LoadValues (SurvivalMode.cs:96)"
+   ],
+   "write": [
+    "SurvivalMode.SaveValues (SurvivalMode.cs:103)"
+   ],
+   "other": []
+  },
+  "\"Time_Days\"": {
+   "read": [
+    "EnviroCore.Load (EnviroCore.cs:1751)",
+    "EnviroCore.Load (EnviroCore.cs:1753)"
+   ],
+   "write": [
+    "EnviroCore.Save (EnviroCore.cs:1734)"
+   ],
+   "other": []
+  },
+  "\"Time_Hours\"": {
+   "read": [
+    "EnviroCore.Load (EnviroCore.cs:1747)",
+    "EnviroCore.Load (EnviroCore.cs:1749)"
+   ],
+   "write": [
+    "EnviroCore.Save (EnviroCore.cs:1733)"
+   ],
+   "other": []
+  },
+  "\"Time_Years\"": {
+   "read": [
+    "EnviroCore.Load (EnviroCore.cs:1755)",
+    "EnviroCore.Load (EnviroCore.cs:1757)"
+   ],
+   "write": [
+    "EnviroCore.Save (EnviroCore.cs:1735)"
+   ],
+   "other": []
+  },
+  "\"TimesCaught\"": {
+   "read": [
+    "Inventory.ReloadStats (Inventory.cs:2624)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2660)"
+   ],
+   "other": []
+  },
+  "\"TipSave\"": {
+   "read": [
+    "Tips.Awake (Tips.cs:32)",
+    "Tips.EnableDelay (Tips.cs:48)"
+   ],
+   "write": [
+    "Tips.SetTip (Tips.cs:58)",
+    "Tips.NextTip (Tips.cs:72)",
+    "Tips.RandomTip (Tips.cs:85)"
+   ],
+   "other": []
+  },
+  "\"ToggleSprint\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2226)"
+   ],
+   "write": [
+    "Inventory.ToggleSprint (Inventory.cs:1052)",
+    "Inventory.ToggleSprint (Inventory.cs:1056)"
+   ],
+   "other": []
+  },
+  "\"TotalHoursPassed\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:325)"
+   ],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:230)"
+   ],
+   "other": []
+  },
+  "\"TravelDistance\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:324)"
+   ],
+   "write": [
+    "Inventory.SaveStats (Inventory.cs:2657)"
+   ],
+   "other": []
+  },
+  "\"TrunkItem\"": {
+   "read": [
+    "CarController.LoadTrunkItem (CarController.cs:370)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Tutorial_Info\"": {
+   "read": [
+    "Tutorial.Start (Tutorial.cs:129)",
+    "Tutorial.GetTutorialImage (Tutorial.cs:137)",
+    "Tutorial.Unlock_Tutorial (Tutorial.cs:185)",
+    "Tutorial.Update (Tutorial.cs:447)"
+   ],
+   "write": [
+    "Tutorial.Unlock_Tutorial (Tutorial.cs:181)"
+   ],
+   "other": []
+  },
+  "\"Tutorial_Popup\"": {
+   "read": [
+    "DroneManager.ActivateDrone (DroneManager.cs:472)",
+    "Tutorial.Update (Tutorial.cs:445)"
+   ],
+   "write": [
+    "Tutorial.Unlock_Tutorial (Tutorial.cs:180)",
+    "Tutorial.Update (Tutorial.cs:456)"
+   ],
+   "other": []
+  },
+  "\"Tutorials\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2274)"
+   ],
+   "write": [
+    "Inventory.TutorialsToggle1 (Inventory.cs:1160)",
+    "Inventory.TutorialsToggle1 (Inventory.cs:1164)"
+   ],
+   "other": []
+  },
+  "\"UIScale\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2388)",
+    "Inventory.Start (Inventory.cs:2413)"
+   ],
+   "write": [
+    "Inventory.SliderValueUI (Inventory.cs:1929)",
+    "Inventory.Start (Inventory.cs:2390)",
+    "MainMenu.Start (MainMenu.cs:153)"
+   ],
+   "other": []
+  },
+  "\"VSync\"": {
+   "read": [
+    "Inventory.DropdownVSync (Inventory.cs:1751)",
+    "Inventory.Start (Inventory.cs:2380)"
+   ],
+   "write": [
+    "Inventory.DropdownVSync (Inventory.cs:1750)"
+   ],
+   "other": []
+  },
+  "\"ValueMinus\"": {
+   "read": [
+    "ContractManager.LoadContract (ContractManager.cs:228)"
+   ],
+   "write": [
+    "ContractManager.SaveContract (ContractManager.cs:262)"
+   ],
+   "other": []
+  },
+  "\"Wallpaper\"": {
+   "read": [
+    "PhoneControls.OnEnable (PhoneControls.cs:64)",
+    "PhoneControls.OnEnable (PhoneControls.cs:65)"
+   ],
+   "write": [
+    "PhoneControls.ChangeWallpaper (PhoneControls.cs:132)"
+   ],
+   "other": []
+  },
+  "\"WallpaperBedroom\"": {
+   "read": [
+    "CheckRenovations.CheckAll (CheckRenovations.cs:83)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"WallpaperLivingRoom\"": {
+   "read": [
+    "CheckRenovations.CheckAll (CheckRenovations.cs:93)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"Warnings\"": {
+   "read": [
+    "Inventory.Start (Inventory.cs:2250)"
+   ],
+   "write": [
+    "Inventory.WarningsToggle1 (Inventory.cs:1121)",
+    "Inventory.WarningsToggle1 (Inventory.cs:1125)"
+   ],
+   "other": []
+  },
+  "\"Week\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:341)"
+   ],
+   "write": [
+    "MainMenu.StartNewGame (MainMenu.cs:440)",
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:148)"
+   ],
+   "other": []
+  },
+  "\"Wishlist\"": {
+   "read": [
+    "StoryManager.Update (StoryManager.cs:185)"
+   ],
+   "write": [
+    "StoryManager.Update (StoryManager.cs:188)"
+   ],
+   "other": []
+  },
+  "\"XCar\"": {
+   "read": [
+    "SaveGame.LoadPlayerPosition (SaveGame.cs:414)"
+   ],
+   "write": [
+    "SaveGame.SaveCarPosition (SaveGame.cs:389)",
+    "SaveGame.ResetCarPosition (SaveGame.cs:406)"
+   ],
+   "other": []
+  },
+  "\"XCarRot\"": {
+   "read": [
+    "SaveGame.LoadPlayerPosition (SaveGame.cs:415)"
+   ],
+   "write": [
+    "SaveGame.SaveCarPosition (SaveGame.cs:392)"
+   ],
+   "other": []
+  },
+  "\"XP\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:342)"
+   ],
+   "write": [
+    "PlayerScript.SaveMoneyAmount (PlayerScript.cs:1651)",
+    "PlayerScript.SaveXP_Test (PlayerScript.cs:1661)",
+    "SaveGame.Save_XP_And_Level (SaveGame.cs:284)"
+   ],
+   "other": []
+  },
+  "\"XPPoints\"": {
+   "read": [
+    "SaveGame.LoadGame (SaveGame.cs:345)"
+   ],
+   "write": [
+    "GameManager.AddSkillPoint (GameManager.cs:1703)",
+    "PlayerScript.SaveMoneyAmount (PlayerScript.cs:1652)",
+    "SaveGame.Save_XP_And_Level (SaveGame.cs:283)",
+    "SkillPage.LearnSkill (SkillPage.cs:217)"
+   ],
+   "other": []
+  },
+  "\"XPlayer\"": {
+   "read": [
+    "SaveGame.Start (SaveGame.cs:64)",
+    "SaveGame.LoadPlayerPosition (SaveGame.cs:413)"
+   ],
+   "write": [
+    "SaveGame.SavePlayerPosition (SaveGame.cs:373)",
+    "SaveGame.SavePlayerPositionNearCar (SaveGame.cs:381)",
+    "SaveGame.ResetPlayerPosition (SaveGame.cs:399)"
+   ],
+   "other": []
+  },
+  "\"YCar\"": {
+   "read": [
+    "SaveGame.LoadPlayerPosition (SaveGame.cs:414)"
+   ],
+   "write": [
+    "SaveGame.SaveCarPosition (SaveGame.cs:390)",
+    "SaveGame.ResetCarPosition (SaveGame.cs:407)"
+   ],
+   "other": []
+  },
+  "\"YCarRot\"": {
+   "read": [
+    "SaveGame.LoadPlayerPosition (SaveGame.cs:415)"
+   ],
+   "write": [
+    "SaveGame.SaveCarPosition (SaveGame.cs:393)"
+   ],
+   "other": []
+  },
+  "\"YPlayer\"": {
+   "read": [
+    "SaveGame.LoadPlayerPosition (SaveGame.cs:413)"
+   ],
+   "write": [
+    "SaveGame.SavePlayerPosition (SaveGame.cs:374)",
+    "SaveGame.SavePlayerPositionNearCar (SaveGame.cs:382)",
+    "SaveGame.ResetPlayerPosition (SaveGame.cs:400)"
+   ],
+   "other": []
+  },
+  "\"ZCar\"": {
+   "read": [
+    "SaveGame.LoadPlayerPosition (SaveGame.cs:414)"
+   ],
+   "write": [
+    "SaveGame.SaveCarPosition (SaveGame.cs:391)",
+    "SaveGame.ResetCarPosition (SaveGame.cs:408)"
+   ],
+   "other": []
+  },
+  "\"ZCarRot\"": {
+   "read": [
+    "SaveGame.LoadPlayerPosition (SaveGame.cs:415)"
+   ],
+   "write": [
+    "SaveGame.SaveCarPosition (SaveGame.cs:394)"
+   ],
+   "other": []
+  },
+  "\"ZPlayer\"": {
+   "read": [
+    "SaveGame.LoadPlayerPosition (SaveGame.cs:413)"
+   ],
+   "write": [
+    "SaveGame.SavePlayerPosition (SaveGame.cs:375)",
+    "SaveGame.SavePlayerPositionNearCar (SaveGame.cs:383)",
+    "SaveGame.ResetPlayerPosition (SaveGame.cs:401)"
+   ],
+   "other": []
+  },
+  "\"anisotropicLevelSlider\"": {
+   "read": [
+    "GraphicsSettingsMenu.LoadMenuVariables (GraphicsSettingsMenu.cs:432)",
+    "URP_GraphicsSettingsMenu.LoadMenuVariables (URP_GraphicsSettingsMenu.cs:323)"
+   ],
+   "write": [
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:49)",
+    "GraphicsSettingsMenu.SaveMenuVariables (GraphicsSettingsMenu.cs:386)",
+    "URP_GraphicsSettingsMenu.SaveMenuVariables (URP_GraphicsSettingsMenu.cs:284)"
+   ],
+   "other": []
+  },
+  "\"anisotropicModeSlider\"": {
+   "read": [
+    "GraphicsSettingsMenu.LoadMenuVariables (GraphicsSettingsMenu.cs:431)",
+    "URP_GraphicsSettingsMenu.LoadMenuVariables (URP_GraphicsSettingsMenu.cs:322)"
+   ],
+   "write": [
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:48)",
+    "GraphicsSettingsMenu.SaveMenuVariables (GraphicsSettingsMenu.cs:385)",
+    "URP_GraphicsSettingsMenu.SaveMenuVariables (URP_GraphicsSettingsMenu.cs:283)"
+   ],
+   "other": []
+  },
+  "\"antiAliasSlider\"": {
+   "read": [
+    "GraphicsSettingsMenu.LoadMenuVariables (GraphicsSettingsMenu.cs:428)"
+   ],
+   "write": [
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:45)",
+    "GraphicsSettingsMenu.SaveMenuVariables (GraphicsSettingsMenu.cs:382)"
+   ],
+   "other": []
+  },
+  "\"associateUpgrade\"": {
+   "read": [
+    "CodenameAI.Start (CodenameAI.cs:148)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"audioPrefsSaved\"": {
+   "read": [
+    "AudioSettingsMenu.LoadMenuVariables (AudioSettingsMenu.cs:66)"
+   ],
+   "write": [
+    "AudioSettingsMenu.SaveMenuVariables (AudioSettingsMenu.cs:57)",
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:54)"
+   ],
+   "other": []
+  },
+  "\"backpack_extra\"": {
+   "read": [
+    "Inventory.CheckBackpack (Inventory.cs:3255)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"bltUpgrade\"": {
+   "read": [
+    "Lockpick.Start (Lockpick.cs:65)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"carStorageUpgrade\"": {
+   "read": [
+    "Inventory.CheckBackpack (Inventory.cs:3224)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"car_parts_weight\"": {
+   "read": [
+    "ItemID.Start (ItemID.cs:126)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"contract_infinite\"": {
+   "read": [
+    "ContractManager.LoadContract (ContractManager.cs:225)"
+   ],
+   "write": [
+    "ContractManager.SaveContract (ContractManager.cs:259)"
+   ],
+   "other": []
+  },
+  "\"contract_infinite_req_amount\"": {
+   "read": [
+    "ContractManager.LoadContract (ContractManager.cs:227)"
+   ],
+   "write": [
+    "ContractManager.SaveContract (ContractManager.cs:261)"
+   ],
+   "other": []
+  },
+  "\"contract_infinite_type\"": {
+   "read": [
+    "ContractManager.LoadContract (ContractManager.cs:226)"
+   ],
+   "write": [
+    "ContractManager.SaveContract (ContractManager.cs:260)"
+   ],
+   "other": []
+  },
+  "\"currentWeather\"": {
+   "read": [
+    "EnviroCore.Load (EnviroCore.cs:1759)",
+    "EnviroCore.Load (EnviroCore.cs:1761)"
+   ],
+   "write": [
+    "EnviroCore.Save (EnviroCore.cs:1740)"
+   ],
+   "other": []
+  },
+  "\"example\"": {
+   "read": [
+    "TestClass.TestSPrefsDeleteKey (TestClass.cs:129)"
+   ],
+   "write": [
+    "TestClass.TestSPrefsDeleteKey (TestClass.cs:123)"
+   ],
+   "other": []
+  },
+  "\"forklift\"": {
+   "read": [
+    "AchievementManager.Refresh (AchievementManager.cs:88)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"fxVolumeF\"": {
+   "read": [
+    "AudioSettingsMenu.LoadMenuVariables (AudioSettingsMenu.cs:69)"
+   ],
+   "write": [
+    "AudioSettingsMenu.SaveMenuVariables (AudioSettingsMenu.cs:60)",
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:56)"
+   ],
+   "other": []
+  },
+  "\"garage\"": {
+   "read": [
+    "GameManager.Start (GameManager.cs:1174)",
+    "Garage.Start (Garage.cs:17)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"graphicsPrefsSaved\"": {
+   "read": [
+    "GraphicsSettingsMenu.LoadMenuVariables (GraphicsSettingsMenu.cs:425)",
+    "URP_GraphicsSettingsMenu.LoadMenuVariables (URP_GraphicsSettingsMenu.cs:318)"
+   ],
+   "write": [
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:42)",
+    "GraphicsSettingsMenu.SaveMenuVariables (GraphicsSettingsMenu.cs:380)",
+    "URP_GraphicsSettingsMenu.SaveMenuVariables (URP_GraphicsSettingsMenu.cs:280)"
+   ],
+   "other": []
+  },
+  "\"graphicsSlider\"": {
+   "read": [
+    "GraphicsSettingsMenu.LoadMenuVariables (GraphicsSettingsMenu.cs:427)",
+    "URP_GraphicsSettingsMenu.LoadMenuVariables (URP_GraphicsSettingsMenu.cs:320)"
+   ],
+   "write": [
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:44)",
+    "GraphicsSettingsMenu.SaveMenuVariables (GraphicsSettingsMenu.cs:381)",
+    "URP_GraphicsSettingsMenu.SaveMenuVariables (URP_GraphicsSettingsMenu.cs:281)"
+   ],
+   "other": []
+  },
+  "\"laptopUpgrade\"": {
+   "read": [
+    "HackingLaptop.OnEnable (HackingLaptop.cs:40)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"lpUpgrade\"": {
+   "read": [
+    "MediumLockMaster.Start (MediumLockMaster.cs:104)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"mainVolumeF\"": {
+   "read": [
+    "AudioSettingsMenu.LoadMenuVariables (AudioSettingsMenu.cs:68)"
+   ],
+   "write": [
+    "AudioSettingsMenu.SaveMenuVariables (AudioSettingsMenu.cs:59)",
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:55)"
+   ],
+   "other": []
+  },
+  "\"meatUpgrade\"": {
+   "read": [
+    "Dog_Meat.Start (Dog_Meat.cs:26)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"musicVolumeF\"": {
+   "read": [
+    "AudioSettingsMenu.LoadMenuVariables (AudioSettingsMenu.cs:70)"
+   ],
+   "write": [
+    "AudioSettingsMenu.SaveMenuVariables (AudioSettingsMenu.cs:61)",
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:57)"
+   ],
+   "other": []
+  },
+  "\"mutedI\"": {
+   "read": [
+    "AudioSettingsMenu.LoadMenuVariables (AudioSettingsMenu.cs:71)"
+   ],
+   "write": [
+    "AudioSettingsMenu.SaveMenuVariables (AudioSettingsMenu.cs:58)"
+   ],
+   "other": []
+  },
+  "\"notepad\"": {
+   "read": [
+    "Inventory.LoadNotepad (Inventory.cs:843)"
+   ],
+   "write": [
+    "Inventory.SaveNotepad (Inventory.cs:838)"
+   ],
+   "other": []
+  },
+  "\"planningUpgrade\"": {
+   "read": [
+    "PlanningMode.SpawnNewObjects (PlanningMode.cs:104)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"police_escape_extra\"": {
+   "read": [
+    "PlayerScript.ShowTownSelection (PlayerScript.cs:1877)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"reward_AI\"": {
+   "read": [
+    "AI.ApplyEvent (AI.cs:563)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"reward_associate\"": {
+   "read": [
+    "GameManager.Awake (GameManager.cs:680)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"reward_bank\"": {
+   "read": [
+    "Darkbank.ReloadValues (Darkbank.cs:49)",
+    "DayNightTime.Update (DayNightTime.cs:400)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"reward_car_service\"": {
+   "read": [
+    "Whiplist.RefreshUpgrades (Whiplist.cs:173)",
+    "Whiplist.SpawnColorButtons (Whiplist.cs:319)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"reward_cooldown\"": {
+   "read": [
+    "AbilitiesManager.LoadAbilities (AbilitiesManager.cs:46)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"reward_crowbar\"": {
+   "read": [
+    "PlayerScript.Start (PlayerScript.cs:1198)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"reward_stealgear\"": {
+   "read": [
+    "GameManager.Awake (GameManager.cs:684)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"reward_time\"": {
+   "read": [
+    "PlayerScript.Start (PlayerScript.cs:1180)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"reward_xp\"": {
+   "read": [
+    "ItemID.Start (ItemID.cs:151)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"shadowResolutionSlider\"": {
+   "read": [
+    "GraphicsSettingsMenu.LoadMenuVariables (GraphicsSettingsMenu.cs:429)"
+   ],
+   "write": [
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:46)",
+    "GraphicsSettingsMenu.SaveMenuVariables (GraphicsSettingsMenu.cs:383)"
+   ],
+   "other": []
+  },
+  "\"stetUpgrade\"": {
+   "read": [
+    "SafeMaster.Start (SafeMaster.cs:97)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"textureQualitySlider\"": {
+   "read": [
+    "GraphicsSettingsMenu.LoadMenuVariables (GraphicsSettingsMenu.cs:430)",
+    "URP_GraphicsSettingsMenu.LoadMenuVariables (URP_GraphicsSettingsMenu.cs:321)"
+   ],
+   "write": [
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:47)",
+    "GraphicsSettingsMenu.SaveMenuVariables (GraphicsSettingsMenu.cs:384)",
+    "URP_GraphicsSettingsMenu.SaveMenuVariables (URP_GraphicsSettingsMenu.cs:282)"
+   ],
+   "other": []
+  },
+  "\"tools_weight\"": {
+   "read": [
+    "ItemID.Start (ItemID.cs:120)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "\"vSyncToggle\"": {
+   "read": [
+    "GraphicsSettingsMenu.LoadMenuVariables (GraphicsSettingsMenu.cs:454)",
+    "URP_GraphicsSettingsMenu.LoadMenuVariables (URP_GraphicsSettingsMenu.cs:335)"
+   ],
+   "write": [
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:53)",
+    "GraphicsSettingsMenu.SaveMenuVariables (GraphicsSettingsMenu.cs:393)",
+    "URP_GraphicsSettingsMenu.SaveMenuVariables (URP_GraphicsSettingsMenu.cs:289)"
+   ],
+   "other": []
+  },
+  "\"wantedResolutionX\"": {
+   "read": [
+    "GraphicsSettingsMenu.LoadMenuVariables (GraphicsSettingsMenu.cs:433)",
+    "URP_GraphicsSettingsMenu.LoadMenuVariables (URP_GraphicsSettingsMenu.cs:324)"
+   ],
+   "write": [
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:50)",
+    "GraphicsSettingsMenu.SaveMenuVariables (GraphicsSettingsMenu.cs:387)",
+    "URP_GraphicsSettingsMenu.SaveMenuVariables (URP_GraphicsSettingsMenu.cs:285)"
+   ],
+   "other": []
+  },
+  "\"wantedResolutionY\"": {
+   "read": [
+    "GraphicsSettingsMenu.LoadMenuVariables (GraphicsSettingsMenu.cs:434)",
+    "URP_GraphicsSettingsMenu.LoadMenuVariables (URP_GraphicsSettingsMenu.cs:325)"
+   ],
+   "write": [
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:51)",
+    "GraphicsSettingsMenu.SaveMenuVariables (GraphicsSettingsMenu.cs:388)",
+    "URP_GraphicsSettingsMenu.SaveMenuVariables (URP_GraphicsSettingsMenu.cs:286)"
+   ],
+   "other": []
+  },
+  "\"windowedModeToggle\"": {
+   "read": [
+    "GraphicsSettingsMenu.LoadMenuVariables (GraphicsSettingsMenu.cs:446)",
+    "URP_GraphicsSettingsMenu.LoadMenuVariables (URP_GraphicsSettingsMenu.cs:327)"
+   ],
+   "write": [
+    "GameMenuController.DeletePlayerprefs (GameMenuController.cs:52)",
+    "GraphicsSettingsMenu.SaveMenuVariables (GraphicsSettingsMenu.cs:395)",
+    "URP_GraphicsSettingsMenu.SaveMenuVariables (URP_GraphicsSettingsMenu.cs:291)"
+   ],
+   "other": []
+  },
+  "CatPref": {
+   "read": [
+    "CatAI.TouchCat (CatAI.cs:52)"
+   ],
+   "write": [
+    "CatAI.TouchCat (CatAI.cs:54)"
+   ],
+   "other": []
+  },
+  "Cryptor.Hash(key)": {
+   "read": [
+    "SPrefs.SecureGetString (SPrefs.cs:162)",
+    "SPrefs.SecureHasKey (SPrefs.cs:167)"
+   ],
+   "write": [
+    "SPrefs.SecureSetString (SPrefs.cs:157)",
+    "SPrefs.SecureDeleteKey (SPrefs.cs:172)"
+   ],
+   "other": []
+  },
+  "PS.GM.mission_strings_to_set[l]": {
+   "read": [],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:266)"
+   ],
+   "other": []
+  },
+  "PS.GM.parcel_strings_to_set[k]": {
+   "read": [],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:259)"
+   ],
+   "other": []
+  },
+  "PS.GM.story_manager.currentStoryScript.story_description + \"_Call\"": {
+   "read": [],
+   "write": [
+    "StorySequence.Update (StorySequence.cs:173)"
+   ],
+   "other": []
+  },
+  "ParcelStorag.parcelCodes[i].parcel_code_pref": {
+   "read": [
+    "GameManager.LoadParcels (GameManager.cs:612)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "ParcelStorage.parcelCodes[i].parcel_code_pref": {
+   "read": [
+    "Inventory.LoadParcelCodes (Inventory.cs:823)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "Parcel_Storage.parcelCodes[i].parcel_code_pref": {
+   "read": [
+    "ReadNote.BeginRead (ReadNote.cs:72)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "Prefs[i]": {
+   "read": [
+    "CheckIfDiscovered.OnEnable (CheckIfDiscovered.cs:13)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "ResidenceScript.Hints[j]": {
+   "read": [
+    "OnPossesion.Info1 (OnPossesion.cs:98)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "ResidenceScript.loot_items[k].display_loot_prefs": {
+   "read": [
+    "OnPossesion.Info1 (OnPossesion.cs:106)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "ResidenceScript.residence_missions[l].mission_prefs": {
+   "read": [
+    "OnPossesion.Info1 (OnPossesion.cs:114)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "Residence_Script.residence_missions[Job_Int].mission_prefs": {
+   "read": [
+    "Mission_UI_Object.OnEnable (Mission_UI_Object.cs:44)",
+    "Mission_UI_Object.OnEnable (Mission_UI_Object.cs:48)",
+    "Mission_UI_Object.OnEnable (Mission_UI_Object.cs:54)"
+   ],
+   "write": [
+    "Mission_UI_Object.Accept_Job (Mission_UI_Object.cs:67)"
+   ],
+   "other": []
+  },
+  "SR.residence_missions[l].mission_prefs": {
+   "read": [
+    "Inventory.ResidenceClicked (Inventory.cs:3076)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "TipPref": {
+   "read": [
+    "BuyTip.CheckTip (BuyTip.cs:133)"
+   ],
+   "write": [
+    "BuyTip.BuyTipp (BuyTip.cs:112)"
+   ],
+   "other": []
+  },
+  "aI.prefsHabitName + \"_\" + k": {
+   "read": [],
+   "write": [
+    "HeistManager.LearnAllHabits (HeistManager.cs:157)"
+   ],
+   "other": []
+  },
+  "aTM_prefs_to_reset[i]": {
+   "read": [],
+   "write": [
+    "DayNightTime.Update (DayNightTime.cs:395)"
+   ],
+   "other": []
+  },
+  "additions[currentAdditionNr].additionPref": {
+   "read": [
+    "HouseRenovator.SelectAddition (HouseRenovator.cs:97)"
+   ],
+   "write": [
+    "HouseRenovator.BuyAddition (HouseRenovator.cs:232)"
+   ],
+   "other": []
+  },
+  "all_tutorials[i].tutorial_pref": {
+   "read": [
+    "Tutorial.Unlock_Tutorial (Tutorial.cs:177)",
+    "Tutorial.Update (Tutorial.cs:436)"
+   ],
+   "write": [
+    "Tutorial.Unlock_Tutorial (Tutorial.cs:179)"
+   ],
+   "other": []
+  },
+  "array2[i].rewardPref": {
+   "read": [
+    "AchievementManager.Refresh (AchievementManager.cs:198)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "array[i]": {
+   "read": [
+    "AchievementManager.CheckEasterEggs (AchievementManager.cs:39)",
+    "AchievementManager.CheckPaintings (AchievementManager.cs:56)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "array[i].TipPref": {
+   "read": [
+    "CheckRobtips.Awake (CheckRobtips.cs:14)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "array[i].colorPref": {
+   "read": [],
+   "write": [
+    "SaveGame.SaveGameNewSystem (SaveGame.cs:170)"
+   ],
+   "other": []
+  },
+  "assigned_pref": {
+   "read": [
+    "CMS_Part.AssignPrefs (CMS_Part.cs:136)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "assigned_residence.residence_missions[mission_int].mission_prefs": {
+   "read": [
+    "Mission_Item.LoadAll (Mission_Item.cs:55)",
+    "Mission_Item.Mission_Complete (Mission_Item.cs:153)"
+   ],
+   "write": [
+    "Mission_Item.MissionComplete1 (Mission_Item.cs:137)"
+   ],
+   "other": []
+  },
+  "blackbays[i].gameObject.name": {
+   "read": [
+    "GameCompletion.Count (GameCompletion.cs:33)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "brakeUpgradePref": {
+   "read": [
+    "CarUpgrades.Start (CarUpgrades.cs:60)"
+   ],
+   "write": [
+    "CarUpgrades.SaveNewPref (CarUpgrades.cs:72)"
+   ],
+   "other": []
+  },
+  "buyTip.TipPref": {
+   "read": [
+    "StoryManager.Update (StoryManager.cs:302)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "car_name": {
+   "read": [
+    "StolenCarHideout.Start (StolenCarHideout.cs:13)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "car_prefs": {
+   "read": [
+    "OtherCarController.Start (OtherCarController.cs:87)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "colorPref": {
+   "read": [
+    "CarPaint.Start (CarPaint.cs:18)",
+    "CarPaint.Start (CarPaint.cs:19)",
+    "ItemMaterialChange.CheckColor (ItemMaterialChange.cs:31)",
+    "ItemMaterialChange.CheckColor (ItemMaterialChange.cs:35)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "company_string": {
+   "read": [
+    "StockCompany.SetNewValue (StockCompany.cs:50)",
+    "StockCompany.SetNewValue (StockCompany.cs:54)"
+   ],
+   "write": [
+    "StockCompany.SetNewValue (StockCompany.cs:52)",
+    "StockCompany.SetNewValue (StockCompany.cs:96)"
+   ],
+   "other": []
+  },
+  "componentsInChildren[i].transform.name": {
+   "read": [
+    "GameManager.SetItemsBlackBay (GameManager.cs:950)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "contractManager.contracts[j].contractPref + \"_complete\"": {
+   "read": [
+    "GameCompletion.Count (GameCompletion.cs:43)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "contractPref + \"_complete\"": {
+   "read": [
+    "ContractUIObj.CheckIfComplete (ContractUIObj.cs:58)"
+   ],
+   "write": [
+    "ContractUIObj.ClaimReward (ContractUIObj.cs:87)"
+   ],
+   "other": []
+  },
+  "currentStoryScript.house_script.residence_missions[currentStoryScript.job_nr].mission_prefs": {
+   "read": [
+    "StoryManager.InitiateStory (StoryManager.cs:529)"
+   ],
+   "write": [
+    "StoryManager.InitiateStory (StoryManager.cs:531)"
+   ],
+   "other": []
+  },
+  "currentStoryScript.house_script.residence_missions[currentStoryScript.second_job_nr].mission_prefs": {
+   "read": [
+    "StoryManager.InitiateStory (StoryManager.cs:534)"
+   ],
+   "write": [
+    "StoryManager.InitiateStory (StoryManager.cs:536)"
+   ],
+   "other": []
+  },
+  "currentStoryScript.item_name": {
+   "read": [
+    "StoryManager.Update (StoryManager.cs:173)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "currentStoryScript.story_description + \"_Call\"": {
+   "read": [
+    "StoryManager.InitiateStory (StoryManager.cs:515)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "currentStoryScript.story_description + \"_deduct\"": {
+   "read": [
+    "StoryManager.InitiateStory (StoryManager.cs:509)"
+   ],
+   "write": [
+    "StoryManager.InitiateStory (StoryManager.cs:513)"
+   ],
+   "other": []
+  },
+  "discovered_camera_prefs": {
+   "read": [
+    "SecurityCamera.OnEnable (SecurityCamera.cs:147)"
+   ],
+   "write": [
+    "SecurityCamera.SpotCamera (SecurityCamera.cs:345)"
+   ],
+   "other": []
+  },
+  "droneUpgrade.drone_upgrade_pref": {
+   "read": [
+    "DroneUpgradePanel.SetNewUpgrade (DroneUpgradePanel.cs:39)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "drone_scripts[currentDroneNr].drone_upgrades[i].drone_upgrade_pref": {
+   "read": [
+    "DroneTech.ShowUpgradesInfo (DroneTech.cs:72)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "easterEggPref": {
+   "read": [
+    "EasterEgg.Start (EasterEgg.cs:16)"
+   ],
+   "write": [
+    "EasterEgg.PickUp (EasterEgg.cs:24)"
+   ],
+   "other": []
+  },
+  "engineUpgradePref": {
+   "read": [
+    "CarUpgrades.Start (CarUpgrades.cs:58)"
+   ],
+   "write": [
+    "CarUpgrades.SaveNewPref (CarUpgrades.cs:70)"
+   ],
+   "other": []
+  },
+  "hacked_parcel_pref": {
+   "read": [
+    "ItemID.HackedElectronic (ItemID.cs:220)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "heists[selectedHeist].hints[m]": {
+   "read": [],
+   "write": [
+    "HeistManager.SelectHeist (HeistManager.cs:279)"
+   ],
+   "other": []
+  },
+  "heists[selectedHeist].loot[l].display_loot_prefs": {
+   "read": [],
+   "write": [
+    "HeistManager.SelectHeist (HeistManager.cs:260)"
+   ],
+   "other": []
+  },
+  "hint_array[j]": {
+   "read": [
+    "Hint_Holder.Refresh_Hints (Hint_Holder.cs:22)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "itemPref": {
+   "read": [
+    "CarPart.Start (CarPart.cs:94)",
+    "HiddenItem.Start (HiddenItem.cs:10)"
+   ],
+   "write": [
+    "CarPart.Start (CarPart.cs:93)",
+    "CarPart.Dismantle (CarPart.cs:140)",
+    "HiddenItem.PickIt (HiddenItem.cs:18)"
+   ],
+   "other": []
+  },
+  "itemSavePref + i": {
+   "read": [
+    "VanHeavyItems.LoadItems (VanHeavyItems.cs:67)",
+    "VanHeavyItems.LoadItems (VanHeavyItems.cs:71)"
+   ],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:130)"
+   ],
+   "other": []
+  },
+  "itemSavePref + j": {
+   "read": [],
+   "write": [
+    "VanHeavyItems.SaveItems (VanHeavyItems.cs:143)"
+   ],
+   "other": []
+  },
+  "itemXP_pref": {
+   "read": [
+    "JobOffer.OnEnable (JobOffer.cs:154)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "item_pref": {
+   "read": [
+    "CarPartItem.CheckIfHas (CarPartItem.cs:20)",
+    "CarPartItem.AddKGs (CarPartItem.cs:34)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "job_pref": {
+   "read": [
+    "JobOffer.OpenJobDetails (JobOffer.cs:75)",
+    "JobOffer.OpenJobDetails (JobOffer.cs:80)",
+    "JobOffer.AcceptJob (JobOffer.cs:91)",
+    "JobOffer.CheckAll (JobOffer.cs:120)",
+    "JobOffer.CheckAll (JobOffer.cs:126)",
+    "JobOffer.CheckAll (JobOffer.cs:132)",
+    "JobOffer.OnEnable (JobOffer.cs:154)",
+    "Job_Object.Start (Job_Object.cs:24)",
+    "Job_Object.OnDestroy (Job_Object.cs:44)"
+   ],
+   "write": [
+    "JobOffer.AcceptJob (JobOffer.cs:91)",
+    "JobOffer.ClaimRewards (JobOffer.cs:104)",
+    "JobOffer.OnEnable (JobOffer.cs:156)"
+   ],
+   "other": []
+  },
+  "key": {
+   "read": [
+    "SelectLevel.FillGrid (SelectLevel.cs:42)",
+    "SelectLevelPack.FillGrid (SelectLevelPack.cs:44)",
+    "SPrefs.GetString (SPrefs.cs:25)",
+    "SPrefs.GetInt (SPrefs.cs:51)",
+    "SPrefs.GetFloat (SPrefs.cs:88)",
+    "SPrefs.GetBool (SPrefs.cs:120)"
+   ],
+   "write": [
+    "SelectLevel.FillGrid (SelectLevel.cs:35)",
+    "SelectLevelPack.FillGrid (SelectLevelPack.cs:38)",
+    "SPrefs.SetString (SPrefs.cs:20)",
+    "SPrefs.SetInt (SPrefs.cs:46)",
+    "SPrefs.SetFloat (SPrefs.cs:83)",
+    "SPrefs.SetBool (SPrefs.cs:125)"
+   ],
+   "other": []
+  },
+  "key2": {
+   "read": [
+    "SelectLevelPack.FillGrid (SelectLevelPack.cs:45)"
+   ],
+   "write": [
+    "SelectLevelPack.FillGrid (SelectLevelPack.cs:39)"
+   ],
+   "other": []
+  },
+  "keyAction.ToString()": {
+   "read": [
+    "KeyBinding.OnEnable (KeyBinding.cs:119)"
+   ],
+   "write": [
+    "KeyBinding.SaveKeyCode (KeyBinding.cs:161)"
+   ],
+   "other": []
+  },
+  "learnedPref": {
+   "read": [
+    "SkillCheck.SkillRefresh (SkillCheck.cs:30)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "listOfPref": {
+   "read": [],
+   "write": [
+    "JobManager.JobSuccess (JobManager.cs:16)"
+   ],
+   "other": []
+  },
+  "location_string": {
+   "read": [
+    "Location_Manager.CheckIfPoliceAlerted (Location_Manager.cs:18)",
+    "Location_Manager.RemoveAlert (Location_Manager.cs:27)",
+    "Location_Manager.SetAlert (Location_Manager.cs:35)",
+    "Location_Manager.SetAlert (Location_Manager.cs:37)"
+   ],
+   "write": [
+    "Location_Manager.RemoveAlert (Location_Manager.cs:29)",
+    "Location_Manager.SetAlert (Location_Manager.cs:37)"
+   ],
+   "other": []
+  },
+  "loot_marker_translation_pref": {
+   "read": [
+    "Pickupable.Start (Pickupable.cs:253)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "normal_AI.TenantName": {
+   "read": [
+    "Pickpocket_Object.Start (Pickpocket_Object.cs:91)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "null": {
+   "read": [
+    "TestClass.TestExtremeValues (TestClass.cs:206)",
+    "TestClass.TestExtremeValues (TestClass.cs:208)",
+    "TestClass.TestExtremeValues (TestClass.cs:210)",
+    "TestClass.TestExtremeValues (TestClass.cs:211)",
+    "TestClass.TestExtremeValues (TestClass.cs:212)"
+   ],
+   "write": [
+    "TestClass.TestExtremeValues (TestClass.cs:205)",
+    "TestClass.TestExtremeValues (TestClass.cs:207)",
+    "TestClass.TestExtremeValues (TestClass.cs:209)"
+   ],
+   "other": []
+  },
+  "paintScript.colorPref": {
+   "read": [
+    "Whiplist.RefreshCurrentColor (Whiplist.cs:159)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "parcelStorage.parcelCodes[i].parcel_code_pref": {
+   "read": [
+    "ParcelContainer.Start (ParcelContainer.cs:21)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "parcel_pref": {
+   "read": [
+    "ReadNote.Start (ReadNote.cs:44)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "payphonePref": {
+   "read": [
+    "Payphone.Start (Payphone.cs:35)"
+   ],
+   "write": [
+    "Payphone.Success (Payphone.cs:127)"
+   ],
+   "other": []
+  },
+  "pickpocket_Target.transform.name + \"_week\"": {
+   "read": [],
+   "write": [
+    "Pickpocket_Manager.Success (Pickpocket_Manager.cs:126)"
+   ],
+   "other": []
+  },
+  "player_shares": {
+   "read": [
+    "StockCompany.SetNewValue (StockCompany.cs:55)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "playershares_pref": {
+   "read": [
+    "StockManager.ShowStockInfo (StockManager.cs:224)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "playersharespref": {
+   "read": [
+    "StockManager.Checker (StockManager.cs:85)",
+    "StockManager.BuyShares (StockManager.cs:105)",
+    "StockManager.SellShares (StockManager.cs:120)",
+    "StockManager.SellShares (StockManager.cs:123)",
+    "StockManager.IncreaseSell (StockManager.cs:138)",
+    "StockManager.DecreaseSell (StockManager.cs:155)"
+   ],
+   "write": [
+    "StockManager.BuyShares (StockManager.cs:102)",
+    "StockManager.SellShares (StockManager.cs:120)"
+   ],
+   "other": []
+  },
+  "pref": {
+   "read": [
+    "CheckIfHasCar.Start (CheckIfHasCar.cs:16)",
+    "Loot_Display_Box.Display_Loot (Loot_Display_Box.cs:45)",
+    "Mission_Display_Box.Display_Mission (Mission_Display_Box.cs:36)",
+    "StashTrigger.Start (StashTrigger.cs:28)"
+   ],
+   "write": [
+    "StashTrigger.DestroyIcon (StashTrigger.cs:37)"
+   ],
+   "other": []
+  },
+  "prefDiscover": {
+   "read": [],
+   "write": [
+    "OnPossesion.OnTriggerEnter (OnPossesion.cs:235)"
+   ],
+   "other": []
+  },
+  "prefName": {
+   "read": [
+    "ColorInfo.CheckIt (ColorInfo.cs:138)",
+    "Pickupable.Start (Pickupable.cs:277)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "prefRequired": {
+   "read": [
+    "EnableDisablePref.Start (EnableDisablePref.cs:13)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "prefsHabitName + \"_\" + i": {
+   "read": [
+    "AI.ReloadHabits (AI.cs:945)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "prefsHabitName + \"_\" + j": {
+   "read": [],
+   "write": [
+    "AI.DiscoverAllHabits (AI.cs:959)",
+    "AI.DiscoverWhenNotHome (AI.cs:974)",
+    "AI.DiscoverHabit (AI.cs:1082)"
+   ],
+   "other": []
+  },
+  "prefsHabitName + \"_spot\"": {
+   "read": [
+    "AI.DiscoverHabit (AI.cs:1065)"
+   ],
+   "write": [
+    "AI.DiscoverHabit (AI.cs:1068)"
+   ],
+   "other": []
+  },
+  "prefsName": {
+   "read": [
+    "PaintingHideout.Start (PaintingHideout.cs:29)",
+    "PaintingHideout.Start (PaintingHideout.cs:36)"
+   ],
+   "write": [
+    "PaintingHideout.Update (PaintingHideout.cs:66)",
+    "PaintingHideout.Update (PaintingHideout.cs:75)"
+   ],
+   "other": []
+  },
+  "prefsToSave[i]": {
+   "read": [],
+   "write": [
+    "CMS_Manager.SavePrefs (CMS_Manager.cs:112)"
+   ],
+   "other": []
+  },
+  "prefs[currentWallpaperSetting]": {
+   "read": [],
+   "write": [
+    "HouseRenovator.SetWallpaperBedroom (HouseRenovator.cs:180)"
+   ],
+   "other": []
+  },
+  "prefs[nr]": {
+   "read": [
+    "HouseRenovator.SetWallpaperSetting (HouseRenovator.cs:302)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "prefs_required": {
+   "read": [
+    "RewardRequirement.Check (RewardRequirement.cs:34)",
+    "RewardRequirement.Check (RewardRequirement.cs:38)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "prefs_to_set": {
+   "read": [
+    "ATM_Object.OnEnable (ATM_Object.cs:45)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "require_pref": {
+   "read": [
+    "Diamond_Marker.Start (Diamond_Marker.cs:34)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "requiredPrefName": {
+   "read": [
+    "CheckShopItem.OnEnable (CheckShopItem.cs:18)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "residence_missions[j].mission_prefs": {
+   "read": [
+    "SelectResidence.RefreshIfComplete (SelectResidence.cs:202)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "residence_script.loot_items[i].display_loot_prefs": {
+   "read": [
+    "Loot_Manager.Load_Loot_Info (Loot_Manager.cs:25)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "residence_script.residence_missions[i].mission_prefs": {
+   "read": [
+    "Mission_Manager.Load_Mission_Info (Mission_Manager.cs:20)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "rewardPref": {
+   "read": [
+    "Reward.CheckAll (Reward.cs:50)"
+   ],
+   "write": [
+    "Reward.Claim (Reward.cs:27)"
+   ],
+   "other": []
+  },
+  "setPrefsTo[i]": {
+   "read": [],
+   "write": [
+    "StoryManager.InitiateStory (StoryManager.cs:477)"
+   ],
+   "other": []
+  },
+  "shopScriptAttach.drone_upgrades[i].drone_upgrade_pref": {
+   "read": [
+    "DroneManager.ApplyUpgrades (DroneManager.cs:189)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "skillManager.skills[skillScr.array_skill].skill_name": {
+   "read": [],
+   "write": [
+    "SkillPage.LearnSkillExtra (SkillPage.cs:234)"
+   ],
+   "other": []
+  },
+  "skills[i].skill_name": {
+   "read": [
+    "Skill_Manager.Start (Skill_Manager.cs:15)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "skills[i].skill_pref": {
+   "read": [
+    "Skill_Manager.Check_If_Skill_Learned (Skill_Manager.cs:55)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "skills[skill_array].skill_pref": {
+   "read": [
+    "Skill_Manager.Check_If_Skill_Learned_Array (Skill_Manager.cs:41)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "skills[skill_int].skill_pref": {
+   "read": [],
+   "write": [
+    "Skill_Manager.Learn_Skill (Skill_Manager.cs:22)"
+   ],
+   "other": []
+  },
+  "soundSetting": {
+   "read": [
+    "SoundButton.Start (SoundButton.cs:14)",
+    "SoundButton.Start (SoundButton.cs:19)"
+   ],
+   "write": [
+    "SoundButton.Start (SoundButton.cs:16)",
+    "SoundButton.ToggleSoundButton (SoundButton.cs:34)",
+    "SoundButton.ToggleSoundButton (SoundButton.cs:39)"
+   ],
+   "other": []
+  },
+  "spref": {
+   "read": [
+    "DestroyIfPref.Start (DestroyIfPref.cs:13)",
+    "DestroyIfPref.Start (DestroyIfPref.cs:18)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "stolen_car.car_name": {
+   "read": [
+    "AchievementManager.Refresh (AchievementManager.cs:210)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "stolen_cars[i].car_name": {
+   "read": [
+    "StolenCarsManager.CheckCars (StolenCarsManager.cs:36)"
+   ],
+   "write": [
+    "StolenCarsManager.ResetCars (StolenCarsManager.cs:28)"
+   ],
+   "other": []
+  },
+  "story_scripts[i].house_script.residence_missions[story_scripts[i].job_nr].mission_prefs": {
+   "read": [],
+   "write": [
+    "StoryManager.Start (StoryManager.cs:89)"
+   ],
+   "other": []
+  },
+  "text": {
+   "read": [
+    "SelectLevel.FillGrid (SelectLevel.cs:28)",
+    "SelectLevel.FillGrid (SelectLevel.cs:39)",
+    "SelectLevelPack.FillGrid (SelectLevelPack.cs:31)",
+    "SelectLevelPack.FillGrid (SelectLevelPack.cs:43)"
+   ],
+   "write": [
+    "SelectLevel.FillGrid (SelectLevel.cs:34)",
+    "SelectLevelPack.FillGrid (SelectLevelPack.cs:37)"
+   ],
+   "other": []
+  },
+  "thisPref": {
+   "read": [
+    "MailBox.CheckIfPlaced (MailBox.cs:52)",
+    "MailBox.CheckIfPlaced (MailBox.cs:58)"
+   ],
+   "write": [
+    "MailBox.PlaceCamera (MailBox.cs:77)",
+    "MailBox.RetrieveCamera (MailBox.cs:87)"
+   ],
+   "other": []
+  },
+  "tipString": {
+   "read": [
+    "TipIndicator.Start (TipIndicator.cs:11)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "tractionUpgradePref": {
+   "read": [
+    "CarUpgrades.Start (CarUpgrades.cs:59)"
+   ],
+   "write": [
+    "CarUpgrades.SaveNewPref (CarUpgrades.cs:71)"
+   ],
+   "other": []
+  },
+  "transform.name": {
+   "read": [
+    "Pickpocket_Object.Start (Pickpocket_Object.cs:60)",
+    "Pickpocket_Object.Start (Pickpocket_Object.cs:81)",
+    "ReadNote.Start (ReadNote.cs:40)"
+   ],
+   "write": [
+    "Pickpocket_Object.Start (Pickpocket_Object.cs:62)",
+    "ReadNote.BeginRead (ReadNote.cs:88)"
+   ],
+   "other": []
+  },
+  "transform.name + \"_alert\"": {
+   "read": [
+    "SelectResidence.WaitSecStart (SelectResidence.cs:256)"
+   ],
+   "write": [
+    "SelectResidence.RemoveAlert (SelectResidence.cs:186)"
+   ],
+   "other": []
+  },
+  "transform.name + \"_week\"": {
+   "read": [
+    "Pickpocket_Object.Start (Pickpocket_Object.cs:60)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "trigger.pref": {
+   "read": [
+    "DigHole.Start (DigHole.cs:23)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "unlock_cameras[i]": {
+   "read": [],
+   "write": [
+    "BuyTip.BuyTipp (BuyTip.cs:125)"
+   ],
+   "other": []
+  },
+  "upgradeItems[current].upgradePref": {
+   "read": [],
+   "write": [
+    "UpgradeIt.BuyUpgrade (UpgradeIt.cs:109)"
+   ],
+   "other": []
+  },
+  "upgradeItems[current].upgradePref + \"_cost\"": {
+   "read": [],
+   "write": [
+    "UpgradeIt.BuyUpgrade (UpgradeIt.cs:104)"
+   ],
+   "other": []
+  },
+  "upgradeItems[i].upgradePref": {
+   "read": [
+    "UpgradeIt.OnEnable (UpgradeIt.cs:56)"
+   ],
+   "write": [
+    "UpgradeIt.SaveAllPrefs (UpgradeIt.cs:87)"
+   ],
+   "other": []
+  },
+  "upgradeItems[i].upgradePref + \"_cost\"": {
+   "read": [
+    "UpgradeIt.OnEnable (UpgradeIt.cs:58)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "upgradeScriptSave.drone_upgrade_pref": {
+   "read": [],
+   "write": [
+    "DroneUpgradePanel.BuyUpgrade (DroneUpgradePanel.cs:99)"
+   ],
+   "other": []
+  },
+  "vanBoughtPref": {
+   "read": [
+    "VehiclesManager.InitiateMainCar (VehiclesManager.cs:36)"
+   ],
+   "write": [],
+   "other": []
+  },
+  "window_pref": {
+   "read": [
+    "BlackBay_Object.OnEnable (BlackBay_Object.cs:37)"
+   ],
+   "write": [],
+   "other": []
+  }
+ }
+}

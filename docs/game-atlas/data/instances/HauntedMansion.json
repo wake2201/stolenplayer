@@ -1,0 +1,773 @@
+{
+"meta": {
+"schema": "game-atlas/1",
+"catalog": "world_object_instances",
+"description": "Scene instances of world-object classes in HauntedMansion",
+"game_version": "1.27c (Unity 2020.3.33f1, Mono)",
+"generated_by": "tools/research/build_atlas_data.py",
+"evidence_levels": [
+"VERIFIED_IL",
+"VERIFIED_ASSET",
+"VERIFIED_RUNTIME",
+"INFERRED",
+"UNKNOWN"
+],
+"scene": "HauntedMansion",
+"region_id": 95,
+"count": 103,
+"path_note": "display paths without [siblingIndex]; census identity disambiguates duplicates (WorldIdentity.IdentityPath)"
+},
+"instances": [
+{
+"class": "ContractItem",
+"path": "CONTRACT ITEM",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick",
+"path": "Stash/Lid",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockType": 1
+},
+{
+"class": "Door",
+"path": "Stash/Lid",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isFileCabinet": true,
+"useVectorRotation": true,
+"key_item_ID": 127
+},
+{
+"class": "DestroyObject",
+"path": "Crash_Crate_0 (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "Stash (1)/Lid",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isFileCabinet": true,
+"useVectorRotation": true,
+"key_item_ID": 127
+},
+{
+"class": "Lockpick",
+"path": "Stash (1)/Lid",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockType": 1
+},
+{
+"class": "Door",
+"path": "safe_01/safe_01_door",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "safe_01 (1)/safe_01_door",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"rotateOpen": true
+},
+{
+"class": "SafeCrack",
+"path": "safe_01 (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Ouija_Board_s6$sr9j",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 395
+},
+{
+"class": "SafeCrack",
+"path": "safe_01",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "Crash_Crate_0 (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Props/Table_Clock_tq9121u",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 387
+},
+{
+"class": "Pickupable",
+"path": "Environment/GrandfatherClock_9obl0oj",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 388,
+"is_heavy_item": true
+},
+{
+"class": "Pickupable",
+"path": "Pumpkin_04_wykuwyx",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 391
+},
+{
+"class": "Pickupable",
+"path": "Pumpkin_04_qzx38n6",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 391
+},
+{
+"class": "Pickupable",
+"path": "KEY 666_jmax4n7",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 382
+},
+{
+"class": "Pickupable",
+"path": "Pumpkin_03_pqd2s1f",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 390
+},
+{
+"class": "Pickupable",
+"path": "Synthesizer_scr4os0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 176
+},
+{
+"class": "Door",
+"path": "Mansion/Interior_Door_02/Interior_Door_02_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "Environment/GrandfatherClock_$rypgnn",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 388,
+"is_heavy_item": true
+},
+{
+"class": "Door",
+"path": "Mansion/Interior_Door_01/Interior_Door_01_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "StashTrigger",
+"path": "DIGGY (2)/stash icon",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "DigHole",
+"path": "DIGGY (3)/DIG",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StashTrigger",
+"path": "DIGGY (1)/stash icon",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "DigHole",
+"path": "DIGGY (1)/DIG",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StashTrigger",
+"path": "DIGGY (3)/stash icon",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "DigHole",
+"path": "DIGGY (2)/DIG",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Coffin_01_a0aof$w",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 392,
+"is_heavy_item": true
+},
+{
+"class": "Pickupable",
+"path": "Environment/Coffin_01_yo9$wyw",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 392,
+"is_heavy_item": true
+},
+{
+"class": "Pickupable",
+"path": "Wine1_d65yvoa",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 61,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Wine1_dndaosb",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 61,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Crash_Crate_0 (3)/Crash_Crate_Fractured_LOD_0/CardboardBox_Horn_qos8uxu",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 383,
+"is_heavy_item": true
+},
+{
+"class": "Pickupable",
+"path": "Laptop_bu9uznn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 66,
+"destroy_if_was_picked": true
+},
+{
+"class": "ReadNote",
+"path": "Note Read",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Note Read (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Note Read (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Pumpkin_01_$b$cjvu",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 389
+},
+{
+"class": "Pickupable",
+"path": "SM_WalkieTalkie_01_as79yu7",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 189,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "camera_ar0mw41",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 265,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Radio_4sm802j",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 151
+},
+{
+"class": "Lockpick",
+"path": "Mansion/Back_Entrance/Back_Entrance_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "Pickupable",
+"path": "HAUNTED MASK_o9xv1dc",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 381
+},
+{
+"class": "Door",
+"path": "Mansion/Back_Entrance/Back_Entrance_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "HAUNTED MASK_d9toctu",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 381
+},
+{
+"class": "Pickupable",
+"path": "HAUNTED MASK_o04$9le",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 381
+},
+{
+"class": "Pickupable",
+"path": "HAUNTED MASK_od5vu9$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 381
+},
+{
+"class": "Lockpick",
+"path": "Mansion/Front_Door/Front_Door_01_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockType": 1
+},
+{
+"class": "Pickupable",
+"path": "tab_2_n$8funo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 240,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "50$_nbem25c",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_oe$3o8a",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_mqoo$mm",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_8ukep$r",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_mw7384y",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_d8s1zm9",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_j6awunw",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_o3gnog$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_$n$bmku",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "50$_nx10e$y",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "Props/Jewelry_Box_y5m$c3$",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 393
+},
+{
+"class": "Pickupable",
+"path": "Props/Jewelry_Box_$0j2bc$",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 393
+},
+{
+"class": "Pickupable",
+"path": "Props/Jewelry_Box_nnpok4m",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 393
+},
+{
+"class": "Pickupable",
+"path": "Medal Silver_lf7ol8c",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 208
+},
+{
+"class": "Pickupable",
+"path": "Medal Gold 2_oc$nnol",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 232,
+"destroy_if_was_picked": true
+},
+{
+"class": "Lockpick",
+"path": "p_reinforced_wooden_chest/reinforced_wooden_chest_top",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "Props/Candle_Stand_02_nktcof3",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 386
+},
+{
+"class": "Pickupable",
+"path": "30$_nbq1dum",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$_clgl3mv",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$_u$y08xz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "30$_7mwmnqr",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "Environment/Clock_Wall_fumlnw8",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 385,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Crash_Crate_0 (2)/Crash_Crate_Fractured_LOD_0/GuitarE_black_on7o$o4",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 194,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "Mansion/Interior_Door_01 (1)/Interior_Door_01_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "Props/Table_Clock_$t5f$qr",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 387
+},
+{
+"class": "Pickupable",
+"path": "Basement_Tools_CordlessDrill_8syqucy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 145,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Props/Jewelry_Box_9a4$tu2",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 393
+},
+{
+"class": "Pickupable",
+"path": "Environment/Clock_Wall_yzdo$3c",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 385,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Environment/Clock_Wall_o7np$e2",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 385,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Props/Table_Clock_6van7rl",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 387
+},
+{
+"class": "Pickupable",
+"path": "Props/Skull_Bone_$4s8ksn",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 394
+},
+{
+"class": "Pickupable",
+"path": "Props/Candle_Stand_02_sq1gorv",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 386
+},
+{
+"class": "Pickupable",
+"path": "Props/Candle_Stand_02_o$a4$b5",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 386
+},
+{
+"class": "Pickupable",
+"path": "Props/Candle_Stand_02_31nd$le",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 386
+},
+{
+"class": "Pickupable",
+"path": "Props/Candle_Stand_02_s4suu$o",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 386
+},
+{
+"class": "Pickupable",
+"path": "Props/Candle_Stand_02_yp42ko$",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 386
+},
+{
+"class": "Pickupable",
+"path": "Projector2_zj$d$na",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 303
+},
+{
+"class": "Door",
+"path": "Mansion/Front_Door/Front_Door_01_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "CONTRACT ITEM/Telephone_Red_01",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 445
+},
+{
+"class": "Pickupable",
+"path": "Props/Candle_Stand_02_oobsp3m",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 386
+},
+{
+"class": "Pickupable",
+"path": "Furniture/Work_Desk/Work_Desk_Box_01_LOD0/WatchSilver_$ksb60w",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 270,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Wallet woman_za6bn$g",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 197,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Wallet woman_9j$pcuj",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 197,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "MANNEQUINS/HAUNTED MECHANICAL DOLL_$y$7lmn",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 396,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "Mansion/Interior_Door_02 (1)/Interior_Door_02_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "Environment/GrandfatherClock_08dztcs",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 388,
+"is_heavy_item": true
+},
+{
+"class": "Pickupable",
+"path": "Wallet brown_9uoos0x",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 196
+},
+{
+"class": "Pickupable",
+"path": "Props/Skull_Bone_vyjsov$",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 394
+},
+{
+"class": "Pickupable",
+"path": "Props/Skull_Bone_unzmx4r",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"item_ID": 394
+},
+{
+"class": "Pickupable",
+"path": "Pumpkin_01_gzo5mk$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 389
+},
+{
+"class": "Pickupable",
+"path": "Breakable Whiskey Bottle_yzasnbn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 201,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Breakable Whiskey Bottle_nnm$ndg",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 201,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "p_reinforced_wooden_chest/reinforced_wooden_chest_top",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isContainer": true,
+"useVectorRotation": true,
+"key_item_ID": 382
+},
+{
+"class": "MediumLock",
+"path": "Mansion/Back_Entrance/Back_Entrance_LOD0",
+"active_in_asset": true,
+"path_unique_in_dump": false
+}
+]
+}

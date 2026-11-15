@@ -1,0 +1,5190 @@
+{
+"meta": {
+"schema": "game-atlas/1",
+"catalog": "world_object_instances",
+"description": "Scene instances of world-object classes in Forestside Resort",
+"game_version": "1.27c (Unity 2020.3.33f1, Mono)",
+"generated_by": "tools/research/build_atlas_data.py",
+"evidence_levels": [
+"VERIFIED_IL",
+"VERIFIED_ASSET",
+"VERIFIED_RUNTIME",
+"INFERRED",
+"UNKNOWN"
+],
+"scene": "Forestside Resort",
+"region_id": 94,
+"count": 725,
+"path_note": "display paths without [siblingIndex]; census identity disambiguates duplicates (WorldIdentity.IdentityPath)"
+},
+"instances": [
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (7)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_309_7"
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (4)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_309_4"
+},
+{
+"class": "DigHole",
+"path": "DIGGY (4)/DIG",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/HOUSE 1A/House01/LIGHT TRIGGERS/light trigger (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Landline_wyyymsy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 63,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/EARRINGS_u73o8vn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 378,
+"destroy_if_was_picked": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (5)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "Budka_straznicza_export (1)/Chair",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DigHole",
+"path": "DIGGY (2)/DIG",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (7)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/HOUSE 1B/House03/LIGHT TRIGGERS/light trigger (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Place_Heavy_Trigger",
+"path": "GOLF CART RED/PLAYER CAR/Place Heavy Trigger",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "StoryObject",
+"path": "GOLF CART RED/PLAYER CAR/Story Arrow Indicator",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/safe_01/safe_01_door",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isGlassCabinet": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/TV_y$ws$aa",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 36,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "TutorialTrigger",
+"path": "PARKING 1",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Light_Trigger",
+"path": "All/House2C/LIGHT TRIGGERS/light trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (2)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_309_2"
+},
+{
+"class": "Mission_Item",
+"path": "GameObject (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DigHole",
+"path": "DIGGY/DIG",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/HOUSE 1A/House01/LIGHT TRIGGERS/light trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StashTrigger",
+"path": "DIGGY/stash icon",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "StashTrigger",
+"path": "DIGGY (2)/stash icon",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Lockpick",
+"path": "Stash (1)/Lid",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 2
+},
+{
+"class": "Door",
+"path": "Stash (1)/Lid",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isFileCabinet": true,
+"useVectorRotation": true,
+"key_item_ID": 127
+},
+{
+"class": "Light_Trigger",
+"path": "All/House1C/LIGHT TRIGGERS/light trigger (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (2)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DigHole",
+"path": "DIGGY (1)/DIG",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (6)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/HOUSE 2B/House05/LIGHT TRIGGERS/light trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ContractItem",
+"path": "CONTRACT ITEM",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/HOUSE 1B/House03/LIGHT TRIGGERS/light trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/HOUSE 2B/House05/LIGHT TRIGGERS/light trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "GOLF CART RED/PLAYER CAR/door_r",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"isCarDoor": true,
+"rotateOpen": true
+},
+{
+"class": "StashTrigger",
+"path": "DIGGY (4)/stash icon",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "SafeCrack",
+"path": "All/House2A/Interior/safe_01",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/HOUSE 2B/House05/LIGHT TRIGGERS/light trigger (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StashTrigger",
+"path": "DIGGY (3)/stash icon",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Light_Trigger",
+"path": "All/House2A/LIGHT TRIGGERS/light trigger (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (6)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_309_6"
+},
+{
+"class": "Light_Trigger",
+"path": "All/House1C/LIGHT TRIGGERS/light trigger (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/House2A/LIGHT TRIGGERS/light trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/AudioSystemSubwoofer_xo$y04p",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 74
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/TV_on_5jj51ss",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 154,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/House1C/LIGHT TRIGGERS/light trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/HOUSE 2B/House05/LIGHT TRIGGERS/light trigger (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Landline_6ob$kvv",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 63
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (4)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Mission_Item",
+"path": "GameObject (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DigHole",
+"path": "DIGGY (3)/DIG",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (1)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Cabinet_B/Cabinet_B_door_L_parent/Cabinet_B_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Cabinet_B/Cabinet_B_door_R_parent/Cabinet_B_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "StashTrigger",
+"path": "Stash (1)/stash icon",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "DestroyObject",
+"path": "Budka_straznicza_export/Chair",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/HOUSE 1B/House03/LIGHT TRIGGERS/light trigger (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/TV_on_yyomanz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 154,
+"is_heavy_item": true
+},
+{
+"class": "CarBox",
+"path": "GOLF CART RED/PLAYER CAR/CarBox",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "GOLF CART RED/PLAYER CAR/door_l",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"isCarDoor": true,
+"rotateOpen": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/HOUSE 1A/House01/LIGHT TRIGGERS/light trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/House1C/LIGHT TRIGGERS/light trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/House2C/LIGHT TRIGGERS/light trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/HOUSE 1B/House03/LIGHT TRIGGERS/light trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (3)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_309_3"
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Landline_mmym$0a",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 63
+},
+{
+"class": "Mission_Item",
+"path": "GameObject (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "HidingSpot",
+"path": "All/HOUSE 1A/House01/Interior/Cabinet_B/Hide Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (5)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_309_5"
+},
+{
+"class": "Light_Trigger",
+"path": "All/HOUSE 1A/House01/LIGHT TRIGGERS/light trigger (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityCamera",
+"path": "SECURITY CAM (1)/Camera_Secity",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"canBeDisabledDrone": true,
+"discovered_camera_prefs": "Camera_309_1"
+},
+{
+"class": "CameraTrigger",
+"path": "SECURITY CAM (3)/Camera_Secity/Camera_Security_Base/Camera_Security_Bearing/Camera_Security_Body/Camera_Security_Protector/GameObject",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Light_Trigger",
+"path": "All/House2A/LIGHT TRIGGERS/light trigger (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "StashTrigger",
+"path": "DIGGY (1)/stash icon",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Dresser_C/Dresser_drawer_A_R_parent/Dresser_drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_A (1)/Frying_pan_jvt$pmf",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 12
+},
+{
+"class": "TimedDestroy",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (2)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Window_Blinds",
+"path": "All/House2C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Wine1",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"item_ID": 61
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Building/WallIn_A_3x_door (2)/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "DestroyObject",
+"path": "All/House2A/Interior/Kitchen_cabinet_A/Plate1_stack",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick",
+"path": "All/HOUSE 1B/Fence house 3/fence_wood_E_4m (3)/fence_wood_E_corner_1m/fence_wood_E_4m/fence_wood_E_doorway_4m/fence_wood_E_door_1m/fence_wood_E",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 2
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Cabinet2/GameObject/Drawer2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/GameObject/Drawer2",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "LockedWindow",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/New painting 1_fyzgcsr",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 182
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/New painting 1_4n55bou",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 182
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/New painting 1_npmcdne",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 182,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/New painting 1_s$p$nxl",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 182
+},
+{
+"class": "WindowUse",
+"path": "All/House2A/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Cabinet2/GameObject/Drawer2/15$_uss$$p7",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "SimpleOpenClose",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_B/Kitchen_cabinet_door_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/NightTable/GameObject/NightTable_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/NightTable (1)/GameObject/NightTable_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/NightTable/GameObject/NightTable_Drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/decentSSD_5y$jxum",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 249
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Window_Blinds",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed (1)",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Vase3_d2ty$vc",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 267
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Vase3_pu$wn6y",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 267
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Vase3_3sq$44s",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 267
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Teapot_nauynk1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 45
+},
+{
+"class": "DestroyObject",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "SimpleOpenClose",
+"path": "All/House2A/Interior/Kitchen_cabinet_B/Kitchen_cabinet_door_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/HOUSE 1B/House03/Building/Porch_A_3x_end_L/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L/15$_k7$aryx",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Dresser_C/Dresser_drawer_C_L_parent/Dresser_drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Lockpick",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Chair_wooden (1)/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/sanny_phone_ottxmnu",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 85,
+"destroy_if_was_picked": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/House2C/Building/Porch_A_3x_end_entrance_R/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/TVRemote_w66wpc$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 79
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/TVRemote_jdk4ajx",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 79
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/TVRemote_ltba8ca",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 79
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_dishwasher/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Clock_03_tacbml1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 193
+},
+{
+"class": "DestroyObject",
+"path": "All/House2A/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "fence_metal_C_4m (6)/fence_metal_C_doorway_4m/fence_metal_C_door_2m/fence_metal_C",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Lockpick",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Building/WallIn_B_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_A (1)/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Window_Blinds",
+"path": "All/House2A/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Blinds_Short_Closed",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Window_Blinds",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Blinds_Short_Closed",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Xcube console pad item_mb$u9o5",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 169
+},
+{
+"class": "DestroyObject",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/Side_table_D/Door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Decor1_$zlfm1c",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 129
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Decor1_tu51zeu",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 129
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/Door",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Cabinet2/Door",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Headphones_nuqbnnd",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 238,
+"destroy_if_was_picked": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Dresser_C/Dresser_drawer_A_L_parent/Dresser_drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Dresser_C/Dresser_drawer_B_R_parent/Dresser_drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "LightSwitch",
+"path": "All/House2A/Interior/Lightswitch (1)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Building/WallIn_B_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_dishwasher/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/HOUSE 2B/FENCE HOUSE 5/Porch_A_6x_entrance_separate/Plant_Climber_Long (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/HOUSE 1B/House03/Building/Porch_A_6x_entrance_separate/Plant_Climber_Long (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Painting12_4loy9sg",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 179,
+"is_heavy_item": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/Valley Painting_vneuf4a",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 150,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Valley Painting_oy$mo9u",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 150,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Valley Painting_y8yk5ur",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 150,
+"is_heavy_item": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Head_t3aonau",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 54
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "HidingSpot",
+"path": "All/HOUSE 1B/House03/Interior/Bed_king/HideSpot",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Dresser_C/Dresser_drawer_A_R_parent/Dresser_drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Hall_Table/GameObject/BC_Drawer015",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Multimeter_UQ_0yty2ec",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 191
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/Door002",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Cabinet2/Door002",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/House2A/Building/Porch_A_3x_end_R/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/Side_table_D/Door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "TimedDestroy",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Bathroom_sink/Bathroom_sink_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "LightSwitch",
+"path": "All/HOUSE 2B/House05/Interior/Lightswitch/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/Door003",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Building/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Lockpick",
+"path": "All/House2C/Interior/_Garage_Cabinet_Openable (1)/Garage_Cabinet_Door",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Lockpick",
+"path": "All/HOUSE 1B/Fence house 3/EXTERIOR HOUSE 3/_Garage_Cabinet_Openable (1)/Garage_Cabinet_Door",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 2
+},
+{
+"class": "Lockpick",
+"path": "All/House1C/Building/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 2
+},
+{
+"class": "DestroyObject",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_A/Plate1_stack",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Lamp_table_shade_nyl$got",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 165
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Lamp_table_shade_sna975a",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 165,
+"destroy_if_was_picked": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "ClimbIvy",
+"path": "All/HOUSE 1B/House03/Building/Porch_A_6x_entrance_separate/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/HOUSE 2B/FENCE HOUSE 5/Porch_A_6x_entrance_separate/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (2)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "All/House2C/Interior/Lightswitch/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LockedWindow",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Bookshelf/Door_D_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "WindowUse",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Bookshelf/Door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Dresser_C (1)/Dresser_drawer_B_R_parent/Dresser_drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/headphones3_qlys2on",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 299,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Bed Drawer/GameObject/Bed_drawer_openable_part/headphones2_qlfn$7g",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 298,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/headphones4_oamgxbg",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 300
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/Vase_5_lrpztfl",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 291
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Dresser_C/Dresser_drawer_C_L_parent/Dresser_drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_cabinet_C/Kitchen_cabinet_door_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L/15$_zgu03gw",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/Fence house 3/fence_wood_E_4m (3)/fence_wood_E_corner_1m/fence_wood_E_4m/fence_wood_E_doorway_4m/fence_wood_E_door_1m/fence_wood_E",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Lockpick",
+"path": "fence_metal_C_4m (6)/fence_metal_C_doorway_4m/fence_metal_C_door_2m/fence_metal_C",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockType": 1
+},
+{
+"class": "Window_Blinds",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed (1)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "All/House1C/Interior/Lightswitch (1)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_cabinet_corner/Kitchen_cabinet_door_parent_A_L/Kitchen_cabinet_door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Window_Blinds",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Building/WallIn_A_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Cabinet2/GameObject/Drawer1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Cabinet2/GameObject/Drawer003",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/GameObject/Drawer003",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_dishwasher/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "LockedWindow",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_A (1)/Pot_buq6z$u",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 30
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Knifeholder_Full_g$y9a$s",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 42
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/ClockWall_j$5oaqt",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 46
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Chair_wooden/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_dishwasher/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/Clock 8_kts$npo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 209,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Clock 8_c$gx6$j",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 209,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Painting_Bond_zn4$1$y",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 57,
+"is_heavy_item": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Hall_Table/GameObject/BC_Drawer010",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (2)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Dresser_C/Dresser_drawer_A_L_parent/Dresser_drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Kitchen_cabinet_door_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Dresser_C/Dresser_drawer_B_R_parent/Dresser_drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Wall Clock_3sm0pa2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 130
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/Wall Clock_ngosgkq",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 130
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Wall Clock_rgno$lu",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 130
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Wall Clock_t1lgpu$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 130
+},
+{
+"class": "Window_Blinds",
+"path": "All/House2C/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Blinds_Short_Closed",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Window_Blinds",
+"path": "All/House2A/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Blinds_Short_Closed",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/Dresser_C/Dresser_drawer_A_R_parent/Dresser_drawer_A_R/Tablet_fmunkmm",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 373
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/GameObject/Drawer004/Tablet_wfjpn$u",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 373,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/FENCE HOUSE 6/Exterior/Projector1_xqmu2my",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 64
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Vent",
+"path": "AirVentGrid (1)",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Vent",
+"path": "All/House2C/Building/AirVentGrid (1)",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Vent",
+"path": "AirVentGrid (3)",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Vent",
+"path": "AirVentGrid",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Vent",
+"path": "AirVentGrid (2)",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Vent",
+"path": "All/House2C/Building/AirVentGrid",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "ClimbIvy",
+"path": "All/House1C/Building/Porch_A_3x_end_L/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Camera_soxafzf",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 93
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/NightTable/Camera_knajgfg",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 93,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_A (1)/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/EXTERIOR/Laptop_ygzfld$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 66,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Laptop_7ujwscs",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 66
+},
+{
+"class": "DestroyObject",
+"path": "All/House2A/Interior/Chair_wooden (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "LockedWindow",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Wine1_cjvlzka",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 61
+},
+{
+"class": "Pickupable",
+"path": "CONTRACT ITEM/Radio",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 444
+},
+{
+"class": "DestroyObject",
+"path": "All/House2C/Interior/Washing_machine",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "All/HOUSE 2B/House05/Interior/Note Read",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "All/HOUSE 1A/House01/Interior/Note Read",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Budka_straznicza_export/Note Read",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Note Read",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "All/House2C/Interior/Note Read",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "All/House2A/Interior/Note Read",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ReadNote",
+"path": "Stash (1)/Note Read",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/GameObject/Drawer003",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/New painting 2_5psu2fv",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 181,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/New painting 2_e$d4mrg",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 181
+},
+{
+"class": "Door",
+"path": "All/House2C/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/SM_WalkieTalkie_01_umnyre4",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 189,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_cabinet_C/Kitchen_cabinet_door_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "WindowUse",
+"path": "All/House1C/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Building/WallIn_B_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "LockedWindow",
+"path": "All/House2C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "HidingSpot",
+"path": "All/House2A/Interior/Bed_twin/HideSpot",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "All/House2C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Toaster_as$1f5g",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 41
+},
+{
+"class": "Window_Blinds",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Lockpick",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_door/Door_parent_B_L/Door_mesh_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Lockpick",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_door/Door_parent_B_L/Door_mesh_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/Fence house 3/EXTERIOR HOUSE 3/Radio_ycyzkep",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 151
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/NightTable/NightTable_Door_A",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/NightTable/NightTable_Door_A",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/NightTable (1)/NightTable_Door_A",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "MediumLock",
+"path": "All/House2C/Building/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Window_Blinds",
+"path": "All/House2C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed (1)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Dresser_C/Dresser_drawer_C_R_parent/Dresser_drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_sink/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "LightSwitch",
+"path": "All/HOUSE 1A/House01/Interior/Lightswitch/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_A (1)/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "LockedWindow",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Intercom_s$ba7ym",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 215
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/Door002",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "LightSwitch",
+"path": "All/HOUSE 1B/House03/Interior/Lightswitch (2)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "All/House2A/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/Hard drive item_8qu$rgj",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 37,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Hard drive item_mdayjn6",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 37,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Building/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Building/WallIn_A_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_A/Kitchen_cabinet_door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "LightSwitch",
+"path": "All/HOUSE 1B/House03/Interior/Lightswitch (1)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Old Clock_um$nt0r",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 44,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_sink/Kitchen_counter_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/Door003",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Cabinet2/Door003",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Bathroom_sink/Bathroom_sink_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Bed Drawer/GameObject/Bed_drawer_openable_part (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "WindowUse",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Clock 2_8o$1ozq",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 195
+},
+{
+"class": "Door",
+"path": "All/House2A/Building/WallIn_B_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Cabinet2/GameObject/Drawer004",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Painting12_9$$927q",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 179,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Hall_Table/GameObject/BC_Drawer012",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/UsbWlanAdapter_8erypsq",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 72
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/UsbWlanAdapter_zqfeorm",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 72,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/Door",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Cabinet2/Door001",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/New painting 6_s$$4f5a",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 302
+},
+{
+"class": "Door",
+"path": "All/House2A/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_cabinet_corner/Kitchen_cabinet_door_parent_A_L/Kitchen_cabinet_door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Window_Blinds",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Microwave_ny8$$to",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 92
+},
+{
+"class": "LightSwitch",
+"path": "All/HOUSE 2B/House05/Interior/Lightswitch (3)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "All/House2A/Interior/Lightswitch (2)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "All/HOUSE 1B/House03/Lightswitch (4)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "All/HOUSE 1A/House01/Interior/Lightswitch (3)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "All/House1C/Interior/Lightswitch (3)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_A (1)/Kitchen_counter_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Painting4_l5py$un",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 202,
+"is_heavy_item": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/TV_Hanging_oaq$m4q",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 217,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Acoustic Guitar_eq1$pqs",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 80
+},
+{
+"class": "LockedWindow",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/uPhone Damaged_11vysd3",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 55,
+"destroy_if_was_picked": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Building/WallIn_A_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/TV_Table/GameObject/Bed_drawer_openable_part (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/D_AlarmClock_auzooo0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 38
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/TV_Table/GameObject/Bed_drawer_openable_part (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "LockedWindow",
+"path": "All/House1C/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/flyp_smartphone_locked_5coev$s",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 94
+},
+{
+"class": "WindowUse",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/CoffeeMaker_19n$6oo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 59
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/CoffeeMaker_ufp$ey2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 59
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/CoffeeMaker_a1l$fxx",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 59,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_sink/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/Landline_emmyn59",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 63
+},
+{
+"class": "LockedWindow",
+"path": "All/House2A/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Dresser_C (1)/Dresser_drawer_B_L_parent/Dresser_drawer_B_L/Scanner_$7mtaax",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Hall_Table/GameObject/BC_Drawer017/Scanner_ubau0ro",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 136,
+"destroy_if_was_picked": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_cabinet_A/Kitchen_cabinet_door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Saucepan_sjnct8o",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 147
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/TV_on_zcusogo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 154,
+"is_heavy_item": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Building/WallIn_A_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/wall_clock_1_x0p6yta",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 274
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/tv broken_$86mgy6",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 375,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_door/Door_parent_B_L/Door_mesh_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_door/Door_parent_B_L/Door_mesh_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Dresser_C/Dresser_drawer_B_R_parent/Dresser_drawer_B_R/50$_9nen$q$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Hall_Table/GameObject/BC_Drawer014/50$_0juu7k2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/50$_ya07u2s",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Dresser_C/Dresser_drawer_A_R_parent/Dresser_drawer_A_R/50$_j9n22ny",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 50
+},
+{
+"class": "DestroyObject",
+"path": "All/HOUSE 1A/House01/Interior/Toilet",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Dresser_C/Dresser_drawer_C_R_parent/Dresser_drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "WindowUse",
+"path": "All/House2A/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Dresser_C (1)/Dresser_drawer_B_L_parent/Dresser_drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "LightSwitch",
+"path": "All/HOUSE 1A/House01/Interior/Lightswitch (2)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Kitchen_cabinet_door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "DestroyObject",
+"path": "All/House2A/Interior/Chair_wooden",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Window_Blinds",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/Receiver1_0$rp$0n",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 140,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Kitchen_cabinet_door_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/GameObject/Drawer2",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_sink/Kitchen_counter_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Landline Phone_$$xfaao",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Landline Phone_wnz5v$l",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 52,
+"destroy_if_was_picked": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/Dresser_C/Dresser_drawer_B_R_parent/Dresser_drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "WindowUse",
+"path": "All/House1C/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Window_Blinds",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Blinds_Short_Closed",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "All/HOUSE 1B/House03/Interior/Lightswitch (3)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (1)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Lockpick",
+"path": "All/House2A/Building/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Teapot_y8113y$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 205
+},
+{
+"class": "Door",
+"path": "All/House1C/Building/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Side_table_D/Door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Dresser_C/Dresser_drawer_B_R_parent/Dresser_drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "HidingSpot",
+"path": "All/House2A/Interior/Bed_twin (1)/HideSpot",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_A/Kitchen_counter_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/Router item_2kkj35$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 40,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Router item_y9$eo$o",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 40
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Router item_f$aeofg",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 40
+},
+{
+"class": "Lockpick",
+"path": "fence_chainlink_B_doorway_5m/fence_chainlink_B_door_2m/hinge/fence_chainlink_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "Lockpick",
+"path": "All/fence_chainlink_B_4m/fence_chainlink_B_doorway_5m/fence_chainlink_B_door_2m/hinge/fence_chainlink_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 2
+},
+{
+"class": "WindowUse",
+"path": "All/House2C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Side_table_D/Door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "LockedWindow",
+"path": "All/House2C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Painting_Triangles_qdn10nl",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 48,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "ClimbIvy",
+"path": "All/House1C/Building/Porch_A_3x_end_R/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_cabinet_C/Kitchen_cabinet_door_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/HOUSE 1A/House01/Building/Porch_A_3x_end_L/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Dresser_C/Dresser_drawer_A_L_parent/Dresser_drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Frying_pan_a7onac2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 12
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Side_table_D (1)/Door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_cabinet_A/Kitchen_cabinet_door_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Cabinet2/Door003",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Window_Blinds",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed (1)",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Dresser_C (1)/Dresser_drawer_A_R_parent/Dresser_drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Bed Drawer/GameObject/Bed_drawer_openable_part",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/Phone_2_nmens$s",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 275,
+"destroy_if_was_picked": true
+},
+{
+"class": "LockedWindow",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_cabinet_C/Kitchen_cabinet_door_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "WindowUse",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Kitchen_cabinet_door_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/regular_wallet_drop_e7z$nad",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 20
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/regular_wallet_drop_yo7uxoy",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 20
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/regular_wallet_drop_fwsnx5$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 20
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Kitchen_cabinet_door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Hall_Table/GameObject/BC_Drawer011",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Bed Lamp_kytbprv",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 286,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Building/WallIn_A_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_A/Kitchen_counter_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Dresser_C (1)/Dresser_drawer_A_L_parent/Dresser_drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Lockpick",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "HidingSpot",
+"path": "Trash Can 1/Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "SecurityPanel",
+"path": "All/House1C/Security Panel Gas",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "SecurityPanel",
+"path": "All/House2C/Security Panel Gas",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (1)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "All/House2C/Interior/Lightswitch (1)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Bathroom_sink/Bathroom_sink_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Building/WallIn_B_3x_doordouble/Door_parent_A_double/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L/15$_c4c8wl1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Dresser_C/Dresser_drawer_C_L_parent/Dresser_drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_A/Kitchen_counter_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "DestroyObject",
+"path": "All/House2A/Interior/Chair_wooden (3)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/House2A/Building/Porch_A_3x_end_L/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/NightTable (1)/GameObject/NightTable_Drawer/30$_a$z3w0$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/30$_c7aq$ao",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/TV_Table/GameObject/Bed_drawer_openable_part (3)/30$_5$pug0w",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/30$_vabn$pm",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/NightTable/GameObject/NightTable_Drawer/30$_7vrx9oo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Cabinet2/GameObject/Drawer1/30$_patc59t",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/30$_eet5$21",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "All/FENCE HOUSE 6/Exterior/30$_r6uo0nw",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/30$_skwn$zn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/30$_$lelda$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/30$_s5sau4n",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/30$_jsvtun0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/30$_q3szwme",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 30
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Chair_wooden (2)/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/GameObject/Drawer1",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/HOUSE 2B/House05/Building/Porch_A_3x_end_L (1)/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (1)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Window_Blinds",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Blinds_Short_Closed",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Dresser_C/Dresser_drawer_A_R_parent/Dresser_drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Window_Blinds",
+"path": "All/House2A/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed (1)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "LockedWindow",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Lockpick",
+"path": "All/HOUSE 1A/FENCE HOUSE 1/fence_wood_B_4m/fence_wood_B_doorway_2m/fence_wood_B_door_1m/fence_wood_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockType": 1
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Dresser_C/Dresser_drawer_A_L_parent/Dresser_drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Dresser_C/Dresser_drawer_B_R_parent/Dresser_drawer_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/New painting 7_w4wn$3$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 180,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/New painting 7_61$7w8y",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 180
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/New painting 7_$o6$0sn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 180
+},
+{
+"class": "Door",
+"path": "All/House2A/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_A/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Hall_Table/GameObject/BC_Drawer016",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Dresser_C (1)/Dresser_drawer_C_L_parent/Dresser_drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "WindowUse",
+"path": "All/House2A/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Dresser_C (1)/Dresser_drawer_B_L_parent/Dresser_drawer_B_L/15$_e$r$tes",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "WindowUse",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "LockedWindow",
+"path": "All/House2A/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_C/Kitchen_cabinet_door_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_A/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_A/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/GameObject/Drawer2/15$_dwk$n2q",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Chair_wooden (1)/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/FENCE HOUSE 5/fence_wood_A_2m/fence_wood_A_doorway_2m/fence_wood_A_door/fence_wood_A_door_wood",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/Dresser_C/Dresser_drawer_C_R_parent/Dresser_drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "DestroyObject",
+"path": "All/House2C/Interior/Chair_wooden",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/Fence house 3/EXTERIOR HOUSE 3/_Garage_Cabinet_Openable (1)/Garage_Cabinet_Door",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/_Garage_Cabinet_Openable (1)/Garage_Cabinet_Door",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isGlassCabinet": true,
+"useVectorRotation": true,
+"key_item_ID": 379
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "WindowUse",
+"path": "All/House2C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/fence_chainlink_B_4m/fence_chainlink_B_doorway_5m/fence_chainlink_B_door_2m/hinge/fence_chainlink_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true,
+"key_item_ID": 376
+},
+{
+"class": "Door",
+"path": "fence_chainlink_B_doorway_5m/fence_chainlink_B_door_2m/hinge/fence_chainlink_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true,
+"key_item_ID": 376
+},
+{
+"class": "ClimbIvy",
+"path": "All/HOUSE 2B/House05/Building/Porch_A_3x_end_R/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Expensive Router_ge8mwor",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 372,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/FENCE HOUSE 1/fence_wood_B_4m/fence_wood_B_doorway_2m/fence_wood_B_door_1m/fence_wood_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/TV_Table/GameObject/Bed_drawer_openable_part",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_A/Kitchen_cabinet_door_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/smart_speaker_2sn83dq",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 272,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/VaseD_oe$ouxa",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 81
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_A/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "SimpleOpenClose",
+"path": "All/House2A/Interior/Kitchen_cabinet_B/Kitchen_cabinet_door_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/ElectricKettle_gcu7n54",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 58,
+"destroy_if_was_picked": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/HOUSE 1B/House03/Building/Porch_A_3x_end_R/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Video game console item_o$gq9nd",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 174,
+"destroy_if_was_picked": true
+},
+{
+"class": "Window_Blinds",
+"path": "All/House1C/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Blinds_Short_Closed",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L/15$_e4xno$c",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Painting_D_rognn38",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 159,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Side_table_D (1)/Door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Dresser_C/Dresser_drawer_C_L_parent/Dresser_drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "LockedWindow",
+"path": "All/House2A/Building/WallOut_3x_windowsmall_vinyl/Window_singlesmall_vinyl/Window_singlesmall_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Cabinet2/GameObject/Drawer004",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/GameObject/Drawer004",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Side_table_D/Door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Cabinet2/Door001",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/Door001",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Side_table_D/Door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Hall_Table/GameObject/BC_Drawer017",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "DestroyObject",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/House1C/Building/WallIn_A_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "DestroyObject",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Window_Blinds",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed (1)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_A/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Dresser_C/Dresser_drawer_A_R_parent/Dresser_drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (1)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Bathroom_sink/Bathroom_sink_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Chair_wooden (2)/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_A/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/T_Sink/T_Sink_Door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "SimpleOpenClose",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_B/Kitchen_cabinet_door_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LockedWindow",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_B",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Bathroom_sink/Bathroom_sink_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "LightSwitch",
+"path": "All/HOUSE 2B/House05/Interior/Lightswitch (2)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Building/WallIn_A_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "WindowUse",
+"path": "All/House2A/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "All/House2C/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_sink/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/Dresser_C/Dresser_drawer_C_R_parent/Dresser_drawer_C_R/15$_3a0o9$j",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/15$_exguned",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/15$_$yu2$ss",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Dresser_C/Dresser_drawer_C_L_parent/Dresser_drawer_C_L/15$_2xnrusc",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Building/WallIn_A_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Hall_Table/GameObject/BC_Drawer018",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/Dresser_C/Dresser_drawer_A_L_parent/Dresser_drawer_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_C/Kitchen_cabinet_door_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_A/Pot",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 30
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_sink/Kitchen_counter_door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/VacuumCleaner_7np2ntu",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 153
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Wine3_aspg45t",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 32
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Building/WallIn_A_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Kitchen_cabinet_door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "LockedWindow",
+"path": "All/House2A/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (4)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/T_Sink/T_Sink_Door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "LockedWindow",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "HidingSpot",
+"path": "Trash Can 2 (1)/Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "HidingSpot",
+"path": "Trash Can 2/Trigger",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/TV_Table/GameObject/Bed_drawer_openable_part (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Kitchen_counter_A/Pot",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 30
+},
+{
+"class": "Door",
+"path": "All/House1C/Building/WallIn_B_3x_door/Door_parent_A_L/Door_mesh_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Cabinet2/Door",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Dresser_C/Dresser_drawer_C_R_parent/Dresser_drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (3)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Stash (1)/usb_flash_5oyeoeo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 178,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Dresser_C/Dresser_drawer_A_L_parent/Dresser_drawer_A_L/usb_flash_waonwxo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 178,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/GameObject/Drawer004",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/Door001",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/GameObject/Drawer2/15$_t72pmgl",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Cabinet2/GameObject/Drawer2/15$_aznoue7",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "WindowUse",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "LightSwitch",
+"path": "All/HOUSE 1A/House01/Interior/Lightswitch (1)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (2)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "HidingSpot",
+"path": "All/HOUSE 1A/House01/Interior/Bed_king/HideSpot",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "All/House2C/Interior/Chair_wooden (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Dresser_C/Dresser_drawer_C_L_parent/Dresser_drawer_C_L/Wallet woman_5w8nalf",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 197,
+"destroy_if_was_picked": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/FENCE HOUSE 6/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ClimbIvy",
+"path": "Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/HOUSE 1A/FENCE HOUSE 1/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/HOUSE 2B/FENCE HOUSE 5/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/HOUSE 1A/FENCE HOUSE 1/Plant_Climber_Long (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_A/Wine1_n98xf7$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 61
+},
+{
+"class": "LockedWindow",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/D_Radio_9t3no82",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 39
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/D_Radio_ksaunzo",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 39
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/D_Radio_asss4d4",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 39
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Clock 7/Clock 7_m48euuz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 43
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Cabinet2/GameObject/Drawer2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Chair_wooden (3)/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (4)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "All/House2A/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (3)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "LightSwitch",
+"path": "All/House2A/Interior/Lightswitch/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Toaster_woox$aa",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 161
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/Dresser_C/Dresser_drawer_A_R_parent/Dresser_drawer_A_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Window_Blinds",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (4)",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/NightTable (1)/NightTable_Door_B",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/NightTable/NightTable_Door_B",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/NightTable/NightTable_Door_B",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Kitchen_counter_A/Pot",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 30
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_corner/Kitchen_cabinet_door_parent_A_L/Kitchen_cabinet_door_A_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Side_table_D/Door_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "DestroyObject",
+"path": "All/HOUSE 2B/House05/Interior/Toilet",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "LightSwitch",
+"path": "All/House1C/Interior/Lightswitch (2)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2A/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer/Plate1_stack/destroyed/Plate1_LOD0_root (3)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "LockedWindow",
+"path": "All/House2C/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "LockedWindow",
+"path": "All/House2A/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Cabinet2/GameObject/Drawer003",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "LightSwitch",
+"path": "All/House1C/Interior/Lightswitch/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/headset_lnmeub6",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 65,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/GameObject/Drawer003/headset_up1aqk2",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 65,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Cabinet2/GameObject/Drawer1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1B/House03/Interior/Cabinet2/GameObject/Drawer1",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "LockedWindow",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/LP_Vase_B_mc4oqcs",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 34
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Hall_Table/GameObject/BC_Drawer013",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (4)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_cabinet_C/Kitchen_cabinet_door_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"rotateOpen": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/House2C/Building/Porch_A_3x_end_L (1)/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Wallet brown_uny6lyj",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 196,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Cabinet2/GameObject/Drawer004/Wallet brown_aa6$bs1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 196,
+"destroy_if_was_picked": true
+},
+{
+"class": "DestroyObject",
+"path": "All/House2C/Interior/Chair_wooden (1)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root (3)",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/Vase_5_7no8l6o",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 291
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_B/Kitchen_counter_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Chair_wooden/Chair_wooden (2)_root",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Kitchen_counter_A/Frying_pan_u7el3eq",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 12
+},
+{
+"class": "WindowUse",
+"path": "All/House2A/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Bathroom_sink/Bathroom_sink_door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/electrictoothbrush_01_vln32$o",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 172
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/electrictoothbrush_01_3ke9xn0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 172,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/electrictoothbrush_01_dslntow",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 172,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Blender_01_0z$8mmu",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 56,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Blender_01_5qfp2s$",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 56
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Side_table_D/Door_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 1B/House03/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_A/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/BassGuitar_33ne$nl",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 252,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Dresser_C/Dresser_drawer_C_R_parent/Dresser_drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Window_single_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1B/House03/Interior/UsbFlashDrive_new4w9n",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 73
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Dresser_C/Dresser_drawer_B_R_parent/Dresser_drawer_B_R/UsbFlashDrive_o26m48s",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 73,
+"destroy_if_was_picked": true
+},
+{
+"class": "ClimbIvy",
+"path": "All/HOUSE 1A/House01/Building/Porch_A_3x_end_R/Plant_Climber_Long",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Dresser_C/Dresser_drawer_C_R_parent/Dresser_drawer_C_R/tab_1 classic 3 101_o8jaz5g",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 149
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Dresser_C/Dresser_drawer_C_R_parent/Dresser_drawer_C_R/tab_1 classic 3 101_8ln7qna",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 149,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "Budka_straznicza_export/tab_1 classic 3 101_e5$mnas",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 149,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_cabinet_C/Kitchen_cabinet_door_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"rotateOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Building/WallOut_3x_windowsmall_vinyl/Window_singlesmall_vinyl/Window_singlesmall_vinyl_openable",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isWindow": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_A/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Window_Blinds",
+"path": "All/HOUSE 1A/House01/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "DestroyObject",
+"path": "All/House2A/Interior/Chair_wooden (2)",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "TimedDestroy",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack/destroyed/Plate1_LOD0_root",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "LightSwitch",
+"path": "All/HOUSE 2B/House05/Interior/Lightswitch (1)/Lightswitch",
+"active_in_asset": true,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "Breakable Whiskey Bottle_wbq34sq",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 201
+},
+{
+"class": "Door",
+"path": "All/House1C/Interior/Dresser_C/Dresser_drawer_C_L_parent/Dresser_drawer_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Bookshelf/Door_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L/15$_$$auxt0",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"is_money": true,
+"add_money": 15
+},
+{
+"class": "WindowUse",
+"path": "All/House2A/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "WindowUse",
+"path": "All/House2C/Building/WallOut_3x_window_vinyl/Window_single_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Tower_Figurine_01_umorvjs",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 287
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Tower_Figurine_01_5s74$cz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 287
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Cabinet2/Door002",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"useVectorRotation": true
+},
+{
+"class": "Window_Blinds",
+"path": "All/House2A/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Blinds_Short_Closed",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Hall_Table/GameObject/BC_Drawer014",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "MediumLock",
+"path": "fence_chainlink_B_doorway_5m/fence_chainlink_B_door_2m/hinge/fence_chainlink_B",
+"active_in_asset": true,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Wine1",
+"active_in_asset": false,
+"path_unique_in_dump": false,
+"item_ID": 61
+},
+{
+"class": "WindowUse",
+"path": "All/House2C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_ENTER",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/LP_CandleHolder_Triple_anx45aq",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 374,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/LP_CandleHolder_Triple_$yeuno4",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 374
+},
+{
+"class": "Lockpick",
+"path": "All/HOUSE 2B/FENCE HOUSE 5/fence_wood_A_2m/fence_wood_A_doorway_2m/fence_wood_A_door/fence_wood_A_door_wood",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockType": 1
+},
+{
+"class": "WindowUse",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 1A/House01/Interior/Bookshelf/Door_B_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isCupboard": true,
+"rotateOpen": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/PaintingDeer_e$1mnwn",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 157,
+"is_heavy_item": true,
+"destroy_if_was_picked": true
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/PaintingDeer_b7m3m3t",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 157,
+"is_heavy_item": true
+},
+{
+"class": "Pickupable",
+"path": "All/House2C/Interior/Kitchen_counter_A/Frying_pan_pjsnnct",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 12
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 2B/House05/Interior/Xcube console item_no5okm1",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 168
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Kitchen_cabinet_A/Wine1",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 61
+},
+{
+"class": "Pickupable",
+"path": "All/House1C/Interior/Lamp_Floor_amx$ek3",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 166
+},
+{
+"class": "Pickupable",
+"path": "All/House2A/Interior/Lamp_Floor_391buoz",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"item_ID": 166,
+"destroy_if_was_picked": true
+},
+{
+"class": "Door",
+"path": "All/HOUSE 2B/House05/Interior/Dresser_C (1)/Dresser_drawer_C_R_parent/Dresser_drawer_C_R",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2A/Interior/Kitchen_counter_A/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "DestroyObject",
+"path": "All/House2C/Interior/Kitchen_cabinet_A/Plate1_stack",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Lockpick",
+"path": "All/House2C/Building/WallOut_3x_door_windows/Door_parent_C_L/Door_mesh_C_L",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"LockpickDifficulty": 1
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Dresser_C/Dresser_drawer_B_L_parent/Dresser_drawer_B_L",
+"active_in_asset": true,
+"path_unique_in_dump": true,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "Door",
+"path": "All/House2C/Interior/Kitchen_counter_B/Kitchen_counter_drawer/Kitchen_counter_drawer",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"isDrawer": true,
+"moveOpen": true
+},
+{
+"class": "WindowUse",
+"path": "All/House1C/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Enter Window (1)/WINDOW ENTERABLES/WINDOW_EXIT",
+"active_in_asset": false,
+"path_unique_in_dump": false
+},
+{
+"class": "Pickupable",
+"path": "All/HOUSE 1A/House01/Interior/Kitchen_counter_A/Frying_pan",
+"active_in_asset": false,
+"path_unique_in_dump": true,
+"item_ID": 12
+},
+{
+"class": "LockedWindow",
+"path": "All/HOUSE 2B/House05/Building/WallOut_3x_windowdouble_vinyl/Window_double_vinyl/Window_double_vinyl_openable_A",
+"active_in_asset": true,
+"path_unique_in_dump": false,
+"canBreak": true,
+"starsAmount": 2,
+"unlockFromInside": true
+},
+{
+"class": "SimpleOpenClose",
+"path": "All/House1C/Building/WallIn_B_3x_doordouble/Door_parent_A_double/Door_parent_A_R/Door_mesh_A_R",
+"active_in_asset": false,
+"path_unique_in_dump": true
+}
+]
+}

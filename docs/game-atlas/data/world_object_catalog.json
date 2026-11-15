@@ -1,0 +1,2020 @@
+{
+ "meta": {
+  "schema": "game-atlas/1",
+  "catalog": "world_object_catalog",
+  "description": "World-object TYPES; instances per scene in instances/<scene>.json",
+  "game_version": "1.27c (Unity 2020.3.33f1, Mono)",
+  "generated_by": "tools/research/build_atlas_data.py",
+  "evidence_levels": [
+   "VERIFIED_IL",
+   "VERIFIED_ASSET",
+   "VERIFIED_RUNTIME",
+   "INFERRED",
+   "UNKNOWN"
+  ],
+  "instance_files": {
+   "MainScene": {
+    "file": "instances/MainScene.json",
+    "count": 279
+   },
+   "MadisonSt": {
+    "file": "instances/MadisonSt.json",
+    "count": 3648
+   },
+   "PlayerHideout": {
+    "file": "instances/PlayerHideout.json",
+    "count": 170
+   },
+   "Auto Shop": {
+    "file": "instances/Auto_Shop.json",
+    "count": 5
+   },
+   "IntroHouse": {
+    "file": "instances/IntroHouse.json",
+    "count": 149
+   },
+   "Warehouse": {
+    "file": "instances/Warehouse.json",
+    "count": 347
+   },
+   "Hillville": {
+    "file": "instances/Hillville.json",
+    "count": 2130
+   },
+   "Jail": {
+    "file": "instances/Jail.json",
+    "count": 266
+   },
+   "BankScene": {
+    "file": "instances/BankScene.json",
+    "count": 459
+   },
+   "Forestside Resort": {
+    "file": "instances/Forestside_Resort.json",
+    "count": 725
+   },
+   "HauntedMansion": {
+    "file": "instances/HauntedMansion.json",
+    "count": 103
+   },
+   "Museum": {
+    "file": "instances/Museum.json",
+    "count": 173
+   },
+   "SwatRange": {
+    "file": "instances/SwatRange.json",
+    "count": 62
+   },
+   "DrugFarm": {
+    "file": "instances/DrugFarm.json",
+    "count": 149
+   }
+  },
+  "decode": {
+   "level0": {
+    "scene": "MainMenuNew",
+    "game_script_instances": 640,
+    "decoded_byte_exact": 630
+   },
+   "level1": {
+    "scene": "MainScene",
+    "game_script_instances": 5464,
+    "decoded_byte_exact": 5402
+   },
+   "level2": {
+    "scene": "HackingPuzzle",
+    "game_script_instances": 1446,
+    "decoded_byte_exact": 1424
+   },
+   "level3": {
+    "scene": "MadisonSt",
+    "game_script_instances": 4793,
+    "decoded_byte_exact": 4732
+   },
+   "level4": {
+    "scene": "PlayerHideout",
+    "game_script_instances": 1424,
+    "decoded_byte_exact": 1384
+   },
+   "level5": {
+    "scene": "Auto Shop",
+    "game_script_instances": 22,
+    "decoded_byte_exact": 22
+   },
+   "level6": {
+    "scene": "IntroHouse",
+    "game_script_instances": 221,
+    "decoded_byte_exact": 220
+   },
+   "level7": {
+    "scene": "Warehouse",
+    "game_script_instances": 402,
+    "decoded_byte_exact": 401
+   },
+   "level8": {
+    "scene": "Hillville",
+    "game_script_instances": 3077,
+    "decoded_byte_exact": 3039
+   },
+   "level9": {
+    "scene": "Jail",
+    "game_script_instances": 322,
+    "decoded_byte_exact": 322
+   },
+   "level10": {
+    "scene": "BankScene",
+    "game_script_instances": 558,
+    "decoded_byte_exact": 555
+   },
+   "level11": {
+    "scene": "EndStory",
+    "game_script_instances": 2,
+    "decoded_byte_exact": 2
+   },
+   "level12": {
+    "scene": "Forestside Resort",
+    "game_script_instances": 957,
+    "decoded_byte_exact": 951
+   },
+   "level13": {
+    "scene": "HauntedMansion",
+    "game_script_instances": 826,
+    "decoded_byte_exact": 825
+   },
+   "level14": {
+    "scene": "Museum",
+    "game_script_instances": 271,
+    "decoded_byte_exact": 268
+   },
+   "level15": {
+    "scene": "SwatRange",
+    "game_script_instances": 124,
+    "decoded_byte_exact": 122
+   },
+   "level16": {
+    "scene": "DrugFarm",
+    "game_script_instances": 209,
+    "decoded_byte_exact": 207
+   }
+  }
+ },
+ "types": [
+  {
+   "id": "wotype:Door",
+   "class": "Door",
+   "category": "door/furniture/window leaf",
+   "interaction": "PlayerScript ray tag Door -> Door.Use / hold -> slow; NPC Door.NPCUse",
+   "state": "isOpen, opening, openedByPlayer, broken (OpenDestroyed); type flags isDrawer/isCupboard/isFridge/isFileCabinet/isGlassCabinet/isContainer/isWindow/isCarDoor; motion rotateOpen/useVectorRotation/moveOpen",
+   "save_behaviour": "none (reset on scene load)",
+   "mod_status": "IMPLEMENTED / NEEDS MANUAL QA (Madison, Hillville, hideout; car doors via vdoor)",
+   "instances_per_scene": {
+    "MainScene": 16,
+    "MadisonSt": 1142,
+    "PlayerHideout": 43,
+    "Auto Shop": 1,
+    "IntroHouse": 68,
+    "Warehouse": 24,
+    "Hillville": 605,
+    "Jail": 59,
+    "BankScene": 134,
+    "Forestside Resort": 239,
+    "HauntedMansion": 11,
+    "Museum": 33,
+    "SwatRange": 12,
+    "DrugFarm": 43
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 3,
+    "MadisonSt": 345,
+    "PlayerHideout": 34,
+    "Auto Shop": 1,
+    "IntroHouse": 65,
+    "Warehouse": 24,
+    "Hillville": 216,
+    "Jail": 59,
+    "BankScene": 133,
+    "Forestside Resort": 236,
+    "HauntedMansion": 11,
+    "Museum": 33,
+    "SwatRange": 12,
+    "DrugFarm": 35
+   },
+   "methods": [
+    "Start",
+    "SetSlowOpenSpeed",
+    "getDoorClip",
+    "SetChildren",
+    "ResetLock",
+    "Unlock_Key",
+    "DelayKey",
+    "TimeAdd",
+    "OpenDestroyed",
+    "NPCUse",
+    "OpenDoorNPC",
+    "CloseAfter",
+    "CloseDoorNPC",
+    "CloseAfterNPC",
+    "OpenOnStartt",
+    "UseFully",
+    "Use",
+    "SlowFailed",
+    "Resett",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "Door.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Lockpick",
+   "class": "Lockpick",
+   "category": "lock",
+   "interaction": "Lockpick.StartLockpicking minigame -> DoorUnlock / DoorUnlockKey / BreakPadlock; crowbar break-in",
+   "state": "unlocked, padlock broken, hasAlarm",
+   "save_behaviour": "none; NPCs relock via Door.ResetLock -> RelockDoor",
+   "mod_status": "IMPLEMENTED / NEEDS MANUAL QA (same regions)",
+   "instances_per_scene": {
+    "MainScene": 1,
+    "MadisonSt": 76,
+    "PlayerHideout": 3,
+    "Auto Shop": 1,
+    "IntroHouse": 6,
+    "Warehouse": 10,
+    "Hillville": 39,
+    "Jail": 11,
+    "BankScene": 8,
+    "Forestside Resort": 17,
+    "HauntedMansion": 5,
+    "Museum": 12,
+    "SwatRange": 4,
+    "DrugFarm": 3
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0,
+    "MadisonSt": 60,
+    "PlayerHideout": 2,
+    "Auto Shop": 1,
+    "IntroHouse": 6,
+    "Warehouse": 10,
+    "Hillville": 27,
+    "Jail": 11,
+    "BankScene": 8,
+    "Forestside Resort": 17,
+    "HauntedMansion": 5,
+    "Museum": 12,
+    "SwatRange": 4,
+    "DrugFarm": 3
+   },
+   "methods": [
+    "Start",
+    "DoorUnlockKey",
+    "CheckInventory",
+    "Update",
+    "BreakPadlock",
+    "RelockDoor",
+    "DoorUnlock",
+    "StartLockpicking"
+   ],
+   "save_keys_in_code": [
+    "\"bltUpgrade\""
+   ],
+   "source": "Lockpick.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:MediumLock",
+   "class": "MediumLock",
+   "category": "lock (medium lock minigame)",
+   "interaction": "MediumLockMaster.Unlocked",
+   "state": "unlocked",
+   "save_behaviour": "none",
+   "mod_status": "PARTIAL (rides Lockpick where assigned; standalone UNKNOWN)",
+   "instances_per_scene": {
+    "MadisonSt": 33,
+    "PlayerHideout": 1,
+    "IntroHouse": 4,
+    "Warehouse": 3,
+    "Hillville": 17,
+    "Jail": 6,
+    "BankScene": 2,
+    "Forestside Resort": 2,
+    "HauntedMansion": 1,
+    "Museum": 1,
+    "SwatRange": 1,
+    "DrugFarm": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 22,
+    "PlayerHideout": 1,
+    "IntroHouse": 4,
+    "Warehouse": 3,
+    "Hillville": 6,
+    "Jail": 6,
+    "BankScene": 2,
+    "Forestside Resort": 2,
+    "HauntedMansion": 1,
+    "Museum": 1,
+    "SwatRange": 1,
+    "DrugFarm": 1
+   },
+   "methods": [
+    "Start",
+    "BeginLockpicking"
+   ],
+   "save_keys_in_code": [],
+   "source": "MediumLock.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:ElectricLock",
+   "class": "ElectricLock",
+   "category": "electric lock",
+   "interaction": "electronics minigame",
+   "state": "unlocked",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 2,
+    "Hillville": 11,
+    "BankScene": 2
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 2,
+    "Hillville": 11,
+    "BankScene": 2
+   },
+   "methods": [
+    "Start",
+    "Update",
+    "DisableLock"
+   ],
+   "save_keys_in_code": [],
+   "source": "ElectricLock.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:WeldDoor",
+   "class": "WeldDoor",
+   "category": "welded door (blowtorch)",
+   "interaction": "Blowtorch",
+   "state": "welded/cut",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 15,
+    "Hillville": 7,
+    "Museum": 6,
+    "SwatRange": 4
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 13,
+    "Hillville": 6,
+    "Museum": 6,
+    "SwatRange": 3
+   },
+   "methods": [
+    "Start",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "WeldDoor.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:LockedWindow",
+   "class": "LockedWindow",
+   "category": "window lock/glass",
+   "interaction": "LockedWindow.BeginCut / UnlockWindowNoAlarm / UnlockWindow / BrokeWindow",
+   "state": "locked, cut, broken glass, alarm",
+   "save_behaviour": "none",
+   "mod_status": "IMPLEMENTED / NEEDS MANUAL QA",
+   "instances_per_scene": {
+    "MainScene": 3,
+    "MadisonSt": 184,
+    "PlayerHideout": 1,
+    "IntroHouse": 6,
+    "Warehouse": 81,
+    "Hillville": 116,
+    "Forestside Resort": 22,
+    "Museum": 26
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0,
+    "MadisonSt": 184,
+    "PlayerHideout": 1,
+    "IntroHouse": 5,
+    "Warehouse": 81,
+    "Hillville": 116,
+    "Forestside Resort": 22,
+    "Museum": 26
+   },
+   "methods": [
+    "Start",
+    "Update",
+    "BeginCut",
+    "CheckAlarm",
+    "UnlockWindowNoAlarm",
+    "UnlockWindow",
+    "BrokeWindow"
+   ],
+   "save_keys_in_code": [],
+   "source": "LockedWindow.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:WindowUse",
+   "class": "WindowUse",
+   "category": "window climb-through",
+   "interaction": "ray tag WindowEnter -> WindowUse.UseWindow (moves local player)",
+   "state": "none (transient)",
+   "save_behaviour": "none",
+   "mod_status": "LOCAL ONLY (player movement, replicated through avatar)",
+   "instances_per_scene": {
+    "MainScene": 8,
+    "MadisonSt": 358,
+    "PlayerHideout": 34,
+    "IntroHouse": 14,
+    "Warehouse": 80,
+    "Hillville": 220,
+    "Forestside Resort": 42,
+    "Museum": 12
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0,
+    "MadisonSt": 0,
+    "PlayerHideout": 0,
+    "IntroHouse": 0,
+    "Warehouse": 0,
+    "Hillville": 0,
+    "Forestside Resort": 0,
+    "Museum": 0
+   },
+   "methods": [
+    "Start",
+    "UseWindow",
+    "GetIn",
+    "RotateTowardsCaught",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "WindowUse.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Window_Blinds",
+   "class": "Window_Blinds",
+   "category": "blinds",
+   "interaction": "interaction toggle",
+   "state": "open/closed",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 173,
+    "IntroHouse": 1,
+    "Hillville": 104,
+    "Forestside Resort": 21
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 118,
+    "IntroHouse": 1,
+    "Hillville": 39,
+    "Forestside Resort": 9
+   },
+   "methods": [
+    "Start",
+    "OnEnable",
+    "SetOff",
+    "Set",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "Window_Blinds.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:WindowExplosion",
+   "class": "WindowExplosion",
+   "category": "scripted window explosion",
+   "interaction": "mission script",
+   "state": "exploded",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "Warehouse": 84,
+    "Hillville": 4
+   },
+   "active_in_asset_per_scene": {
+    "Warehouse": 0,
+    "Hillville": 0
+   },
+   "methods": [
+    "Start",
+    "WindowCollision",
+    "RigidbodiesInteract"
+   ],
+   "save_keys_in_code": [],
+   "source": "WindowExplosion.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:DestroyObject",
+   "class": "DestroyObject",
+   "category": "breakable (crowbar)",
+   "interaction": "crowbar hit -> DestroyObject",
+   "state": "destroyed stage",
+   "save_behaviour": "none (mission completion via Mission_Item)",
+   "mod_status": "MISSING (local)",
+   "instances_per_scene": {
+    "MadisonSt": 64,
+    "PlayerHideout": 7,
+    "IntroHouse": 4,
+    "Hillville": 9,
+    "Forestside Resort": 20,
+    "HauntedMansion": 2,
+    "Museum": 4,
+    "SwatRange": 2,
+    "DrugFarm": 8
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 6,
+    "PlayerHideout": 5,
+    "IntroHouse": 1,
+    "Hillville": 5,
+    "Forestside Resort": 15,
+    "HauntedMansion": 2,
+    "Museum": 4,
+    "SwatRange": 2,
+    "DrugFarm": 8
+   },
+   "methods": [
+    "Start",
+    "Destroy_Thing"
+   ],
+   "save_keys_in_code": [],
+   "source": "DestroyObject.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:TimedDestroy",
+   "class": "TimedDestroy",
+   "category": "timed cleanup helper",
+   "interaction": "auto",
+   "state": "lifetime",
+   "save_behaviour": "none",
+   "mod_status": "LOCAL (no gameplay state)",
+   "instances_per_scene": {
+    "MainScene": 2,
+    "MadisonSt": 112,
+    "PlayerHideout": 19,
+    "IntroHouse": 7,
+    "Warehouse": 1,
+    "Hillville": 4,
+    "Forestside Resort": 47,
+    "DrugFarm": 4
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0,
+    "MadisonSt": 0,
+    "PlayerHideout": 0,
+    "IntroHouse": 0,
+    "Warehouse": 0,
+    "Hillville": 0,
+    "Forestside Resort": 0,
+    "DrugFarm": 0
+   },
+   "methods": [
+    "Start",
+    "DestroyIt"
+   ],
+   "save_keys_in_code": [],
+   "source": "TimedDestroy.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:LightSwitch",
+   "class": "LightSwitch",
+   "category": "light switch",
+   "interaction": "interact toggle",
+   "state": "on/off",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 112,
+    "PlayerHideout": 5,
+    "IntroHouse": 7,
+    "Hillville": 73,
+    "Forestside Resort": 21,
+    "Museum": 2
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 24,
+    "PlayerHideout": 4,
+    "IntroHouse": 7,
+    "Hillville": 1,
+    "Forestside Resort": 21,
+    "Museum": 2
+   },
+   "methods": [
+    "Start",
+    "AssignOnMaterial",
+    "PowerOut",
+    "NPC_Entered_Room",
+    "Update",
+    "FlipSwitch"
+   ],
+   "save_keys_in_code": [],
+   "source": "LightSwitch.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Light_Trigger",
+   "class": "Light_Trigger",
+   "category": "light area trigger",
+   "interaction": "player trigger",
+   "state": "lit state",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 99,
+    "Hillville": 56,
+    "Forestside Resort": 21
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 93,
+    "Hillville": 56,
+    "Forestside Resort": 21
+   },
+   "methods": [
+    "Start",
+    "AddNPC",
+    "RemoveNPC",
+    "Update",
+    "CheckNPCAmount"
+   ],
+   "save_keys_in_code": [],
+   "source": "Light_Trigger.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:FuseBoxSwitch",
+   "class": "FuseBoxSwitch",
+   "category": "fuse box",
+   "interaction": "interact",
+   "state": "power off",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 4,
+    "BankScene": 1,
+    "SwatRange": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 3,
+    "BankScene": 1,
+    "SwatRange": 1
+   },
+   "methods": [
+    "Start",
+    "Update",
+    "PowerOff"
+   ],
+   "save_keys_in_code": [],
+   "source": "FuseBoxSwitch.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:SecurityCamera",
+   "class": "SecurityCamera",
+   "category": "security camera",
+   "interaction": "drone disable / panel / SpotCamera",
+   "state": "isDisabled, spotted, discovered",
+   "save_behaviour": "discovered_camera_prefs key only",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MainScene": 1,
+    "MadisonSt": 22,
+    "PlayerHideout": 2,
+    "IntroHouse": 1,
+    "Warehouse": 2,
+    "Hillville": 21,
+    "Jail": 3,
+    "BankScene": 12,
+    "Forestside Resort": 7,
+    "Museum": 13,
+    "SwatRange": 4
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0,
+    "MadisonSt": 17,
+    "PlayerHideout": 1,
+    "IntroHouse": 1,
+    "Warehouse": 2,
+    "Hillville": 21,
+    "Jail": 3,
+    "BankScene": 12,
+    "Forestside Resort": 7,
+    "Museum": 13,
+    "SwatRange": 4
+   },
+   "methods": [
+    "Start",
+    "OnEnable",
+    "DisableCamera",
+    "DisablePermamently",
+    "Update",
+    "SpotCamera"
+   ],
+   "save_keys_in_code": [
+    "discovered_camera_prefs"
+   ],
+   "source": "SecurityCamera.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:CameraTrigger",
+   "class": "CameraTrigger",
+   "category": "camera view trigger",
+   "interaction": "player in view -> StartPoliceChase",
+   "state": "triggered",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MainScene": 1,
+    "MadisonSt": 22,
+    "PlayerHideout": 2,
+    "Warehouse": 2,
+    "Hillville": 21,
+    "Jail": 3,
+    "BankScene": 12,
+    "Forestside Resort": 7,
+    "Museum": 13,
+    "SwatRange": 4
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0,
+    "MadisonSt": 17,
+    "PlayerHideout": 0,
+    "Warehouse": 2,
+    "Hillville": 21,
+    "Jail": 3,
+    "BankScene": 12,
+    "Forestside Resort": 7,
+    "Museum": 13,
+    "SwatRange": 4
+   },
+   "methods": [
+    "Start",
+    "Update",
+    "OnTriggerEnter",
+    "OnTriggerExit"
+   ],
+   "save_keys_in_code": [],
+   "source": "CameraTrigger.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:SecurityPanel",
+   "class": "SecurityPanel",
+   "category": "security panel minigame",
+   "interaction": "Security_Panel_Minigame -> PanelDeactivate",
+   "state": "deactivated",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 29,
+    "PlayerHideout": 1,
+    "Hillville": 32,
+    "Jail": 1,
+    "BankScene": 4,
+    "Forestside Resort": 2,
+    "Museum": 4,
+    "SwatRange": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 22,
+    "PlayerHideout": 1,
+    "Hillville": 29,
+    "Jail": 1,
+    "BankScene": 4,
+    "Forestside Resort": 2,
+    "Museum": 4,
+    "SwatRange": 1
+   },
+   "methods": [
+    "Start",
+    "Shuffle",
+    "PanelDeactivate",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "SecurityPanel.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Alarm",
+   "class": "Alarm",
+   "category": "house alarm",
+   "interaction": "Alarm.TriggerAlarm (AIs HeardSound, police)",
+   "state": "triggered",
+   "save_behaviour": "none",
+   "mod_status": "MISSING (no scene instance in any level: prefab-only or unused, UNKNOWN)",
+   "instances_per_scene": {},
+   "active_in_asset_per_scene": {},
+   "methods": [
+    "Start",
+    "TriggerAlarm"
+   ],
+   "save_keys_in_code": [],
+   "source": "Alarm.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:GasDetector",
+   "class": "GasDetector",
+   "category": "gas detector",
+   "interaction": "SleepingGas/SleepGasCloud sensor -> TriggerAlarm",
+   "state": "triggered",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 2,
+    "Hillville": 6
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 0,
+    "Hillville": 5
+   },
+   "methods": [
+    "Start",
+    "DisableAlarm",
+    "TriggerAlarm"
+   ],
+   "save_keys_in_code": [],
+   "source": "GasDetector.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:SafeCrack",
+   "class": "SafeCrack",
+   "category": "safe",
+   "interaction": "SafeEnable minigame",
+   "state": "open",
+   "save_behaviour": "SafesOpened stat",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MainScene": 1,
+    "MadisonSt": 11,
+    "PlayerHideout": 2,
+    "Warehouse": 1,
+    "Hillville": 6,
+    "BankScene": 1,
+    "Forestside Resort": 1,
+    "HauntedMansion": 2,
+    "SwatRange": 1,
+    "DrugFarm": 2
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0,
+    "MadisonSt": 2,
+    "PlayerHideout": 1,
+    "Warehouse": 1,
+    "Hillville": 0,
+    "BankScene": 1,
+    "Forestside Resort": 1,
+    "HauntedMansion": 2,
+    "SwatRange": 1,
+    "DrugFarm": 2
+   },
+   "methods": [
+    "Start",
+    "Update",
+    "CreateRotateAngles",
+    "UnlockSafe",
+    "CrackSafe"
+   ],
+   "save_keys_in_code": [],
+   "source": "SafeCrack.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:HidingSpot",
+   "class": "HidingSpot",
+   "category": "hiding place",
+   "interaction": "HidingSpot.GetIn / Unhide",
+   "state": "occupied (player isHiding)",
+   "save_behaviour": "none",
+   "mod_status": "PARTIAL (avatar shows hiding? UNKNOWN; NPC perception local)",
+   "instances_per_scene": {
+    "MadisonSt": 28,
+    "PlayerHideout": 1,
+    "IntroHouse": 4,
+    "Hillville": 12,
+    "Jail": 9,
+    "BankScene": 1,
+    "Forestside Resort": 8,
+    "Museum": 3
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 12,
+    "PlayerHideout": 0,
+    "IntroHouse": 2,
+    "Hillville": 4,
+    "Jail": 9,
+    "BankScene": 1,
+    "Forestside Resort": 8,
+    "Museum": 3
+   },
+   "methods": [
+    "Start",
+    "GetIn",
+    "Unhide",
+    "WasFoundOpen",
+    "UnhideIE",
+    "GetInn",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "HidingSpot.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Vent",
+   "class": "Vent",
+   "category": "vent",
+   "interaction": "crowbar/screwdriver open",
+   "state": "opened",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 14,
+    "Hillville": 8,
+    "BankScene": 2,
+    "Forestside Resort": 6
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 14,
+    "Hillville": 6,
+    "BankScene": 2,
+    "Forestside Resort": 6
+   },
+   "methods": [
+    "Start",
+    "Pass",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "Vent.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:ClimbIvy",
+   "class": "ClimbIvy",
+   "category": "climbable",
+   "interaction": "agility skill climb",
+   "state": "none",
+   "save_behaviour": "none",
+   "mod_status": "LOCAL (movement)",
+   "instances_per_scene": {
+    "MadisonSt": 45,
+    "PlayerHideout": 4,
+    "IntroHouse": 2,
+    "Warehouse": 2,
+    "Hillville": 31,
+    "BankScene": 3,
+    "Forestside Resort": 21
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 45,
+    "PlayerHideout": 0,
+    "IntroHouse": 2,
+    "Warehouse": 2,
+    "Hillville": 31,
+    "BankScene": 3,
+    "Forestside Resort": 21
+   },
+   "methods": [
+    "Start",
+    "ClimbIvy1",
+    "GetIn",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "ClimbIvy.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:DigHole",
+   "class": "DigHole",
+   "category": "dig spot",
+   "interaction": "shovel",
+   "state": "dug, item spawned",
+   "save_behaviour": "DugHoles stat",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 8,
+    "PlayerHideout": 1,
+    "Hillville": 7,
+    "BankScene": 3,
+    "Forestside Resort": 5,
+    "HauntedMansion": 3
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 8,
+    "PlayerHideout": 1,
+    "Hillville": 7,
+    "BankScene": 3,
+    "Forestside Resort": 5,
+    "HauntedMansion": 3
+   },
+   "methods": [
+    "Start",
+    "WasDug",
+    "Update"
+   ],
+   "save_keys_in_code": [
+    "trigger.pref"
+   ],
+   "source": "DigHole.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:StashTrigger",
+   "class": "StashTrigger",
+   "category": "stash/hidden spot trigger",
+   "interaction": "player trigger",
+   "state": "found",
+   "save_behaviour": "UNKNOWN",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 12,
+    "PlayerHideout": 1,
+    "Hillville": 11,
+    "BankScene": 3,
+    "Forestside Resort": 6,
+    "HauntedMansion": 3
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 12,
+    "PlayerHideout": 1,
+    "Hillville": 11,
+    "BankScene": 3,
+    "Forestside Resort": 6,
+    "HauntedMansion": 3
+   },
+   "methods": [
+    "Start",
+    "DestroyIcon",
+    "Update"
+   ],
+   "save_keys_in_code": [
+    "pref"
+   ],
+   "source": "StashTrigger.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:HiddenItem",
+   "class": "HiddenItem",
+   "category": "hidden item (+100$)",
+   "interaction": "HiddenItem.PickIt",
+   "state": "found",
+   "save_behaviour": "HiddenItems stat; key UNKNOWN",
+   "mod_status": "UNSAFE for P2 (money excluded on client, W4.1B)",
+   "instances_per_scene": {
+    "MadisonSt": 10,
+    "Hillville": 10,
+    "Jail": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 10,
+    "Hillville": 10,
+    "Jail": 1
+   },
+   "methods": [
+    "Start",
+    "PickIt"
+   ],
+   "save_keys_in_code": [
+    "itemPref"
+   ],
+   "source": "HiddenItem.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:MailBox",
+   "class": "MailBox",
+   "category": "mailbox",
+   "interaction": "interact",
+   "state": "opened/looted",
+   "save_behaviour": "UNKNOWN",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 13,
+    "PlayerHideout": 1,
+    "Hillville": 6
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 13,
+    "PlayerHideout": 0,
+    "Hillville": 6
+   },
+   "methods": [
+    "Start",
+    "CanPlaceDelay",
+    "CheckIfPlaced",
+    "PlaceCamera",
+    "RetrieveCamera",
+    "Update"
+   ],
+   "save_keys_in_code": [
+    "thisPref"
+   ],
+   "source": "MailBox.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:ParcelLocker",
+   "class": "ParcelLocker",
+   "category": "parcel locker",
+   "interaction": "ParcelMinigame code entry",
+   "state": "opened",
+   "save_behaviour": "parcel_code_pref keys",
+   "mod_status": "PARTIAL (parcel loot shared W4.2D; locker state MISSING)",
+   "instances_per_scene": {
+    "MadisonSt": 9,
+    "Hillville": 6
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 9,
+    "Hillville": 6
+   },
+   "methods": [
+    "Start",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "ParcelLocker.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Garage_Switch",
+   "class": "Garage_Switch",
+   "category": "garage door switch",
+   "interaction": "interact",
+   "state": "open",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 6,
+    "Hillville": 8,
+    "SwatRange": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 6,
+    "Hillville": 4,
+    "SwatRange": 1
+   },
+   "methods": [
+    "Start",
+    "HackedOpen",
+    "OpenGarage",
+    "SwitchGarageNPC",
+    "SwitchGarage",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "Garage_Switch.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:CarGate",
+   "class": "CarGate",
+   "category": "car gate",
+   "interaction": "switch/trigger",
+   "state": "open",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 6,
+    "Hillville": 3,
+    "SwatRange": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 6,
+    "Hillville": 3,
+    "SwatRange": 1
+   },
+   "methods": [
+    "Start",
+    "SwitchOpen",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "CarGate.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:GarageOpenNPC",
+   "class": "GarageOpenNPC",
+   "category": "NPC garage opener",
+   "interaction": "NPC schedule",
+   "state": "open",
+   "save_behaviour": "none",
+   "mod_status": "MISSING (NPC)",
+   "instances_per_scene": {
+    "Hillville": 4
+   },
+   "active_in_asset_per_scene": {
+    "Hillville": 4
+   },
+   "methods": [
+    "Start",
+    "CheckAll",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "GarageOpenNPC.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Doorbell",
+   "class": "Doorbell",
+   "category": "doorbell",
+   "interaction": "interact -> NPC reaction",
+   "state": "rang",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 5
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 3
+   },
+   "methods": [
+    "Start",
+    "Highlight",
+    "Ring",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "Doorbell.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:ReadNote",
+   "class": "ReadNote",
+   "category": "note",
+   "interaction": "ReadNote.BeginRead (XP once via key <name>, may advance story)",
+   "state": "read",
+   "save_behaviour": "SPrefs <transform name> = 1",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 15,
+    "PlayerHideout": 11,
+    "Warehouse": 1,
+    "Hillville": 18,
+    "Jail": 3,
+    "Forestside Resort": 7,
+    "HauntedMansion": 3
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 4,
+    "PlayerHideout": 3,
+    "Warehouse": 1,
+    "Hillville": 2,
+    "Jail": 3,
+    "Forestside Resort": 7,
+    "HauntedMansion": 3
+   },
+   "methods": [
+    "Start",
+    "Update",
+    "BeginRead"
+   ],
+   "save_keys_in_code": [
+    "Parcel_Storage.parcelCodes[i].parcel_code_pref",
+    "parcel_pref",
+    "transform.name"
+   ],
+   "source": "ReadNote.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:TutorialTrigger",
+   "class": "TutorialTrigger",
+   "category": "tutorial trigger",
+   "interaction": "player trigger",
+   "state": "shown",
+   "save_behaviour": "Tutorial_* keys",
+   "mod_status": "LOCAL (UI)",
+   "instances_per_scene": {
+    "MadisonSt": 15,
+    "PlayerHideout": 1,
+    "IntroHouse": 1,
+    "Hillville": 7,
+    "Forestside Resort": 1,
+    "Museum": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 14,
+    "PlayerHideout": 0,
+    "IntroHouse": 0,
+    "Hillville": 7,
+    "Forestside Resort": 1,
+    "Museum": 1
+   },
+   "methods": [
+    "Start",
+    "OnTriggerEnter"
+   ],
+   "save_keys_in_code": [],
+   "source": "TutorialTrigger.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:ATM_Object",
+   "class": "ATM_Object",
+   "category": "ATM",
+   "interaction": "ATM_Minigame -> SpawnMoney (may advance story55)",
+   "state": "hacked",
+   "save_behaviour": "prefs_to_set",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 3,
+    "Hillville": 1,
+    "BankScene": 2
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 3,
+    "Hillville": 1,
+    "BankScene": 2
+   },
+   "methods": [
+    "OnEnable",
+    "Begin_Minigame",
+    "SpawnMoney",
+    "Update"
+   ],
+   "save_keys_in_code": [
+    "prefs_to_set"
+   ],
+   "source": "ATM_Object.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Payphone",
+   "class": "Payphone",
+   "category": "payphone mission giver",
+   "interaction": "Payphone.TryActivate",
+   "state": "current_mission",
+   "save_behaviour": "Payphone<Region> + PayphoneActive/Minutes/Seconds/Name",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 1,
+    "Hillville": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 1,
+    "Hillville": 1
+   },
+   "methods": [
+    "Start",
+    "MinimapToItem",
+    "TryActivate",
+    "Failure",
+    "Success",
+    "CheckIfFinished",
+    "Update"
+   ],
+   "save_keys_in_code": [
+    "\"PayphoneActive\"",
+    "\"PayphoneMinutes\"",
+    "\"PayphoneName\"",
+    "\"PayphoneSeconds\"",
+    "payphonePref"
+   ],
+   "source": "Payphone.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Pickupable",
+   "class": "Pickupable",
+   "category": "world loot",
+   "interaction": "PlayerScript ray tag Pickupable -> Pickupable.PickUp / PickUpHeavy",
+   "state": "present/taken",
+   "save_behaviour": "ItemDay_<name>, Item_<name>",
+   "mod_status": "IMPLEMENTED / NEEDS MANUAL QA (ordinary/money/unique all scenes; heavy/story/drone/special BLOCKED)",
+   "instances_per_scene": {
+    "MainScene": 39,
+    "MadisonSt": 869,
+    "PlayerHideout": 2,
+    "IntroHouse": 16,
+    "Warehouse": 50,
+    "Hillville": 598,
+    "Jail": 168,
+    "BankScene": 241,
+    "Forestside Resort": 190,
+    "HauntedMansion": 72,
+    "Museum": 43,
+    "SwatRange": 23,
+    "DrugFarm": 84
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0,
+    "MadisonSt": 48,
+    "PlayerHideout": 0,
+    "IntroHouse": 8,
+    "Warehouse": 50,
+    "Hillville": 22,
+    "Jail": 168,
+    "BankScene": 79,
+    "Forestside Resort": 182,
+    "HauntedMansion": 69,
+    "Museum": 40,
+    "SwatRange": 19,
+    "DrugFarm": 79
+   },
+   "methods": [
+    "DestroyMarker",
+    "OnEnable",
+    "HighlightOnStart",
+    "SetDayRespawn",
+    "RandomName",
+    "Start",
+    "OnCollisionEnter",
+    "WasPlacedInCar",
+    "Create_Sound_Effect",
+    "PickingItem",
+    "HeavyItemSaveXP",
+    "HeavyItemSaveXP_Van",
+    "PickUp",
+    "SetTriggerCollider",
+    "PickUpHeavy",
+    "DropHeavy",
+    "PlacedInTrunk",
+    "IsObstructed",
+    "NotObstructed",
+    "Update"
+   ],
+   "save_keys_in_code": [
+    "\"ItemDay_\" + transform.name",
+    "\"Item_\" + transform.name",
+    "loot_marker_translation_pref",
+    "prefName"
+   ],
+   "source": "Pickupable.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:RandomFileCabinet",
+   "class": "RandomFileCabinet",
+   "category": "random cabinet",
+   "interaction": "Start roll",
+   "state": "rolled variant",
+   "save_behaviour": "none",
+   "mod_status": "IMPLEMENTED / NEEDS MANUAL QA (seeded roll, DESIGN COMPROMISE)",
+   "instances_per_scene": {
+    "MadisonSt": 2,
+    "Hillville": 1,
+    "BankScene": 27
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 0,
+    "Hillville": 0,
+    "BankScene": 27
+   },
+   "methods": [
+    "Start",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "RandomFileCabinet.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:CarBox",
+   "class": "CarBox",
+   "category": "car / locker storage",
+   "interaction": "Inventory.OpenStorage",
+   "state": "contents",
+   "save_behaviour": "Storage_Item_<id>/Locker_Item_<id>",
+   "mod_status": "COMPLETE / VERIFIED (car box); locker IMPLEMENTED / NEEDS MANUAL QA",
+   "instances_per_scene": {
+    "MainScene": 4,
+    "MadisonSt": 1,
+    "PlayerHideout": 2,
+    "Hillville": 1,
+    "Forestside Resort": 1
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 1,
+    "MadisonSt": 0,
+    "PlayerHideout": 1,
+    "Hillville": 0,
+    "Forestside Resort": 0
+   },
+   "methods": [
+    "Start",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "CarBox.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Place_Heavy_Trigger",
+   "class": "Place_Heavy_Trigger",
+   "category": "heavy placement",
+   "interaction": "carry into trigger",
+   "state": "placed",
+   "save_behaviour": "trunk/shed keys",
+   "mod_status": "BLOCKED BY DEPENDENCY (heavy ownership)",
+   "instances_per_scene": {
+    "MainScene": 2,
+    "MadisonSt": 1,
+    "Hillville": 1,
+    "Forestside Resort": 1
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0,
+    "MadisonSt": 0,
+    "Hillville": 0,
+    "Forestside Resort": 0
+   },
+   "methods": [
+    "Start",
+    "OnTriggerEnter",
+    "OnTriggerExit"
+   ],
+   "save_keys_in_code": [],
+   "source": "Place_Heavy_Trigger.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:ShopTrigger",
+   "class": "ShopTrigger",
+   "category": "shop entry",
+   "interaction": "trigger -> Inventory.OpenShop",
+   "state": "open",
+   "save_behaviour": "none",
+   "mod_status": "IMPLEMENTED (wallet purchases) / NEEDS MANUAL QA",
+   "instances_per_scene": {
+    "MadisonSt": 1,
+    "PlayerHideout": 1,
+    "Auto Shop": 2,
+    "Hillville": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 0,
+    "PlayerHideout": 1,
+    "Auto Shop": 2,
+    "Hillville": 1
+   },
+   "methods": [
+    "Start"
+   ],
+   "save_keys_in_code": [],
+   "source": "ShopTrigger.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:PawnGuyTrigger",
+   "class": "PawnGuyTrigger",
+   "category": "pawn shop seller",
+   "interaction": "trigger -> sell UI",
+   "state": "open",
+   "save_behaviour": "none",
+   "mod_status": "IMPLEMENTED (sales counted via wallet) / NEEDS MANUAL QA",
+   "instances_per_scene": {
+    "MadisonSt": 1,
+    "Hillville": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 0,
+    "Hillville": 1
+   },
+   "methods": [
+    "OnEnable",
+    "Update",
+    "OnTriggerEnter"
+   ],
+   "save_keys_in_code": [],
+   "source": "PawnGuyTrigger.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Bed",
+   "class": "Bed",
+   "category": "bed / sleep",
+   "interaction": "Bed -> PassTime",
+   "state": "sleeping",
+   "save_behaviour": "none (time keys at checkpoints)",
+   "mod_status": "COMPLETE / VERIFIED (co-op sleep, M3.1.2)",
+   "instances_per_scene": {
+    "MainScene": 1
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0
+   },
+   "methods": [
+    "Start",
+    "Stand",
+    "Sleep",
+    "SleepB",
+    "LayDown",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "Bed.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:OnPossesion",
+   "class": "OnPossesion",
+   "category": "residence robbery zone",
+   "interaction": "trigger -> PlayerScript.isOnPossesion",
+   "state": "inside",
+   "save_behaviour": "none",
+   "mod_status": "LOCAL (player state)",
+   "instances_per_scene": {
+    "MainScene": 89
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 89
+   },
+   "methods": [
+    "Start",
+    "Info1",
+    "Update",
+    "ShowUnavailable",
+    "RefreshInfo",
+    "OnTriggerExit",
+    "OnTriggerEnter"
+   ],
+   "save_keys_in_code": [
+    "\"Item_\" + ResidenceScript.loot_items[k].loot_prefs",
+    "\"StreamerMode\"",
+    "ResidenceScript.Hints[j]",
+    "ResidenceScript.loot_items[k].display_loot_prefs",
+    "ResidenceScript.residence_missions[l].mission_prefs",
+    "prefDiscover"
+   ],
+   "source": "OnPossesion.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:LockedCarDoor",
+   "class": "LockedCarDoor",
+   "category": "stealable car door lock",
+   "interaction": "car lock pick gun minigame",
+   "state": "unlocked",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MainScene": 1,
+    "MadisonSt": 3,
+    "Hillville": 3
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0,
+    "MadisonSt": 1,
+    "Hillville": 3
+   },
+   "methods": [
+    "Start",
+    "UnlockDoor",
+    "BreakLock",
+    "BeginDrill"
+   ],
+   "save_keys_in_code": [],
+   "source": "LockedCarDoor.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:CarAlarm",
+   "class": "CarAlarm",
+   "category": "car alarm",
+   "interaction": "alarm trigger -> police",
+   "state": "ringing",
+   "save_behaviour": "none",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MainScene": 1,
+    "Hillville": 2
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0,
+    "Hillville": 2
+   },
+   "methods": [
+    "Start",
+    "AlarmDisarmed"
+   ],
+   "save_keys_in_code": [],
+   "source": "CarAlarm.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Lockpick_Pin",
+   "class": "Lockpick_Pin",
+   "category": "hideout lockpick practice",
+   "interaction": "minigame",
+   "state": "n/a",
+   "save_behaviour": "none",
+   "mod_status": "LOCAL",
+   "instances_per_scene": {
+    "PlayerHideout": 5
+   },
+   "active_in_asset_per_scene": {
+    "PlayerHideout": 5
+   },
+   "methods": [
+    "Start",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "Lockpick_Pin.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:CheckCameras",
+   "class": "CheckCameras",
+   "category": "camera view PC",
+   "interaction": "PlayerScript ray -> CheckCameras (story)",
+   "state": "used",
+   "save_behaviour": "none",
+   "mod_status": "BLOCKED BY DEPENDENCY (story)",
+   "instances_per_scene": {
+    "MadisonSt": 1,
+    "PlayerHideout": 2,
+    "IntroHouse": 1,
+    "Warehouse": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 0,
+    "PlayerHideout": 1,
+    "IntroHouse": 1,
+    "Warehouse": 1
+   },
+   "methods": [
+    "Start",
+    "DestroyThis",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "CheckCameras.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:StoryObject",
+   "class": "StoryObject",
+   "category": "story-gated object",
+   "interaction": "Start/Update enable by Story index/key",
+   "state": "active",
+   "save_behaviour": "derived from Story",
+   "mod_status": "BLOCKED BY DEPENDENCY (story sync)",
+   "instances_per_scene": {
+    "MainScene": 16,
+    "MadisonSt": 33,
+    "PlayerHideout": 16,
+    "Auto Shop": 1,
+    "IntroHouse": 5,
+    "Warehouse": 2,
+    "Hillville": 7,
+    "Jail": 1,
+    "Forestside Resort": 1
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 2,
+    "MadisonSt": 23,
+    "PlayerHideout": 13,
+    "Auto Shop": 1,
+    "IntroHouse": 3,
+    "Warehouse": 2,
+    "Hillville": 4,
+    "Jail": 1,
+    "Forestside Resort": 0
+   },
+   "methods": [
+    "Start",
+    "OnEnable",
+    "UpdateObject",
+    "Update"
+   ],
+   "save_keys_in_code": [
+    "\"FreeMode\"",
+    "\"Story\""
+   ],
+   "source": "StoryObject.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:AdvanceTrigger",
+   "class": "AdvanceTrigger",
+   "category": "story trigger",
+   "interaction": "OnTriggerEnter",
+   "state": "fired",
+   "save_behaviour": "Story",
+   "mod_status": "BLOCKED BY DEPENDENCY (story)",
+   "instances_per_scene": {
+    "MadisonSt": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 1
+   },
+   "methods": [
+    "Start",
+    "OnTriggerEnter"
+   ],
+   "save_keys_in_code": [],
+   "source": "AdvanceTrigger.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:AdvanceStoryTrigger",
+   "class": "AdvanceStoryTrigger",
+   "category": "story trigger",
+   "interaction": "OnTriggerEnter",
+   "state": "fired",
+   "save_behaviour": "Story",
+   "mod_status": "BLOCKED BY DEPENDENCY (story)",
+   "instances_per_scene": {
+    "PlayerHideout": 1
+   },
+   "active_in_asset_per_scene": {
+    "PlayerHideout": 1
+   },
+   "methods": [
+    "Start",
+    "OnTriggerEnter",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "AdvanceStoryTrigger.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Mission_Item",
+   "class": "Mission_Item",
+   "category": "residence mission target",
+   "interaction": "Mission_Item.Mission_Complete callers (photo, plant, destroy, knock-out, feed dog)",
+   "state": "progress",
+   "save_behaviour": "<house>_mission_<i>",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MainScene": 17,
+    "MadisonSt": 37,
+    "Warehouse": 1,
+    "Hillville": 14,
+    "BankScene": 1,
+    "Forestside Resort": 3,
+    "SwatRange": 3,
+    "DrugFarm": 3
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0,
+    "MadisonSt": 25,
+    "Warehouse": 1,
+    "Hillville": 12,
+    "BankScene": 1,
+    "Forestside Resort": 3,
+    "SwatRange": 3,
+    "DrugFarm": 3
+   },
+   "methods": [
+    "OnEnable",
+    "LoadAll",
+    "Update",
+    "MissionComplete1",
+    "Mission_Complete"
+   ],
+   "save_keys_in_code": [
+    "assigned_residence.residence_missions[mission_int].mission_prefs"
+   ],
+   "source": "Mission_Item.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:PlantEvidence",
+   "class": "PlantEvidence",
+   "category": "plant-mission target",
+   "interaction": "plant interaction",
+   "state": "planted",
+   "save_behaviour": "via Mission_Item",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MadisonSt": 7,
+    "Warehouse": 1,
+    "Hillville": 6,
+    "DrugFarm": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 7,
+    "Warehouse": 1,
+    "Hillville": 4,
+    "DrugFarm": 1
+   },
+   "methods": [
+    "Start",
+    "Planted",
+    "Update"
+   ],
+   "save_keys_in_code": [],
+   "source": "PlantEvidence.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:ContractItem",
+   "class": "ContractItem",
+   "category": "contract target item",
+   "interaction": "pickup",
+   "state": "found",
+   "save_behaviour": "contract keys",
+   "mod_status": "PARTIAL (loot shared; contract completion host-only)",
+   "instances_per_scene": {
+    "MadisonSt": 14,
+    "Warehouse": 1,
+    "Hillville": 6,
+    "Jail": 1,
+    "Forestside Resort": 1,
+    "HauntedMansion": 1
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 1,
+    "Warehouse": 1,
+    "Hillville": 0,
+    "Jail": 1,
+    "Forestside Resort": 1,
+    "HauntedMansion": 1
+   },
+   "methods": [
+    "OnEnable"
+   ],
+   "save_keys_in_code": [],
+   "source": "ContractItem.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:Pickpocket_Object",
+   "class": "Pickpocket_Object",
+   "category": "pickpocket target",
+   "interaction": "Pickpocket_Manager minigame",
+   "state": "pickpocketed this week",
+   "save_behaviour": "<name>_week",
+   "mod_status": "MISSING",
+   "instances_per_scene": {
+    "MainScene": 76,
+    "MadisonSt": 5,
+    "PlayerHideout": 1,
+    "Hillville": 3
+   },
+   "active_in_asset_per_scene": {
+    "MainScene": 0,
+    "MadisonSt": 4,
+    "PlayerHideout": 1,
+    "Hillville": 3
+   },
+   "methods": [
+    "Start",
+    "Was_Caught",
+    "Update"
+   ],
+   "save_keys_in_code": [
+    "\"Story\"",
+    "normal_AI.TenantName",
+    "transform.name",
+    "transform.name + \"_week\""
+   ],
+   "source": "Pickpocket_Object.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  },
+  {
+   "id": "wotype:SimpleOpenClose",
+   "class": "SimpleOpenClose",
+   "category": "animator open/close helper (asset-store)",
+   "interaction": "ObjectClicked (no verified game caller)",
+   "state": "objectOpen",
+   "save_behaviour": "none",
+   "mod_status": "UNKNOWN (no interaction path verified)",
+   "instances_per_scene": {
+    "MadisonSt": 22,
+    "IntroHouse": 2,
+    "Hillville": 2,
+    "Forestside Resort": 5
+   },
+   "active_in_asset_per_scene": {
+    "MadisonSt": 0,
+    "IntroHouse": 2,
+    "Hillville": 0,
+    "Forestside Resort": 4
+   },
+   "methods": [
+    "Start",
+    "ObjectClicked"
+   ],
+   "save_keys_in_code": [],
+   "source": "SimpleOpenClose.cs",
+   "evidence": "VERIFIED_ASSET (counts) + VERIFIED_IL (methods/keys); interaction/state text from IL reads and docs/research"
+  }
+ ]
+}

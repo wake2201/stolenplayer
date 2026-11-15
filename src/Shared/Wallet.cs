@@ -152,7 +152,7 @@ namespace TS2MP.Shared
         Purchase,  // counted + purchase counter (host checks the balance; refused -> record restored, item and money return)
         Exclude,   // the original runs, its money change is reverted locally and never credited (system not shared yet)
         Refuse,    // the original method does nothing on the client (it buys host / world-owned state that Player 2 cannot own)
-        HostTxn,   // V1.2: a host transaction of another subsystem (TravelHooks: Tutorial.BuyVan -> "vbuy"); the host charges the
+        HostTxn,   // V1.2 / W1: a host transaction of another subsystem (Tutorial.BuyVan -> "vbuy"; garage / renovations -> "hbuy"); the host charges the
                    // shared balance once, the client never changes money itself. Refused like Refuse when that hook is missing.
         Load       // original load/save plumbing: replaced by the mirror (never a delta)
     }
@@ -195,14 +195,14 @@ namespace TS2MP.Shared
             new MoneyWriter("PlayerScript", "PickUpMoney", MoneyPolicy.Exclude, "IL_0014 (no caller in Assembly-CSharp)", "unknown world source"),
             new MoneyWriter("HiddenItem", "PickIt", MoneyPolicy.Exclude, "PlayerScript.Update IL_73b0 PickIt, IL_73de += 100", "hidden items are world objects that are not shared"),
             // ---- host / world-owned purchases: refused on the client ----
-            new MoneyWriter("Inventory", "BuyGarage", MoneyPolicy.Refuse, "IL_001d -8000", "garage = host world"),
+            new MoneyWriter("Inventory", "BuyGarage", MoneyPolicy.HostTxn, "IL_001d -8000", "garage = host world: W1 hbuy host transaction (HideoutSync)"),
             new MoneyWriter("Whiplist", "DeductColorPrice", MoneyPolicy.Refuse, "IL_001c", "car upgrades are not synchronized"),
             new MoneyWriter("Whiplist", "UpgradeEngine", MoneyPolicy.Refuse, "IL_0032", "car upgrades are not synchronized"),
             new MoneyWriter("Whiplist", "UpgradeBrakes", MoneyPolicy.Refuse, "IL_0032", "car upgrades are not synchronized"),
             new MoneyWriter("Whiplist", "UpgradeTraction", MoneyPolicy.Refuse, "IL_0032", "car upgrades are not synchronized"),
-            new MoneyWriter("HouseRenovator", "SetWallpaperBedroom", MoneyPolicy.Refuse, "IL_001e", "hideout = host world"),
-            new MoneyWriter("HouseRenovator", "BuyAddition", MoneyPolicy.Refuse, "IL_003e", "hideout = host world"),
-            new MoneyWriter("HouseRenovator", "BuyRepairs", MoneyPolicy.Refuse, "IL_0024", "hideout = host world"),
+            new MoneyWriter("HouseRenovator", "SetWallpaperBedroom", MoneyPolicy.HostTxn, "IL_001e", "hideout = host world: W1 hbuy host transaction (HideoutSync)"),
+            new MoneyWriter("HouseRenovator", "BuyAddition", MoneyPolicy.HostTxn, "IL_003e", "hideout = host world: W1 hbuy host transaction (HideoutSync)"),
+            new MoneyWriter("HouseRenovator", "BuyRepairs", MoneyPolicy.HostTxn, "IL_0024", "hideout = host world: W1 hbuy host transaction (HideoutSync)"),
             new MoneyWriter("DroneUpgradePanel", "BuyUpgrade", MoneyPolicy.Refuse, "IL_003d", "drones are special items, not synchronized"),
             new MoneyWriter("DroneTech", "RestoreDrone", MoneyPolicy.Refuse, "IL_00d8", "drones are special items, not synchronized"),
             new MoneyWriter("UpgradeIt", "BuyUpgrade", MoneyPolicy.Refuse, "IL_0045", "upgrade target not owned by the Player-2 record"),

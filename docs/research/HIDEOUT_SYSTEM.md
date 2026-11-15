@@ -54,7 +54,7 @@ car state. It is not per region and not per player.
   Player 2 sees it only after the next join (no live swap).
 - `Inventory.BuyGarage` uses `FindObjectOfType<Garage>()` — callable only inside the hideout scene [V].
 
-## 6. Future implementation (not implemented)
+## 6. Implementation (W1, mod 0.21.0 — PROGRESS W1; this section kept as the original plan)
 - One host-authoritative **campaign transaction** `buyGarage` (txn id, requester, expected price 8000): host checks
   `garage < 1` and the payer's funds, debits exactly once, commits `garage = 2` on the host side (writes the key and
   `boughtGarage`), replies; both instances apply the swap through `Garage.BoughtSeq` semantics (presentation part only on
@@ -77,3 +77,6 @@ car state. It is not per region and not per player.
 | Purchase (8000 debit + flag) | host-authoritative transaction, exactly once |
 | Buy animation, camera/input lock | local visual state of the actor |
 | Story advance on `boughtGarage` | persistent shared campaign state (host story owner) |
+
+## 8. Renovations (W1 verification)
+`HouseRenovator` (MainScene): `BuyAddition` (AudioUpgrade 1000, AntiTheft 1500, CatStuff 1500, LoreBooks 1500; key = 1 at once + `GM.SelectHideout()`), `BuyRepairs` (2500, `HouseRepairs` = 1 + `SelectHideout`, `UPGRADE_HOUSE`), `SetWallpaperBedroom` (50, five material keys, live `CheckRenovations.CheckAll`). Readers: `EnableDisablePref` ×4, `CheckRenovations` ×67, `CatAI.Start`, `HeavyItemsShed.LoadItems` (Start only). Shared as host transactions in W1 (PROGRESS W1).

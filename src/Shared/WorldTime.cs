@@ -479,6 +479,36 @@ namespace TS2MP.Shared
         // region still unknown this changes nothing (the later SetPlayerRegion assigns it, the launcher-proven order).
         public int FleetInitialized(double now) { _now = now; int before = Outbox.Count; AfterFleetChange(); return Outbox.Count - before; }
 
+        // ---- W1 shared hideout ownership ----
+        public IHideoutHost HideoutHost;   // host plugin: balance, derived state, original costs, apply on the host's own state
+        public long HideoutPurchases, HideoutRefusals;
+
+        // One client purchase: validated completely (VehicleShop pattern), applied on the host's original state, then the
+        // shared state is re-derived and committed in this single host step. Retransmission = cached answer (ProposalGate);
+        // a second request after the purchase is Stale -> one charge.
+        public ProposalCode BuyHideout(byte slot, HideoutBuyRequest r, out string why)
+        {
+            int price;
+            var code = HideoutShop.Decide(r, RegionOfSlot(slot), HideoutHost, out price, out why);
+            if (code == ProposalCode.Accepted)
+            {
+                if (!HideoutHost.Apply(r, price)) { why = "host apply failed"; code = ProposalCode.Busy; }
+                else { why = "charged " + price; HideoutPurchases++; PublishHideout(); }
+            }
+            if (code != ProposalCode.Accepted) HideoutRefusals++;
+            return code;
+        }
+
+        // Host: re-derive and commit the shared hideout state (after any original purchase, scene bind or applied request).
+        public bool PublishHideout()
+        {
+            HideoutState s;
+            if (HideoutHost == null || !HideoutHost.TryState(out s)) return false;
+            var e = Reg.Commit(StateScope.Session, 0, WorldKeys.Hideout, s.ToBytes());
+            if (e == null) return false;
+            Outbox.Add(e); return true;
+        }
+
         // ---- V1.2 vehicle purchase / unlock ----
         public IVehicleShopHost Shop;   // host plugin: shared balance, garage condition, charge (original money + unlock key)
         public long Purchases, PurchaseRefusals;
@@ -1011,6 +1041,12 @@ namespace TS2MP.Shared
                 if (vid == VehicleIds.None || p.Value == null || p.Value.Length != 1 || p.Value[0] > 2) code = ProposalCode.Invalid;
                 else code = Ride(senderSlot, vid, p.Value[0], now, out why);
                 LastNote = "ride car#" + vid + " op " + (p.Value != null && p.Value.Length == 1 ? p.Value[0].ToString() : "?") + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
+            }
+            else if (p.Scope == StateScope.Session && p.Key == WorldKeys.HideoutBuy)
+            {
+                HideoutBuyRequest hr; string why = null;
+                if (p.ScopeArg != 0 || !HideoutBuyRequest.TryParse(p.Value, out hr)) { code = ProposalCode.Invalid; LastNote = "hideout buy by P" + senderSlot + " -> Invalid"; }
+                else { code = BuyHideout(senderSlot, hr, out why); LastNote = "hideout buy " + hr + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : ""); }
             }
             else if (p.Scope == StateScope.Session && p.Key == WorldKeys.VehicleBuy)
             {

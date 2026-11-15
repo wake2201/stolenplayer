@@ -655,9 +655,11 @@ static class WalletTests
         Expect(methods.Count == 40 + 1, "the 40 verified writer methods + HiddenItem.PickIt are classified (" + methods.Count + ")");
         foreach (var m in new[] { "Mission_Item.MissionComplete1", "JobOffer.ClaimRewards", "ContractUIObj.ClaimReward", "Payphone.Success", "Pickpocket_Manager.Success" })
             Expect(Policy(m) == MoneyPolicy.Exclude, m + " excluded (not shared yet)");
-        foreach (var m in new[] { "Darkbank.DepositMoney", "Darkbank.WithdrawMoney", "StockManager.BuyShares", "Inventory.BuyGarage", "Whiplist.UpgradeEngine", "DroneUpgradePanel.BuyUpgrade", "HouseRenovator.BuyAddition" })
+        foreach (var m in new[] { "Darkbank.DepositMoney", "Darkbank.WithdrawMoney", "StockManager.BuyShares", "Whiplist.UpgradeEngine", "DroneUpgradePanel.BuyUpgrade" })
             Expect(Policy(m) == MoneyPolicy.Refuse, m + " refused on the client");
         Expect(Policy("Shop_Manager.Buy_Item") == MoneyPolicy.Purchase && purchase == 1, "only the shop purchase is a checked purchase");
+        foreach (var m in new[] { "Inventory.BuyGarage", "HouseRenovator.BuyAddition", "HouseRenovator.BuyRepairs", "HouseRenovator.SetWallpaperBedroom" })
+            Expect(Policy(m) == MoneyPolicy.HostTxn, m + " = W1 hideout host transaction (hbuy), refused only when its hook is missing");
         Expect(Policy("Tutorial.BuyVan") == MoneyPolicy.HostTxn, "V1.2: the Shadowhawk purchase is a host transaction (vbuy), refused only when its hook is missing");
         // loot classes that stay unsupported (v0.16.1: SharedName is shared by census id - WorldLootTests 15, V161Tests)
         string why;

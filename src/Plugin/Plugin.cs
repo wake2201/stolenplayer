@@ -203,6 +203,7 @@ namespace TS2MP.Plugin
         WorldKeyMirror _mirror;
         WorldLootSync _loot;
         HeavySync _heavy;    // H1 heavy-object leases (needs WorldLootSync: its PickUpHeavy hook + host catalogs)
+        HideoutSync _hideout;    // W1 shared hideout purchases / renovations (before WalletSync: it claims its money writers)
         HeavyCargoSync _cargo;   // H2 shared heavy vehicle cargo (needs HeavySync: loads / unloads are heavy-lease operations)
         CampaignBootstrap _campaign;
         WorldObjectSync _doors;   // W4.2B doors / locks / windows
@@ -320,6 +321,8 @@ namespace TS2MP.Plugin
             if (_world == null) return;
             try { _vehicles = new VehicleSync(node, log, _world, _sync, _settings.DataDir, _settings.Vehicles); }
             catch (Exception ex) { log.Error("VEHICLE init failed (vehicle sync disabled)", ex); _vehicles = null; }
+            try { _hideout = new HideoutSync(node, log, _world); if (!_hideout.Ready) { _hideout.Dispose(); _hideout = null; } }
+            catch (Exception ex) { log.Error("HIDEOUT init failed (shared hideout purchases disabled)", ex); _hideout = null; }
             try { _wallet = new WalletSync(node, log, _world); }
             catch (Exception ex) { log.Error("WALLET init failed (shared money disabled)", ex); _wallet = null; }
             try { _p2 = new Player2Sync(node, log, _world, _settings.DataDir); }
@@ -383,7 +386,7 @@ namespace TS2MP.Plugin
         void DisposeSystems()
         {
             Release(ref _doors, "WOBJ"); Release(ref _campaign, "CAMPAIGN"); Release(ref _cargo, "CARGO"); Release(ref _heavy, "HEAVY"); Release(ref _loot, "WLOOT"); Release(ref _mirror, "MIRROR");
-            Release(ref _census, "CENSUS"); Release(ref _items, "WITEM"); Release(ref _carbox, "CARBOX"); Release(ref _p2, "P2INV"); Release(ref _wallet, "WALLET");
+            Release(ref _census, "CENSUS"); Release(ref _items, "WITEM"); Release(ref _carbox, "CARBOX"); Release(ref _p2, "P2INV"); Release(ref _wallet, "WALLET"); Release(ref _hideout, "HIDEOUT");
             Release(ref _vehicles, "VEHICLE"); Release(ref _world, "WORLD"); Release(ref _sync, "SYNC");
         }
 
@@ -473,6 +476,11 @@ namespace TS2MP.Plugin
             {
                 try { _wallet.Update(); }
                 catch (Exception ex) { _log.Error("WALLET update exception (shared money mirror disabled)", ex); _wallet.Dispose(); _wallet = null; }
+            }
+            if (_hideout != null)
+            {
+                try { _hideout.Update(); }
+                catch (Exception ex) { _log.Error("HIDEOUT update exception (shared hideout disabled)", ex); _hideout.Dispose(); _hideout = null; }
             }
             if (_carbox != null && _world != null)
             {

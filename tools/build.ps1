@@ -70,7 +70,8 @@ $suites = @(
     @('TS2MP.W42DTests', 'W42DTests.cs', 'W4.2D cross-region loot: host scene-file catalogs (real game files), cabinets, keys, parcels'),
     @('TS2MP.H1Tests', 'H1Tests.cs', 'H1 heavy objects: host lease, simultaneous pickup, drop relocation, disconnect, region transitions'),
     @('TS2MP.H2Tests', 'H2Tests.cs', 'H2 shared heavy vehicle cargo: load / unload by both players, capacity, travel, persistence, isolation'),
-    @('TS2MP.V12Tests', 'V12Tests.cs', 'V1.2 shared Shadowhawk purchase / unlock, hideout presentation, Auto Shop travel-only proxy')
+    @('TS2MP.V12Tests', 'V12Tests.cs', 'V1.2 shared Shadowhawk purchase / unlock, hideout presentation, Auto Shop travel-only proxy'),
+    @('TS2MP.W1Tests', 'W1Tests.cs', 'W1 shared hideout: garage / additions / repairs / wallpapers purchases, coordinated original rebuild, persistence')
 )
 foreach ($s in $suites) {
     Invoke-Csc "$($s[0]).exe" (@('/target:exe', "/out:$outTests\$($s[0]).exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\$($s[1])"))

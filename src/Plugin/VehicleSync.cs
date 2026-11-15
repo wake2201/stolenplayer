@@ -227,7 +227,7 @@ namespace TS2MP.Plugin
                 string err;
                 try { err = TravelHooks.Install("com.ts2mp.multiplayer.travel"); } catch (Exception ex) { err = ex.Message; }
                 _hooks = err == null;
-                if (_hooks) { TravelHooks.Handler = this; TravelHooks.Log = delegate(string m) { _log.Info(m); }; }
+                if (_hooks) { TravelHooks.Handler = this; TravelHooks.Log = delegate(string m) { _log.Info(m); }; if (TravelHooks.BuyVanPatched) HostTxnHooks.Claim("Tutorial.BuyVan"); }
                 else _log.Error("TRAVEL hooks not installed (" + err + "): travel stays original, region car rule NOT enforced");
             }
             world.ProposalResultHook = OnProposalResult;
@@ -3296,6 +3296,7 @@ namespace TS2MP.Plugin
         {
             if (ReferenceEquals(_legsOwner, this)) _legsOwner = null;   // the postfix becomes a no-op (vanilla legs)
             if (ReferenceEquals(Current, this)) Current = null;
+            HostTxnHooks.Release("Tutorial.BuyVan");
             _node.MessageReceived -= OnMessage;
             _node.RemoteDisconnected -= OnRemoteDisconnected;
             _node.RemoteConnected -= OnRemoteConnected;

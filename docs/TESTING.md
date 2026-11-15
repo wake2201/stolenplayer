@@ -151,6 +151,25 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 41. W1 checklist — shared garage + hideout renovations (release `TS2-Multiplayer-0.21.0.zip` on BOTH PCs, protocol 32)
+F8 test campaign copy WITHOUT the garage, without renovations, shared money ≥ 20,000. Grep tags: `HIDEOUT`, `hideout buy`, `HIDEOUT_STATS`, `original hideout rebuild`, `sandbox keys follow`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Both in the hideout. P2 buys the garage at the garage trigger | P2: original window, buy animation, sound; garage opens. P1 sees the garage swap at the same moment (walls/gate gone, brick fence, lamps, laptop; can walk into the garage). Money −8000 once on both. Host `hideout buy Garage by P2 -> Accepted`, client `HIDEOUT purchase … accepted`, host `garage queued for the next host checkpoint` | NOT TESTED |
+| 2 | Fresh copy: P1 buys the garage while P2 is in Madison | P1 original purchase; P2 not interrupted. P2 travels to the hideout → garage built. P2 at the Auto Shop sees the Shadowhawk sign | NOT TESTED |
+| 3 | Both click Buy at the same time / P2 double-clicks | One charge only; the later click logs `refused … Stale` / `already owned` | NOT TESTED |
+| 4 | With < 8000 / < 1000 | Original: no garage button; renovator shows its own "too poor" page; nothing charged | NOT TESTED |
+| 5 | Both in the hideout. P2 buys an addition (e.g. audio system) on the hideout computer | P2: original loading screen + rebuilt hideout with the radio. P1: original loading screen right after (`original hideout rebuild`), same upgrade, both at the hideout spawn; inventories, money, cars unchanged; session stays connected | NOT TESTED |
+| 6 | P1 in the hideout sits in a car / carries a heavy object while P2 buys house repairs | P1's rebuild waits until P1 is out of the car / dropped the object (`rebuild … waits`), then the original loading screen once | NOT TESTED |
+| 7 | P1 in Madison, P2 in the hideout buys repairs | P2 reloads; P1 is not interrupted (no loading screen). P1 travels home → repaired hideout | NOT TESTED |
+| 8 | P1 (host) in Madison: P2 buys an addition + wallpaper | Accepted although the host is elsewhere; host travel home → upgraded hideout | NOT TESTED |
+| 9 | Wallpaper / floor: P2 changes the bedroom wallpaper while P1 watches | P1 sees the new material live (no reload); −50 once | NOT TESTED |
+| 10 | P1 buys an addition (original reload) while P2 is in the hideout | P2 gets the original rebuild once; no repeated reloads | NOT TESTED |
+| 11 | P2 disconnects right after a purchase (during the loading screen), rejoins | Purchase kept once, no second charge; P2 sees the upgraded hideout after the rejoin | NOT TESTED |
+| 12 | Host saves (travel), quits, restarts, hosts; P2 joins | Garage + renovations on both PCs, money unchanged. Fresh copy: P2 buys repairs, P1 gets caught and loads the checkpoint without saving → repairs AND money rolled back together | NOT TESTED |
+| 13 | Regression: Shadowhawk purchase / unlock, travel proxies, CarBox, driving, passenger seats, heavy cargo, tailgate, F7 | Unchanged | NOT TESTED |
+
 ## 40. V1.2 checklist — Shadowhawk purchase / unlock + Auto Shop travel proxy (release `TS2-Multiplayer-0.20.0.zip` on BOTH PCs, protocol 31)
 Both PCs need 0.20.0. Use the F8 test campaign with the hideout garage bought (`garage`) and the Shadowhawk NOT bought; shared money ≥ 50,000. Grep tags: `VEHICLE purchase`, `buy car#`, `unlocked in the shared fleet`, `placed at the original hideout spot`, `Auto Shop travel proxy`, `travel proxy presentation`, `Auto Shop purchase sign`, `VEHICLE_STATS … buy req`.
 

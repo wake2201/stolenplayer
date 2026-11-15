@@ -1,5 +1,44 @@
 ﻿# PROGRESS
 
+## W1 — Shared hideout purchases, renovations & scene synchronization — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-15
+Mod **0.21.0, protocol 32** (client proposal `hbuy` 3 B, host-committed state `hideout` 8 B). Both PCs need 0.21.0. Built on `6826735` (V1.2, confirmed in game by the user). Manual QA: `docs/TESTING.md` §41.
+
+### A. Original mechanisms (verified: ilspycmd 1.27c + scene scans level1 MainScene / level4 PlayerHideout, read-only)
+| Purchase | Original path | Price | Key / timing | Scene effect |
+|---|---|---|---|---|
+| Garage | hideout trigger tag `BuyGarage` → `Tutorial.OpenBuyGarage` (button if money ≥ 8000) → `Inventory.BuyGarage` → `Garage.BoughtSeq` | 8000 | `mission_strings_to_set` "garage" → saved as **2** at the next `SaveGameNewSystem`; `GM.boughtGarage` | live swap `garageDisable` off / `garageEnable` on (walls, gate, colliders, entrance, porch, lamps, laptop), `RefreshLightObjects`, 4 s buy animation with camera lock (buyer); `Garage.Start` reads `garage >= 1` |
+| Home additions | hideout computer (`SCENE OBJECTS/HIDEOUT/COMPUTER`) → MainScene `HouseRenovator.BuyAddition` | AudioUpgrade 1000, AntiTheft 1500, CatStuff 1500, LoreBooks 1500 (scene data) | `SPrefs.SetInt(pref, 1)` at once, then **`GM.SelectHideout()`** (save + reload) | `EnableDisablePref` ×4 (radio, cams, compendium, cat stuff), `CatAI.Start`, `HeavyItemsShed.LoadItems` — Start only |
+| House repairs | `HouseRenovator.BuyRepairs` | 2500 | `HouseRepairs = 1` at once, then **`GM.SelectHideout()`**, achievement `UPGRADE_HOUSE` | `CheckRenovations` ×67 swaps / materials — Start (and `CheckAll`) |
+| Wallpapers / floors | `HouseRenovator.SetWallpaperBedroom` (5 settings) | 50 per change | `WallpaperBedroom`, `FloorBedroom`, `WallpaperLivingRoom`, `FloorLivingRoom`, `FloorStorage` at once | live `CheckRenovations.CheckAll` (no reload) |
+The two extensions with the original loading/rebuild sequence are **home additions** and **house repairs** (`SelectHideout` = the original hideout travel: save, loading screen, rebuild). `HouseRenovator` lives in MainScene (`GameManager.houseRenovations`) — present in every region; `Garage` / `CheckRenovations` / `EnableDisablePref` only in the hideout scene.
+
+### B. Root causes
+| Issue | Root cause | Verdict |
+|---|---|---|
+| Player 2 cannot buy the garage / renovations | `WalletPolicy` = `Refuse` for `Inventory.BuyGarage` and `HouseRenovator.BuyAddition / BuyRepairs / SetWallpaperBedroom` (W4.1B interim, HIDEOUT_SYSTEM §6) | DESIGN COMPROMISE → replaced |
+| Player 2 does not see Player 1's garage live | no shared hideout state: the keys reach Player 2 only in the next campaign snapshot (join); the scene swap runs only on the buyer | INCOMPLETE |
+| Renovations not shared | same; additions / repairs additionally need a hideout rebuild on the other instance | INCOMPLETE |
+
+### C. Design
+- **One host transaction for all hideout items** (`HideoutShop.Decide` → `WorldHost.BuyHideout`, the `VehicleShop` pattern of V1.2): buyer in the hideout; item not owned / wallpaper differs (else **Stale**); price = original constant (8000 / 2500 / 50) or the host's live `HouseRenovator.additions` cost (checked against the verified pref order); live shared balance ≥ price → `IHideoutHost.Apply` on the host's ORIGINAL state → state re-derived and committed (`hideout`), all in one host step; retransmission = cached answer.
+- **Host apply (persistence = original timing, money and ownership in the same checkpoint):** moneyAm −= price; garage → `mission_strings_to_set` "garage" + `boughtGarage` (saved as 2); additions / repairs → `parcel_strings_to_set` (saved as 1 with the money at the next checkpoint; `HomeAddition.bought` for the original window); wallpapers → `SPrefs.SetInt` at once (the original's own timing and rollback). A checkpoint reload without a save drops money and ownership together. No achievement / animation / camera lock on the host for Player 2's purchase.
+- **Host's own purchases:** the original methods run unchanged (prefix refuses only an item already owned); postfix commits the re-derived state. Host state = keys + queued purchases; published at every host scene bind.
+- **Client:** original button → `hbuy`; accepted → the ORIGINAL method runs once (buy animation, camera lock, sound, `UPGRADE_HOUSE` / `BUY_GARAGE`, window, its own `SelectHideout`), with the price credited right before so its deduction nets to zero (balance from the wallet mirror). Below the price the original's own "too poor" page runs (no money change). Hook fails closed.
+- **Presentation (both instances, event-driven on `hideout`):** the hideout scene remembers the state it was built with (keys after `loadedMap`). Client sandbox keys always mirror the committed state (the next original load builds it). In the hideout: garage → `BoughtSeq` scene swap (objects, `boughtGarage`, lights); wallpapers → `CheckRenovations.CheckAll`; new addition / repairs → the original **`GameManager.SelectHideout()`** rebuild, once per scene, deferred while in a car, carrying, caught or in the travel menu, never during an own pending purchase.
+- **Scenarios:** A (both in the hideout) — the buyer's original reloads, the other instance runs the original rebuild on the state delta. B (other player elsewhere) — keys only; the next original hideout load builds the upgraded hideout. C (reconnect / restart) — registry snapshot + campaign snapshot overlay (queued host purchases included); no replay, no payment. D (host elsewhere) — decision and apply use only MainScene objects and GameManager lists.
+- **Wallet:** the four writers are `MoneyPolicy.HostTxn`; `HostTxnHooks` claims (also `Tutorial.BuyVan`) — `WalletSync` refuses a writer as before when its hook is not installed.
+
+### D. Files
+New: `src/Shared/Hideout.cs`, `src/Plugin/HideoutSync.cs` (incl. `HostTxnHooks`), `tests/W1Tests.cs` (suite 34). Changed: `src/Shared/WorldTime.cs` (`HideoutHost`, `BuyHideout`, `PublishHideout`, `hbuy` dispatch), `src/Shared/WorldState.cs` (keys), `src/Shared/Wallet.cs` (4 × HostTxn), `src/Shared/Protocol.cs` (32 / 0.21.0), `src/Plugin/Plugin.cs` (build before WalletSync / update / dispose), `src/Plugin/WalletSync.cs` (claims), `src/Plugin/WorldSync.cs` (result hook 9, log), `src/Plugin/VehicleSync.cs` (BuyVan claim), `src/Plugin/CampaignBootstrap.cs` (snapshot overlay), `tools/build.ps1`, tests (WalletTests policy, V12 scan, version pins).
+
+### E. Performance
+Per frame: two reference compares + registry head revision. Scene lookups (`FindObjectOfType(Garage)`, `FindObjectsOfType(CheckRenovations)` — the original's own lookups) only after a state change in the hideout. Network: 3 B per purchase request, 8 B state per change. No new hot path; FPS not measured.
+
+### F. Limitations
+- The coordinated rebuild puts the other player at the original hideout spawn (the original rebuild behaviour of `SelectHideout`).
+- Hideout doors stay local (unchanged, HIDEOUT_SYSTEM §2). Cat XP (`CatStuff`) and shed theft (`AntiTheft`) keep their original local readers (separate milestones); only the keys are shared.
+- A wallpaper bought by Player 2 is written on the host at once (original timing): like the original, a caught-screen reload keeps it while the money returns.
+
 ## V1.2 — Shared Shadowhawk purchase / unlock + Auto Shop travel proxy — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-15
 Mod **0.20.0, protocol 31** (new client proposal `vbuy`, never stored). Both PCs need 0.20.0 (0.19.x is refused). Built on `52999e4` (H2). The Ranger tailgate is synchronized by the existing `vdoor` Door-component sync (Ranger `Door` on front L/R + tailgate) — no separate tailgate commit exists locally; that path is unchanged. Manual QA: `docs/TESTING.md` §40.
 

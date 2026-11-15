@@ -228,6 +228,8 @@ namespace TS2MP.Shared
         public const string Vehicle = "vehicle";        // Session scope (arg = vehicle id): VehicleRecord, host-committed (M4.1)
         public const string VehicleClaim = "vehicleClaim"; // Session scope (arg = vehicle id): 1 byte 1 = claim driver seat, 0 = release (client proposal)
         public const string VehicleTake = "vehicleTake";   // Session scope (arg = vehicle id): 1 byte 1 = request free driver seat + simulation (M4.2.2, protocol 8)
+        public const string HideoutBuy = "hbuy";       // Session scope (arg 0): HideoutBuyRequest 3 B (client proposal, W1 protocol 32), never stored
+        public const string Hideout = "hideout";       // Session scope (arg 0): HideoutState 8 B, host-committed shared hideout ownership (W1)
         public const string VehicleBuy = "vbuy";        // Session scope (arg = vehicle id): 1 byte 1 = buy this car (client proposal, V1.2 protocol 31), never stored
         public const string VehicleRide = "vehicleRide"; // Session scope (arg = vehicle id): 1 byte 1 = reserve passenger seat, 2 = seated (confirm), 0 = leave (M4.3, protocol 10)
         public const string P2Inv = "p2inv";             // Session scope (arg 2): committed Player-2 inventory (P2Inventory), host-owned (M4.3.3, protocol 13)

@@ -177,6 +177,7 @@ namespace TS2MP.Plugin
             // W4.1B: the client sandbox starts with the shared balance (live host money; the saved key if the wallet is not up yet)
             int shared; var wal = WalletSync.Instance;
             if (wal == null || !wal.TryHostBalance(out shared)) { if (!model.TryInt("Money", out shared)) shared = 0; }
+            var hs = HideoutSync.Instance; if (hs != null) hs.OverlaySnapshot(model);   // W1: hideout purchases still queued for the host's next checkpoint
             var snap = CampaignSnapshot.Build(model, p2.HostRecord, plan, p2.HostProfile, p2.HostHistoryId, (uint)new System.Random().Next(1, int.MaxValue), shared, out removed);
             byte[] body = snap.Encode();
             _w.Reset(); _w.Put((byte)MsgType.CampaignSnapshot); _w.Put(body);   // raw body: no 64 KB length prefix (LiteNetLib fragments it)

@@ -404,6 +404,7 @@ namespace TS2MP.Plugin
             var code = _wh.HandleProposal(_node.RemoteInstanceId ?? "?", _remoteSlot, id, p, Now, out rev, out sleepRegion, out sleepHours);
             if (p.Key == WorldKeys.VehicleTake && _wh.LastNote != null) _log.Info("VEHICLE " + _wh.LastNote);
             if ((p.Key == WorldKeys.ObjectTxn || p.Key == WorldKeys.ObjectScene || p.Key == WorldKeys.ObjectInit) && _wh.LastNote != null) _log.Info("WOBJ " + _wh.LastNote);   // W4.2B: every object decision (also accepted ones)
+            if (p.Key == WorldKeys.HeavyTxn && _wh.LastNote != null) _log.Info("HEAVY " + _wh.LastNote);   // H1: every lease decision on Player 2's requests
             if (p.Key == WorldKeys.Region && code == ProposalCode.Accepted)
             {
                 if (_wh.LastNote != null) _log.Info("REGION_CLOCK " + _wh.LastNote);
@@ -721,6 +722,7 @@ namespace TS2MP.Plugin
                 if (ProposalResultHook5 != null && ProposalResultHook5(id, code)) return; // M5 W4.1 world-loot pickups
                 if (ProposalResultHook6 != null && ProposalResultHook6(id, code)) return; // W4.2 Player-2 position reports
                 if (ProposalResultHook7 != null && ProposalResultHook7(id, code)) return; // W4.2 world-object transitions (doors)
+                if (ProposalResultHook8 != null && ProposalResultHook8(id, code)) return; // H1 heavy-object leases
                 if (_sleep.IsStart(id))
                 {
                     _sleep.StartResult(ok);
@@ -797,6 +799,7 @@ namespace TS2MP.Plugin
         internal Func<uint, ProposalCode, bool> ProposalResultHook5;   // M5 W4.1 WorldLootSync
         internal Func<uint, ProposalCode, bool> ProposalResultHook6;   // W4.2 CampaignBootstrap (p2pos)
         internal Func<uint, ProposalCode, bool> ProposalResultHook7;   // W4.2B WorldObjectSync (objTxn / objScene / objInit)
+        internal Func<uint, ProposalCode, bool> ProposalResultHook8;   // H1 HeavySync (heavyTxn)
         // M4.3.3 hotfix: bounded recovery when an expected entry (Player-2 record) is missing on the client.
         internal void RequestResync(string why)
         {

@@ -557,6 +557,12 @@ namespace TS2MP.Shared
             _count++;
         }
 
+        // H1.1: the same buffer for any sender-timed rigid pose (heavy objects): only time, position and rotation are used.
+        public void Add(uint timeMs, Vec3 pos, Quat rot, double localNow) { Add(new VehicleSnapshot { TimeMs = timeMs, Pos = pos, Rot = rot }, localNow); }
+
+        // The render time has passed the newest sample (nothing left to interpolate towards).
+        public bool Drained(double localNow) { return _count == 0 || localNow - _offset - InterpolationDelay >= At(_count - 1).T; }
+
         public bool Sample(double localNow, out VehiclePose p)
         {
             p = default(VehiclePose);

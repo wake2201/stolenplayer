@@ -202,6 +202,7 @@ namespace TS2MP.Plugin
         WorldCensus _census;
         WorldKeyMirror _mirror;
         WorldLootSync _loot;
+        HeavySync _heavy;    // H1 heavy-object leases (needs WorldLootSync: its PickUpHeavy hook + host catalogs)
         CampaignBootstrap _campaign;
         WorldObjectSync _doors;   // W4.2B doors / locks / windows
         DevTestMode _devTest;     // W4.2B.1 developer launcher "devtest" only
@@ -344,6 +345,12 @@ namespace TS2MP.Plugin
                 catch (Exception ex) { log.Error("WLOOT init failed (shared world loot disabled)", ex); _loot = null; }
             }
             else log.Info("WLOOT disabled (" + (!world.SharedLoot ? "World.SharedLoot = false" : "no identity census") + "): original local loot pickups");
+            if (_loot != null)
+            {
+                try { _heavy = new HeavySync(node, log, _world); }
+                catch (Exception ex) { log.Error("HEAVY init failed (heavy-object sync disabled; Player 2 heavy pickups stay refused)", ex); _heavy = null; }
+            }
+            else log.Info("HEAVY disabled (no shared world loot): Player 2 heavy pickups stay refused");
             // W4.2: host campaign bootstrap + Player-2 spawn (needs Player2Sync for the record / campaign id, VehicleSync for checked placement)
             try { _campaign = new CampaignBootstrap(node, log, _world, _settings.DataDir, _args != null); _campaign.Vehicles = _vehicles; if (!_campaign.Ready) { _campaign.Dispose(); _campaign = null; } }
             catch (Exception ex) { log.Error("CAMPAIGN init failed (Player 2 cannot load a host campaign; joins time out safely)", ex); _campaign = null; }
@@ -369,7 +376,7 @@ namespace TS2MP.Plugin
         // name (bounded: at most one line per system per session end) and the remaining systems are still disposed.
         void DisposeSystems()
         {
-            Release(ref _doors, "WOBJ"); Release(ref _campaign, "CAMPAIGN"); Release(ref _loot, "WLOOT"); Release(ref _mirror, "MIRROR");
+            Release(ref _doors, "WOBJ"); Release(ref _campaign, "CAMPAIGN"); Release(ref _heavy, "HEAVY"); Release(ref _loot, "WLOOT"); Release(ref _mirror, "MIRROR");
             Release(ref _census, "CENSUS"); Release(ref _items, "WITEM"); Release(ref _carbox, "CARBOX"); Release(ref _p2, "P2INV"); Release(ref _wallet, "WALLET");
             Release(ref _vehicles, "VEHICLE"); Release(ref _world, "WORLD"); Release(ref _sync, "SYNC");
         }
@@ -480,6 +487,11 @@ namespace TS2MP.Plugin
             {
                 try { _loot.Update(); }
                 catch (Exception ex) { _log.Error("WLOOT update exception (shared world loot disabled)", ex); _loot.Dispose(); _loot = null; }
+            }
+            if (_heavy != null && _world != null)
+            {
+                try { _heavy.Update(); }
+                catch (Exception ex) { _log.Error("HEAVY update exception (heavy-object sync disabled)", ex); _heavy.Dispose(); _heavy = null; }
             }
             if (_campaign != null && _world != null)
             {

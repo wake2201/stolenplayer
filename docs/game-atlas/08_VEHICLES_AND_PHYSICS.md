@@ -44,6 +44,7 @@ Authoritative detail lives in `docs/CODEBASE_MAP.md` §3.7 (vehicles), §3.9 (sc
 **Current StolenPlayer state:**
 - Player 1 carrying is visible to Player 2 (W3 held/carried object presentation).
 - Player 2 is **refused** at `Pickupable.PickUpHeavy` (client prefix, v0.16.1) by design: no heavy transaction family exists. This is not a bug in loot sync. It is a missing feature.
+- **H1 (mod 0.18.0, PENDING MANUAL QA):** host-authoritative lease per census heavy object (`wheavy` / `heavyTxn`, `src/Shared/HeavyItems.cs`, `src/Plugin/HeavySync.cs`): both players pick up / carry / drop with the original methods; observers hide the scene copy while it is carried (avatar shows that object) and show it kinematic at the holder's committed rest pose. Steps 1-3 of the architecture below are implemented; deposits (4) and story hooks (5) are H2. PROGRESS H1.
 
 **Minimal reusable architecture** (detailed in [11](11_ARCHITECTURE_BLUEPRINT.md) §C):
 1. **Ownership lease** per heavy census id. The host grants a lease to one player at `PickUpHeavy`, and the other instance hides or attaches the object to the remote avatar.

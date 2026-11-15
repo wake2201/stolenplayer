@@ -36,7 +36,7 @@ static class W42DTests
         Run("A10 persistence: durable take keys, unsaved-exit replay, respawn day, host checkpoint rollback", Persistence);
         Run("B1 random cabinets: seeded original roll is deterministic per cabinet + day; one outcome per slot and occupancy", Cabinets);
         Run("B2 random cabinets from the real files: slot groups / outcomes extracted (Madison 6, Hillville 3, BankScene 81 slots)", RealCabinets);
-        Run("B3 heavy loot stays refused for Player 2 (carry-only pickup; storage / sale transaction family missing)", HeavyRefused);
+        Run("B3 heavy loot is not a loot take (carry-only pickup); Player 2 carries only under the H1 lease", HeavyRefused);
         Run("C1 keys = unique valuables; tools / no-XP / never_destroy = LiveOnly (no ItemDay_ key, vanilla respawn on reload)", KeysAndLiveOnly);
         Run("C2 contract + parcel: shared; parcel side effect applied once on the host (real parcel prefs extracted)", ContractParcel);
         Run("C3 story / drone / special / mission items stay excluded with their dependency", StoryDroneSpecial);
@@ -259,7 +259,7 @@ static class W42DTests
         string why;
         Expect(LootRules.Classify(new LootEntry { Name = "TV", Flags = LootFlags.Heavy }, Item(), out why) == LootClass.Excluded && LootRules.ClientPolicy(true, true, LootClass.Excluded, false) == P2PickPolicy.Refuse, "heavy -> refused");
         var s = Src("Plugin", "WorldLootSync.cs");
-        Expect(s.Contains("static bool HeavyPrefix(") && s.Contains("transaction family missing"), "client PickUpHeavy guard stays");
+        Expect(s.Contains("static bool HeavyPrefix(") && s.Contains("transaction family missing") && s.Contains("hs.AllowPickUpHeavy(c, dist)"), "heavy loot never enters the loot book; PickUpHeavy goes through the H1 lease (refusal fallback kept)");
     }
 
     // ------------------------------------------------------------------------------------------------ C

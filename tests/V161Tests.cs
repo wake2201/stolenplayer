@@ -200,7 +200,7 @@ static class V161Tests
         Expect(!s.Contains("original local pickup\");") || s.Contains("Player 2 cannot pick it"), "the former client fallback 'not shared - original local pickup' is gone");
         int host = s.IndexOf("if (_host)", s.IndexOf("public bool AllowPick(", StringComparison.Ordinal), StringComparison.Ordinal);
         Expect(host > 0 && s.Substring(host, 900).Contains("ShadowClaim(ns, e, pick, excl); return true;"), "host: excluded objects keep the original pickup (never refused) + shadow claim");
-        Expect(s.Contains("static bool HeavyPrefix(") && s.Contains("AccessTools.Method(pk, \"PickUpHeavy\", new[] { typeof(float) })") && s.IndexOf("if (!_host)", s.IndexOf("RespawnPostfix\")", StringComparison.Ordinal), StringComparison.Ordinal) > 0, "client-only guard on Pickupable.PickUpHeavy(float)");
+        Expect(s.Contains("static bool HeavyPrefix(") && s.Contains("AccessTools.Method(pk, \"PickUpHeavy\", new[] { typeof(float) })") && s.Contains("return i._host || i.RefuseP2Heavy(c);"), "Pickupable.PickUpHeavy(float) guarded: H1 lease (HeavySync) or the v0.16.1 client refusal");
         Expect(s.Contains("persist = LootRules.TakenByKeys(c0, (e.Flags & LootFlags.SharedName) != 0"), "host decision uses the family-aware persistence (W4.2D occupancy seeding)");
         Expect(s.Contains("ACCEPTED by the host") && s.Contains("refused: \" + why + \" - no shared transaction possible"), "diagnostics: acceptance + refusal reasons");
         Expect(!s.Contains("GUI.") && !s.Contains("OnGUI"), "no mod text in the game UI");
@@ -381,6 +381,6 @@ static class V161Tests
         Expect(cb.Contains("if (region == _plan.Region) PlaceSpawn(gm);"), "placement only where the original loaded the planned region (travel / vehicle arrivals untouched)");
         var c = Shared("Campaign.cs");
         Expect(c.Contains("PlayerScript.Quicksave") && c.Contains("SaveGameNewSystem(savePos, time)") && c.Contains("Inventory.autoSaveToggle"), "verified save rules documented next to the code");
-        Expect(Shared("Protocol.cs").Contains("public const int ProtocolVersion = 28;"), "v0.16.1 spawn changes added no wire values (protocol 28 = W4.2D loot namespaces)");
+        Expect(Shared("Protocol.cs").Contains("public const int ProtocolVersion = 29;"), "v0.16.1 spawn changes added no wire values (protocol 28 = W4.2D loot namespaces, 29 = H1 heavy leases)");
     }
 }

@@ -11,7 +11,11 @@
 //  - swing: PlayerScript.Attack() (one call per original attack, PlayerScript.Update IL_3994) increments a 4-bit counter in
 //    the snapshot; a changed counter plays one short procedural right-arm swing (crowbar / baton) in LateUpdate, after the
 //    legacy Animation has posed the avatar (one bone rotation per frame for 0.55 s; locomotion untouched).
-//  - heavy carry: the original CarryRun clip + the carried item's original drop_object model in front of the chest.
+//  - heavy carry: the original CarryRun clip + a copy of the carried item in front of the chest. H1: the copy is made from the
+//    very scene object the other player holds under its lease (hidden on this instance by HeavySync, so the interactive object
+//    is never duplicated); without a lease record (runtime / unsupported object) the item type's original drop_object model as
+//    before. H1.1: for leased objects the lease record decides (HeavySync.CarryShown), so the copy appears / disappears in the
+//    very frame the scene object is hidden / revealed - no gap and no double image while the player snapshot catches up.
 //  - flashlight: W3.3 product decision - NO remote flashlight visual at all (no mesh, material, light, shadow or attachment).
 //    W3.1 (all-emissive police torch: white triangle) and W3.2 (police torch, lens-only emission: magenta triangle in game)
 //    were removed. The flashlight bits stay in the snapshot gear byte (protocol unchanged) and are simply not presented.
@@ -41,10 +45,10 @@ namespace TS2MP.Plugin
 
         GameObject _avatarGo; Transform _hand, _palmRef, _index1, _pinky1, _upperArm, _chest;
         readonly Dictionary<int, GameObject> _tools = new Dictionary<int, GameObject>();   // pooled held-tool copies (built once per avatar)
-        readonly Dictionary<int, GameObject> _carries = new Dictionary<int, GameObject>(); // pooled carried-item copies
-        int _shownTool = -1, _shownCarry = -1;
+        readonly Dictionary<long, GameObject> _carries = new Dictionary<long, GameObject>(); // pooled carried-item copies (key: item id, or H1 scene object)
+        int _shownTool = -1; long _shownCarry = -1;
         int _lastSwing = -1; float _swingT = -1f; bool _holding;
-        readonly HashSet<int> _failedTools = new HashSet<int>(), _failedCarries = new HashSet<int>();
+        readonly HashSet<int> _failedTools = new HashSet<int>(); readonly HashSet<long> _failedCarries = new HashSet<long>();
         public long ToolSwitches, CarrySwitches, Swings;
 
         public RemoteGear(InstanceLog log)
@@ -63,7 +67,12 @@ namespace TS2MP.Plugin
             bool carrying = (s.Gear & GearFlags.Carrying) != 0;
             int tool = GearRules.ToolShown(s.Held, s.Gear, false);
             ShowTool(tool, ps);
-            ShowCarry(carrying ? s.CarryItem - 1 : -1, ps);
+            // H1.1: a leased heavy object follows its lease record (same frame as the scene object's reveal / hiding), the
+            // snapshot's carry flag is the fallback for unleased objects
+            int carry = carrying ? s.CarryItem - 1 : -1; GameObject scene = null;
+            var hs = HeavySync.Instance;
+            if (hs != null) carry = hs.CarryShown(carry, out scene);
+            ShowCarry(carry, scene, ps);
             _holding = tool > 0 && _hand != null;
             if (GearRules.SwingStarts(_lastSwing, s.Swing, tool) && _upperArm != null) { _swingT = 0f; Swings++; }
             _lastSwing = s.Swing;                                      // first sample after (re)bind only records (no replay)
@@ -74,7 +83,7 @@ namespace TS2MP.Plugin
         {
             if (avatar == null) return;
             if (!ReferenceEquals(avatar, _avatarGo)) Bind(avatar);
-            ShowTool(0, null); ShowCarry(-1, null);
+            ShowTool(0, null); ShowCarry(-1, null, null);
             _holding = false; _swingT = -1f;
         }
 
@@ -213,36 +222,37 @@ namespace TS2MP.Plugin
         }
 
         // ---- heavy carry ----
-        void ShowCarry(int itemId, object ps)
+        void ShowCarry(int itemId, GameObject scene, object ps)
         {
-            if (itemId == _shownCarry) return;
+            long key = itemId < 0 ? -1 : scene != null ? (1L << 32) | (uint)scene.GetInstanceID() : itemId;
+            if (key == _shownCarry) return;
             if (_shownCarry >= 0) { GameObject old; if (_carries.TryGetValue(_shownCarry, out old) && old != null) old.SetActive(false); }
-            _shownCarry = itemId; CarrySwitches++;
-            if (itemId < 0) return;
+            _shownCarry = key; CarrySwitches++;
+            if (key < 0) return;
             GameObject go;
-            if (!_carries.TryGetValue(itemId, out go) || go == null)
+            if (!_carries.TryGetValue(key, out go) || go == null)
             {
-                go = BuildCarry(itemId, ps);
+                go = BuildCarry(key, itemId, scene, ps);
                 if (go == null) return;
-                _carries[itemId] = go;
+                _carries[key] = go;
             }
             go.SetActive(true);
         }
 
-        GameObject BuildCarry(int itemId, object ps)
+        GameObject BuildCarry(long key, int itemId, GameObject scene, object ps)
         {
-            if (_failedCarries.Contains(itemId) || ps == null || _chest == null) return null;
-            var prefab = ItemModel(ps, itemId);
-            if (prefab == null) { _failedCarries.Add(itemId); _log.Info("AVATAR_GEAR carried item " + itemId + ": no original world model on this instance (CarryRun pose only)"); return null; }
+            if (_failedCarries.Contains(key) || ps == null || _chest == null) return null;
+            var prefab = scene ?? ItemModel(ps, itemId);
+            if (prefab == null) { _failedCarries.Add(key); _log.Info("AVATAR_GEAR carried item " + itemId + ": no original world model on this instance (CarryRun pose only)"); return null; }
             var copy = VisualCopy(prefab, "TS2MP_Carried_" + itemId, true);
-            if (copy == null) { _failedCarries.Add(itemId); return null; }
+            if (copy == null) { _failedCarries.Add(key); return null; }
             var av = _avatarGo.transform;
             copy.transform.rotation = av.rotation;
             var bb = Bounds(copy);
             copy.transform.position += av.TransformPoint(new Vector3(0f, 1.15f, 0.45f)) - bb.center;
             copy.transform.SetParent(av, true);
             copy.SetActive(false);
-            _log.Info("AVATAR_GEAR carried item " + itemId + " from " + prefab.name + " size " + bb.size.ToString("0.00"));
+            _log.Info("AVATAR_GEAR carried item " + itemId + " from " + (scene != null ? "the leased scene object " : "the item model ") + prefab.name + " size " + bb.size.ToString("0.00"));
             return copy;
         }
 

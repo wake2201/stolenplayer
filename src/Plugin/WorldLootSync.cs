@@ -99,12 +99,10 @@ namespace TS2MP.Plugin
                 { _log.Warn("WLOOT game API incomplete: shared world loot disabled (original local pickups)"); return; }
                 _h = new Harmony("com.ts2mp.multiplayer.wloot");
                 _h.Patch(respawn, null, new HarmonyMethod(AccessTools.Method(typeof(WorldLootSync), "RespawnPostfix")));
-                if (!_host)
-                {
-                    var heavy = AccessTools.Method(pk, "PickUpHeavy", new[] { typeof(float) });
-                    if (heavy != null) _h.Patch(heavy, new HarmonyMethod(AccessTools.Method(typeof(WorldLootSync), "HeavyPrefix")));
-                    else _log.Warn("WLOOT Pickupable.PickUpHeavy(float) not found: Player-2 heavy pickups are not guarded");
-                }
+                // H1: both roles - the H1 lease decides (HeavySync); without it the v0.16.1 client refusal stays
+                var heavy = AccessTools.Method(pk, "PickUpHeavy", new[] { typeof(float) });
+                if (heavy != null) _h.Patch(heavy, new HarmonyMethod(AccessTools.Method(typeof(WorldLootSync), "HeavyPrefix")));
+                else _log.Warn("WLOOT Pickupable.PickUpHeavy(float) not found: Player-2 heavy pickups are not guarded");
                 // W4.2D: both instances seed the original RandomFileCabinet roll identically (cabinet identity + campaign day)
                 var cab = AccessTools.TypeByName("RandomFileCabinet"); var cabStart = cab != null ? AccessTools.Method(cab, "Start", Type.EmptyTypes) : null;
                 var rnd = AccessTools.TypeByName("UnityEngine.Random");
@@ -198,20 +196,27 @@ namespace TS2MP.Plugin
             return false;
         }
 
-        // v0.16.1 heavy items (Pickupable.PickUpHeavy, PlayerScript.Update IL_7cfb - its only caller, called right after the
-        // switch sound with no PlayerScript state set before it): not shared (W4.2 heavy flow), so Player 2 is refused - a local
-        // carry would duplicate the object Player 1 still sees.
-        static bool HeavyPrefix(object __instance)
+        // Heavy items (Pickupable.PickUpHeavy(float), PlayerScript.Update interact branch - its only caller, called right after
+        // the switch sound with no PlayerScript state set before it). H1: the host lease decides (HeavySync.AllowPickUpHeavy:
+        // census heavy objects of the current region; everything else stays refused for Player 2). Without HeavySync (API
+        // incomplete / init failed) the v0.16.1 rule stays: Player 2 is refused - a local carry would duplicate the object.
+        static bool HeavyPrefix(object __instance, float dist)
         {
             var i = Instance; var c = __instance as Component;
-            if (i == null || c == null || i._host) return true;
-            try { return i.RefuseP2Heavy(c); } catch (Exception ex) { i._log.Error("WLOOT heavy pickup hook failed (pickup refused)", ex); return false; }
+            if (i == null || c == null) return true;
+            try
+            {
+                var hs = HeavySync.Instance;
+                if (hs != null) return hs.AllowPickUpHeavy(c, dist);
+                return i._host || i.RefuseP2Heavy(c);
+            }
+            catch (Exception ex) { i._log.Error("WLOOT heavy pickup hook failed (pickup refused)", ex); return false; }
         }
         bool RefuseP2Heavy(Component pick)
         {
             _heavyRefused++;
             string name = pick.transform.name;
-            if (_notSharedLogged.Count < 128 && _notSharedLogged.Add(("heavy:" + name).GetHashCode())) _log.Info("WLOOT Player-2 heavy pickup of '" + name + "' refused: heavy items are not shared yet (carry / trunk / van / shed / shop transaction family missing) - a local carry would duplicate the object");
+            if (_notSharedLogged.Count < 128 && _notSharedLogged.Add(("heavy:" + name).GetHashCode())) _log.Info("WLOOT Player-2 heavy pickup of '" + name + "' refused: heavy-object sync unavailable (lease transaction family missing) - a local carry would duplicate the object");
             return false;
         }
 

@@ -1,5 +1,104 @@
 ﻿# PROGRESS
 
+## H1.1 — Immediate heavy-drop synchronization — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-15
+Revision of the uncommitted H1 build. Still **mod 0.18.0 / protocol 29** (H1 was never released), but the `wheavy` list is now **version 2** and `MsgType.HeavyMotion = 18` is new: **both PCs must run this build**. An earlier H1 build logs `HEAVY registry list … unreadable` and ignores the snapshots (no corruption, but no handshake refusal either). Manual QA: `docs/TESTING.md` §38 (rows 2, 3, 5 changed; 16–24 new). Nothing committed.
+
+### User architecture decisions (2026-11-15, recorded as given)
+1. Preserve original mechanics / assets wherever technically possible. 2. No temporary workarounds, arbitrary delays, hidden defects or fake replacements. 3. Maximize reuse of proven systems across regions, maps and compatible object categories. 4. One shared implementation with data-driven / type-specific adapters, no map-specific duplicates. 5. Do not force fundamentally different vanilla mechanics into one method. 6. Excellent FPS on both PCs is mandatory. 7. Host authority ≠ host-side simulation: physics stays on the participating instance that owns the object. 8. No regression of user-verified features.
+Applied here: ordinary TAB drops (`Inventory.DropItemNewSystem`, `WorldItemSync`) and heavy drops (`Pickupable.DropHeavy`, `HeavySync`) stay separate original operations with separate presentation strategies; only the generic pose / network helpers are shared.
+
+### A. Root cause (H1 observer gap)
+H1 presented `Carried` → **hidden** on the observer, and the holder committed nothing until the W3 rest rule fired (`SimFrame`: 0.2 s checks, `MinUnpaused` 0.2 s, asleep or < 2 cm/s, 8 s fallback). Meanwhile the avatar's carried copy ended with the player snapshot's carry flag (rendered 100 ms late). Result: the object was invisible on the other PC from the drop until the first `Drop` (= rest) commit — typically 1–3 s, up to 8 s.
+
+### B. Verified original drop (ilspycmd 11.2, Assembly-CSharp 1.27c, `Pickupable` / `PlayerScript` only)
+- `Pickupable.DropHeavy()`: tag `Pickupable`, `dropMakeSound`, `can_flash`, layer 15, `SetTriggerCollider(false)`, noise timers, `thisRigid.useGravity = true`, `isKinematic = false`, `interpolation = Interpolate`, `PS.isCarrying = false`, `isCarried = false`. **No transform change.**
+- `PlayerScript.StopCarryingItem(float)`: `if (isCarrying && !dropBigItemBlock)` → UI / speed reset → `CarryItem.GetComponent<Pickupable>().DropHeavy()` → **then** `AddForce(forward * power)` + `AddForce(up * power / 2)` → `CarryItem = null`.
+- `PlayerScript.GetTazed`: `isCarrying = false; DropHeavy(); AddForce(forward * 100); CarryItem = null`.
+- ⇒ A `DropHeavy` postfix sees the object dynamic, at the exact carry (release) pose, before any force: the correct hook for the immediate commit. Both callers are covered.
+
+### C. Lifecycle (H1.1)
+1. **Pickup / carry:** unchanged H1 lease + original `PickUpHeavy` / carry; the observer hides the scene object. The avatar copy now follows the **lease record** (`HeavySync.CarryShown`, called by `RemoteGear` once per frame, runs the registry check first), so the copy and the scene object switch in the same frame. A just-ended leased carry suppresses the snapshot fallback for that item type until the snapshot also shows the end (event latch, no timer).
+2. **Immediate drop:** `DropHeavy` postfix → `StartMoving` → `Drop` (Placed + **Moving**, release pose, holder lease). Host: committed in place; client: `heavyTxn` proposal → host commit. The observer reveals the original scene object, kinematic, at that pose in the frame the record arrives.
+3. **Movement:** only the holder's original Rigidbody simulates. Per frame while Moving: `VehicleSendPolicy` (20 Hz cap, ≥ 1 cm / 1°, no heartbeat) → `HeavyMotion` (40 B, unreliable, own sequence, lease + region). Observer: `HeavyMotionFilter` (holder, lease, region, newer sequence; `Buffer` while the reliable Drop is still in flight; `NotMoving` after the Settle) → `VehiclePoseBuffer` (120 ms interpolation, no extrapolation) → transform of the kinematic object (Rigidbody interpolation off while followed, restored after).
+4. **Settle:** W3 `SettleRules.OwnerShouldReport` (unchanged) → final snapshot + `Settle` (exact pose, Moving cleared) → streaming stops. The observer plays out the buffer, then snaps to the committed pose (final correction logged). A resting object that moves again (0.5 s check) starts a new Drop → motion → Settle cycle. Re-pickup works at any time (Placed is leasable; `Lease` clears Moving).
+5. **Robustness:** stale / reordered / duplicate snapshots rejected by sequence; old-lease Drop / Settle / Release are `Stale` at the host; a snapshot never applies to a record carried by the other player, Removed, or settled. **Handover:** if the simulator leaves / disconnects / releases while the object is Moving, `HeavyBook` gives the record (new lease) to the other player when that player is in the region; its instance `Adopt`s (original post-DropHeavy Rigidbody state from its shown pose) and settles it. Nobody else there → record removed = original scene pose (vanilla reload rule), never frozen mid-air.
+
+### D. Changed files / reuse
+- `src/Shared/HeavyItems.cs`: `HeavyRecord.Moving` (flag bit, list v2, invariant check), `HeavyOp.Settle`, `HeavyMotion`, `HeavyMotionFilter`, `HeavyBook.Drop` / `Settle` (shared `Place`), handover in `Release` / `ReleaseSlot` / `Revert`, counters `Settles` / `Handovers`.
+- `src/Shared/WorldTime.cs`: `Settle` dispatch; `Release` / `ReleaseSlot` get the other slot's region.
+- `src/Shared/Protocol.cs`: `MsgType.HeavyMotion = 18`.
+- `src/Shared/Vehicles.cs`: additive `VehiclePoseBuffer.Add(timeMs, pos, rot, now)` + `Drained(now)` (vehicle path unchanged).
+- `src/Plugin/HeavySync.cs`: `StartMoving`, `Stream`, `Refresh`, `MotionFrame`, `OnMessage`, `Adopt`, `CarryShown`, record cache, `SimFrame` rewrite, stats.
+- `src/Plugin/RemoteGear.cs`: `ShowCarry(item, scene, ps)` fed by `CarryShown`.
+- `tests/H1Tests.cs`: suites 11–17 added; 01 / 02 / 04 / 06 / 07 / 10 updated to the Drop / Settle semantics.
+- **Reused, not duplicated:** `VehiclePoseBuffer` (interpolation), `VehicleSendPolicy` (rate / epsilon), `SnapshotValidation.IsNewer` / `MaxCoordinate`, `Quat16` / `Vec3` / `WorldItemList.Finite`, `SettleRules` (rest rule), registry + proposal gate, census identity. **Deliberately separate:** `WorldItemSync` (TAB drops: the original object exists while physics is paused at `timeScale` 0 → surface projection + later rest report; streaming would only send a static pose). Not changed.
+
+### E. Phase D — ordinary TAB drops (code + tests, no change)
+`WorldItemSync.AllowDrop` → host `DropDecision.HostOriginal`: the original `DropItemNewSystem` runs at once with TAB open; its `Instantiate` result is captured (`DropTranspiler`), registered in the postfix and committed to `witems`. Client: proposal, then the original runs on acknowledgement. Observers `Spawn` the item's `drop_object` kinematic and project it onto the surface (`SettleRules.ProjectToSurface(!Settled)`) until the dropper's original physics, which resumes when TAB closes, reports the rest pose. Nothing in H1.1 touches this path; `W3Tests`, `V161Tests` and `WorldLootTests` pass unchanged, and `H1Tests` 17 checks that `WorldItemSync` never writes `Time.timeScale` and never uses the heavy path. No ordinary-item defect found.
+
+### F. Evidence
+`tools\build.ps1 -Test` (2026-11-15 07:09–07:11): plugin 0 warnings; **ALL 31 SUITES PASSED** — `H1Tests` 17/17 (10 H1 + 7 H1.1), every earlier suite unchanged and green (incl. `W3Tests`, `V161Tests`, `WorldLootTests`, `VehicleTests`), launcher / developer-launcher tests ran (no game process open), `package-test.ps1` 14/14, `n1-smoke.ps1` 3/3. Release `build\release\TS2-Multiplayer-0.18.0.zip` (27 files, manifest verified), SHA-256 `53d2f2ad903e6fe7a21c8182818269c902f5d159b7b9be4599c15b091134eab3`, plugin SHA-256 `36834f6c61db7c414f47b4e22a12c1649c605933d4a69138b827052bba715404`; not deployed. Offline proves: Drop / Settle / handover decisions through the real `WorldHost.HandleProposal` path, stale / reordered / foreign snapshot rejection, codec limits, interpolation / send-rate behaviour of the reused helpers, source wiring (commit point, no delays / fake objects / `timeScale` writes, TAB-drop path untouched). NOT proven: anything in game — visible handoff, motion smoothness, rest poses on two PCs, handover physics, FPS.
+
+### G. Performance (instrumented, not measured in game)
+- Holder, per moving object per frame: one `VehicleSendPolicy.ShouldSend` (struct math), at most 20 sends/s; one 40 B write into a reused `NetDataWriter`. Settle check unchanged (5x/s while moving; 2x/s at rest instead of 1x/s — one Rigidbody read + compare).
+- Observer, per followed object per frame: one ring-buffer sample + `SetPositionAndRotation`. Allocation: one `Motion` (+ 16-entry ring) per drop; snapshots are allocation-free.
+- Registry: 2 commits per drop cycle (Drop + Settle, ≤ 930 B each, typically 31–150 B) instead of 1; motion never touches the registry.
+- Traffic: ≤ 20 × 40 B ≈ 0.8 kB/s per moving object, only while it moves and only when the other player is in the region; 0 at rest.
+- `HEAVY_STATS` counters: `motion sent/recv (bytes) stale rejected malformed unknown following followed maxCorrection adopted`, book `settles handovers`, `frameMax`. FPS: NOT measured (§38 row 24).
+
+### H. Known limitations / risks
+- The avatar's carried copy uses H1's heuristic chest offset; at the drop the object appears at the holder's true carry pose, so a small visual offset (tens of cm) is visible at the handoff.
+- The observer shows the holder's physics 120 ms late (interpolation delay) plus one-way latency; no prediction (by decision).
+- 8 s cap per movement cycle (bounded stream): a still-rolling object is committed, then a new cycle starts at the next movement check.
+- An object that moves AND comes to rest between two 0.5 s rest checks is committed at the new pose without motion snapshots (jump on the observer).
+- Handover restarts the adopter's physics from rest (velocity not transferred).
+- Same version number as H1: mixed H1 / H1.1 builds are not refused at the handshake (see header).
+
+## H1 — Heavy object synchronization (pickup / carry / drop for both players) — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-15
+Mod **0.18.0, protocol 29** (29: proposal `heavyTxn`, registry `wheavy`; a 0.17.x peer is refused). Built on commit `83b0f9e` (clean tree). Manual QA: `docs/TESTING.md` §38. Nothing committed.
+
+### A. Existing state (classified before the change)
+| System | File / method | Status | Evidence |
+|---|---|---|---|
+| Player-1 heavy carry, visible to P2 | `PlayerSync` gear (`isCarrying` + `CarryItem` item id) → `RemoteGear.ShowCarry` (drop_object copy + `CarryRun`) | IMPLEMENTED BUT UNVERIFIED (kept, reused) | W3 code; P2's own scene copy stayed visible = visual duplicate (DEFECTIVE part, fixed here) |
+| Player-2 heavy pickup | `WorldLootSync.HeavyPrefix` client refusal (v0.16.1) | DESIGN COMPROMISE (necessary until H1) → replaced by the lease where it applies, kept as fallback | `WorldLootSync.cs` |
+| Heavy drop / deposits | none (each PC local) | INCOMPLETE → drop shared (H1); deposits still INCOMPLETE (H2) | atlas 08 §4 |
+
+### B. Verified original flow (ilspycmd decompile of Assembly-CSharp 1.27c, read-only)
+| Step | Evidence |
+|---|---|
+| Pickup | `PlayerScript.Update` interact branch (tag `Pickupable`, `!isCarrying`, `!is_in_vehicle`, `!PMB.isRunning`): `SwitchWepSound.Play()` → `Pickupable.PickUpHeavy(hitInfo.distance)` — its only caller; `codenameAI.PickHeavy(go)` instead while the associate's heavy mode is on. No PlayerScript state is written before the call. |
+| `PickUpHeavy` | `DiscoverItem`, `pickedItemsSinceSave++`, optional `missingItemObj` marker, `parent = null`, tag `HeavyCarried`, layer 11, `SetTriggerCollider(true)`, Rigidbody interpolate / continuous / kinematic / no gravity, `PS.canInteract = false`, `PS.CarryItem`, `PS.isCarrying`, `CarryItemInfo`, `CarryItem_PositionArray = heavy_carry_array`, `heavy_drop_prompt`, `isCarried`. No key, no reward. |
+| Carry | `PlayerScript.Update`: `CarryItem` lerped to `carryPos[CarryItem_PositionArray]`; interact → `StopCarryingItem(100)`, throw → `StopCarryingItem(300)` unless `heavyObstructed`; walk speed from `isCarrying`; travel menu blocked while carrying. |
+| Drop | `StopCarryingItem` (skipped while `dropBigItemBlock`) / `GetTazed` → `Pickupable.DropHeavy` (tag `Pickupable`, layer 15, solid colliders, dynamic Rigidbody + gravity) + throw force. The Rigidbody stays (`deleteRigidInTime` false for heavy). Not saved. |
+| Deposits | `Place_Heavy_Trigger` / `Shop_Heavy_Trigger.OnTriggerEnter` → `PlayerScript.HeavyItemPlacedInCar` → `Pickupable.PlacedInTrunk` (+ `CarController.HeavyItemPlaced` / shop pose); `VanHeavyItems` (cargo `TriggerSensor`, `SaveItems` / `SaveXPForItems`); `HeavyItemsShed` (sensor at save); `CodenameAI.PickHeavy` (associate carries it to the car). |
+
+### C. Design (host-authoritative lease on the census identity)
+- **Identity:** census id (`LootCatalog` of the object's region scene, `LootFlags.Heavy`, not `Ambiguous`). MainScene heavy objects (2) are excluded (MainScene reloads at every region change of either player) and keep the v0.16.1 rule.
+- **Lease (`HeavyBook`, `src/Shared/HeavyItems.cs`):** per region a list of touched objects (`wheavy`, ≤ 32 records, ≤ 930 B): `Carried(holder) / Placed(simulating slot or 0) / Removed`, lease id (stale guard), last rest pose. Player 1's pickup is decided in place inside its original `PickUpHeavy` call; Player 2's `Lease` proposal is validated against the host's scene-file catalog + census digest (`HeavySync.HostCatalog`). First committed wins; retransmissions are cached by the proposal gate, duplicates are `Unchanged`.
+- **Player 2's pickup:** click → original refused + proposal → grant → precondition re-check (`HeavyRules.GrantBlock`: object alive, not carrying, not in a vehicle, controls on, not paused, ≤ 3.5 m) → the ORIGINAL `PickUpHeavy(distance)` exactly once (resume guard); otherwise the lease is released at once.
+- **Observer presentation:** carried by the other player → scene object hidden (renderers + colliders off, kinematic); `RemoteGear` shows a script-free copy of THAT object (`HeavySync.RemoteCarried`), item prefab as fallback. Placed → kinematic at the committed pose. No record → original scene pose (restored exactly).
+- **Drop:** `DropHeavy` postfix → the holder's original physics alone → W3 `SettleRules` rest rule (5x/s falling, 1x/s at rest, 8 s fallback) → `Drop` commit; later real movements are re-committed by the simulating instance only.
+- **Lifetime:** carry ends without a drop (scene reload / object destroyed) → `Release` (previous rest pose or scene pose); region change / menu / disconnect → `HeavyBook.ReleaseSlot` (host, in `SetPlayerRegion`); region emptied → `ClearRegion` (the original reload restores every object).
+- **Downstream (H1 scope boundary):** Player 2: trunk / shop triggers blocked while carrying a leased object; its drop is refused when the object would land on / in a vehicle (keeps carrying, like an obstructed drop); an object that still ends on a car is fixed at its pose and released. Player 1: original deposits unchanged; the object leaves shared tracking (`Removed` → hidden for P2, never a second copy; P1's original can take it out again = tracked again); an object resting on a vehicle after P1's drop is treated the same. The associate's heavy carry (`CodenameAI.PickHeavy`) of supported objects is refused during a session (both roles).
+
+### D. Changed files
+New: `src/Shared/HeavyItems.cs` (`HeavyRecord`, `HeavyList`, `HeavyTxnRequest`, `HeavyRules`, `HeavyBook`), `src/Plugin/HeavySync.cs`, `tests/H1Tests.cs` (suite 31). Changed: `src/Shared/WorldTime.cs` (`WorldHost.Heavy`, `HeavyCatalog`, `HeavyTransaction`, `heavyTxn` dispatch with client `Remove` refused, `ReleaseSlot` / `ClearRegion` in `SetPlayerRegion`), `src/Shared/WorldState.cs` (`WorldKeys.Heavy` / `HeavyTxn`), `src/Plugin/WorldLootSync.cs` (PickUpHeavy hook on both roles → `HeavySync.AllowPickUpHeavy`, v0.16.1 refusal as fallback), `src/Plugin/RemoteGear.cs` (leased scene object as carry model), `src/Plugin/WorldSync.cs` (`ProposalResultHook8`, `HEAVY` decision log), `src/Plugin/Plugin.cs` (build / update / dispose), `src/Shared/Protocol.cs` (29 / 0.18.0), `tools/build.ps1` (suite 31); tests: version pins (6 suites + `package-test.ps1`), `V161Tests` A9 + C6, `W42DTests` B3 source scans.
+
+### E. Evidence
+`tools\build.ps1 -Test`: plugin builds with 0 warnings; **all 31 C# suites pass** (H1Tests 10/10; every earlier suite unchanged in count) + the redirect test; `package-test.ps1` 14/14 and `n1-smoke.ps1` 3/3 run separately. **NOT RUN:** `launcher-test.ps1` / `launcher-dev-test.ps1` — they refuse while a `Thief Simulator 2` process is running (the user's instance, PID 15948, left open). Release `build\release\TS2-Multiplayer-0.18.0.zip`, SHA-256 `91bdbed419569e6af0c9f1fc805320564ba283464f8df5fdff8fe34740253e6b`; not deployed. Offline proves: lease decisions (single winner, stale guards, release / disconnect / region rules, capacity, host validation) through the real `WorldHost.HandleProposal` path, codec limits, source wiring. NOT proven: anything in game (original carry after a grant, settle poses on two PCs, avatar model, deposit / drop blocks).
+
+### F. Performance
+Hot paths: `HeavySync.Update` per frame = field reads + the `wheavy` entry revision check (the list is parsed only when that entry changes); held objects 5x/s falling, 1x/s at rest (one Rigidbody read + compare); `RemoteGear.ShowCarry` adds one O(1) lookup per avatar frame while the remote player carries. Event-only: pickup hook (catalog dictionary lookups), drop / deposit hooks, one `OverlapBoxNonAlloc` per Player-2 drop click, one `RaycastNonAlloc` per rest report. GC: a small list / set per `wheavy` change; no per-frame allocation. Network: Lease 35 B per pickup click, Drop 35 B per rest report (+ one per later movement), Release 35 B; registry delta ≤ 930 B per change (typically 31–150 B); nothing while idle. FPS: not measured (manual QA §38 row 15).
+
+### G. Risks / open
+- Observer gap: between the holder's drop and the rest commit (≤ ~2 s, 8 s worst case) the object is not visible on the other PC (hidden while carried; the avatar copy ends with the carry flag). **Superseded by H1.1** (immediate Drop commit + motion snapshots).
+- Rest poses come from the holder's physics only; the observer's copy is kinematic, so a hit on the observer's PC does not move it there (DESIGN COMPROMISE, necessary: one simulation per object).
+- ≤ 32 touched heavy objects per region at a time; a further pickup does nothing (logged).
+- Player 1's deposits make the object host-local (hidden for P2); trunk / van / shed / shop sync, `StolenBigItems` and story `WasPlacedInCar` are H2.
+- `VehicleNear` refuses Player 2's drops within 0.3 m of any car collider (conservative).
+- Launcher scripts not re-run (game process open).
+
 ## Game Atlas — full gameplay reverse-engineering audit — **RESEARCH COMPLETE (static), AWAITING ARCHITECTURE REVIEW**, 2026-11-15
 Documentation and research tooling only. No gameplay source, game file or save was changed. The game was not launched. Nothing was committed. The uncommitted W4.2D files are untouched.
 - **Package:** `docs/game-atlas/00_README.md` … `13_UNVERIFIED_AND_RUNTIME_TESTS.md` + `docs/game-atlas/data/*.json`, generated by `tools/research/*.py`.

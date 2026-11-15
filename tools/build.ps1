@@ -67,7 +67,8 @@ $suites = @(
     @('TS2MP.W42CTests', 'W42CTests.cs', 'shared furniture, Hillville + hideout regions, incremental page cache (W4.2C Phase B)'),
     @('TS2MP.WalletTests', 'WalletTests.cs', 'shared money balance + world money / unique valuables (W4.1B)'),
     @('TS2MP.V161Tests', 'V161Tests.cs', 'v0.16.1 two-PC QA fixes: no duplicate loot, original join loading screen, host-checkpoint spawn'),
-    @('TS2MP.W42DTests', 'W42DTests.cs', 'W4.2D cross-region loot: host scene-file catalogs (real game files), cabinets, keys, parcels')
+    @('TS2MP.W42DTests', 'W42DTests.cs', 'W4.2D cross-region loot: host scene-file catalogs (real game files), cabinets, keys, parcels'),
+    @('TS2MP.H1Tests', 'H1Tests.cs', 'H1 heavy objects: host lease, simultaneous pickup, drop relocation, disconnect, region transitions')
 )
 foreach ($s in $suites) {
     Invoke-Csc "$($s[0]).exe" (@('/target:exe', "/out:$outTests\$($s[0]).exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\$($s[1])"))

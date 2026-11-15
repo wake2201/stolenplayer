@@ -436,6 +436,9 @@ namespace TS2MP.Shared
         public readonly LootBook Loot = new LootBook();              // W4.1: taken pre-placed world loot (host-authoritative)
         public delegate ProposalCode LootTxnFn(byte slot, LootTxnRequest t, bool inRegion, out string why);
         public LootTxnFn LootTxnHook;                                // W4.1 host plugin: validation against the host catalog + durable Player-2 side
+        public readonly HeavyBook Heavy = new HeavyBook();           // H1: heavy-object leases + rest poses (host-authoritative)
+        public delegate ProposalCode HeavyCatalogFn(int ns, uint hash, uint digest, out string why);
+        public HeavyCatalogFn HeavyCatalog;                          // H1 host plugin: Accepted = supported census heavy object (host scene-file catalog + digest), Busy = catalog building
         public readonly RegionStateBook Objects = new RegionStateBook(); // W4.2/W4.2B: host-owned region epochs + door / lock / window states
         public Func<ObjectKind, int, uint, bool?> ObjectCatalog { get { return Objects.Catalog; } set { Objects.Catalog = value; } }   // host census check (null result = no census of that region)
         public Func<P2PosReport, ProposalCode> P2PosHook;            // W4.2 host plugin: Player-2 spawn store (p2spawn-<profile>.dat)
@@ -745,6 +748,35 @@ namespace TS2MP.Shared
             return ProposalCode.Accepted;
         }
 
+        // ---- H1 heavy objects: host in place for its own original pickup / drop, client proposal "heavyTxn" ----
+        // Lease: Player 2's request is checked against the host's scene-file catalog (the host may not have that region loaded);
+        // Player 1's own pickup passes known = true from its live census (decided inside its PickUpHeavy call).
+        public ProposalCode HeavyTransaction(byte slot, HeavyTxnRequest t, double now, out ushort lease, out string why)
+        {
+            lease = 0; why = null;
+            int region = RegionOfSlot(slot);
+            switch (t.Op)
+            {
+                case HeavyOp.Lease:
+                {
+                    bool known = slot == 1;
+                    if (slot == 2)
+                    {
+                        if (HeavyCatalog == null) { why = "heavy-object sync unavailable on the host"; return ProposalCode.NotAuthorized; }
+                        var c = HeavyCatalog(t.Ns, t.Hash, t.Digest, out why);
+                        if (c != ProposalCode.Accepted) return c;
+                        known = true;
+                    }
+                    return Heavy.Lease(slot, region, t.Ns, t.Hash, known, Reg, Outbox, out lease, out why);
+                }
+                case HeavyOp.Drop: lease = t.Lease; return Heavy.Drop(slot, region, t.Ns, t.Hash, t.Lease, t.Pos, t.Rot, Reg, Outbox, out why);
+                case HeavyOp.Settle: lease = t.Lease; return Heavy.Settle(slot, region, t.Ns, t.Hash, t.Lease, t.Pos, t.Rot, Reg, Outbox, out why);
+                case HeavyOp.Release: lease = t.Lease; return Heavy.Release(slot, t.Ns, t.Hash, t.Lease, RegionOfSlot((byte)(slot == 1 ? 2 : 1)), Reg, Outbox, out why);   // H1.1: a moving object goes to the other player if it is there
+                case HeavyOp.Remove: lease = t.Lease; return Heavy.Remove(slot, t.Ns, t.Hash, t.Lease, Reg, Outbox, out why);
+                default: why = "op"; return ProposalCode.Invalid;
+            }
+        }
+
         // ---- W4.2 region-independent object state (host in place for its own interactions, or client proposal "objTxn") ----
         public ProposalCode ObjectTransaction(byte slot, ObjectTxnRequest t, double now, out string why)
         {
@@ -806,6 +838,7 @@ namespace TS2MP.Shared
             if (CarBox.Release(slot)) CommitCarBox();                     // M4.3.2b: a storage session never survives a region change
             if (Locker.Release(slot)) CommitLease(StorageKind.Locker);    // W3: same for the hideout locker
             Items.ReleaseSim(slot, Reg, Outbox);                          // W3: its original item objects are gone with its scene
+            Heavy.ReleaseSlot(slot, RegionOfSlot((byte)(slot == 1 ? 2 : 1)), Reg, Outbox);   // H1: same for the heavy objects it carried / simulated (H1.1: a moving one is handed to the other player if it is there)
             // W4.2D: every region change is an original MainScene reload for that player (Select<Map> -> LoadLevel MainScene):
             // the MainScene loot book starts a new occupancy (re-seeded by the host plugin from its keys).
             if (prev != region) Loot.ClearRegion(IdentityNamespace.MainScene, Reg, Outbox);
@@ -813,6 +846,7 @@ namespace TS2MP.Shared
             {
                 Items.ClearRegion(prev, Reg, Outbox);                     // W3: region emptied = the original scene reload destroys its dropped items
                 Loot.ClearRegion(prev, Reg, Outbox);                      // W4.1: the reload re-creates the loot; the original ItemDay_ keys decide
+                Heavy.ClearRegion(prev, Reg, Outbox);                     // H1: the reload restores every heavy object at its scene pose
             }
             Objects.OnPlayerRegion(slot, region, now, Reg, Outbox);       // W4.2B: scene-lifetime objects end with the region EPOCH (member grace period, RegionStateBook)
             _now = now;
@@ -930,6 +964,14 @@ namespace TS2MP.Shared
                 if (p.ScopeArg != 0 || !LootTxnRequest.TryParse(p.Value, out t)) code = ProposalCode.Invalid;
                 else code = LootTransaction(senderSlot, t, now, out why);
                 LastNote = "lootTxn #" + t.Txn + " " + IdentityNamespace.Name(t.Ns) + ":" + t.Hash.ToString("X8") + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
+            }
+            else if (p.Scope == StateScope.Session && p.Key == WorldKeys.HeavyTxn)
+            {
+                HeavyTxnRequest t = default(HeavyTxnRequest); string why = null; ushort lease;
+                if (p.ScopeArg != 0 || !HeavyTxnRequest.TryParse(p.Value, out t)) code = ProposalCode.Invalid;
+                else if (t.Op == HeavyOp.Remove) { code = ProposalCode.NotAuthorized; why = "deposits are the host's own original"; }
+                else code = HeavyTransaction(senderSlot, t, now, out lease, out why);
+                LastNote = "heavyTxn " + t + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
             }
             else if (p.Scope == StateScope.Session && p.Key == WorldKeys.ObjectTxn)
             {

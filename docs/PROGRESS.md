@@ -1,7 +1,7 @@
 ﻿# PROGRESS
 
 ## V1.4 — Hideout vehicle overlap, parking and missing vehicle visuals — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-16
-Mod **0.21.2, protocol 32 (wire unchanged)**. Both PCs need 0.21.2. Built on `b65ca51` (W1.1, confirmed in game). Manual QA: `docs/TESTING.md` §43.
+Mod **0.21.3, protocol 32 (wire unchanged)**. Both PCs need 0.21.3 (0.21.2 = first V1.4 build, superseded by the follow-up in G). Built on `b65ca51` (W1.1, confirmed in game). Manual QA: `docs/TESTING.md` §43.
 
 ### A. Evidence
 - The two supplied logs (`LogOutput(20261116-014155).log`, `LogOutput.log(20261116-014155).1`) were **not on the development PC**; the analysis uses the quoted lines (client `VEHICLE_BIND … van:MUSTANG#2(locked)(active)`, Ranger `Hidden -> AwayProxy (kind=0 @AutoShop parked)`, Shadowhawk `Hidden -> Real (@Hideout reserved holder=P2)`; host Shadowhawk `ParkedOther`, Ranger `AwayProxy`), the original IL and the scene data.
@@ -30,9 +30,14 @@ New `src/Plugin/VehicleHideoutLayout.cs`, `tests/V14Tests.cs` (suite 35). Change
 `tools/build.ps1 -Test`: **ALL 35 SUITES PASSED**; V14 12/12 with a two-PC model of the original hideout load: reported sequence, root cause reproduced without the layout, reversed roles, two real cars, three arrival orders, all four `CurrentCar` combinations, transitions Real↔AwayProxy / AwayProxy→ParkedOther / handoff, persistence + conflicting poses, never while driven, determinism. Offline tests do not prove the in-game result. Cost: ≤ 1 pass per second in the hideout over ≤ 2 cars (distance compares, reused lists, no scene search, no allocation except the change-signature string); renderer counting only when logging. No network change. FPS not measured.
 
 ### F. Remaining risks
-- The original logs were not available: whether Player 2's "missing Ranger" also involved hidden renderers is unverified — the new log line reports root + renderer state.
+- Whether Player 2 also saw hidden renderers cannot be proven from the 0.21.1 logs (no renderer logging then); no mod code disables car renderers, and the new log line reports root + renderer state.
 - The layout may move a frozen proxy (or an observed car before its first snapshot) once when the obstacles settle — a single visible jump, no physics.
 - If both original spots are blocked, a proxy stays where it is (logged as overlap).
+
+### G. Follow-up review (0.21.3)
+- **Logs located** on the development PC (`<game>\BepInEx\LogOutput.log` host, `LogOutput.log.1` client, last written 02:41 local = `20261116-014155` UTC; mod 0.21.1, protocol 32). They confirm B1–B3: host after the return `VEHICLE_BIND firstCar(active) van(active)` (host `CurrentCar 0`: Ranger at the main spot) → Ranger `AwayProxy`, Shadowhawk `ParkedOther` (follows Player 2); client `VEHICLE_BIND firstCar(active) van(locked)(active)` (client `CurrentCar 1`: Shadowhawk main, Ranger second) → Ranger `AwayProxy`, Shadowhawk `Real`. No overlap / relocation line (W1 `KeepClearOfOtherCars` never fired: it ran before the observed Shadowhawk received Player 2's pose). The Ranger was a proxy on both PCs, never a second real car.
+- **Defect found in the first V1.4 build (0.21.2):** a Real car with the local driver seated before its arrangement was dropped from the plan (not an obstacle → a proxy could be placed on it) and stayed un-arranged → after the driver parked elsewhere and got out it was moved to its identity spot (unwanted relocation). The holder also ignored its own stopped, seated car while the other PC's observer counts it as an obstacle (`Remote.Stopped`) → proxy spots could differ between the PCs.
+- **Fix** (`VehicleHideoutLayout.LayoutFrame`): seated or moving → `Arranged = true` (driver's place, never repositioned, logged once); moving → still not an obstacle; stopped with the driver seated → `Fixed` obstacle (same rule as the observer). V14 test 13; all 35 suites pass.
 
 ## W1.1 — Player-2-initiated hideout renovation reload on Player 1 — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-16
 Mod **0.21.1, protocol 32 (wire unchanged)**. Both PCs need 0.21.1. Built on `5dce0db` (W1). Manual QA: `docs/TESTING.md` §42.

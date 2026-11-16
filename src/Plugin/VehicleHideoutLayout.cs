@@ -56,9 +56,16 @@ namespace TS2MP.Plugin
                 if (lc.Mine && !lc.IsProxy)
                 {
                     kind = "Real";
-                    bool driven = (ReferenceEquals(cur, lc.Car) && _sitting(lc.Car)) || (lc.Rb != null && !lc.Rb.isKinematic && lc.Rb.velocity.sqrMagnitude > 0.25f);
-                    if (driven) { if (newScene) _log.Info("VEHICLE_HIDEOUT_LAYOUT " + CarName(lc.Id) + " Real (driven) at " + Fmt(lc.T.position) + ": never repositioned while driven"); continue; }
-                    role = lc.Arranged || JointHolds(lc.Id) ? LayoutRole.Fixed : LayoutRole.Arrange;
+                    bool seated = ReferenceEquals(cur, lc.Car) && _sitting(lc.Car);
+                    bool moving = lc.Rb != null && !lc.Rb.isKinematic && lc.Rb.velocity.sqrMagnitude > 0.25f;
+                    if (seated || moving)
+                    {
+                        // V1.4 follow-up: a car someone sat in / drove has its place chosen by the driver -> never rearranged later
+                        // (without this, a car first driven before its arrangement was moved to its identity spot after parking).
+                        if (!lc.Arranged) { lc.Arranged = true; _log.Info("VEHICLE_HIDEOUT_LAYOUT " + CarName(lc.Id) + " Real (" + (moving ? "moving" : "driver seated") + ") at " + Fmt(lc.T.position) + ": driver's place, never repositioned"); }
+                        if (moving) continue;   // moving: not an obstacle yet (the other PC's observer also waits until it stopped)
+                    }
+                    role = lc.Arranged || JointHolds(lc.Id) ? LayoutRole.Fixed : LayoutRole.Arrange;   // stopped with the driver seated = Fixed obstacle, like Remote.Stopped on the other PC
                 }
                 else if (lc.Observed && lc.Pres == CarPresentation.ParkedOther)
                 {

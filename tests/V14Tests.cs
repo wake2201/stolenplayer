@@ -32,6 +32,7 @@ static class V14Tests
         Run("10 eligibility: locked / hidden cars are not presented; only one presentation per identity; proxy never Real", Eligibility);
         Run("11 glue: layout after every reconcile, no KeepClear leftovers, no park / record writes for proxies, diagnostics", Glue);
         Run("12 regressions: Auto Shop proxy, other regions, presentation rules unchanged; version pins", Regressions);
+        Run("13 a car the driver sits in (stopped) is an obstacle on both PCs and is never rearranged after parking", SeatedStopped);
         Console.WriteLine();
         Console.WriteLine("RESULT: " + _passed + " passed, " + _failed + " failed");
         return _failed == 0 ? 0 : 1;
@@ -64,13 +65,13 @@ static class V14Tests
         public byte Slot; public int CurrentCar; public bool VanPref; public Fleet F;
         public readonly Dictionary<ushort, Vec3> Pos = new Dictionary<ushort, Vec3>();
         public readonly Dictionary<ushort, CarPresentation> Pres = new Dictionary<ushort, CarPresentation>();
-        public readonly HashSet<ushort> Active = new HashSet<ushort>(), Arranged = new HashSet<ushort>(), Followed = new HashSet<ushort>(), Driven = new HashSet<ushort>();
+        public readonly HashSet<ushort> Active = new HashSet<ushort>(), Arranged = new HashSet<ushort>(), Followed = new HashSet<ushort>(), Driven = new HashSet<ushort>(), Seated = new HashSet<ushort>();
         public bool Layout = true; public int Moves;
 
         // VehiclesManager.InitiateMainCar + GameManager.Start (hideout), then the mod's first reconcile + layout
         public void Load()
         {
-            Pos.Clear(); Pres.Clear(); Active.Clear(); Arranged.Clear(); Followed.Clear(); Driven.Clear();
+            Pos.Clear(); Pres.Clear(); Active.Clear(); Arranged.Clear(); Followed.Clear(); Driven.Clear(); Seated.Clear();
             ushort cur = CurrentCar == 1 ? GT : Ranger, other = cur == Ranger ? GT : Ranger;
             Active.Add(cur); Pos[cur] = MainSpot;
             if (CurrentCar == 1 || VanPref) { Active.Add(other); Pos[other] = SecondSpot; }
@@ -122,7 +123,7 @@ static class V14Tests
                 var p = Pres[id];
                 ParkRecord pk; bool pose = F.Park.TryGetValue(id, out pk) && pk.HasPose && pk.Region == Hideout;
                 LayoutRole role;
-                if (p == CarPresentation.Real) { if (Driven.Contains(id)) continue; role = Arranged.Contains(id) ? LayoutRole.Fixed : LayoutRole.Arrange; }
+                if (p == CarPresentation.Real) { if (Driven.Contains(id) || Seated.Contains(id)) Arranged.Add(id); if (Driven.Contains(id)) continue; role = Arranged.Contains(id) ? LayoutRole.Fixed : LayoutRole.Arrange; }
                 else if (p == CarPresentation.ParkedOther) { if (Driven.Contains(id)) continue; role = Arranged.Contains(id) || Followed.Contains(id) ? LayoutRole.Fixed : LayoutRole.Arrange; }
                 else if (p == CarPresentation.AwayProxy) role = LayoutRole.Proxy;
                 else continue;
@@ -314,6 +315,29 @@ static class V14Tests
         Expect(host.Moves == moves, "no reposition loop");
     }
 
+    static void SeatedStopped()
+    {
+        // Player 2's Shadowhawk is seated in on arrival (before its arrangement), stopped on the main spot; Ranger is a proxy
+        var f = new Fleet(true);
+        f.Set(Ranger, AutoShop, 0); f.Set(GT, Hideout, 2);
+        var host = new Pc { Slot = 1, CurrentCar = 0, VanPref = true, F = f };
+        var cli = new Pc { Slot = 2, CurrentCar = 1, VanPref = false, F = f, Layout = false };
+        cli.Load(); cli.Layout = true;
+        cli.Seated.Add(GT); cli.RunLayout();
+        Expect(At(cli, GT, MainSpot), "a car with the driver seated is never moved");
+        Expect(At(cli, Ranger, SecondSpot), "the stopped seated car is an obstacle: the proxy keeps clear of it");
+        host.Load(); Settle(host, cli);
+        Separated(host, "host"); Separated(cli, "Player 2"); Same(host, cli, "seated, stopped");
+        // the driver parks somewhere else and gets out: the car stays where it was parked (never sent to its identity spot)
+        var park = new Vec3(-103.5f, 76.4f, -160.0f);
+        cli.Driven.Add(GT); cli.Pos[GT] = park; cli.RunLayout(); cli.Driven.Remove(GT); cli.Seated.Remove(GT);
+        for (int i = 0; i < 3; i++) cli.RunLayout();
+        Expect(At(cli, GT, park), "after parking and leaving the car it is never relocated");
+        Settle(host, cli);
+        Expect(At(cli, Ranger, MainSpot) && At(host, Ranger, MainSpot), "the proxy returns to its identity spot once it is free, on both PCs");
+        Separated(host, "host after parking"); Same(host, cli, "after parking");
+    }
+
     static void Determinism()
     {
         var a = new List<LayoutCar> { new LayoutCar { Id = GT, Role = LayoutRole.Proxy, Pos = SceneDefault }, new LayoutCar { Id = Ranger, Role = LayoutRole.Proxy, Pos = MainSpot } };
@@ -374,7 +398,7 @@ static class V14Tests
         var lf = Body(ly, "void LayoutFrame(UnityEngine.Object gm, UnityEngine.Object ps, int region, double now)");
         Expect(lf.Contains("if (region != TravelRules.Hideout || gm == null) return;"), "hideout only");
         Expect(lf.Contains("pk.Region == TravelRules.Hideout"), "only hideout poses count (a carried car keeps its origin pose until arrival)");
-        Expect(lf.Contains("if (driven)") && lf.Contains("continue;   // moving under its holder"), "driven / moving cars are never moved and not obstacles");
+        Expect(lf.Contains("if (seated || moving)") && lf.Contains("if (!lc.Arranged) { lc.Arranged = true;") && lf.Contains("if (moving) continue;") && lf.Contains("continue;   // moving under its holder"), "driven cars are never moved (marked arranged); moving cars are not obstacles, stopped seated cars are");
         Expect(lf.Contains("HideoutLayout.Plan(cars, V(main.position), V(second.position))") && lf.Contains("_gmHideoutCar(gm)") && lf.Contains("_vmSecondPos(vm)"), "original spots GameManager.SpawnHideoutCar / VehiclesManager.secondCarHideoutPos");
         Expect(lf.Contains("_carRotYHideout(lc.Car)") && lf.Contains("second.rotation"), "original rotations (GameManager.Start rotY_hideout, InitiateMainCar)");
         Expect(!ly.Contains("SetPark") && !ly.Contains("SendProposal") && !ly.Contains("Commit(") && !ly.Contains("FlushFleet"), "no park pose / record / proposal written by the layout (proxy never changes its car)");
@@ -393,7 +417,7 @@ static class V14Tests
         Expect(PresentationRules.Decide(fleet[Ranger], Madison, 2) == CarPresentation.RemoteVisual && PresentationRules.Decide(fleet[GT], Madison, 1) == CarPresentation.Hidden, "other regions unchanged");
         var v = Src("Plugin", "VehicleSync.cs");
         Expect(Body(v, "void Activate(UnityEngine.Object gm, LocalCar lc, int region)").Contains("else if (!lc.Placed && region == TravelRules.Hideout) PlaceNewHideoutCar(gm, lc);"), "initial placement of an unplaced object kept (valid start pose before the layout)");
-        Expect(ProtocolInfo.ProtocolVersion == 32 && ProtocolInfo.ModVersion == "0.21.2", "protocol 32 / mod 0.21.2");
+        Expect(ProtocolInfo.ProtocolVersion == 32 && ProtocolInfo.ModVersion == "0.21.3", "protocol 32 / mod 0.21.3");
     }
 
     // ------------------------------------------------------------------------------------------------ source helpers

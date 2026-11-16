@@ -1132,4 +1132,74 @@ namespace TS2MP.Shared
             return -1;
         }
     }
+    // V1.4: hideout parking layout of the original car objects (pure). The hideout is the one region where both player cars
+    // can be present. The original VehiclesManager.InitiateMainCar + GameManager.Start put THIS save's CurrentCar at
+    // GameManager.SpawnHideoutCar and the other car at VehiclesManager.secondCarHideoutPos - each PC from its own CurrentCar,
+    // so the two PCs disagreed which car stands where (host: Ranger proxy at the main spot, Player 2: Shadowhawk there; the
+    // Shadowhawk then followed Player 2's pose onto the host's Ranger proxy). The layout is derived only from shared data
+    // (vehicle identity, committed hideout poses, the settled poses of cars that are physically here), never from CurrentCar:
+    //   1. Fixed cars keep their pose and are obstacles: a car being driven / moving, a Real car already arranged in this
+    //      scene, an observed car (ParkedOther) that follows its holder (snapshots or a committed hideout pose).
+    //   2. Arrangeable cars that are physically here (a Real car of this instance on arrival, an observed car without any
+    //      pose yet), lowest id first: its committed hideout pose if clear, else its identity spot (Ranger = SpawnHideoutCar,
+    //      every other car = secondCarHideoutPos), else the other original spot, else where it stands.
+    //   3. Travel proxies (AwayProxy, the car itself is elsewhere), lowest id first: identity spot if clear, else the other
+    //      spot, else where it stands. Recomputed when the obstacles change, always the same function of them -> both PCs
+    //      show the proxy at the same spot; its car's record / park pose are never written.
+    // "Clear" = horizontal distance >= Clearance to every car placed before (the original spots are ~12 m apart).
+    public enum LayoutRole : byte { Fixed = 0, Arrange = 1, Proxy = 2 }
+    public enum LayoutChoice : byte { Keep = 0, Pose = 1, MainSpot = 2, SecondSpot = 3 }
+
+    public struct LayoutCar
+    {
+        public ushort Id; public LayoutRole Role;
+        public Vec3 Pos;                       // where the object stands now
+        public bool HasPose; public Vec3 Pose; // committed hideout pose (ParkRecord.Region == hideout)
+    }
+
+    public struct LayoutResult
+    {
+        public ushort Id; public LayoutChoice Choice; public Vec3 Target; public bool Overlapped;   // Overlapped: its current place collided
+        public bool Moves(Vec3 from) { return Choice != LayoutChoice.Keep && Vec3.HorizontalDistance(from, Target) > HideoutLayout.MoveEpsilon; }
+    }
+
+    public static class HideoutLayout
+    {
+        public const float Clearance = 3.5f, MoveEpsilon = 0.5f;
+        public const ushort MainSpotOwner = 1;   // VehicleIds.FromCarNr(0) = Ranger (firstCar): the original's default current car
+
+        public static bool IdentityMain(ushort id) { return id == MainSpotOwner; }
+
+        static bool Clear(Vec3 p, List<Vec3> taken) { for (int i = 0; i < taken.Count; i++) if (Vec3.HorizontalDistance(p, taken[i]) < Clearance) return false; return true; }
+
+        public static LayoutResult[] Plan(IList<LayoutCar> cars, Vec3 main, Vec3 second)
+        {
+            var res = new LayoutResult[cars.Count];
+            var taken = new List<Vec3>();
+            for (int i = 0; i < cars.Count; i++)
+            {
+                res[i] = new LayoutResult { Id = cars[i].Id, Choice = LayoutChoice.Keep, Target = cars[i].Pos };
+                if (cars[i].Role == LayoutRole.Fixed) taken.Add(cars[i].Pos);
+            }
+            foreach (var role in new[] { LayoutRole.Arrange, LayoutRole.Proxy })
+            {
+                var order = new List<int>();
+                for (int i = 0; i < cars.Count; i++) if (cars[i].Role == role) order.Add(i);
+                order.Sort((a, b) => cars[a].Id.CompareTo(cars[b].Id));
+                foreach (int i in order)
+                {
+                    var c = cars[i];
+                    res[i].Overlapped = !Clear(c.Pos, taken);
+                    bool idMain = IdentityMain(c.Id);
+                    Vec3 first = idMain ? main : second, other = idMain ? second : main;
+                    LayoutChoice fc = idMain ? LayoutChoice.MainSpot : LayoutChoice.SecondSpot, oc = idMain ? LayoutChoice.SecondSpot : LayoutChoice.MainSpot;
+                    if (role == LayoutRole.Arrange && c.HasPose && Clear(c.Pose, taken)) { res[i].Choice = LayoutChoice.Pose; res[i].Target = c.Pose; }
+                    else if (Clear(first, taken)) { res[i].Choice = fc; res[i].Target = first; }
+                    else if (Clear(other, taken)) { res[i].Choice = oc; res[i].Target = other; }
+                    taken.Add(res[i].Target);
+                }
+            }
+            return res;
+        }
+    }
 }

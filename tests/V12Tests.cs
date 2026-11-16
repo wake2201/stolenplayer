@@ -342,7 +342,7 @@ static class V12Tests
                 }
         var v = Src("Plugin", "VehicleSync.cs");
         Expect(Body(v, "void DoorFrame(int region)").Contains("if (!lc.Active || !(lc.Observed || (lc.Mine && !lc.IsProxy))) continue;"), "door / tailgate sync (vdoor, original Door components) still skips travel proxies");
-        Expect(Body(v, "void Reconcile(UnityEngine.Object gm, UnityEngine.Object ps, int region)").Contains("if (!was && region == TravelRules.Hideout) KeepClearOfOtherCars(gm, lc);"), "hideout proxy spot logic unchanged");
+        Expect(Body(v, "void Reconcile(UnityEngine.Object gm, UnityEngine.Object ps, int region)").Contains("if (!was && region == TravelRules.AutoShop) PlaceShopProxy(gm, lc);") && v.Contains("MarkLayout(\"presentation reconcile\")"), "Auto Shop proxy spot unchanged; hideout proxy spot = V1.4 shared layout");
         var w = Src("Plugin", "WalletSync.cs");
         Expect(w.Contains("if (w.Policy == MoneyPolicy.HostTxn && HostTxnHooks.Claims(w.Type + \".\" + w.Method)) { n++; continue; }") && Src("Plugin", "VehicleSync.cs").Contains("if (TravelHooks.BuyVanPatched) HostTxnHooks.Claim(\"Tutorial.BuyVan\");"), "Tutorial.BuyVan left to the vbuy hook only when it is installed (claim); otherwise refused like before");
         bool found = false; foreach (var m in WalletPolicy.Writers) if (m.Type == "Tutorial" && m.Method == "BuyVan") { found = true; Expect(m.Policy == MoneyPolicy.HostTxn, "BuyVan = host transaction"); }
@@ -356,7 +356,7 @@ static class V12Tests
         foreach (var bad in new[] { "OnGUI", "GUI.", "Time.timeScale =", "FindObjectsOfType", "SpawnMessage(" })
             Expect(!vs.Contains(bad), "VehicleShopSync contains no '" + bad + "' (no mod UI text, no scene-wide search)");
         Expect(Count(vs, "GameObject.Find(") == 1 && Body(vs, "void HideBuySign(object gm, bool once)").Contains("GameObject.Find(\"BUY VAN OBJ\")"), "the only lookup = the original sign name (Tutorial.BuyVan uses the same)");
-        Expect(ProtocolInfo.ProtocolVersion == 32 && ProtocolInfo.ModVersion == "0.21.1", "protocol 32 / mod 0.21.1");
+        Expect(ProtocolInfo.ProtocolVersion == 32 && ProtocolInfo.ModVersion == "0.21.2", "protocol 32 / mod 0.21.1");
         Expect(WorldKeys.VehicleBuy == "vbuy", "key");
     }
 

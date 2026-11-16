@@ -1,5 +1,39 @@
 ﻿# PROGRESS
 
+## V1.4 — Hideout vehicle overlap, parking and missing vehicle visuals — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-16
+Mod **0.21.2, protocol 32 (wire unchanged)**. Both PCs need 0.21.2. Built on `b65ca51` (W1.1, confirmed in game). Manual QA: `docs/TESTING.md` §43.
+
+### A. Evidence
+- The two supplied logs (`LogOutput(20261116-014155).log`, `LogOutput.log(20261116-014155).1`) were **not on the development PC**; the analysis uses the quoted lines (client `VEHICLE_BIND … van:MUSTANG#2(locked)(active)`, Ranger `Hidden -> AwayProxy (kind=0 @AutoShop parked)`, Shadowhawk `Hidden -> Real (@Hideout reserved holder=P2)`; host Shadowhawk `ParkedOther`, Ranger `AwayProxy`), the original IL and the scene data.
+- Original (ilspycmd 1.27c): `VehiclesManager.InitiateMainCar` deactivates both cars, activates `CurrentCar`; at the hideout the other car is also activated at `secondCarHideoutPos` (if `VanBought == 1`, or always when `CurrentCar == 1`). `GameManager.Start` (hideout) then moves `GameManager.Car` (= the current car) to `SpawnHideoutCar` with yaw `CarController.rotY_hideout`. Scene scan level1: `SpawnCarHideout` (-97.72, 76.43, -169.62), `Second Car Hideout Position` (-109.80, 76.41, -168.81): ~12 m apart.
+- `LocalCar.Placed = lc.Active` is correct: `InitiateMainCar` only ever activates a car at one of the two original spots (it deactivates both first). `PlaceNewHideoutCar` is skipped only for such cars. No mod code disables renderers or child objects of the cars (scan of VehicleSync / VehicleShopSync / CarBox / cargo).
+
+### B. Root cause
+| # | Finding | Effect | Verdict |
+|---|---|---|---|
+| 1 | Each PC's original places the cars by **its own** `CurrentCar` (the car that PC last drove). After independent trips: host `CurrentCar 0` → Ranger at the main spot; Player 2 `CurrentCar 1` (client log: van active although locked in the sandbox) → Shadowhawk at the main spot, Ranger at the second spot | the two PCs disagree which car stands where | DESIGN GAP (multiplayer adds two sources of truth) |
+| 2 | The host's Ranger `AwayProxy` kept the host's main spot; the Shadowhawk `ParkedOther` followed Player 2's pose (main spot) onto it. `KeepClearOfOtherCars` ran once, when the proxy appeared, and only against cars already there | **two cars on one spot on the host** | DEFECTIVE |
+| 3 | Player 2 showed the Ranger proxy at the second spot, Player 1 at the main spot — where Player 2 sees the Shadowhawk | "Ranger missing" for Player 2 at the spot where Player 1 sees it (positional inconsistency, not hidden renderers — unverified in game, now logged) | DEFECTIVE |
+| 4 | Two real cars arriving: each holder's own car at its main spot → both at the main spot | overlap with two real cars | DEFECTIVE |
+| 5 | A Real car already activated by the original ignored its committed hideout pose (only `Activate` of an inactive object applied it) | a car parked in the hideout was reset to an original spot after every reload | INCOMPLETE |
+
+### C. Fix — rules
+- `HideoutLayout.Plan` (`src/Shared/Travel.cs`, pure) from shared data only (identity, committed hideout poses, settled poses of cars present), never `CurrentCar`: Fixed cars (driven/moving excluded; a Real car already arranged in this scene; an observed car following its holder's snapshots) are obstacles → arrangeable cars present (own Real car on arrival, observed car before snapshots), lowest id first: committed hideout pose if clear, else identity spot (**Ranger = `SpawnHideoutCar`, other = `secondCarHideoutPos`**), else the other original spot, else stays → travel proxies, lowest id first: identity spot, else the other spot, else stays. Clear = 3.5 m horizontal. No invented coordinates.
+- `VehicleHideoutLayout.cs` (partial `VehicleSync`): runs after every reconcile in the hideout and ≤ 1 Hz for settled poses; original rotations (`rotY_hideout` like `GameManager.Start`, `secondCarHideoutPos.rotation`); a Real car is arranged once per scene and never while driven / moving or with the player on the target; a handoff in place is never rearranged; a moving observed car is no obstacle (a proxy reacts only after it settles); a proxy moved onto the player starts non-solid (`GhostIfAroundPlayer`). Never writes a park pose / record / proposal; the Real car's new pose reaches the other PC through the existing snapshots / `vpark`.
+- `KeepClearOfOtherCars` removed (superseded). `PlaceNewHideoutCar` kept as the initial valid pose of an object the original left inactive.
+- Diagnostics `VEHICLE_HIDEOUT_LAYOUT` per car (record region + holder, presentation, role, root active, renderers on/total, pos, yaw, spot, park pose validity/region, overlap) on scene bind / change, `corrected … (reason)` per move; `VEHICLE_STATS … hideoutLayout passes/moves`.
+
+### D. Files
+New `src/Plugin/VehicleHideoutLayout.cs`, `tests/V14Tests.cs` (suite 35). Changed `src/Shared/Travel.cs` (`LayoutRole`, `LayoutChoice`, `LayoutCar`, `LayoutResult`, `HideoutLayout`), `src/Plugin/VehicleSync.cs` (`LocalCar.Arranged`, layout call, handoff mark, KeepClear removed), `src/Plugin/VehicleShopSync.cs` (stats), `src/Shared/Protocol.cs` (0.21.2), `tools/build.ps1`, `tests/V12Tests.cs` (proxy-spot pin), version pins.
+
+### E. Tests / performance
+`tools/build.ps1 -Test`: **ALL 35 SUITES PASSED**; V14 12/12 with a two-PC model of the original hideout load: reported sequence, root cause reproduced without the layout, reversed roles, two real cars, three arrival orders, all four `CurrentCar` combinations, transitions Real↔AwayProxy / AwayProxy→ParkedOther / handoff, persistence + conflicting poses, never while driven, determinism. Offline tests do not prove the in-game result. Cost: ≤ 1 pass per second in the hideout over ≤ 2 cars (distance compares, reused lists, no scene search, no allocation except the change-signature string); renderer counting only when logging. No network change. FPS not measured.
+
+### F. Remaining risks
+- The original logs were not available: whether Player 2's "missing Ranger" also involved hidden renderers is unverified — the new log line reports root + renderer state.
+- The layout may move a frozen proxy (or an observed car before its first snapshot) once when the obstacles settle — a single visible jump, no physics.
+- If both original spots are blocked, a proxy stays where it is (logged as overlap).
+
 ## W1.1 — Player-2-initiated hideout renovation reload on Player 1 — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-16
 Mod **0.21.1, protocol 32 (wire unchanged)**. Both PCs need 0.21.1. Built on `5dce0db` (W1). Manual QA: `docs/TESTING.md` §42.
 

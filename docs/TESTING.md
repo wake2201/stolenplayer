@@ -151,6 +151,24 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 43. V1.4 checklist — hideout parking layout of both cars (release `TS2-Multiplayer-0.21.2.zip` on BOTH PCs, protocol 32)
+F8 test campaign with the garage and BOTH cars owned. Grep tag: `VEHICLE_HIDEOUT_LAYOUT` (one line per car on scene bind / change: region + holder, presentation, root, renderers on/total, pos, yaw, spot, park, overlap; `corrected … -> MainSpot/SecondSpot/Pose (reason)` on every move), `VEHICLE_STATS … hideoutLayout passes/moves`.
+Expected layout whenever no car has a parked hideout pose: **Ranger at the main spot (SpawnHideoutCar), Shadowhawk at the second spot (secondCarHideoutPos)** on both PCs; a car someone parked in the hideout stays where it was parked.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Reported sequence: P1 leaves the Ranger at the Auto Shop and returns to the hideout; P2 drives the Shadowhawk to Madison and back to the hideout | Both PCs: Ranger (travel proxy) and Shadowhawk visible, separated, at the same spots on both screens. P1 log: Shadowhawk `ParkedOther`, Ranger `AwayProxy`, `overlap no`, renderers n/n | NOT TESTED |
+| 2 | Row 1 with reversed roles (P1 carries the Shadowhawk, P2 leaves the Ranger elsewhere) | Same result | NOT TESTED |
+| 3 | Both arrive with their own car (P1 Ranger, P2 Shadowhawk), in either order | Ranger main, Shadowhawk second on both PCs; no car on top of another | NOT TESTED |
+| 4 | P1 home first (both cars elsewhere → two proxies), then P2 arrives with a car | Proxies separated; when P2 arrives the proxy/observed cars end up at the same spots as on P2 | NOT TESTED |
+| 5 | Travel interaction: E on the proxy | Original travel menu; no driving, no storage, no cargo on the proxy | NOT TESTED |
+| 6 | Park a car anywhere in the hideout, then: renovation reload (W1.1), reconnect P2, host restart | The parked car comes back at its parked place on both PCs | NOT TESTED |
+| 7 | Drive a car around the hideout and park it on the other car's proxy spot | The driven car never jumps; once parked the proxy moves to the free original spot (log `corrected … overlapped another car`) on both PCs | NOT TESTED |
+| 8 | Handoff / passenger in the hideout (take over the other player's car, ride as passenger) | Car stays in place, no relocation, entry / seat work as before | NOT TESTED |
+| 9 | Regression: Auto Shop proxy, Shadowhawk purchase, CarBox, fuel, Ranger cargo + tailgate, H1/H2, W1 purchases, joint travel | Unchanged | NOT TESTED |
+
+Send back both `LogOutput.log` files (the two logs of the original report were not available on the development PC).
+
 ## 42. W1.1 checklist — Player-2-initiated renovation reload on Player 1 (release `TS2-Multiplayer-0.21.1.zip` on BOTH PCs, protocol 32)
 F8 test campaign copy with the garage, WITHOUT renovations, shared money >= 20,000. Grep tags on the PC that did NOT buy: `HIDEOUT_REBUILD` (`invoke` = SelectHideout called, `native loading screen presented` = LoadWait ran, `scene reloaded and built with ... renovation applied (scene: AudioUpgrade shown ...)` = the new scene contains it, `waits (...)` = deferred, `MISSING` / `did not start` = failure), `HIDEOUT_STATS ... rebuilds req/started/notStarted/applied/missing/waits`.
 

@@ -138,6 +138,7 @@ namespace TS2MP.Plugin
             public readonly double[] SlowAt = { -1, -1 }; public readonly bool[] SlowRep = new bool[2];
             public bool Active { get { return Go != null && Go.activeInHierarchy; } }
             public bool Placed;   // V1.2: the original (InitiateMainCar) or the mod gave the object a valid pose in this scene
+            public bool Arranged; // V1.4: the hideout layout fixed its place in this scene (never rearranged afterwards)
         }
 
         // One original wheel transform (EVP.Wheel.wheelTransform) in car-local terms: rest rotation, axle and steering axis of
@@ -447,7 +448,8 @@ namespace TS2MP.Plugin
                 var ps = _gmPS(gm);
                 if (_gmLoaded(gm) && TravelRules.IsFleetRegion(region))
                 {
-                    if (_reconcile || NeedsExitRetry()) { _reconcile = false; Reconcile(gm, ps, region); }
+                    if (_reconcile || NeedsExitRetry()) { _reconcile = false; Reconcile(gm, ps, region); MarkLayout("presentation reconcile"); }
+                    LayoutFrame(gm, ps, region, now);   // V1.4: hideout only; event-driven + <= 1 Hz for settled poses
                     SignFrame(gm, region, now);
                     t2 = Stopwatch.GetTimestamp();
                     FuelFrame(ps);
@@ -1053,6 +1055,7 @@ namespace TS2MP.Plugin
                     if (lc.IsProxy)
                     {
                         if (lc.Observed) ExitObserved(lc); else ExitProxy(lc);
+                        lc.Arranged = true;   // V1.4: a handoff in place keeps the pose (never rearranged)
                         // handoff in place (hideout copy): the frozen original resumes physics where it stands
                         if (gm != null) { _setGmCar(gm, lc.Go); var tr = _carTrunk(lc.Car); _setGmTrunk(gm, tr != null ? tr : lc.T); }
                     }
@@ -1082,7 +1085,6 @@ namespace TS2MP.Plugin
                     if (!lc.Active) ActivateProxyObject(gm, lc, region);
                     if (!was && region == TravelRules.AutoShop) PlaceShopProxy(gm, lc);   // before EnterProxy: its ghost check needs the final spot
                     if (!lc.IsProxy) EnterProxy(lc, ps);
-                    if (!was && region == TravelRules.Hideout) KeepClearOfOtherCars(gm, lc);
                     if (lc.Pres != pres) _log.Info("VEHICLE " + CarName(lc.Id) + " travel proxy presentation " + lc.Pres + " -> " + pres + " in " + Regions.Name(region) + " (" + r + "): E opens the travel menu");
                     lc.Pres = pres;
                     continue;
@@ -1349,19 +1351,7 @@ namespace TS2MP.Plugin
             if (lc.Rb != null && lc.Rb.isKinematic) { lc.Rb.position = pos; lc.Rb.rotation = rot; }
         }
 
-        // An away proxy keeps its last hideout spot unless that overlaps another car; then the free original hideout spot
-        // (GameManager.SpawnHideoutCar / VehiclesManager.secondCarHideoutPos) farthest from the other cars is used.
-        void KeepClearOfOtherCars(UnityEngine.Object gm, LocalCar lc)
-        {
-            if (!Overlaps(lc, lc.T.position)) return;
-            var vm = gm != null ? _gmVM(gm) : null;
-            var spots = new List<Transform>();
-            var a = gm != null && _gmHideoutCar != null ? _gmHideoutCar(gm) as Transform : null; if (a != null) spots.Add(a);
-            var b = vm != null && _vmSecondPos != null ? _vmSecondPos(vm) as Transform : null; if (b != null) spots.Add(b);
-            foreach (var sp in spots)
-                if (!Overlaps(lc, sp.position)) { lc.T.SetPositionAndRotation(sp.position, sp.rotation); _log.Info("VEHICLE " + CarName(lc.Id) + " travel proxy moved to the free hideout spot " + sp.name); return; }
-        }
-
+        // V1.4: the hideout spot of an away proxy is decided by the shared layout (VehicleHideoutLayout.cs, HideoutLayout.Plan).
         bool Overlaps(LocalCar lc, Vector3 p)
         {
             foreach (var o in _local) if (o != lc && o.Active && Flat(o.T.position, p) < 3.5f) return true;

@@ -253,6 +253,6 @@ namespace TS2MP.Plugin
             _log.Info("VEHICLE " + CarName(lc.Id) + " Auto Shop travel proxy " + (keep ? "at its last spot here" : "at the original Auto Shop car spawn" + (spawn != null ? " " + spawn.name : " (missing: kept in place)")) + ": E opens the travel menu, the car stays where it is");
         }
 
-        string ShopStats { get { return " buy req " + _buyRequests + " ok " + _buyAccepted + " refused " + _buyRefused + " hostBuys " + _hostBuys + " hostRefused " + _hostBuyRefused + " unlockChanges " + _unlockChanges + " shopProxies " + _shopProxies + " placedNew " + _placedNew; } }
+        string ShopStats { get { return " buy req " + _buyRequests + " ok " + _buyAccepted + " refused " + _buyRefused + " hostBuys " + _hostBuys + " hostRefused " + _hostBuyRefused + " unlockChanges " + _unlockChanges + " shopProxies " + _shopProxies + " placedNew " + _placedNew + " hideoutLayout passes/moves " + _layoutPasses + "/" + _layoutMoves; } }
     }
 }

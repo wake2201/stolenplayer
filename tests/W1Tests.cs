@@ -49,6 +49,14 @@ static class W1Tests
         Run("11 disconnect during a purchase / transition: nothing charged twice, host state unchanged, pending dropped", Disconnect);
         Run("12 wallet + wiring: four writers are host transactions, client hook fails closed, claims released, plugin order", Wiring);
         Run("13 regressions: Shadowhawk garage prerequisite, V1.2 hooks, travel scripted path, no mod UI text, no per-frame search", Regressions);
+        // W1.1: Player-2-initiated renovation reload on Player 1 (HideoutRebuild + HideoutSync glue)
+        Run("14 W1.1 both buyer directions x every reload renovation: the observer in the hideout rebuilds exactly once", W11BothDirections);
+        Run("15 W1.1 observer elsewhere: never interrupted; the next original hideout load builds it; reconnect / restart", W11ObserverElsewhere);
+        Run("16 W1.1 temporarily busy: deferred, retry survives unrelated registry commits, runs once the restriction ends", W11BusyRetry);
+        Run("17 W1.1 non-reload purchases / refused clicks / travel-hook refusal never block a later rebuild", W11NoStaleMarker);
+        Run("18 W1.1 no loops: a load already under way, an own pending purchase, a rebuild that did not bring the state", W11NoLoops);
+        Run("19 W1.1 host scene transition: Player-2 purchase Busy (never applied to a GameManager whose checkpoint is written)", W11HostTransition);
+        Run("20 W1.1 glue: disablesound detection, verification logs, busy list, wiring, no per-frame search", W11Glue);
         Console.WriteLine();
         Console.WriteLine("RESULT: " + _passed + " passed, " + _failed + " failed");
         return _failed == 0 ? 0 : 1;
@@ -216,7 +224,7 @@ static class W1Tests
     {
         var hs = Src("Plugin", "HideoutSync.cs");
         var up = Body(hs, "public void Update()");
-        Expect(up.Contains("if (region != HideoutShop.Region || !_hasBuilt || _pend != null) return;   // elsewhere: the next original hideout load builds it"), "a player outside the hideout: sandbox keys only, never a reload / teleport / loading screen");
+        Expect(up.Contains("if (region != HideoutShop.Region || !_rb.HasBuilt) { _rb.Waiting = false; return; }   // elsewhere: the next original hideout load builds it"), "a player outside the hideout: sandbox keys only, never a reload / teleport / loading screen");
         Expect(up.IndexOf("if (changed) ApplySandbox();", StringComparison.Ordinal) < up.IndexOf("if (region != HideoutShop.Region", StringComparison.Ordinal), "keys are written in every region (the next original load reads them)");
         foreach (var sig in new[] { "public bool Apply(HideoutBuyRequest r, int price)", "public bool TryState(out HideoutState s)", "public int AdditionCost(int index)", "public int WallpaperCount(int setting)" })
             Expect(!Body(hs, sig).Contains("FindObjectOfType"), sig + ": host decides / applies without the hideout scene (MainScene HouseRenovator + GameManager lists)");
@@ -231,14 +239,14 @@ static class W1Tests
     {
         var hs = Src("Plugin", "HideoutSync.cs");
         var pr = Body(hs, "void Present(object gm, double now)");
-        Expect(pr.Contains("s.NeedsRebuild(_built) && !ReferenceEquals(_reloadGm, gm)") && pr.Contains("_reloadGm = gm; _reloads++;"), "at most one rebuild per scene instance");
-        foreach (var w in new[] { "_psInVehicle(ps)", "_psCarrying(ps)", "_psCaught(ps)", "_psOpened(ps)" }) Expect(pr.Contains(w), "deferred while " + w);
-        Expect(pr.Contains("_retry = true"), "deferred rebuild retried at 1 Hz");
+        Expect(pr.Contains("_rb.Decide(s, true, own, Leaving(gm), own ? null : Busy(gm, Ps(gm)), now, out why)") && pr.Contains("_rb.Invoked(s, started, now);"), "W1.1: HideoutRebuild decides (one rebuild per needed state, verified)");
+        var bz = Body(hs, "string Busy(object gm, object ps)");
+        foreach (var w in new[] { "_psInVehicle(ps)", "_psCarrying(ps)", "_psCaught(ps)", "_psOpened(ps)" }) Expect(bz.Contains(w), "deferred while " + w);
         var ob = Body(hs, "bool OnBuy(object inst, MethodBase m)");
-        Expect(ob.Contains("if (r.Item == HideoutItem.Addition || r.Item == HideoutItem.Repairs) _reloadGm = gm;"), "host's own renovation: the original reloads, no second SelectHideout");
+        Expect(!ob.Contains("_reloadGm") && !hs.Contains("_reloadGm"), "W1.1: no per-GameManager marker; the host's own renovation is recognised by the original's disablesound");
         var res = Body(hs, "internal bool OnProposalResult(uint id, ProposalCode code)");
-        Expect(res.Contains("_resume = true; _reloadGm = gm;") && res.IndexOf("ApplySandbox();", StringComparison.Ordinal) < res.IndexOf("p.Method.Invoke(p.Instance, null);", StringComparison.Ordinal), "client actor: keys first, then the original (its own SelectHideout), no extra reload");
-        Expect(Body(hs, "public void Update()").Contains("_pend != null) return;"), "no observer rebuild while an own purchase waits for its result (the delta precedes the result)");
+        Expect(res.Contains("_resume = true;") && res.IndexOf("ApplySandbox();", StringComparison.Ordinal) < res.IndexOf("p.Method.Invoke(p.Instance, null);", StringComparison.Ordinal), "client actor: keys first, then the original (its own SelectHideout), no extra reload");
+        Expect(pr.Contains("bool own = _pend != null;"), "no observer rebuild while an own purchase waits for its result (the delta precedes the result)");
         Expect(Body(hs, "public void Update()").Contains("if (!_gmLoaded(gm)) return;   // the original Start methods have not read the keys yet"), "built state taken after the original Start methods (loadedMap)");
     }
 
@@ -269,10 +277,10 @@ static class W1Tests
         Expect(Body(hs, "public void Dispose()").Contains("HostTxnHooks.Release(k)") && hs.Contains("HostTxnHooks.Claim(kv.Key);"), "claims follow the installed hooks (else WalletSync refuses them like before)");
         Expect(Body(hs, "bool OnBuy(object inst, MethodBase m)").Contains("_money(ps) < price) return true;"), "client below the price: the original 'too poor' page (no money change)");
         var p = Src("Plugin", "Plugin.cs");
-        int hi = p.IndexOf("_hideout = new HideoutSync(node, log, _world)", StringComparison.Ordinal), wi = p.IndexOf("_wallet = new WalletSync(node, log, _world)", StringComparison.Ordinal);
+        int hi = p.IndexOf("_hideout = new HideoutSync(node, log, _world, _sync)", StringComparison.Ordinal), wi = p.IndexOf("_wallet = new WalletSync(node, log, _world)", StringComparison.Ordinal);
         Expect(hi > 0 && wi > hi, "HideoutSync built before WalletSync (claims exist when the wallet policy installs)");
         Expect(Src("Plugin", "WorldSync.cs").Contains("ProposalResultHook9 != null && ProposalResultHook9(id, code)"), "proposal results routed");
-        Expect(WorldKeys.HideoutBuy == "hbuy" && WorldKeys.Hideout == "hideout" && ProtocolInfo.ProtocolVersion == 32 && ProtocolInfo.ModVersion == "0.21.0", "keys / protocol 32 / mod 0.21.0");
+        Expect(WorldKeys.HideoutBuy == "hbuy" && WorldKeys.Hideout == "hideout" && ProtocolInfo.ProtocolVersion == 32 && ProtocolInfo.ModVersion == "0.21.1", "keys / protocol 32 / mod 0.21.1");
     }
 
     static void Regressions()
@@ -286,6 +294,199 @@ static class W1Tests
         var up = Body(hs, "public void Update()");
         Expect(!up.Contains("FindObjectOfType") && !up.Contains("FindObjectsOfType"), "no scene search in the per-frame path (only in Present after a state change)");
         Expect(Src("Plugin", "TravelHooks.cs").Contains("HostTxnHooks") == false && Src("Plugin", "VehicleSync.cs").Contains("HostTxnHooks.Release(\"Tutorial.BuyVan\");"), "V1.2 BuyVan claim lives with VehicleSync");
+    }
+
+    // ------------------------------------------------------------------------------------------------ W1.1
+    // One instance's presentation as HideoutSync drives it: scene bind (keys at loadedMap), committed state, scene facts.
+    sealed class Observer
+    {
+        public readonly HideoutRebuild Rb = new HideoutRebuild();
+        public HideoutState Keys;                 // what the next original scene load reads (client sandbox / host save)
+        public bool InHideout = true, Leaving, OwnPending; public string Busy;
+        public int SelectCalls, Reloads; public bool HookRefuses;
+        public double Now;
+        public void Bind() { Leaving = false; Rb.Bound(Keys); }
+        // Present() for the rebuild part; returns the step. A started SelectHideout saves the keys and leaves the scene.
+        public RebuildStep Tick(HideoutState committed)
+        {
+            string why;
+            var st = Rb.Decide(committed, InHideout, OwnPending, Leaving, Busy, Now, out why);
+            if (st != RebuildStep.Rebuild) return st;
+            SelectCalls++;
+            bool started = !HookRefuses;
+            if (started) { Leaving = true; Reloads++; }
+            Rb.Invoked(committed, started, Now);
+            return st;
+        }
+    }
+
+    static readonly HideoutBuyRequest[] ReloadItems = { new HideoutBuyRequest { Item = HideoutItem.Addition, Index = 0 }, new HideoutBuyRequest { Item = HideoutItem.Addition, Index = 1 },
+        new HideoutBuyRequest { Item = HideoutItem.Addition, Index = 2 }, new HideoutBuyRequest { Item = HideoutItem.Addition, Index = 3 }, new HideoutBuyRequest { Item = HideoutItem.Repairs } };
+
+    static HideoutState With(HideoutState s, HideoutBuyRequest r)
+    {
+        if (r.Item == HideoutItem.Repairs) s.Repairs = true; else if (r.Item == HideoutItem.Addition) s.Additions |= (byte)(1 << r.Index);
+        else if (r.Item == HideoutItem.Garage) s.Garage = true; else s.SetWall(r.Index, r.Value);
+        return s;
+    }
+
+    static void W11BothDirections()
+    {
+        foreach (var item in ReloadItems)
+        {
+            // Player 2 buys (host transaction) -> Player 1 (host, observer in the hideout)
+            FakeHost h; var wh = Host(Hideout, Hideout, out h);
+            var p1 = new Observer { Keys = h.S }; p1.Bind();
+            Expect(Buy(wh, item) == ProposalCode.Accepted && h.Applies == 1, item + ": Player-2 purchase accepted once");
+            var c = Committed(wh);
+            Expect(c.NeedsRebuild(p1.Rb.Built), item + ": the committed state needs the original rebuild on Player 1");
+            Expect(p1.Tick(c) == RebuildStep.Rebuild && p1.SelectCalls == 1 && p1.Leaving, item + ": Player 1 runs SelectHideout once; native load started");
+            Expect(p1.Tick(c) == RebuildStep.None && p1.SelectCalls == 1, item + ": no second call while the load runs (disablesound)");
+            p1.Keys = c;   // SelectHideout -> SaveGameNewSystem wrote parcel_strings_to_set -> the keys hold it
+            p1.Bind();
+            Expect(p1.Rb.Applied == 1 && !c.NeedsRebuild(p1.Rb.Built) && p1.Tick(c) == RebuildStep.None && p1.SelectCalls == 1, item + ": rebuilt scene contains it, exactly one reload");
+            Expect(Buy(wh, item) == ProposalCode.Stale && h.Applies == 1 && h.Money == 20000 - (item.Item == HideoutItem.Repairs ? 2500 : HideoutShop.AdditionCosts[item.Index]), item + ": one charge, a repeat is Stale");
+
+            // Player 1 buys (original on the host, postfix publish) -> Player 2 (client observer, sandbox keys mirror the commit)
+            FakeHost h2; var w2 = Host(Hideout, Hideout, out h2);
+            var p2 = new Observer { Keys = h2.S }; p2.Bind();
+            h2.S = With(h2.S, item); Expect(w2.PublishHideout(), item + ": host purchase committed");
+            var c2 = Committed(w2); p2.Keys = c2;   // ApplySandbox before Present
+            Expect(p2.Tick(c2) == RebuildStep.Rebuild && p2.Tick(c2) == RebuildStep.None, item + ": Player 2 rebuilds once");
+            p2.Bind();
+            Expect(p2.Rb.Applied == 1 && p2.Tick(c2) == RebuildStep.None && p2.Reloads == 1, item + ": Player 2 sees it after one reload");
+        }
+        // the buyer itself: its original reload runs (disablesound) -> its own presentation never adds a coordinated rebuild
+        var buyer = new Observer(); buyer.Bind();
+        buyer.Leaving = true;   // BuyAddition -> SelectHideout -> LoadWait on the buyer
+        Expect(buyer.Tick(new HideoutState { Additions = 1 }) == RebuildStep.None && buyer.SelectCalls == 0, "buyer: only the original's own reload");
+    }
+
+    static void W11ObserverElsewhere()
+    {
+        FakeHost h; var wh = Host(Madison, Hideout, out h);
+        var p1 = new Observer { Keys = h.S, InHideout = false }; p1.Bind();
+        Expect(Buy(wh, Add(2)) == ProposalCode.Accepted, "Player 2 renovates while Player 1 is in Madison");
+        var c = Committed(wh);
+        for (int i = 0; i < 5; i++) { p1.Now = i; Expect(p1.Tick(c) == RebuildStep.None, "Player 1 elsewhere: never interrupted"); }
+        Expect(p1.SelectCalls == 0 && !p1.Rb.Waiting, "no call, no pending retry outside the hideout");
+        // Player 1 travels home: the original Select* saves the queue -> the hideout scene is built with it, no extra reload
+        p1.InHideout = true; p1.Keys = c; p1.Bind();
+        Expect(p1.Tick(c) == RebuildStep.None && p1.SelectCalls == 0, "returning player: normal scene load shows it");
+        // reconnect: the client's sandbox keys come from the registry / campaign snapshot before its hideout load
+        var p2 = new Observer { Keys = c }; p2.Bind();
+        Expect(p2.Tick(c) == RebuildStep.None && p2.SelectCalls == 0, "reconnecting Player 2: built from the snapshot keys, no reload");
+        // restart of the host: keys saved by the transition, published at the first bind
+        FakeHost h3; var w3 = Host(Hideout, Regions.None, out h3); h3.S = c;
+        Expect(w3.PublishHideout() && Committed(w3).Has(2), "host restart: saved keys rebuild the shared state");
+        var p3 = new Observer { Keys = c }; p3.Bind();
+        Expect(p3.Tick(Committed(w3)) == RebuildStep.None, "restart: no reload loop");
+        // a client snapshot overlay carries a renovation still queued on the host
+        var hs = Src("Plugin", "HideoutSync.cs");
+        Expect(Body(hs, "internal void OverlaySnapshot(CampaignData model)").Contains("TryState(out s)"), "overlay uses the queued host state");
+    }
+
+    static void W11BusyRetry()
+    {
+        foreach (var busy in new[] { "scene loading", "in a car", "seated as passenger", "carrying an object", "caught", "travel menu open", "passing time" })
+        {
+            var o = new Observer { Keys = new HideoutState() }; o.Bind();
+            var c = new HideoutState { Repairs = true };
+            o.Busy = busy;
+            Expect(o.Tick(c) == RebuildStep.Wait && o.Rb.Waiting && o.SelectCalls == 0, busy + ": deferred");
+            // an unrelated registry commit inside the retry second (W1 lost the retry here)
+            o.Now = 0.5; Expect(o.Tick(c) == RebuildStep.Wait && o.Rb.Waiting, busy + ": retry kept across an unrelated commit");
+            o.Busy = null;
+            o.Now = 0.9; Expect(o.Tick(c) == RebuildStep.Wait && o.Rb.Waiting && o.SelectCalls == 0, busy + ": still inside the retry interval");
+            o.Now = 1.6; Expect(o.Tick(c) == RebuildStep.Rebuild && o.SelectCalls == 1 && !o.Rb.Waiting, busy + ": runs once the restriction ends (no further commit needed)");
+            o.Now = 3; Expect(o.Tick(c) == RebuildStep.None && o.SelectCalls == 1, busy + ": exactly once");
+        }
+        var hs = Src("Plugin", "HideoutSync.cs");
+        var up = Body(hs, "public void Update()");
+        Expect(up.Contains("if (!changed && (!_rb.Waiting || now < _rb.NextTry)) return;"), "Update re-evaluates a held-back rebuild at its retry time without a registry change");
+        Expect(!up.Contains("_retry = false"), "the retry flag is no longer cleared by an unrelated head change");
+    }
+
+    static void W11NoStaleMarker()
+    {
+        // W1: a wallpaper / garage purchase, a refused "too poor" click or a call the travel hook did not run marked the
+        // GameManager as "reloaded" -> the other player's renovation never rebuilt in that scene.
+        var o = new Observer { Keys = new HideoutState() }; o.Bind();
+        var wall = new HideoutState { W0 = 3 }; var garage = new HideoutState { Garage = true, W0 = 3 };
+        Expect(o.Tick(wall) == RebuildStep.None && o.Tick(garage) == RebuildStep.None, "garage / wallpaper: live, no rebuild");
+        var c = new HideoutState { Garage = true, W0 = 3, Additions = 8 };
+        Expect(o.Tick(c) == RebuildStep.Rebuild && o.SelectCalls == 1, "a later renovation by the other player still rebuilds");
+        // travel hook refused the call: retried (bounded), never marked as done
+        var r = new Observer { Keys = new HideoutState(), HookRefuses = true }; r.Bind();
+        var c2 = new HideoutState { Additions = 1 };
+        Expect(r.Tick(c2) == RebuildStep.Rebuild && !r.Leaving && r.Rb.Waiting && r.Rb.NotStarted == 1, "not started: retry armed");
+        r.HookRefuses = false; r.Now = 1.1;
+        Expect(r.Tick(c2) == RebuildStep.Rebuild && r.Leaving && r.SelectCalls == 2 && r.Reloads == 1, "next attempt starts the native load");
+        var hs = Src("Plugin", "HideoutSync.cs");
+        var ob = Body(hs, "bool OnBuy(object inst, MethodBase m)");
+        Expect(!ob.Contains("_reloadGm") && Body(hs, "internal bool OnProposalResult(uint id, ProposalCode code)").Contains("_resume = true;") && !Body(hs, "internal bool OnProposalResult(uint id, ProposalCode code)").Contains("_reloadGm"), "no marker set by purchases that may not reload");
+        var np = Body(hs, "void NoteOwnPresentation()");
+        Expect(np.Contains("if (_gmBought(gm)) _rb.Built.Garage = true;") && np.Contains("_rb.Built.SetWall(i, p.Wall(i));") && Body(hs, "static void BuyPostfix(object __instance, MethodBase __originalMethod)").Contains("h.NoteOwnPresentation();"), "own garage / wallpaper purchase: not re-presented as the other player's (host log line 1370 of the W1 test)");
+    }
+
+    static void W11NoLoops()
+    {
+        var c = new HideoutState { Additions = 2 };
+        // a load is already under way (own purchase, travel, caught reload): nothing added
+        var a = new Observer { Keys = new HideoutState() }; a.Bind(); a.Leaving = true;
+        Expect(a.Tick(c) == RebuildStep.None && a.SelectCalls == 0, "native load under way: the next scene reads the keys");
+        // own pending purchase (client): wait for its result
+        var b = new Observer { Keys = new HideoutState(), OwnPending = true }; b.Bind();
+        Expect(b.Tick(c) == RebuildStep.Wait && b.SelectCalls == 0, "own purchase pending: held");
+        b.OwnPending = false; b.Now = 1.5;
+        Expect(b.Tick(c) == RebuildStep.Rebuild, "refused own purchase: the other player's renovation still rebuilds");
+        // a rebuild whose keys still lack the state (e.g. checkpoint dropped): verdict MISSING, not repeated
+        var m = new Observer { Keys = new HideoutState() }; m.Bind();
+        Expect(m.Tick(c) == RebuildStep.Rebuild, "first rebuild");
+        m.Bind();   // keys unchanged
+        Expect(m.Rb.Missing == 1, "verdict MISSING logged");
+        for (int i = 0; i < 10; i++) { m.Now = 10 + i * 2; Expect(m.Tick(c) == RebuildStep.None, "never repeated for the same state (no reload loop)"); }
+        Expect(m.SelectCalls == 1, "exactly one SelectHideout");
+        var c3 = new HideoutState { Additions = 6 };
+        Expect(m.Tick(c3) == RebuildStep.Rebuild, "a new renovation is a new state: rebuilt");
+        // hook refusing permanently: bounded per scene
+        var r = new Observer { Keys = new HideoutState(), HookRefuses = true }; r.Bind();
+        for (int i = 0; i < 20; i++) { r.Now = i * 1.5; r.Tick(c); }
+        Expect(r.SelectCalls == HideoutRebuild.MaxNotStartedPerScene && !r.Rb.Waiting, "a refusing hook is tried " + HideoutRebuild.MaxNotStartedPerScene + " times per scene, then left to the next load");
+        r.Bind(); r.HookRefuses = false; r.Now = 100;
+        Expect(r.Tick(c) == RebuildStep.Rebuild && r.Reloads == 1, "the counter resets with the next scene");
+    }
+
+    static void W11HostTransition()
+    {
+        FakeHost h; var wh = Host(Hideout, Hideout, out h);
+        h.Loading = true;   // host GameManager loading or leaving (disablesound)
+        Expect(Buy(wh, Add(0)) == ProposalCode.Busy && h.Applies == 0 && h.Money == 20000, "Busy, nothing charged");
+        h.Loading = false;
+        Expect(Buy(wh, Add(0)) == ProposalCode.Accepted && h.Applies == 1, "accepted once the host scene is loaded");
+        var hs = Src("Plugin", "HideoutSync.cs");
+        var tb = Body(hs, "public bool TryBalance(out int balance)");
+        Expect(tb.Contains("if (lg == null || !_gmLoaded(lg) || Leaving(lg)) { _hostLoadingBusy++; return false; }") && tb.IndexOf("Leaving(lg)", StringComparison.Ordinal) < tb.IndexOf("WalletSync.Instance", StringComparison.Ordinal), "balance unavailable while loading / leaving, before the wallet mirror");
+        Expect(Body(hs, "public bool Apply(HideoutBuyRequest r, int price)").Contains("if (ps == null || !_gmLoaded(gm) || Leaving(gm)) return false;"), "apply refuses a dying / unloaded GameManager");
+        Expect(Body(hs, "static void BuyPostfix(object __instance, MethodBase __originalMethod)").Contains("PublishHideout()") && !Body(hs, "public bool TryState(out HideoutState s)").Contains("Leaving"), "the host's own purchase still publishes during its own reload (TryState unguarded)");
+    }
+
+    static void W11Glue()
+    {
+        var hs = Src("Plugin", "HideoutSync.cs");
+        Expect(hs.Contains("_gmLeaving = Fast.Getter<bool>(gm, \"disablesound\")") && hs.Contains("|| _gmLeaving == null ||"), "GameManager.disablesound required (set by LoadWait / LoadCheckpoint, never cleared)");
+        var pr = Body(hs, "void Present(object gm, double now)");
+        Expect(pr.Contains("_selectHideout.Invoke(gm, null)") && pr.Contains("bool started = Leaving(gm);"), "original SelectHideout; load start verified right after the call");
+        Expect(pr.Contains("HIDEOUT_REBUILD invoke") && pr.Contains("HIDEOUT_REBUILD native loading screen presented") && pr.Contains("HIDEOUT_REBUILD the original did not start the load"), "logs: invoked / native loading presented / not started");
+        Expect(Body(hs, "void LogRebuilt(string verdict, HideoutState built)").Contains("scene reloaded and built with") && Body(hs, "public void Update()").Contains("LogRebuilt(verdict, built)"), "log: scene reload + applied state at the next bind");
+        Expect(Body(hs, "string SceneEvidence()").Contains("FindObjectsOfType(_edpT)") && !Body(hs, "public void Update()").Contains("FindObjectsOfType"), "scene evidence (EnableDisablePref) only once per reload after our rebuild");
+        var bz = Body(hs, "string Busy(object gm, object ps)");
+        foreach (var w in new[] { "scene loading", "in a car", "seated as passenger", "carrying an object", "caught", "travel menu open", "passing time", "_players.LocalSeated", "SleepPresenter.Observing", "town.activeInHierarchy" })
+            Expect(bz.Contains(w), "busy list: " + w);
+        Expect(Body(hs, "void Present(object gm, double now)").Contains("_rb.Waits % 30 == 0"), "wait log throttled (reason change or every 30th retry), not per frame");
+        Expect(Src("Plugin", "Plugin.cs").Contains("new HideoutSync(node, log, _world, _sync)"), "PlayerSync passed for the passenger seat check");
+        var gm = Src("Plugin", "GameAccess.cs");
+        Expect(gm.Contains("public static Func<object, T> Getter<T>(Type owner, string field)"), "field accessors compiled once (no reflection per frame)");
     }
 
     // ------------------------------------------------------------------------------------------------ source helpers

@@ -141,4 +141,57 @@ namespace TS2MP.Shared
             return ProposalCode.Accepted;
         }
     }
+
+    public enum RebuildStep : byte { None = 0, Wait = 1, Rebuild = 2 }
+
+    // W1.1: the coordinated original rebuild (GameManager.SelectHideout) on the instance that did NOT run the purchase.
+    // Pure decision logic; HideoutSync feeds it the scene facts once per state change / retry and performs the call.
+    //   "leaving" = GameManager.disablesound: set only by the original scene-leaving paths (LoadWait of every Select*,
+    //   LoadCheckpoint, the story ending) and never cleared on that GameManager -> a native load is already under way (an own
+    //   purchase, a travel, a caught reload or an earlier rebuild) and the next scene reads the keys itself.
+    // Replaces the W1 "once per GameManager" marker, which was also set by purchases that never reload (wallpaper, garage,
+    // a refused "too poor" click) and by a call the travel hook did not run, and whose 1 s retry could be consumed by an
+    // unrelated registry change (the deferred rebuild then waited for the next commit - often a travel).
+    public sealed class HideoutRebuild
+    {
+        public const double RetrySeconds = 1.0;
+        public const int MaxNotStartedPerScene = 3;
+        public bool HasBuilt; public HideoutState Built;   // what the current scene was built with (keys at loadedMap)
+        public bool Waiting;                               // a needed rebuild is held back: re-evaluate at NextTry without a state change
+        public double NextTry;
+        bool _requested; HideoutState _target;             // our SelectHideout started the native load for this state
+        bool _suppressed; HideoutState _suppress;          // a started rebuild did not bring this state: never repeated for it (no loop)
+        int _notStarted;                                   // calls the original did not run in this scene
+        public long Requests, Started, NotStarted, Applied, Missing, Waits;
+
+        // A new scene finished its original Start methods (loadedMap). Returns the verdict of our last rebuild, else null.
+        public string Bound(HideoutState built)
+        {
+            HasBuilt = true; Built = built; Waiting = false; NextTry = 0; _notStarted = 0;
+            if (!_requested) return null;
+            _requested = false;
+            if (_target.NeedsRebuild(built)) { _suppressed = true; _suppress = _target; Missing++; return "MISSING"; }
+            Applied++; return "APPLIED";
+        }
+
+        public RebuildStep Decide(HideoutState committed, bool inHideout, bool ownPending, bool leaving, string busy, double now, out string why)
+        {
+            why = null; Waiting = false;
+            if (!inHideout || !HasBuilt || !committed.NeedsRebuild(Built)) return RebuildStep.None;
+            if (leaving) { why = "native load already under way (the next scene reads the keys)"; return RebuildStep.None; }
+            if (_suppressed && committed.Same(_suppress)) { why = "an earlier rebuild did not bring this state (not repeated)"; return RebuildStep.None; }
+            if (_notStarted >= MaxNotStartedPerScene) { why = "the original did not start the load " + _notStarted + " times in this scene"; return RebuildStep.None; }
+            if (ownPending) busy = "own purchase waiting for the host";
+            if (busy != null) { why = busy; Waiting = true; NextTry = now + RetrySeconds; Waits++; return RebuildStep.Wait; }
+            if (now < NextTry) { why = "retry pending"; Waiting = true; return RebuildStep.Wait; }
+            Requests++; return RebuildStep.Rebuild;
+        }
+
+        // After the SelectHideout call: loadStarted = GameManager.disablesound became true (LoadWait ran: LoadPanel "ShowLoad").
+        public void Invoked(HideoutState target, bool loadStarted, double now)
+        {
+            if (loadStarted) { Started++; _requested = true; _target = target; Waiting = false; return; }
+            NotStarted++; _notStarted++; Waiting = _notStarted < MaxNotStartedPerScene; NextTry = now + RetrySeconds;
+        }
+    }
 }

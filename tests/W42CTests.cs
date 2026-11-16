@@ -421,7 +421,7 @@ static class W42CTests
         foreach (var bad in new[] { "MakeNoise", "AlertNPC", "Mission_Complete", "AdvanceStory", "currentXPPoints", "item_amount", "SetActive(", "Destroy(", "SPrefs", "FBPP", "FindObjectsOfType", "GetComponentsInChildren" })
             Expect(sync.IndexOf(bad, StringComparison.Ordinal) < 0, "sync never calls " + bad);
         Expect(File.ReadAllText(Path.Combine(PluginDir(), "WorldObjectSync.cs")).Contains("if (region == Regions.None || !ObjectStateRules.SupportedNamespace(region)) return;   // no work elsewhere"), "no per-frame work outside shared regions");
-        Expect(ProtocolInfo.ProtocolVersion == 32 && ProtocolInfo.ModVersion == "0.21.0", "protocol 28 (furniture wire unchanged; 27 = W4.1B shared money) / mod 0.16.1 (both instances must match)");
+        Expect(ProtocolInfo.ProtocolVersion == 32 && ProtocolInfo.ModVersion == "0.21.1", "protocol 28 (furniture wire unchanged; 27 = W4.1B shared money) / mod 0.16.1 (both instances must match)");
         Expect(Validation.Check(new Hello { ModVersion = "0.15.0", ClientNonce = new byte[JoinAuth.NonceBytes], InstanceId = "x" }, null, null, "h", false) == RejectCode.ModVersionMismatch, "a 0.15.0 peer (personal Player-2 money) is rejected at the handshake");
         Expect(Validation.Check(new Hello { ModVersion = "0.14.4", ClientNonce = new byte[JoinAuth.NonceBytes], InstanceId = "x" }, null, null, "h", false) == RejectCode.ModVersionMismatch, "a 0.14.4 peer (furniture local) is rejected at the handshake");
     }

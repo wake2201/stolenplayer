@@ -17,9 +17,13 @@
 //     with; a newly owned garage -> the BoughtSeq scene swap (garageDisable off, garageEnable on, boughtGarage,
 //     RefreshLightObjects; no animation / camera lock / money / achievement on the observer); changed wallpapers ->
 //     CheckRenovations.CheckAll (the original's own live update); a new addition / repairs -> the original rebuild
-//     GM.SelectHideout() for a player who is IN the hideout (deferred while in a car, carrying, caught or in the travel
-//     menu; once per scene). A player elsewhere is never interrupted: the sandbox keys make the next original hideout load
+//     GM.SelectHideout() for a player who is IN the hideout (W1.1: decided by HideoutRebuild - deferred while loading, in
+//     a car, seated as passenger, carrying, caught, in the travel menu or passing time, retried at 1 Hz until it runs;
+//     skipped while a native load is already under way = GameManager.disablesound; verified after the call and again at
+//     the next scene bind). A player elsewhere is never interrupted: the sandbox keys make the next original hideout load
 //     build the upgraded scene. Joining clients get the state in the campaign snapshot (OverlaySnapshot).
+//   W1.1 host: no Player-2 purchase is applied while the host scene loads or is being left (disablesound) - the original
+//     checkpoint of that transition is already written, a queued key would die with the old GameManager.
 // Cost: per frame two reference compares + the registry head revision; scene objects are looked up only on a state change
 // (FindObjectOfType / FindObjectsOfType, the original's own lookups). Network: 3 B per purchase request, 8 B state per change.
 using System;
@@ -47,32 +51,33 @@ namespace TS2MP.Plugin
 
         sealed class Pending { public uint Id; public HideoutBuyRequest Req; public object Instance; public MethodInfo Method; public int Price; public double At; }
 
-        readonly SessionNode _node; readonly InstanceLog _log; readonly WorldSync _world; readonly bool _host;
+        readonly SessionNode _node; readonly InstanceLog _log; readonly WorldSync _world; readonly bool _host; readonly PlayerSync _players;
         Harmony _h; bool _ok;
         Func<object, object> _gmPs, _gmReno, _psInv; Func<object, List<string>> _gmMission, _gmParcel; Func<object, bool> _gmBought, _gmLoaded, _psInVehicle, _psCaught, _psCarrying, _psOpened;
         Action<object, bool> _setGmBought; Func<object, int> _money; Action<object, int> _setMoney;
         Func<object, Array> _renoAdditions; Func<object, int> _renoAddNr, _renoWallSetting; Action<object, int> _setRenoArray;
         Func<object, string> _addPref; Func<object, int> _addCost; Action<object, bool> _setAddBought;
-        Func<object, object> _garageDisable, _garageEnable, _gmDayNight;
+        Func<object, object> _garageDisable, _garageEnable, _gmDayNight, _gmTownSel;
+        Func<object, bool> _gmLeaving, _psPassing;   // W1.1: GameManager.disablesound (native load under way), PlayerScript.passingTimeOn
+        Type _edpT; Func<object, string> _edpPref; Func<object, object> _edpEnable, _edpDisable;   // EnableDisablePref (scene evidence)
         MethodInfo _selectHideout, _setWallSetting, _refreshLights, _checkAll;
         Type _garageT, _checkT;
         readonly Func<object, Array>[] _wallArrays = new Func<object, Array>[5];
         Func<string, int> _prefInt; Action<string, int> _prefSet;
 
         Pending _pend; bool _resume, _ran;
-        object _builtGm; HideoutState _built; bool _hasBuilt;
-        object _reloadGm; double _nextReloadTry; bool _retry; uint _frameHead = uint.MaxValue;
+        object _builtGm; readonly HideoutRebuild _rb = new HideoutRebuild(); uint _frameHead = uint.MaxValue;
         uint _seenHead = uint.MaxValue, _seenEpoch; int _seenRegion = int.MinValue;
         HideoutState _committed; bool _hasCommitted;
-        long _requests, _accepted, _refused, _hostBuys, _hostRefused, _applied, _swaps, _wallUpdates, _reloads, _reloadDeferred, _sandboxWrites;
+        long _requests, _accepted, _refused, _hostBuys, _hostRefused, _applied, _hostLoadingBusy, _swaps, _wallUpdates, _sandboxWrites;
         double _nextStats;
         const double Timeout = 10;
         static double Now { get { return Time.realtimeSinceStartup; } }
         public bool Ready { get { return _ok; } }
 
-        public HideoutSync(SessionNode node, InstanceLog log, WorldSync world)
+        public HideoutSync(SessionNode node, InstanceLog log, WorldSync world, PlayerSync players = null)
         {
-            _node = node; _log = log; _world = world; _host = node.Role == Role.Host;
+            _node = node; _log = log; _world = world; _host = node.Role == Role.Host; _players = players;
             try
             {
                 var gm = AccessTools.TypeByName("GameManager"); var ps = AccessTools.TypeByName("PlayerScript"); var inv = AccessTools.TypeByName("Inventory");
@@ -81,7 +86,10 @@ namespace TS2MP.Plugin
                 _gmPs = Fast.Getter<object>(gm, "PS"); _gmReno = Fast.Getter<object>(gm, "houseRenovations"); _psInv = Fast.Getter<object>(ps, "invScript");
                 _gmMission = Fast.Getter<List<string>>(gm, "mission_strings_to_set"); _gmParcel = Fast.Getter<List<string>>(gm, "parcel_strings_to_set");
                 _gmBought = Fast.Getter<bool>(gm, "boughtGarage"); _setGmBought = Fast.Setter<bool>(gm, "boughtGarage"); _gmLoaded = Fast.Getter<bool>(gm, "loadedMap");
-                _gmDayNight = Fast.Getter<object>(gm, "dayNightScript");
+                _gmDayNight = Fast.Getter<object>(gm, "dayNightScript"); _gmTownSel = Fast.Getter<object>(gm, "TownSelectObj");
+                _gmLeaving = Fast.Getter<bool>(gm, "disablesound"); _psPassing = Fast.Getter<bool>(ps, "passingTimeOn");
+                _edpT = AccessTools.TypeByName("EnableDisablePref");
+                if (_edpT != null) { _edpPref = Fast.Getter<string>(_edpT, "prefRequired"); _edpEnable = Fast.Getter<object>(_edpT, "toEnable"); _edpDisable = Fast.Getter<object>(_edpT, "toDisable"); }
                 _money = Fast.Getter<int>(ps, "moneyAm"); _setMoney = Fast.Setter<int>(ps, "moneyAm");
                 _psInVehicle = Fast.Getter<bool>(ps, "is_in_vehicle"); _psCaught = Fast.Getter<bool>(ps, "caughtUp"); _psCarrying = Fast.Getter<bool>(ps, "isCarrying"); _psOpened = Fast.Getter<bool>(ps, "openedTownSelection");
                 _renoAdditions = Fast.Getter<Array>(reno, "additions"); _renoAddNr = Fast.Getter<int>(reno, "currentAdditionNr"); _renoWallSetting = Fast.Getter<int>(reno, "currentWallpaperSetting");
@@ -106,7 +114,7 @@ namespace TS2MP.Plugin
                 foreach (var kv in methods) if (kv.Value == null) missing.Add(kv.Key);
                 if (_gmPs == null || _gmReno == null || _gmMission == null || _gmParcel == null || _gmBought == null || _setGmBought == null || _money == null || _setMoney == null
                     || _renoAdditions == null || _addPref == null || _addCost == null || _setAddBought == null || _garageDisable == null || _garageEnable == null || _selectHideout == null
-                    || _checkAll == null || _prefInt == null || _prefSet == null || _setWallSetting == null || _setRenoArray == null || _psCarrying == null || missing.Count > 0)
+                    || _checkAll == null || _prefInt == null || _prefSet == null || _setWallSetting == null || _setRenoArray == null || _psCarrying == null || _gmLeaving == null || missing.Count > 0)
                 { _log.Warn("HIDEOUT game API incomplete (" + string.Join(", ", missing.ToArray()) + "): shared hideout purchases disabled (Player 2's purchases stay refused)"); return; }
                 _h = new Harmony("com.ts2mp.multiplayer.hideout");
                 var pre = new HarmonyMethod(AccessTools.Method(typeof(HideoutSync), "BuyPrefix")); var post = new HarmonyMethod(AccessTools.Method(typeof(HideoutSync), "BuyPostfix"));
@@ -125,6 +133,9 @@ namespace TS2MP.Plugin
         object Reno(object gm) { var r = gm != null ? _gmReno(gm) : null; var u = r as UnityEngine.Object; return u != null && u ? r : null; }
         int Pref(string k) { try { return _prefInt(k); } catch { return 0; } }
         static bool Has(List<string> l, string k) { if (l == null) return false; for (int i = 0; i < l.Count; i++) if (l[i] == k) return true; return false; }
+
+        // W1.1: the original is leaving this GameManager's scene (LoadWait / LoadCheckpoint ran; never cleared on it).
+        bool Leaving(object gm) { return gm != null && _gmLeaving(gm); }
 
         object Addition(object reno, int i) { var a = reno != null ? _renoAdditions(reno) : null; return a != null && i >= 0 && i < a.Length ? a.GetValue(i) : null; }
 
@@ -154,6 +165,10 @@ namespace TS2MP.Plugin
         public bool TryBalance(out int balance)
         {
             balance = 0;
+            // W1.1: while the host scene loads or is being left the purchase would be applied to a GameManager whose checkpoint
+            // is already written (SelectX saves before LoadWait) or whose Start has not read the keys yet -> Busy, nothing charged.
+            var lg = Gm();
+            if (lg == null || !_gmLoaded(lg) || Leaving(lg)) { _hostLoadingBusy++; return false; }
             var w = WalletSync.Instance;
             if (w != null && w.TryHostBalance(out balance)) return true;
             var gm = Gm(); var ps = Ps(gm);
@@ -176,7 +191,7 @@ namespace TS2MP.Plugin
 
         public bool Apply(HideoutBuyRequest r, int price)
         {
-            var gm = Gm(); var ps = Ps(gm); if (ps == null) return false;
+            var gm = Gm(); var ps = Ps(gm); if (ps == null || !_gmLoaded(gm) || Leaving(gm)) return false;
             int before = _money(ps);
             _setMoney(ps, before - price);   // the original's field and amount
             switch (r.Item)
@@ -224,11 +239,24 @@ namespace TS2MP.Plugin
         {
             var h = Instance; if (h == null || !h._ran) return;
             h._ran = false;
+            try { h.NoteOwnPresentation(); } catch (Exception ex) { h._log.Error("HIDEOUT own presentation bookkeeping failed", ex); }
             try { if (h._host) { h._hostBuys++; if (h._world.Host != null && h._world.Host.PublishHideout()) h._world.FlushOutbox(); h._log.Info("HIDEOUT host purchase " + __originalMethod.Name + " (original) -> shared state " + h.Committed()); } }
             catch (Exception ex) { h._log.Error("HIDEOUT purchase postfix failed", ex); }
         }
 
         string Committed() { HideoutState s; return TryState(out s) ? s.ToString() : "?"; }
+
+        // W1.1: an own original purchase (host, or the client's accepted presentation) already applied the live parts in this
+        // scene (Garage.BoughtSeq, CheckAll) -> the built state follows, so they are not presented a second time as "the other
+        // player's". Additions / repairs reload by themselves (disablesound) and need nothing here.
+        void NoteOwnPresentation()
+        {
+            var gm = Gm();
+            if (gm == null || !ReferenceEquals(gm, _builtGm) || !_rb.HasBuilt || Leaving(gm)) return;
+            if (_gmBought(gm)) _rb.Built.Garage = true;
+            var p = FromPrefs();
+            for (int i = 0; i < 5; i++) _rb.Built.SetWall(i, p.Wall(i));
+        }
 
         bool OnBuy(object inst, MethodBase m)
         {
@@ -240,8 +268,7 @@ namespace TS2MP.Plugin
             if (known && Owned(s, r)) { if (_host) _hostRefused++; _log.Info("HIDEOUT " + r + " refused: already owned in the shared hideout (nothing charged)"); return false; }
             if (_host)
             {
-                _ran = true;
-                if (r.Item == HideoutItem.Addition || r.Item == HideoutItem.Repairs) _reloadGm = gm;   // the original reloads the hideout itself
+                _ran = true;   // additions / repairs: the original reloads itself (disablesound -> no second SelectHideout)
                 return true;
             }
             // client: below the price the original only shows its own "too poor" page (no money change) -> keep it
@@ -304,7 +331,7 @@ namespace TS2MP.Plugin
             if (p.Req.Item == HideoutItem.Wallpaper) _setRenoArray(p.Instance, p.Req.Value);
             int before = _money(ps);
             ApplySandbox();                                     // keys first: the original's own reload / CheckAll reads them
-            _resume = true; _reloadGm = gm;                     // BuyAddition / BuyRepairs reload by themselves
+            _resume = true;                                     // BuyAddition / BuyRepairs reload by themselves (disablesound)
             _setMoney(ps, before + p.Price);                    // the original's own deduction nets to zero
             try { p.Method.Invoke(p.Instance, null); }
             catch (Exception ex) { _log.Warn("HIDEOUT original purchase presentation failed: " + (ex.InnerException != null ? ex.InnerException.Message : ex.Message)); }
@@ -348,7 +375,7 @@ namespace TS2MP.Plugin
         {
             if (!_ok) return;
             double now = Now;
-            if (now >= _nextStats) { _nextStats = now + 30; if (_requests + _hostBuys + _applied + _swaps + _reloads > 0) _log.Info(Stats); }
+            if (now >= _nextStats) { _nextStats = now + 30; if (_requests + _hostBuys + _applied + _swaps + _rb.Requests > 0) _log.Info(Stats); }
             if (_pend != null && now - _pend.At > Timeout) { _log.Warn("HIDEOUT purchase request #" + _pend.Id + " timed out (the host decides alone; the shared state shows the result)"); _pend = null; }
             var gm = Gm();
             if (gm == null) return;
@@ -356,24 +383,42 @@ namespace TS2MP.Plugin
             if (!ReferenceEquals(gm, _builtGm))
             {
                 if (!_gmLoaded(gm)) return;   // the original Start methods have not read the keys yet
-                _builtGm = gm; _built = FromPrefs(); _hasBuilt = true; _seenRegion = int.MinValue;
+                _builtGm = gm; _seenRegion = int.MinValue;
+                var built = FromPrefs();
+                string verdict = _rb.Bound(built);
+                if (verdict != null) LogRebuilt(verdict, built);
                 if (_host && _world.Host != null && _world.Host.PublishHideout()) _world.FlushOutbox();
             }
             uint head = _world.Registry.HeadRev;
             bool changed = head != _frameHead || region != _seenRegion;
-            if (!changed && (!_retry || now < _nextReloadTry)) return;
-            _frameHead = head; _seenRegion = region; _retry = false;
+            if (!changed && (!_rb.Waiting || now < _rb.NextTry)) return;   // W1.1: a held-back rebuild keeps its retry across unrelated commits
+            _frameHead = head; _seenRegion = region;
             ReadCommitted();
             if (!_hasCommitted) return;
             if (changed) ApplySandbox();
-            if (region != HideoutShop.Region || !_hasBuilt || _pend != null) return;   // elsewhere: the next original hideout load builds it
+            if (region != HideoutShop.Region || !_rb.HasBuilt) { _rb.Waiting = false; return; }   // elsewhere: the next original hideout load builds it
             Present(gm, now);
+        }
+
+        // Original interaction restrictions under which the scripted SelectHideout must not cut in (null = free).
+        string Busy(object gm, object ps)
+        {
+            if (ps == null || !_gmLoaded(gm)) return "scene loading";
+            if (_psInVehicle(ps)) return "in a car";
+            if (_players != null && _players.LocalSeated) return "seated as passenger";
+            if (_psCarrying(ps)) return "carrying an object";
+            if (_psCaught(ps)) return "caught";
+            if (_psOpened != null && _psOpened(ps)) return "travel menu open";
+            var town = _gmTownSel != null ? _gmTownSel(gm) as GameObject : null;
+            if (town != null && town.activeInHierarchy) return "travel menu open";
+            if ((_psPassing != null && _psPassing(ps)) || SleepPresenter.Observing) return "passing time";
+            return null;
         }
 
         void Present(object gm, double now)
         {
-            var s = _committed;
-            if (s.Garage && !_built.Garage)
+            var s = _committed; bool own = _pend != null;
+            if (!own && s.Garage && !_rb.Built.Garage)
             {
                 var g = UnityEngine.Object.FindObjectOfType(_garageT);
                 if (g != null)
@@ -387,30 +432,57 @@ namespace TS2MP.Plugin
                     _swaps++;
                     _log.Info("HIDEOUT garage bought by the other player: original garage scene swap applied here (Garage.BoughtSeq objects, lights)");
                 }
-                _built.Garage = true;
+                _rb.Built.Garage = true;
             }
-            if (s.WallsDiffer(_built))
+            if (!own && s.WallsDiffer(_rb.Built))
             {
                 foreach (var c in UnityEngine.Object.FindObjectsOfType(_checkT)) try { _checkAll.Invoke(c, null); } catch { }
-                for (int i = 0; i < 5; i++) _built.SetWall(i, s.Wall(i));
+                for (int i = 0; i < 5; i++) _rb.Built.SetWall(i, s.Wall(i));
                 _wallUpdates++;
                 _log.Info("HIDEOUT wallpapers / floors updated live (CheckRenovations.CheckAll): " + s);
             }
-            if (s.NeedsRebuild(_built) && !ReferenceEquals(_reloadGm, gm))
+            if (!s.NeedsRebuild(_rb.Built)) { _rb.Waiting = false; return; }
+            string why; long waits = _rb.Waits;
+            var step = _rb.Decide(s, true, own, Leaving(gm), own ? null : Busy(gm, Ps(gm)), now, out why);
+            if (step == RebuildStep.None) { if (why != null && _lastRebuildNote != why) { _lastRebuildNote = why; _log.Info("HIDEOUT_REBUILD not run here: " + why + " (" + s + ")"); } return; }
+            if (step == RebuildStep.Wait)
             {
-                if (now < _nextReloadTry) return;
-                var ps = Ps(gm); string wait = null;
-                if (ps == null || !_gmLoaded(gm)) wait = "scene loading";
-                else if (_psInVehicle(ps)) wait = "in a car";
-                else if (_psCarrying(ps)) wait = "carrying an object";
-                else if (_psCaught(ps)) wait = "caught";
-                else if (_psOpened != null && _psOpened(ps)) wait = "travel menu open";
-                if (wait != null) { _nextReloadTry = now + 1; _retry = true; if (_reloadDeferred++ % 30 == 0) _log.Info("HIDEOUT rebuild for the other player's renovation waits (" + wait + ")"); return; }
-                _reloadGm = gm; _reloads++;
-                _log.Info("HIDEOUT renovation by the other player (" + s + "): original hideout rebuild GameManager.SelectHideout (built with " + _built + ")");
-                try { _selectHideout.Invoke(gm, null); }
-                catch (Exception ex) { _log.Error("HIDEOUT original hideout rebuild failed", ex); }
+                if (_rb.Waits != waits && (_lastRebuildNote != why || _rb.Waits % 30 == 0)) { _lastRebuildNote = why; _log.Info("HIDEOUT_REBUILD for the other player's renovation waits (" + why + "), retried every " + HideoutRebuild.RetrySeconds + " s"); }
+                return;
             }
+            _lastRebuildNote = null;
+            _log.Info("HIDEOUT_REBUILD invoke original GameManager.SelectHideout for the other player's renovation (target " + s + ", scene built with " + _rb.Built + ")");
+            try { _selectHideout.Invoke(gm, null); }
+            catch (Exception ex) { _log.Error("HIDEOUT original hideout rebuild failed", ex); }
+            bool started = Leaving(gm);
+            _rb.Invoked(s, started, now);
+            if (started) _log.Info("HIDEOUT_REBUILD native loading screen presented (GameManager.LoadWait ran: LoadPanel ShowLoad, checkpoint saved; scene reload follows)");
+            else _log.Warn("HIDEOUT_REBUILD the original did not start the load (travel hook / game state refused it, attempt " + _rb.NotStarted + ")" + (_rb.Waiting ? ", retried in " + HideoutRebuild.RetrySeconds + " s" : ", not retried in this scene"));
+        }
+
+        string _lastRebuildNote;
+
+        // Next scene after our rebuild: keys at loadedMap + the original EnableDisablePref objects actually switched.
+        void LogRebuilt(string verdict, HideoutState built)
+        {
+            string ev = SceneEvidence();
+            if (verdict == "APPLIED") _log.Info("HIDEOUT_REBUILD scene reloaded and built with " + built + ": renovation applied" + ev);
+            else _log.Warn("HIDEOUT_REBUILD scene reloaded but built with " + built + " - the target renovation is missing in the keys" + ev + "; not repeated for this state (no reload loop)");
+        }
+
+        // Once per reload after our rebuild (4 objects, the original's own components).
+        string SceneEvidence()
+        {
+            if (_edpT == null || _edpPref == null || _edpEnable == null || _edpDisable == null) return "";
+            var parts = new List<string>();
+            foreach (var o in UnityEngine.Object.FindObjectsOfType(_edpT))
+            {
+                string pref = _edpPref(o); if (HideoutShop.AdditionIndex(pref) < 0) continue;
+                var on = _edpEnable(o) as GameObject; var off = _edpDisable(o) as GameObject;
+                bool shown = (on == null || on.activeSelf) && (off == null || !off.activeSelf);
+                parts.Add(pref + (shown ? " shown" : " hidden"));
+            }
+            return parts.Count > 0 ? " (scene: " + string.Join(", ", parts.ToArray()) + ")" : " (scene: no addition objects found)";
         }
 
         void OnDisconnected(string reason) { if (_pend != null) { _log.Info("HIDEOUT purchase request #" + _pend.Id + " dropped: disconnected"); _pend = null; } }
@@ -420,7 +492,9 @@ namespace TS2MP.Plugin
             get
             {
                 return "HIDEOUT_STATS " + (_host ? "host" : "client") + " req " + _requests + " ok " + _accepted + " refused " + _refused + " hostBuys " + _hostBuys + " hostRefused " + _hostRefused
-                    + " applied " + _applied + " swaps " + _swaps + " wallUpdates " + _wallUpdates + " rebuilds " + _reloads + " deferred " + _reloadDeferred + " sandboxWrites " + _sandboxWrites
+                    + " applied " + _applied + " hostLoadingBusy " + _hostLoadingBusy + " swaps " + _swaps + " wallUpdates " + _wallUpdates
+                    + " rebuilds req/started/notStarted/applied/missing/waits " + _rb.Requests + "/" + _rb.Started + "/" + _rb.NotStarted + "/" + _rb.Applied + "/" + _rb.Missing + "/" + _rb.Waits
+                    + " sandboxWrites " + _sandboxWrites
                     + (_hasCommitted ? " | " + _committed : "");
             }
         }

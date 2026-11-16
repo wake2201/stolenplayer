@@ -321,7 +321,7 @@ namespace TS2MP.Plugin
             if (_world == null) return;
             try { _vehicles = new VehicleSync(node, log, _world, _sync, _settings.DataDir, _settings.Vehicles); }
             catch (Exception ex) { log.Error("VEHICLE init failed (vehicle sync disabled)", ex); _vehicles = null; }
-            try { _hideout = new HideoutSync(node, log, _world); if (!_hideout.Ready) { _hideout.Dispose(); _hideout = null; } }
+            try { _hideout = new HideoutSync(node, log, _world, _sync); if (!_hideout.Ready) { _hideout.Dispose(); _hideout = null; } }
             catch (Exception ex) { log.Error("HIDEOUT init failed (shared hideout purchases disabled)", ex); _hideout = null; }
             try { _wallet = new WalletSync(node, log, _world); }
             catch (Exception ex) { log.Error("WALLET init failed (shared money disabled)", ex); _wallet = null; }

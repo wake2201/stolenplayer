@@ -1,5 +1,38 @@
 ﻿# PROGRESS
 
+## W1.1 — Player-2-initiated hideout renovation reload on Player 1 — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-16
+Mod **0.21.1, protocol 32 (wire unchanged)**. Both PCs need 0.21.1. Built on `5dce0db` (W1). Manual QA: `docs/TESTING.md` §42.
+
+### A. Evidence reconciliation (supplied host log `LogOutput (1).log`, header `TS2 Multiplayer 0.16.0`)
+- The one Player-2 reload renovation in that log (AudioUpgrade, line 354) **did** rebuild Player 1's hideout: `SelectHideout` → MainScene + PlayerHideout reloaded, and the next scene bind did **not** trigger a second rebuild — so the keys read by the new scene already contained `AudioUpgrade` (the `SelectHideout` save writes `parcel_strings_to_set`, `SaveGame.SaveGameNewSystem`, ilspycmd decompile lines 255–260). In that instance invocation, native loading (LoadWait is the same call the original `BuyAddition` makes) and the rebuilt state were all correct.
+- The log contains no failing instance; the unreliable cases are therefore paths the log does not exercise. Verified original facts: `HouseRenovator.BuyAddition / BuyRepairs` → `SPrefs` key + `GM.SelectHideout()` (identical call to ours); `SelectHideout` → `SaveGameNewSystem` → `LoadWait` (`disablesound = true`, `LoadPanel.Play("ShowLoad")`, MainScene reload); `EnableDisablePref` / `CheckRenovations` read the keys only in `Start`; `GameManager.disablesound` is set only by `LoadWait`, `LoadCheckpoint` and the story ending and never cleared on that GameManager.
+- Log line 1370: the host's own `BuyGarage` was re-presented as "garage bought by the other player" (harmless double swap, misleading log).
+
+### B. Root causes (W1 `HideoutSync`)
+| # | Defect | Effect | Verdict |
+|---|---|---|---|
+| 1 | Deferred rebuild retry lost: `Update` cleared `_retry` on any registry head change; `Present` then returned at `now < _nextReloadTry` without re-arming | after one deferral (car, carrying, caught, menu, loading) any commit inside the 1 s window (e.g. the region-owner / vehicle commits around Player 2's own reload - inferred, not seen in the supplied log) consumed the retry; the quiet hideout registry then never re-ran it → **"travel away and back"** | DEFECTIVE → fixed |
+| 2 | `_reloadGm` "rebuilt once per GameManager" marker set for purchases that never reload (client wallpaper / garage `OnProposalResult`), a refused "too poor" host click, and a `SelectHideout` the travel hook did not run | the other player's later renovation was never rebuilt in that scene | DEFECTIVE → replaced |
+| 3 | Host applied a Player-2 purchase while its own scene was being left (`TryState`/`TryBalance` only needed a GameManager) | key queued into a GameManager whose checkpoint was already written → purchase lost on the next bind while charged | HIGH-RISK → Busy |
+| 4 | Busy list missed the seated mod passenger and passing time (sleep) | rebuild could cut into a passenger seat / sleep | INCOMPLETE → added |
+| 5 | Own garage / wallpaper purchase re-presented | double swap / CheckAll + wrong log | DEFECTIVE → fixed |
+
+### C. Fix
+- `src/Shared/Hideout.cs` `HideoutRebuild` (pure, tested): scene bind → `Bound(keys)` (verdict of our last rebuild: APPLIED / MISSING); `Decide(committed, inHideout, ownPending, leaving, busy, now)` → None / Wait (1 s retry, survives unrelated commits) / Rebuild; `Invoked(target, loadStarted)`. Leaving = `GameManager.disablesound` (a native load is already under way: own purchase, travel, caught, earlier rebuild). A started rebuild whose next scene still lacks the state is never repeated for that state (no loop); a call the original does not start is retried at most 3 times per scene.
+- `HideoutSync`: `Present` uses the planner; `Busy()` = scene loading, in a car, seated as passenger (`PlayerSync.LocalSeated`), carrying, caught, travel menu (`openedTownSelection` or `TownSelectObj` active), passing time (`passingTimeOn` / `SleepPresenter.Observing`); after `SelectHideout` the load start is verified via `disablesound`; host `TryBalance` / `Apply` refuse while the host scene is not loaded or is being left (Decide → Busy, nothing charged); `NoteOwnPresentation` after an own original purchase. Purchase transaction logic unchanged.
+- Logs (event-driven, never per frame): `HIDEOUT_REBUILD invoke …` → `native loading screen presented …` / `did not start …` → at the next bind `scene reloaded and built with … renovation applied (scene: AudioUpgrade shown, …)` (the original `EnableDisablePref` objects, one lookup per reload) or `MISSING`; `waits (reason)` once per reason / every 30th retry; `HIDEOUT_STATS … rebuilds req/started/notStarted/applied/missing/waits`, `hostLoadingBusy`.
+
+### D. Files
+`src/Shared/Hideout.cs` (`RebuildStep`, `HideoutRebuild`), `src/Plugin/HideoutSync.cs`, `src/Plugin/Plugin.cs` (PlayerSync passed), `src/Shared/Protocol.cs` (0.21.1), `tests/W1Tests.cs` (tests 14–20, 09/10/12 updated), version pins in 8 suites + `tests/package-test.ps1`.
+
+### E. Tests / performance
+`tools/build.ps1 -Test`: **ALL 34 SUITES PASSED**; W1 suite 20/20 (both buyer directions × AudioUpgrade / AntiTheft / CatStuff / LoreBooks / repairs, observer in / out of the hideout, 7 busy states with the retry surviving an unrelated commit, stale-marker cases, no-loop cases, host transition Busy, reconnect / restart). Offline tests do not prove the in-game visual result. Hot path unchanged in kind: per frame two reference compares + head revision + (while a rebuild is held back) one time compare; the planner runs only on a state change or at the 1 Hz retry; `FindObjectsOfType(EnableDisablePref)` once per reload after our own rebuild. No network change, no per-frame allocation. FPS not measured.
+
+### F. Remaining risks
+- The supplied log's 0.16.0 header means the build behind the report is not certain; if the 0.21.1 logs show `scene reloaded … applied` but Player 1 still sees no change, the visual layer (objects outside `EnableDisablePref`) needs a new look.
+- `disablesound` as "leaving" relies on the original never clearing it (verified for 1.27c only).
+- A Player-2 purchase during the host's load is refused (Busy) — the click must be repeated.
+
 ## W1 — Shared hideout purchases, renovations & scene synchronization — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-15
 Mod **0.21.0, protocol 32** (client proposal `hbuy` 3 B, host-committed state `hideout` 8 B). Both PCs need 0.21.0. Built on `6826735` (V1.2, confirmed in game by the user). Manual QA: `docs/TESTING.md` §41.
 

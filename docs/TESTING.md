@@ -151,6 +151,24 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 42. W1.1 checklist — Player-2-initiated renovation reload on Player 1 (release `TS2-Multiplayer-0.21.1.zip` on BOTH PCs, protocol 32)
+F8 test campaign copy with the garage, WITHOUT renovations, shared money >= 20,000. Grep tags on the PC that did NOT buy: `HIDEOUT_REBUILD` (`invoke` = SelectHideout called, `native loading screen presented` = LoadWait ran, `scene reloaded and built with ... renovation applied (scene: AudioUpgrade shown ...)` = the new scene contains it, `waits (...)` = deferred, `MISSING` / `did not start` = failure), `HIDEOUT_STATS ... rebuilds req/started/notStarted/applied/missing/waits`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Both in the hideout, P1 on foot. P2 buys **AudioUpgrade** on the hideout computer | P2: original loading screen, radio present. P1: within ~1 s the original loading screen, rebuilt hideout with the radio. P1 log: `invoke` → `native loading screen presented` → `scene reloaded ... renovation applied (scene: AudioUpgrade shown)`. One charge | NOT TESTED |
+| 2 | Repeat row 1 for **AntiTheft**, **CatStuff**, **LoreBooks** and **house repairs** (one per reload) | Same for each; `HIDEOUT_STATS` on P1: `started` = `applied` = number of purchases, `missing 0`, `notStarted 0` | NOT TESTED |
+| 3 | P1 sits in a car (or carries a heavy object / has the travel menu open / is seated as passenger) while P2 buys an addition | P1 not reloaded while busy; log `waits (in a car)` (once per reason). P1 gets out → loading screen within ~1 s **without any further action** → renovation visible | NOT TESTED |
+| 4 | P1 in Madison while P2 buys an addition; then P1 travels home | P1 never interrupted, no `HIDEOUT_REBUILD` line while in Madison; normal travel to the hideout shows the renovation | NOT TESTED |
+| 5 | Reverse direction: P1 buys an addition while P2 is in the hideout | Unchanged from W1: P2 one loading screen + renovation (P2 log shows the same `HIDEOUT_REBUILD` sequence) | NOT TESTED |
+| 6 | P2 changes a wallpaper first, then P1 buys repairs (both in the hideout) | P2 still gets the repairs rebuild (W1 suppressed it after a wallpaper purchase) | NOT TESTED |
+| 7 | P1 buys the garage (fresh copy) while P2 is in the hideout | P1 log has NO `garage bought by the other player` line (own purchase not re-presented); P2 sees the swap | NOT TESTED |
+| 8 | P2 buys an addition exactly while P1 is travelling / in the loading screen | P2: refused (`Busy`, nothing charged; click again after P1 arrived) or accepted after P1's scene is loaded — never charged without the renovation appearing | NOT TESTED |
+| 9 | After rows 1–2: P1 travels away and back; P2 disconnects and rejoins; host saves (travel), quits, restarts | Renovations stay on both PCs, money unchanged, no reload loop (no repeated `invoke` lines) | NOT TESTED |
+| 10 | Regression: W1 rows 1–13, Shadowhawk, CarBox, heavy cargo, passengers, travel | Unchanged | NOT TESTED |
+
+Send back both `LogOutput.log` files. Note: the supplied host log of the W1 report announced `TS2 Multiplayer 0.16.0` in its BepInEx header; please confirm that both PCs show `0.21.1` this time.
+
 ## 41. W1 checklist — shared garage + hideout renovations (release `TS2-Multiplayer-0.21.0.zip` on BOTH PCs, protocol 32)
 F8 test campaign copy WITHOUT the garage, without renovations, shared money ≥ 20,000. Grep tags: `HIDEOUT`, `hideout buy`, `HIDEOUT_STATS`, `original hideout rebuild`, `sandbox keys follow`.
 

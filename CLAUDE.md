@@ -23,36 +23,33 @@ If a fundamental assumption fails, stop and report the blocker; do not quietly r
 - Stop at a real testing boundary (foundation changes are tested before features are built on them).
 
 ## Token discipline
-- **Never repeatedly scan the entire repository or decompile every assembly.** M0 should establish a navigable `docs/CODEBASE_MAP.md` with verified paths, types, and subsystem ownership. Afterwards, use it as an index and inspect only changed/relevant portions.
+- **Never repeatedly scan the entire repository or decompile every assembly.** `docs/CODEBASE_MAP.md` (verified paths, types, subsystem ownership) is the index: read only the source/research sections relevant to the task. Read `docs/PROGRESS.md` / `docs/TESTING.md` by heading, not whole.
 - A code map is a navigation aid, **not a substitute for checking the current code** before changes. Verify suspicious or outdated entries locally and update them.
 - Use targeted searches and bounded command output (`rg`, explicit paths, selected methods); summarize tool results instead of dumping enormous transcripts.
 - Avoid duplicate reports, long running commentary, multiple alternative implementations, and unnecessary rewrites.
 - Prefer a small dependency-free or well-supported solution over adding a full framework when not required.
-- Do not invoke Codex to rubber-stamp each change; do not run parallel development agents. Codex may do one bounded read-only review after a high-risk change (AGENTS.md); never let it edit files Claude is editing.
+- No subagents unless the user asks. Do not invoke Codex to rubber-stamp each change; do not run parallel development agents. Codex may do one bounded read-only review after a high-risk change (AGENTS.md); never let it edit files Claude is editing.
 
 ## Skills and plugins — selective policy
 The user has installed an **antislop** plugin family and an **OpenAI Codex** plugin, with additional skills available. **Availability does not mean a skill must be loaded.** The project may have no project-scoped plugins enabled; check availability rather than assuming it.
 
-- **Default for M0 and most backend/gameplay/networking tasks: no additional skills.** Use built-in code inspection, C# reasoning, relevant game files, and official documentation.
-- `antislop` / `antislop-ui`: only if working on an actual user-facing launcher UI or writing user-facing copy, and only when the skill is available and beneficial.
-- `antislop-code`: optional for a narrow code-comment/code-quality pass if specifically useful; never as an automatic extra review stage.
-- `antislop-human`, `antislop-layoutmobile`, `antislop-copywriting`: not relevant to core multiplayer engineering; do not load them by default.
-- Anthropic `skill-creator`, `import-memory`, `morning`, `canvas-design`: not needed for this project unless a future task explicitly calls for them.
-- Codex plugin commands such as `review`, `adversarial-review`, and `rescue`: **only on explicit approval** and only for a well-scoped task. Internal Codex helper skills do not need to be manually invoked.
-- Avoid calling several skills for the same problem. If none clearly improves the milestone, use none.
+- **Default for backend/gameplay/networking tasks: no additional skills.** Use code inspection, C# reasoning, relevant game files and official documentation.
+- `antislop` / `antislop-ui`: only for real user-facing launcher UI or copy. `antislop-code`: optional narrow comment pass, never an automatic review stage. Other antislop and Anthropic skills (`skill-creator`, `import-memory`, `morning`, `canvas-design`): not by default.
+- Codex plugin commands (`review`, `adversarial-review`, `rescue`): **only on explicit approval**, well-scoped.
+- Never several skills for the same problem; if none clearly helps, use none.
 
 ## Permanent rules (see AGENTS.md "Permanent rules" for the full text)
 - **Original game untouched:** BepInEx plugin + narrowly scoped Harmony patches + the game's own APIs/assets only. Never edit game assemblies/assets on disk or replace original systems; if that ever seems unavoidable, explain why and STOP for user approval.
 - **No mod text in the gameplay UI** (AGENTS.md rule 4): no custom notices, overlays or debug labels in game; feedback goes to the BepInEx log, invalid interactions simply do nothing; only the game's own prompts/warning keys may appear. Debug overlay only via `Debug.ShowOverlay` (default off).
 - **Mod performance is an acceptance criterion:** every milestone report lists the hot paths it added/changed, their measured cost (where practical), network traffic and GC behaviour, and the potential FPS impact. FPS claims only from real in-game measurements. Optimize our code, not the game's.
 
-## Technical direction (not yet validated)
-- Windows; C# mod; investigate the installed game's engine/runtime and a compatible BepInEx/Harmony version first.
-- Candidate network architecture: two peers, **host-authoritative** state; small local-first session; reliable gameplay events and interpolated frequent state updates. Choose a transport only after compatibility checks.
+## Technical direction (verified stack; details in `docs/CODEBASE_MAP.md`)
+- Windows; Thief Simulator 2 v1.27c, Unity 2020.3.33 Mono; C# mod on BepInEx 5.4.23.5 + Harmony; LiteNetLib transport.
+- Two peers, **host-authoritative** state; reliable gameplay events and interpolated frequent state updates.
 - Reuse the original character, NPC, vehicle, mission, inventory, and animation systems wherever technically possible; don't invent unverified hooks or animations.
 - Remote vehicles (M5.0): the car simulated by the other instance is shown on the local ORIGINAL car object in kinematic "observed" mode (EVP simulation paused, original colliders/doors/trigger/seats kept), solid in every state; door state is host-committed (`vdoor`). Never reintroduce stripped clones or non-solid moving cars.
 - Vehicles follow the **region vehicle rule** in `docs/PROJECT_PLAN.md` (M4.1A): two globally unique player cars, **at most one permanent player car per region**, host-authoritative reservations (first committed wins, host wins only exact ties), a car never exists twice, inventory follows the car. The earlier "several fleet cars per region" and "one fixed car per region slot" rules are SUPERSEDED — never implement them.
-- For eventual launcher flow: first launch starts Host, second launch starts Client, with automatic local session connection. Never automate third-party account login.
+- Session start: F8 multiplayer menu in the main menu (host prepares, client joins by address/port/join code); `TS2-Multiplayer-Launcher.exe` is a developer tool for local two-instance tests. Never automate third-party account login.
 - Gameplay QA is manual on two actual game instances; provide a reproducible checklist and clear logs for the user.
 - Prevent data loss: saving and two-instance file contention are release-blocking concerns.
 

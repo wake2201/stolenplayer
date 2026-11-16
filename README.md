@@ -20,12 +20,13 @@ The core two-player session is running, and several systems have been tested in-
 - **Doors, locks and windows** (Madison Street) — shared doors, normal lockpicking, windows and vehicle cameras were confirmed by the user in a two-PC internet run (0.14.2); some edge cases remain under QA.
 - **Host-owned campaign** — Player 2 always loads the host's world in an isolated save sandbox; an optional isolated **multiplayer test campaign** (all skills, test money) protects real saves during testing.
 
-Implemented but **still pending in-game verification**: the main-menu-only session start of 0.14.3, Player 2's persistent inventory and item transfers, shared dropped items and pre-placed loot, travelling together in the same car, and synchronized sleep presentation.
+- **Hideout purchases** — garage and renovations bought by either player, including the original hideout rebuild (W1.1, confirmed by the user on two PCs).
+
+Implemented but **still pending in-game verification** (status per milestone in `docs/PROGRESS.md`): shared furniture/containers, shared money and cross-region loot, heavy objects and Ranger cargo, the shared Shadowhawk purchase, the shared hideout parking layout of both cars, Player 2's persistent inventory, travelling together in the same car, and synchronized sleep presentation.
 
 ### Still being worked on
 
-- The remaining vehicle presentation issue (car seen floating on the host while Player 2 drives; diagnostics added in 0.14.3).
-- Drawers and other containers, the Hideout garage, the cat, the drone, police and missions (documented for later research, not started).
+- The cat, the drone, police and missions (documented for later research, not started).
 - Broader world and mission synchronization; remaining audio and gameplay edge cases.
 
 The project is being developed and tested incrementally; a feature isn't considered finished just because it compiles or passes offline tests.
@@ -43,7 +44,7 @@ Players install a drag-and-drop ZIP into the game folder and start the game norm
 Direct-IP internet play between two PCs has been used by the user since 0.14.1 (doors, lockpicking, windows and vehicle cameras confirmed in 0.14.2).
 
 **Tested game target:** Thief Simulator 2 v1.27c  
-**Current development build:** 0.17.0 · protocol 28 — cross-region loot (both players collect money, valuables, keys, contract/parcel items and file-cabinet loot in every region, validated by the host from its own scene files); 0.16.1: two-PC QA fixes (no duplicate loot for Player 2, original loading screen while joining, Player-2 spawn from the host checkpoint); 0.16.0: one shared money balance for both players, shared world money and unique valuables in Madison Street, on top of the 0.15.0 furniture / Hillville / hideout objects (pending manual two-PC QA, `docs/TESTING.md` §32 – §35)
+**Current development build:** 0.21.3 · protocol 32 — shared hideout parking layout of both cars (V1.4, pending manual two-PC QA, `docs/TESTING.md` §43). Version history: `ModVersion` comment in `src/Shared/Protocol.cs`.
 
 Both instances need the same mod version and protocol.
 

@@ -324,7 +324,7 @@ static class InteractionTests
             root = System.IO.Path.GetDirectoryName(root.TrimEnd(System.IO.Path.DirectorySeparatorChar));
         }
         Expect(plugin != null, "src/Plugin found from the test folder");
-        string[] allowedKeys = { "cant_fast_travel" };
+        string[] allowedKeys = { "cant_fast_travel", "you_cant_sleep" };   // S1: PassTime.PassStart's own refusal key (IL 1.27c)
         int files = 0;
         foreach (var f in System.IO.Directory.GetFiles(plugin, "*.cs"))
         {

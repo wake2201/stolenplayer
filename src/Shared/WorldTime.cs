@@ -799,6 +799,21 @@ namespace TS2MP.Shared
             var e = Reg.Commit(StateScope.Region, region, WorldKeys.SleepShow, s.ToBytes());
             if (e != null) Outbox.Add(e);
         }
+
+        // Per host frame: which regions run an original sleep (the host's own, the client's accepted one) -> "sleepShow".
+        // One sleep per region: when both would run in the same region (race), the accepted client sleep keeps its event
+        // (first committed wins; the host's own PassStart is refused there by SleepControl.OwnSleepBlocked).
+        int _showHost = Regions.None, _showRemote = Regions.None;
+        public void UpdateSleepShows(int hostRegion, int hostTargetHour)
+        {
+            int a = Regions.None, b = Regions.None;
+            var act = Active;
+            if (act != null) { b = act.Region; SetSleepShow(b, true, act.Slot, act.TargetHour); }
+            if (HostSleeping && hostRegion != Regions.None && hostRegion != b) { a = hostRegion; SetSleepShow(a, true, HostSlot, hostTargetHour); }
+            if (_showHost != Regions.None && _showHost != a && _showHost != b) SetSleepShow(_showHost, false, 0, 0);
+            if (_showRemote != Regions.None && _showRemote != a && _showRemote != b && _showRemote != _showHost) SetSleepShow(_showRemote, false, 0, 0);
+            _showHost = a; _showRemote = b;
+        }
         static bool CarBox_TryParse(byte[] v, out CarBoxOp op, out uint session) { return TS2MP.Shared.CarBoxRequest.TryParse(v, out op, out session); }
 
         void CommitCarBox() { CommitLease(StorageKind.Car); }
@@ -1220,7 +1235,13 @@ namespace TS2MP.Shared
                     sleepHours = TimeMath.Wrap24(s.From + s.Advance);
                     sleepRegion = p.ScopeArg;
                     SleepWatched = Active.HostWatching;
-                    if (SleepWatched) { Clocks.NormalizeRate(p.ScopeArg, now, Outbox); code = ProposalCode.Accepted; }   // host clock already advanced
+                    if (!SleepWatched && s.Advance < SleepTransaction.MinAdvance)
+                    {
+                        // S1: cancelled before any real advance - releases the transaction (and presentation), commits nothing
+                        Clocks.NormalizeRate(p.ScopeArg, now, Outbox); code = ProposalCode.Accepted;
+                        sleepRegion = Regions.None; sleepHours = float.NaN;
+                    }
+                    else if (SleepWatched) { Clocks.NormalizeRate(p.ScopeArg, now, Outbox); code = ProposalCode.Accepted; }   // host clock already advanced
                     else code = Clocks.Sleep(p.ScopeArg, s, now, Outbox, out sleepHours);
                     Active = null;
                 }

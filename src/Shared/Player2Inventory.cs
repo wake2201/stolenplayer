@@ -627,6 +627,82 @@ namespace TS2MP.Shared
         // Should THIS instance (slot me, in region myRegion) present the event of 'region'?
         public static bool ShouldPresent(SleepShowState s, int region, byte me, int myRegion) { return s.Active && s.Initiator != me && region == myRegion && region != Regions.None; }
     }
+
+    // S1 shared sleep control (pure rules; glue in SleepPresenter / WorldSync). Original controls (PassTime IL, 1.27c):
+    // Update: Esc while passingTimeOn -> StopIt (fast-forward running) or QuitIt (hour picker); survival energy >= 125 ->
+    // StopIt; the picker's Start / Stop / Quit buttons call PassStart / StopIt / QuitIt. Only the player who started the
+    // sleep may use them; the observer's presentation follows the sleeper's committed start and end.
+    public enum SleepCall { EscKey, StopIt, QuitIt, PassStart }
+    public enum ObserverAtTarget { End, Hold }
+
+    public static class SleepControl
+    {
+        public const double HoldMaxSeconds = 8;        // observer reached the target first: wait this long for the sleeper's end
+        public const double RetrySeconds = 0.5;        // a temporarily busy observer retries the presentation of a running sleep
+        public const float MinWireAdvance = 0.001f;    // "sleep" payload needs advance > 0 (SleepRequest.TryParse)
+
+        // May THIS instance, while it presents the other player's sleep, let an original PassTime control call through?
+        // presenterOwned: the mod's own Begin / PassStart / StopIt; gameRule: the survival-energy StopIt inside PassTime.Update.
+        public static bool ObserverMay(SleepCall call, bool presenterOwned, bool gameRule)
+        {
+            switch (call)
+            {
+                case SleepCall.EscKey: return false;                              // no cancel / close by key
+                case SleepCall.QuitIt: return false;                              // the mod restores the view itself
+                case SleepCall.StopIt: return presenterOwned || gameRule;         // buttons refused; game's own survival rule kept
+                case SleepCall.PassStart: return presenterOwned;
+            }
+            return false;
+        }
+
+        // The local player's own PassStart while the other player's committed sleep runs in the same region (first committed
+        // wins; the host decides exact ties through "sleepStart" -> Busy). remoteActiveHere: host-side accepted client sleep.
+        public static bool OwnSleepBlocked(bool hasShow, SleepShowState show, int showRegion, byte me, int myRegion, bool remoteActiveHere)
+        {
+            if (myRegion == Regions.None) return false;
+            if (remoteActiveHere) return true;
+            return hasShow && SleepShowState.ShouldPresent(show, showRegion, me, myRegion);
+        }
+
+        // The observer's PassTime reached the target hour (or the game's survival rule stopped it) before the sleeper's end
+        // arrived: keep the presentation (no independent finish) until the end or the hold limit.
+        public static ObserverAtTarget AtTarget(bool sleeperDone, double heldFor)
+        {
+            return sleeperDone || heldFor > HoldMaxSeconds ? ObserverAtTarget.End : ObserverAtTarget.Hold;
+        }
+
+        // Client sleeper: a started (pending / accepted) sleep always reports its end so the host releases the transaction and
+        // any presentation, also after a very short cancel; the host commits nothing for such a short sleep.
+        public static bool ReportEnd(bool mayComplete, float advance) { return mayComplete && !float.IsNaN(advance) && advance >= 0f; }
+        public static float WireAdvance(float advance) { return Math.Max(advance, MinWireAdvance); }
+    }
+
+    // Which committed sleep event THIS instance presents, with retries while it is temporarily busy (paused / menu / own
+    // picker / moving car it drives). One presentation per event; a disconnect forgets everything (reconnect re-presents a
+    // still running sleep from the snapshot).
+    public sealed class SleepShowFollower
+    {
+        public uint Shown { get; private set; }
+        uint _pending; double _next; string _lastWhy;
+
+        public bool Due(SleepShowState st, int region, byte me, int myRegion, double now)
+        {
+            if (!SleepShowState.ShouldPresent(st, region, me, myRegion)) { _pending = 0; _lastWhy = null; return false; }
+            if (st.EventId == Shown) return false;
+            if (st.EventId != _pending) { _pending = st.EventId; _next = now; _lastWhy = null; }
+            return now >= _next;
+        }
+
+        // true = the reason changed (log it once, not every retry)
+        public bool Refused(string why, double now)
+        {
+            _next = now + SleepControl.RetrySeconds;
+            bool changed = why != _lastWhy; _lastWhy = why; return changed;
+        }
+
+        public void Started(uint eventId) { Shown = eventId; _pending = 0; _lastWhy = null; }
+        public void Reset() { Shown = 0; _pending = 0; _lastWhy = null; _next = 0; }
+    }
 }
 
 namespace TS2MP.Shared

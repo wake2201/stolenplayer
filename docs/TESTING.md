@@ -151,24 +151,46 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
-## 44. V1.4.1 checklist — first-arrival main spot + Player-2 medkit (release `TS2-Multiplayer-0.22.0.zip` on BOTH PCs, protocol 33)
+## 45. S1 checklist — shared sleep control (release `TS2-Multiplayer-0.22.1.zip` on BOTH PCs, protocol 33)
+F8 test campaign, normal mode (not survival). Sleep = hideout bed or the car (driver, `Parking`). Grep tags: `SLEEP_CONTROL` (`installed`, `observer EscKey/StopIt/QuitIt refused`, `own sleep refused`), `SLEEP_SHOW` (`presenting`, `not presented yet (...)`, `holding`, `ended (...)`), `SLEEP_START`, `SLEEP accepted`, `SLEEP end`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Both in the hideout. P1 sleeps in the bed until a later hour | P2 sees the original clock / fast-forward UI from its own view; P2 log `SLEEP_SHOW ... presenting`; both end at the same hour | NOT TESTED |
+| 2 | Row 1 with P2 sleeping (bed), P1 watching | P1 sees the original UI; P1 log `SLEEP_START accepted ... host shows the original sleep presentation`; no double advance (P1 day/rent tick once per hour) | NOT TESTED |
+| 3 | During rows 1 / 2 the OBSERVER presses Esc several times and clicks the screen | Nothing happens; observer log `SLEEP_CONTROL observer EscKey refused` once; sleep continues on both | NOT TESTED |
+| 4 | The SLEEPER presses Esc mid-sleep (P1 sleeper, then P2 sleeper) | Both presentations end at the same time; observer log `SLEEP_SHOW ended (... sleeper ...)`; the sleeper's picker / Esc back to the game as original; same clock on both | NOT TESTED |
+| 5 | Sleeper presses Esc immediately after Start (P2 sleeper) | P1 presentation ends at once; P1 clock not advanced to the target; no 40 s `expired` warning | NOT TESTED |
+| 6 | While P1 sleeps, P2 opens its own bed / car sleep picker and presses Start | Original warning "you can't sleep"; picker stays; Esc closes it; P2 log `SLEEP_CONTROL own sleep refused`; then P2 sees the running sleep (`presenting` after its picker closed) | NOT TESTED |
+| 7 | Row 6 reversed (P2 sleeps, P1 tries) | Same | NOT TESTED |
+| 8 | Different regions: P1 in the hideout, P2 in Madison; each sleeps | No presentation on the other PC; each region clock advances only in its own region | NOT TESTED |
+| 9 | Observer busy: P2 in the pause menu / inventory when P1 starts sleeping, closes it after 2 s | P2 log `not presented yet (game paused / UI open), retrying`, then `presenting` while the sleep still runs | NOT TESTED |
+| 10 | Observer driving: P2 drives a moving car when P1 sleeps; stops the car while the sleep runs | Driving never interrupted; presentation starts after the car stopped (`driving a moving car` then `presenting`), EVP input restored after the sleep | NOT TESTED |
+| 11 | Car sleep: P1 sleeps in the car as driver, P2 passenger in the same car | P2 sees the original UI; after the end the seat / camera are as before | NOT TESTED |
+| 12 | P2 (observer) disconnects during P1's sleep and reconnects while it still runs | Presentation stops at the disconnect; after the reconnect P2 adopts the region clock (presents the rest if still running) | NOT TESTED |
+| 13 | P2 (sleeper) disconnects mid-sleep | P1 presentation stops (`transaction ended without completion`); P1 clock continues normally | NOT TESTED |
+| 14 | Regression: solo sleep without a session (bed + car), M3.1 region clocks, hourly rent/day, travel after sleeping | Unchanged | NOT TESTED |
+
+Send back both `LogOutput.log` files.
+
+## 44. V1.4.1 checklist — first-arrival main spot + Player-2 medkit (release `TS2-Multiplayer-0.22.0.zip` on BOTH PCs, protocol 33) — **user-verified 2026-11-16 (Ranger rear hatch NOT TESTED)**
 F8 test campaign with the garage, BOTH cars owned and the medkit NOT used yet (fresh test campaign copy). Grep tags: `VEHICLE_HIDEOUT_LAYOUT`, `MEDKIT` (`requested`, `accepted`, `refused`, `committed state`, `removed`), `MEDKIT_STATS`.
 
 | # | Steps | Expected evidence | Result |
 |---|---|---|---|
-| 1 | Both cars away (Ranger at the Auto Shop, Shadowhawk in Madison), both players in the hideout | Two travel proxies, separated, same spots on both PCs; E on each opens the travel menu | NOT TESTED |
-| 2 | P2 drives the Shadowhawk home first | Shadowhawk at the main spot, Ranger proxy moves to the second spot, on both PCs | NOT TESTED |
-| 3 | Row 2 reversed: P1 drives the Ranger home first, Shadowhawk away | Ranger main, Shadowhawk proxy second, on both PCs | NOT TESTED |
-| 4 | After row 2, P1 brings the Ranger home | Ranger takes the second spot; the parked Shadowhawk does not move | NOT TESTED |
-| 5 | Drive a car off / past a proxy and park elsewhere | No proxy jump while driving; once parked the proxy goes to a free original spot on both PCs; the driven car never jumps | NOT TESTED |
-| 6 | P2 gets shot (bleeding), opens the right front door of a car in the same region, E on the medkit | Original heal (blood UI gone), sound, medkit disappears on BOTH PCs. P2 log `MEDKIT ... accepted`, host log `medkit car#.. by P2 -> Accepted` | NOT TESTED |
-| 7 | After row 6: other car's medkit, and reload / reconnect / host restart | No medkit in either car on either PC (single use per save) | NOT TESTED |
-| 8 | Fresh copy: P2 as passenger, first person, engine OFF, bleeding, look at the medkit, E | Heal, medkit gone on both PCs | NOT TESTED |
-| 9 | P2 passenger, engine running, right door closed, E on the medkit | Nothing happens (no exit, no heal) | NOT TESTED |
-| 10 | E on the medkit while NOT bleeding (foot and seat) | Original warning "not bleeding", medkit stays | NOT TESTED |
-| 11 | Medkit on a travel proxy (car elsewhere) | No prompt, E does nothing, nothing consumed | NOT TESTED |
-| 12 | P1 uses the medkit (original) | Medkit gone on both PCs; a later P2 attempt does nothing | NOT TESTED |
-| 13 | Regression: CarBox from the seat, passenger entry/exit, handoff, Auto Shop proxy, cargo + tailgate, fuel, W1 purchases | Unchanged | NOT TESTED |
+| 1 | Both cars away (Ranger at the Auto Shop, Shadowhawk in Madison), both players in the hideout | Two travel proxies, separated, same spots on both PCs; E on each opens the travel menu | PASS (user) |
+| 2 | P2 drives the Shadowhawk home first | Shadowhawk at the main spot, Ranger proxy moves to the second spot, on both PCs | PASS (user) |
+| 3 | Row 2 reversed: P1 drives the Ranger home first, Shadowhawk away | Ranger main, Shadowhawk proxy second, on both PCs | PASS (user) |
+| 4 | After row 2, P1 brings the Ranger home | Ranger takes the second spot; the parked Shadowhawk does not move | PASS (user) |
+| 5 | Drive a car off / past a proxy and park elsewhere | No proxy jump while driving; once parked the proxy goes to a free original spot on both PCs; the driven car never jumps | PASS (user) |
+| 6 | P2 gets shot (bleeding), opens the right front door of a car in the same region, E on the medkit | Original heal (blood UI gone), sound, medkit disappears on BOTH PCs. P2 log `MEDKIT ... accepted`, host log `medkit car#.. by P2 -> Accepted` | PASS (user) |
+| 7 | After row 6: other car's medkit, and reload / reconnect / host restart | No medkit in either car on either PC (single use per save) | PASS (user) |
+| 8 | Fresh copy: P2 as passenger, first person, engine OFF, bleeding, look at the medkit, E | Heal, medkit gone on both PCs | PASS (user) |
+| 9 | P2 passenger, engine running, right door closed, E on the medkit | Nothing happens (no exit, no heal) | PASS (user) |
+| 10 | E on the medkit while NOT bleeding (foot and seat) | Original warning "not bleeding", medkit stays | PASS (user) |
+| 11 | Medkit on a travel proxy (car elsewhere) | No prompt, E does nothing, nothing consumed | PASS (user) |
+| 12 | P1 uses the medkit (original) | Medkit gone on both PCs; a later P2 attempt does nothing | PASS (user) |
+| 13 | Regression: CarBox from the seat, passenger entry/exit, handoff, Auto Shop proxy, cargo + tailgate, fuel, W1 purchases | Unchanged | PASS (user), except the Ranger rear hatch (tailgate): NOT TESTED |
 
 Send back both `LogOutput.log` files.
 

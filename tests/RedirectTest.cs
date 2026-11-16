@@ -80,7 +80,31 @@ static class RedirectTest
             Console.WriteLine((medOk ? "PASS" : "FAIL") + "  medkit: PlayerScript.Update use sequence (Heal .. SPrefs.SetInt Medkit 1) found " + sites + "x, replaced by one hook call (" + orig.Count + " -> " + res.Count + " instructions); tag, bleeding check, not_bleeding warning kept");
         }
         catch (Exception ex) { Console.WriteLine("FAIL  medkit IL check: " + ex.Message); }
+        // S1: PassTime.Update has exactly one Esc read and one (survival) StopIt call; both are routed through the observer
+        // gates, nothing else changes (same instruction count, the "you_cant_sleep" warning and QuitIt call stay).
+        bool sleepOk = false;
+        try
+        {
+            var ptT = asms[0].GetType("PassTime");
+            var upd = ptT.GetMethod("Update", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+            var orig = PatchProcessor.GetOriginalInstructions(upd);
+            var keyGate = typeof(RedirectTest).GetMethod("KeyGateStub", BindingFlags.Static | BindingFlags.NonPublic);
+            var ruleGate = typeof(RedirectTest).GetMethod("RuleGateStub", BindingFlags.Static | BindingFlags.NonPublic);
+            int esc, rule;
+            var res = SleepControlIL.Rewrite(new List<CodeInstruction>(orig), keyGate, ruleGate, out esc, out rule);
+            Func<CodeInstruction, string> name = ci => ci.operand is MethodInfo ? ((MethodInfo)ci.operand).Name : null;
+            sleepOk = esc == 1 && rule == 1 && res.Count == orig.Count
+                && res.Count(ci => ci.operand as MethodInfo == keyGate) == 1 && res.Count(ci => ci.operand as MethodInfo == ruleGate) == 1
+                && !res.Any(ci => name(ci) == "GetKeyDown") && res.Count(ci => name(ci) == "StopIt") == orig.Count(ci => name(ci) == "StopIt") - 1
+                && res.FindIndex(ci => ci.operand as MethodInfo == ruleGate) < res.FindIndex(ci => ci.operand as MethodInfo == keyGate)
+                && res.Count(ci => name(ci) == "QuitIt") == 1
+                && res.Any(ci => ci.opcode == System.Reflection.Emit.OpCodes.Ldstr && (ci.operand as string) == "you_cant_sleep");
+            Console.WriteLine((sleepOk ? "PASS" : "FAIL") + "  S1 sleep control: PassTime.Update Esc read found " + esc + "x, survival StopIt (before the key read) " + rule + "x, both routed through the observer gates (" + orig.Count + " -> " + res.Count + " instructions); Esc-branch StopIt / QuitIt calls and you_cant_sleep warning kept");
+        }
+        catch (Exception ex) { Console.WriteLine("FAIL  S1 sleep control IL check: " + ex.Message); }
         log.Dispose();
-        return scanOk && rewriteFail == 0 && evalOk && medOk ? 0 : 1;
+        return scanOk && rewriteFail == 0 && evalOk && medOk && sleepOk ? 0 : 1;
     }
+    static bool KeyGateStub(int key) { return false; }
+    static void RuleGateStub(object pt) { }
 }

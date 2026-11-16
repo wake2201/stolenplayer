@@ -54,7 +54,7 @@ namespace TS2MP.Plugin
         int _region = Regions.None, _proposedRegion = int.MaxValue;
         byte _localMode = 1; double _nextModeRead, _nextCalendar;
         SleepPresenter _presenter;                 // M4.3.3 original PassTime presentation of the other player's sleep
-        int _showA = Regions.None, _showB = Regions.None; uint _shownEvent; uint _showRev;
+        readonly SleepShowFollower _follow = new SleepShowFollower();   // S1: which committed sleep event this instance presents (retries while busy)
 
         // clock state
         bool _adoptPending;                  // entered a region: adopt its established clock before publishing
@@ -92,6 +92,7 @@ namespace TS2MP.Plugin
             try { hookErr = SleepHooks.Install("com.ts2mp.multiplayer.sleep"); } catch (Exception ex) { hookErr = ex.Message; }
             _hooksOk = hookErr == null;
             _presenter = new SleepPresenter(log, _host);
+            SleepPresenter.OwnSleepBlocked = OwnSleepBlocked;
             if (_hooksOk) { SleepHooks.Started += OnSleepStarted; SleepHooks.Ended += OnSleepEnded; }
             else _log.Error("WORLD sleep hooks not installed (" + hookErr + "): client sleep requests disabled");
             log.Info("WORLD_INIT role=" + node.Role + " slot=" + _localSlot + (_host ? " epoch=" + _reg.Epoch.ToString("X8") : "")
@@ -247,6 +248,7 @@ namespace TS2MP.Plugin
             if (_wh.Active != null && _wh.ExpireSleep(now)) _log.Warn("SLEEP_START transaction expired after " + WorldHost.SleepMaxSeconds + " s without completion");
             if (_presenter != null && _presenter.Active && _wh.Active == null && !_presenter.HasStopAt) _presenter.Stop("the client's sleep transaction ended without completion");
             SleepShowFrame();
+            HostShowRetry(gm);
             if (_lapse) LapseFrame(gm, hasClock, local);
             if (_region != Regions.None && hasClock)
             {
@@ -435,7 +437,7 @@ namespace TS2MP.Plugin
                     var gm = _gm;
                     // M4.3.3: the host presents the client's sleep with the original PassTime; its fast-forward IS the region
                     // clock (watched: no second advance). Fallback: the M3.1.2 day-speed time-lapse, else catch-up afterwards.
-                    shown = _presenter != null && _presenter.TryStart(gm, a.TargetHour, id, out showWhy);
+                    shown = HostTryPresent(gm, a, out showWhy);
                     watch = shown || StartLapse(gm != null ? _enviro(gm) : null, a.TargetHour);
                 }
                 _wh.SetWatching(watch);
@@ -553,36 +555,70 @@ namespace TS2MP.Plugin
             _log.Info("PROPOSAL sent id=" + id + " region=" + Regions.Name(_region));
         }
 
-        // ---------------- M4.3.3 co-op sleep presentation event ----------------
+        // ---------------- M4.3.3 co-op sleep presentation event (S1: shared control) ----------------
         // Host: which regions have a running original sleep (its own, or the client's accepted one) -> "sleepShow" committed on
-        // change only. Client: presents the event of its own region unless it is the sleeper.
+        // change only (WorldHost.UpdateSleepShows). Client: presents the event of its own region unless it is the sleeper.
         void SleepShowFrame()
         {
-            int a = Regions.None, b = Regions.None;
-            if (_wh.HostSleeping && _region != Regions.None) { a = _region; _wh.SetSleepShow(_region, true, _localSlot, SleepHooks.TargetHour); }
-            var act = _wh.Active;
-            if (act != null) { b = act.Region; _wh.SetSleepShow(act.Region, true, act.Slot, act.TargetHour); }
-            if (_showA != Regions.None && _showA != a && _showA != b) _wh.SetSleepShow(_showA, false, 0, 0);
-            if (_showB != Regions.None && _showB != a && _showB != b && _showB != _showA) _wh.SetSleepShow(_showB, false, 0, 0);
-            _showA = a; _showB = b;
+            _wh.UpdateSleepShows(_region, SleepHooks.TargetHour);
             if (_wh.Outbox.Count > 0) FlushOutbox();
+        }
+
+        // S1: the local player's own PassStart is refused (original "you_cant_sleep" warning) while the other player's
+        // committed sleep runs in this region; the local player watches that sleep instead.
+        bool OwnSleepBlocked()
+        {
+            if (_region == Regions.None || !_node.IsConnected) return false;
+            var a = _host ? _wh.Active : null;
+            bool remoteHere = a != null && a.Region == _region;
+            var e = _reg.Get(StateScope.Region, _region, WorldKeys.SleepShow);
+            SleepShowState st = default(SleepShowState);
+            bool has = e != null && SleepShowState.TryParse(e.Value, out st);
+            return SleepControl.OwnSleepBlocked(has, st, _region, _localSlot, _region, remoteHere);
         }
 
         void ClientShowFrame(UnityEngine.Object gm)
         {
             if (_region == Regions.None) { if (_presenter.Active) _presenter.Stop("no region"); return; }
             var e = _reg.Get(StateScope.Region, _region, WorldKeys.SleepShow);
-            if (e == null) return;
-            SleepShowState st;
-            if (!SleepShowState.TryParse(e.Value, out st)) return;
-            if (_presenter.Active && (!st.Active || st.EventId != _presenter.EventId)) { _presenter.Stop("the sleeper finished or stopped"); _adoptPending = true; return; }
-            if (e.Rev == _showRev) return;
-            _showRev = e.Rev;
-            if (!SleepShowState.ShouldPresent(st, _region, _localSlot, _region) || st.EventId == _shownEvent) return;
-            _shownEvent = st.EventId;
+            SleepShowState st = default(SleepShowState);
+            bool has = e != null && SleepShowState.TryParse(e.Value, out st);
+            if (_presenter.Active && (!has || !st.Active || st.EventId != _presenter.EventId)) { _presenter.Stop("the sleeper finished or stopped"); _adoptPending = true; return; }
+            if (!has || _presenter.Active || !_follow.Due(st, _region, _localSlot, _region, Now)) return;
             string why;
-            if (_presenter.TryStart(gm, st.TargetHour, st.EventId, out why)) _log.Info("SLEEP_SHOW P" + st.Initiator + " sleeps in " + Regions.Name(_region) + ": presenting (event " + st.EventId + ")");
-            else _log.Info("SLEEP_SHOW P" + st.Initiator + " sleeps in " + Regions.Name(_region) + ": not presented (" + why + "), the clock follows the host");
+            if (_presenter.TryStart(gm, st.TargetHour, st.EventId, out why)) { _follow.Started(st.EventId); _log.Info("SLEEP_SHOW P" + st.Initiator + " sleeps in " + Regions.Name(_region) + ": presenting (event " + st.EventId + ")"); }
+            else if (_follow.Refused(why, Now)) _log.Info("SLEEP_SHOW P" + st.Initiator + " sleeps in " + Regions.Name(_region) + ": not presented yet (" + why + "), retrying every " + SleepControl.RetrySeconds + " s while it runs; the clock follows the host");
+        }
+
+        // S1 host: the client's accepted sleep in the host's region that could not be presented at its start (host busy) is
+        // presented as soon as possible while it runs. The presentation's PassTime then drives the region clock (watched:
+        // no second advance); a running day-speed time-lapse hands over to it.
+        bool HostTryPresent(UnityEngine.Object gm, ActiveSleep a, out string why)
+        {
+            why = null;
+            var st = new SleepShowState { EventId = a.StartId, Initiator = a.Slot, TargetHour = (byte)a.TargetHour, Active = true };
+            if (_presenter == null || _presenter.Active || _adoptPending || _stepping) { why = "busy"; return false; }
+            if (!_follow.Due(st, a.Region, _localSlot, _region, Now)) { why = "not due"; return false; }
+            if (_presenter.TryStart(gm, a.TargetHour, a.StartId, out why))
+            {
+                _follow.Started(a.StartId);
+                if (_lapse) StopLapse("handed over to the sleep presentation", false);   // PassTime.Update now sets the day length
+                return true;
+            }
+            if (_follow.Refused(why, Now)) _log.Info("SLEEP_SHOW P" + a.Slot + " sleeps in " + Regions.Name(a.Region) + ": not presented yet (" + why + "), retrying every " + SleepControl.RetrySeconds + " s while it runs");
+            return false;
+        }
+
+        void HostShowRetry(UnityEngine.Object gm)
+        {
+            var a = _wh.Active;
+            if (a == null || a.Region != _region || _presenter == null || _presenter.Active || _follow.Shown == a.StartId) return;
+            string why;
+            if (HostTryPresent(gm, a, out why))
+            {
+                _wh.SetWatching(true);
+                _log.Info("SLEEP_SHOW host now presents P" + a.Slot + "'s sleep (start id " + a.StartId + "): host PassTime drives the region clock (watched)");
+            }
         }
 
         // ---------------- sleep (original PassTime fast-forward) ----------------
@@ -620,9 +656,13 @@ namespace TS2MP.Plugin
             _sampler.Reset();
             _log.Info("SLEEP end " + Regions.Name(_region) + " " + Fmt(req.From) + " -> " + Fmt(to) + " (+" + req.Advance.ToString("0.00") + " h, "
                 + (completed ? "completed" : "stopped") + ")" + (end == SleepEnd.OtherRegion ? " region changed: not sent" : ""));
-            if (end != SleepEnd.Ended || _host || req.Advance < SleepTransaction.MinAdvance) return;   // host: its own sampler publishes the region clock
+            if (end != SleepEnd.Ended || _host) return;   // host: its own sampler publishes the region clock
             if (!_node.IsConnected || !_reg.HasSnapshot) { _log.Warn("SLEEP not sent (offline): region clock will be restored from the host"); return; }
             if (!_sleep.MayComplete) { _log.Warn("SLEEP not sent (start " + _sleep.StartState + "): re-adopting the region clock"); _adoptPending = true; return; }
+            // S1: also a very short cancel is reported - the host releases the transaction and the observer's presentation
+            // (it commits nothing below SleepTransaction.MinAdvance)
+            if (!SleepControl.ReportEnd(true, req.Advance)) return;
+            req.Advance = SleepControl.WireAdvance(req.Advance);
             uint id = _nextProposalId++;
             var e = new StateEntry { Scope = StateScope.Region, ScopeArg = _region, Key = WorldKeys.Sleep, Value = req.ToBytes() };
             _w.Reset(); StateMessages.WriteProposal(_w, id, e); Send();
@@ -654,7 +694,9 @@ namespace TS2MP.Plugin
             {
                 if (_sleep.Awaiting) _log.Warn("SLEEP id=" + _sleep.PendingId + " unresolved at disconnect (state restored from the host snapshot on reconnect)");
                 _proposedRegion = int.MaxValue; _sleep.Disconnected();
+                if (_presenter != null && _presenter.Active) { _presenter.Stop("disconnected"); _adoptPending = _region != Regions.None; }
             }
+            _follow.Reset();   // S1: a reconnect presents a still running sleep again (snapshot)
         }
 
         void OnMessage(NetPeer peer, byte type, NetPacketReader r)

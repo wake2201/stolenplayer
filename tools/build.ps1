@@ -72,7 +72,8 @@ $suites = @(
     @('TS2MP.H2Tests', 'H2Tests.cs', 'H2 shared heavy vehicle cargo: load / unload by both players, capacity, travel, persistence, isolation'),
     @('TS2MP.V12Tests', 'V12Tests.cs', 'V1.2 shared Shadowhawk purchase / unlock, hideout presentation, Auto Shop travel-only proxy'),
     @('TS2MP.W1Tests', 'W1Tests.cs', 'W1 shared hideout: garage / additions / repairs / wallpapers purchases, coordinated original rebuild, persistence'),
-    @('TS2MP.V14Tests', 'V14Tests.cs', 'V1.4 hideout parking layout: both cars separated and identical on both PCs, proxies, arrival orders, persistence')
+    @('TS2MP.V14Tests', 'V14Tests.cs', 'V1.4 hideout parking layout: both cars separated and identical on both PCs, proxies, arrival orders, persistence'),
+    @('TS2MP.S1Tests', 'S1Tests.cs', 'S1 shared sleep control: both sleeper roles, cancellation ownership, completion, regions, simultaneous, busy retry, reconnect')
 )
 foreach ($s in $suites) {
     Invoke-Csc "$($s[0]).exe" (@('/target:exe', "/out:$outTests\$($s[0]).exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\$($s[1])"))
@@ -80,7 +81,7 @@ foreach ($s in $suites) {
 Copy-Item $lnl $outTests -Force
 Invoke-Csc 'TS2MP.NetSmoke.exe' (@('/target:exe', "/out:$outTests\TS2MP.NetSmoke.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\NetSmoke.cs"))
 Invoke-Csc 'FakeGame.exe' @('/target:exe', "/out:$outTests\FakeGame.exe", "$RepoRoot\tests\FakeGame.cs")
-Invoke-Csc 'TS2MP.RedirectTest.exe' (@('/target:exe', '/platform:x64', "/out:$outTests\TS2MP.RedirectTest.exe", "/r:$core\0Harmony.dll", "/r:$lnl") + $shared + @("$src\Plugin\PathRedirect.cs", "$src\Plugin\MedkitIL.cs", "$RepoRoot\tests\RedirectTest.cs"))
+Invoke-Csc 'TS2MP.RedirectTest.exe' (@('/target:exe', '/platform:x64', "/out:$outTests\TS2MP.RedirectTest.exe", "/r:$core\0Harmony.dll", "/r:$lnl") + $shared + @("$src\Plugin\PathRedirect.cs", "$src\Plugin\MedkitIL.cs", "$src\Plugin\SleepControlIL.cs", "$RepoRoot\tests\RedirectTest.cs"))
 Copy-Item "$core\*.dll" $outTests -Force
 
 $ini = Join-Path $BuildDir 'TS2-Multiplayer-Launcher.ini'

@@ -1,6 +1,40 @@
 ﻿# PROGRESS
 
-## V1.4.1 — First-arrival hideout main spot + Player-2 medkit — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-16
+## S1 — Shared sleep control — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-16
+Mod **0.22.1, protocol 33 (wire unchanged; no new keys)**. Both PCs need 0.22.1. Built on `cbb4e43` (V1.4.1). Manual QA: `docs/TESTING.md` §45.
+
+### A. Classification of the existing sleep sync (kept)
+- `SleepHooks` (`GameAccess.cs`: PassStart / StopIt / passingTime edge), `SleepTransaction`, `sleepStart` / `sleep` proposals, `WorldHost` Active sleep + `Busy`, region clocks, M3.1.2 time-lapse, catch-up stepping: IMPLEMENTED BUT UNVERIFIED in two-PC QA, logic correct - unchanged.
+- `SleepPresenter` (M4.3.3 original PassTime presentation for the other player, `sleepShow` event): kept. **DEFECTIVE** parts found:
+  1. The observer could cancel the shared presentation with the original controls: `PassTime.Update` Esc -> `StopIt` / `QuitIt` (and the time-passing / picker buttons). On a host observer this also stopped the region clock's fast-forward while the client still slept (client then corrected backwards).
+  2. The observer finished independently when its own PassTime reached the target before the sleeper's end.
+  3. A client cancel below `SleepTransaction.MinAdvance` (0.05 h) sent nothing: the host kept the transaction (up to 40 s) and a host observer fast-forwarded the region clock to the target although the sleeper had cancelled.
+  4. A temporarily busy observer (paused, menu, own picker open, driving a moving car) was never presented the sleep (one attempt per event).
+  5. Simultaneous host + client sleep in one region (race): `SleepShowFrame` alternated the event per frame (new event id each frame). Nothing stopped the second player's own PassStart while the other one slept there (client: local fast-forward then snap back; host: two sleeps on one region clock).
+  6. Client observer disconnect left the presentation running until its own target / 120 s timeout; a reconnect never re-presented the running sleep.
+
+### B. Changes (original PassTime IL 1.27c, ilspycmd)
+- **Control gate** (`SleepPresenter.InstallControlGate`, both roles): transpiler on `PassTime.Update` (`SleepControlIL.Rewrite`): the single `Input.GetKeyDown(Escape)` read -> `ObserverKeyDown` (false while presenting, logged once per event); the survival `StopIt` before it -> `RuleStopIt` (the game's own rule, kept). Applied only on the exact verified pattern (1 key read, 1 StopIt before it; verified on the real assembly by `RedirectTest`: 158 -> 158 instructions). Prefixes `StopIt` / `QuitIt`: refused while presenting unless the mod calls them (`_own`) or the survival rule runs. Without a presentation every control is original (the sleeper is never gated).
+- **Hold**: observer at the target first -> presentation held (original time-passing panel re-shown, picker hidden, clock stopped at the target) until the sleeper's end (host: `StopAtHours` from the `sleep` completion, or Active gone; client: `sleepShow` inactive) or `SleepControl.HoldMaxSeconds` (8 s).
+- **Own sleep refused** (`PassStart` prefix + `WorldSync.OwnSleepBlocked`): while the other player's committed sleep runs in this region (host: accepted Active there; both: `sleepShow` of the region active by the other slot) the local PassStart takes the original refusal path (warning key `you_cant_sleep`, picker stays open). Exact ties: host decides via `sleepStart` -> `Busy` (existing).
+- **One event per region** (`WorldHost.UpdateSleepShows`, moved from `WorldSync.SleepShowFrame`): an accepted client sleep keeps its event if the host also sleeps there (lost race): no per-frame commits.
+- **Short cancel**: the client reports every started end (`SleepControl.ReportEnd`, payload advance >= 0.001 h); the host releases the transaction and commits nothing below `MinAdvance` when not watched (watched: `StopAtHours` ends the host presentation).
+- **Busy retry** (`SleepShowFollower`): client and host retry the presentation of a running sleep every 0.5 s (reason logged on change); the host makes itself authoritative (`SetWatching(true)`) when its late presentation starts and a running day-speed time-lapse hands over without resetting the day length. A moving car the observer drives is never interrupted (TryStart refuses, retried when it stops).
+- **Disconnect**: client stops the presentation and re-adopts; `_follow.Reset()` re-presents a still running sleep after reconnect (snapshot). Host: sleeper disconnect drops Active -> presentation stops (existing).
+
+### C. Files
+New `src/Plugin/SleepControlIL.cs`, `tests/S1Tests.cs`. Changed `src/Plugin/SleepPresenter.cs`, `src/Plugin/WorldSync.cs`, `src/Shared/Player2Inventory.cs` (`SleepControl`, `SleepCall`, `ObserverAtTarget`, `SleepShowFollower`), `src/Shared/WorldTime.cs` (`UpdateSleepShows`, short cancel), `src/Shared/Protocol.cs` (0.22.1), `tools/build.ps1` (S1 suite; RedirectTest compiles `SleepControlIL.cs`), `tests/RedirectTest.cs` (PassTime IL check), `tests/InteractionTests.cs` (`you_cant_sleep` allowed: original key), version pins.
+
+### D. Tests / performance
+`tools/build.ps1 -Test`: **ALL 36 SUITES PASSED** (705 PASS lines, 0 FAIL; S1 12/12; RedirectTest S1 IL PASS). Offline only, no game started. Hot paths: `PassTime.Update` +1 static call per frame (`ObserverKeyDown`: one field read + the original key read); `PassStart` prefix one registry lookup per PassStart click; presentation retry <= 2 `TryStart` per second only while the other player's sleep runs and this player is busy (cheap checks first, `FindObjectsOfTypeAll` only after them). No allocations per frame. Network: no new keys; +1 x 8 B `sleep` proposal per very short client cancel (previously none). FPS not measured.
+
+### E. Risks / limitations
+- Survival mode: the game's own energy rule (>= 125) can still stop the observer's PassTime (kept deliberately; blocking it would spam the original warning every frame). The presentation then holds; a host observer's region clock stops fast-forwarding and the client sleeper is corrected afterwards.
+- Hold limit 8 s: a sleeper's end delayed longer (packet loss) ends the observer's presentation by itself (logged `sleeper's end not received`); clocks still follow the host.
+- The PassStart refusal relies on the committed `sleepStart` / `sleepShow`; within one round trip both players can press Start - the host returns `Busy` to the client (existing re-adopt path, client snaps back after its local fast-forward).
+- If the 1.27c `PassTime.Update` IL pattern differs, the Esc gate is not applied (logged `SLEEP_CONTROL ... gate: esc=.. rule=..`); the button prefixes still apply.
+
+## V1.4.1 — First-arrival hideout main spot + Player-2 medkit — **USER-VERIFIED (two-PC QA, 2026-11-16); Ranger rear hatch NOT TESTED**, 2026-11-16
 Mod **0.22.0, protocol 33** (new proposal `medkitUse`, new state `medkit`). Both PCs need 0.22.0. Built on `841fe9e` (V1.4 follow-up). Manual QA: `docs/TESTING.md` §44.
 
 ### A. Hideout parking (change of the V1.4 rule)

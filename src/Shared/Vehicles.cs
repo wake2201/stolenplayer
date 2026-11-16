@@ -749,7 +749,7 @@ namespace TS2MP.Shared
     // that ray selects no original branch.
     public enum InteractTarget : byte { None, CarBody, Obstacle, Native, CarBox, Medkit }
     public enum FootAction : byte { None, Original, RequestPassenger }
-    public enum SeatAction : byte { None, OpenStorage, Exit, OutOfReach }
+    public enum SeatAction : byte { None, OpenStorage, Exit, OutOfReach, UseMedkit }   // UseMedkit: V1.4.1
 
     public struct FootProbe
     {
@@ -767,6 +767,7 @@ namespace TS2MP.Shared
         public bool Gates;            // seated >= 1 s, game not paused, no inventory/pause UI open or just closed
         public bool FirstPerson;      // the original interaction ray (main camera) only exists in first person
         public InteractTarget Ray;    // classification of that ray's hit from the passenger's eyes
+        public bool MedkitReachable;  // V1.4.1: MedkitRules.SeatReachable (right door open on this PC, or the car's engine off)
     }
 
     public static class PassengerInteraction
@@ -845,12 +846,13 @@ namespace TS2MP.Shared
         public static bool SeatStorageAllowed(bool isHost, bool sharedLease) { return isHost || sharedLease; }
 
         // Seated passenger, E pressed: the car's storage box (first person, like the original driver) opens the original
-        // storage; the medkit is out of reach from a passenger seat; everything else gets out.
+        // storage; the medkit (V1.4.1) is used like the original when reachable (right door open or engine off, the original
+        // seated-driver rule), otherwise nothing happens; everything else gets out.
         public static SeatAction Seated(SeatProbe p)
         {
             if (!p.Gates) return SeatAction.None;
             if (p.FirstPerson && p.Ray == InteractTarget.CarBox) return SeatAction.OpenStorage;
-            if (p.FirstPerson && p.Ray == InteractTarget.Medkit) return SeatAction.OutOfReach;
+            if (p.FirstPerson && p.Ray == InteractTarget.Medkit) return p.MedkitReachable ? SeatAction.UseMedkit : SeatAction.OutOfReach;
             return SeatAction.Exit;
         }
     }

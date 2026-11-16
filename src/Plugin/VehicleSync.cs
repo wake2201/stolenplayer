@@ -2373,7 +2373,7 @@ namespace TS2MP.Plugin
         // M4.3.2a: evaluated at 10 Hz for the prompt and freshly on the frame E goes down (0.6.1 host log: our update cost rose
         // from ~60 to 150-190 us avg while probing every frame).
         double _nextFootProbe, _nextSeatProbe;
-        InteractTarget _seatRay;
+        InteractTarget _seatRay; GameObject _seatMedkit;   // V1.4.1: the medkit object the passenger's ray hits
         void FootFrame(double now, UnityEngine.Object ps)
         {
             if (!PassengerApi || !ResolverApi || ps == null) { _entryHint = false; return; }
@@ -2518,6 +2518,8 @@ namespace TS2MP.Plugin
             else if (!sp.FirstPerson) _seatRay = InteractTarget.None;
             if (!pressed) return;
             sp.Ray = _seatRay;
+            if (_seatRay == InteractTarget.Medkit && _seatMedkit != null)
+                sp.MedkitReachable = MedkitRules.SeatReachable(_seatMedkit.CompareTag("Medkit"), EngineOn(t.Car.Id));
             switch (PassengerInteraction.Seated(sp))
             {
                 case SeatAction.OpenStorage:
@@ -2536,9 +2538,15 @@ namespace TS2MP.Plugin
                     try { _psOpenStorage(ps, type); } catch (Exception ex) { _log.Warn("PASSENGER OpenStorage failed: " + ex.Message); }
                     _uiFreeAt = now + 0.35;
                     return;
+                case SeatAction.UseMedkit:
+                    // V1.4.1: the original medkit use (bleeding check, Heal, sound, single use) as a host transaction (MedkitSync)
+                    var mk = MedkitSync.Instance;
+                    if (mk == null || _seatMedkit == null) { _medkitRefused++; Quiet("passenger medkit: shared medkit not active, nothing happens"); return; }
+                    mk.SeatUse(ps, _seatMedkit);
+                    return;
                 case SeatAction.OutOfReach:
                     _medkitRefused++;
-                    Quiet("passenger aimed at the medkit: out of reach from the seat, nothing happens");
+                    Quiet("passenger aimed at the medkit: out of reach from the seat (right door closed and engine running), nothing happens");
                     return;
                 case SeatAction.Exit:
                     TryExitRide(t, ps);
@@ -2555,6 +2563,7 @@ namespace TS2MP.Plugin
             bool hit = OriginalRay(ps, out h, out cam);
             if (cam == null) return InteractTarget.None;
             var target = Classify(hit, h, lc);
+            _seatMedkit = target == InteractTarget.Medkit ? h.collider.gameObject : null;
             float hitDist = hit ? h.distance : float.MaxValue;
             float boxDist;
             // the car's own plain body/interior colliders do not hide the box (the driver reaches it with the original ray); the

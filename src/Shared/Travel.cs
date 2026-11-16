@@ -1141,8 +1141,9 @@ namespace TS2MP.Shared
     //   1. Fixed cars keep their pose and are obstacles: a car being driven / moving, a Real car already arranged in this
     //      scene, an observed car (ParkedOther) that follows its holder (snapshots or a committed hideout pose).
     //   2. Arrangeable cars that are physically here (a Real car of this instance on arrival, an observed car without any
-    //      pose yet), lowest id first: its committed hideout pose if clear, else its identity spot (Ranger = SpawnHideoutCar,
-    //      every other car = secondCarHideoutPos), else the other original spot, else where it stands.
+    //      pose yet), lowest id first: its committed hideout pose if clear, else (V1.4.1) the main spot SpawnHideoutCar for
+    //      whichever car arrives first (Ranger or Shadowhawk), else secondCarHideoutPos, else where it stands. (V1.4 used an
+    //      identity spot here - Ranger main, others second.)
     //   3. Travel proxies (AwayProxy, the car itself is elsewhere), lowest id first: identity spot if clear, else the other
     //      spot, else where it stands. Recomputed when the obstacles change, always the same function of them -> both PCs
     //      show the proxy at the same spot; its car's record / park pose are never written.
@@ -1172,7 +1173,11 @@ namespace TS2MP.Shared
 
         static bool Clear(Vec3 p, List<Vec3> taken) { for (int i = 0; i < taken.Count; i++) if (Vec3.HorizontalDistance(p, taken[i]) < Clearance) return false; return true; }
 
-        public static LayoutResult[] Plan(IList<LayoutCar> cars, Vec3 main, Vec3 second)
+        public static LayoutResult[] Plan(IList<LayoutCar> cars, Vec3 main, Vec3 second) { return Plan(cars, main, second, false); }
+
+        // holdProxies (V1.4.1): a car in the hideout is moving (driven, not an obstacle yet) -> proxies keep their place until it
+        // settled, so a proxy never jumps around while someone drives off / past; the next pass after it stopped decides.
+        public static LayoutResult[] Plan(IList<LayoutCar> cars, Vec3 main, Vec3 second, bool holdProxies)
         {
             var res = new LayoutResult[cars.Count];
             var taken = new List<Vec3>();
@@ -1185,12 +1190,15 @@ namespace TS2MP.Shared
             {
                 var order = new List<int>();
                 for (int i = 0; i < cars.Count; i++) if (cars[i].Role == role) order.Add(i);
-                order.Sort((a, b) => cars[a].Id.CompareTo(cars[b].Id));
+                // V1.4.1: an arrangeable car with a committed hideout pose (settled earlier, e.g. the observed car of the first arrival on
+                // a PC that just loaded) claims its place before cars without one; then lowest id first
+                order.Sort((a, b) => { int pa = cars[a].HasPose ? 0 : 1, pb = cars[b].HasPose ? 0 : 1; return pa != pb ? pa.CompareTo(pb) : cars[a].Id.CompareTo(cars[b].Id); });
                 foreach (int i in order)
                 {
                     var c = cars[i];
                     res[i].Overlapped = !Clear(c.Pos, taken);
-                    bool idMain = IdentityMain(c.Id);
+                    if (role == LayoutRole.Proxy && holdProxies) { taken.Add(c.Pos); continue; }
+                    bool idMain = role == LayoutRole.Arrange || IdentityMain(c.Id);   // V1.4.1: a real car arriving takes the main spot first; proxies keep their identity preference and yield
                     Vec3 first = idMain ? main : second, other = idMain ? second : main;
                     LayoutChoice fc = idMain ? LayoutChoice.MainSpot : LayoutChoice.SecondSpot, oc = idMain ? LayoutChoice.SecondSpot : LayoutChoice.MainSpot;
                     if (role == LayoutRole.Arrange && c.HasPose && Clear(c.Pose, taken)) { res[i].Choice = LayoutChoice.Pose; res[i].Target = c.Pose; }

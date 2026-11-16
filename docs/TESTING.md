@@ -151,6 +151,27 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 44. V1.4.1 checklist — first-arrival main spot + Player-2 medkit (release `TS2-Multiplayer-0.22.0.zip` on BOTH PCs, protocol 33)
+F8 test campaign with the garage, BOTH cars owned and the medkit NOT used yet (fresh test campaign copy). Grep tags: `VEHICLE_HIDEOUT_LAYOUT`, `MEDKIT` (`requested`, `accepted`, `refused`, `committed state`, `removed`), `MEDKIT_STATS`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Both cars away (Ranger at the Auto Shop, Shadowhawk in Madison), both players in the hideout | Two travel proxies, separated, same spots on both PCs; E on each opens the travel menu | NOT TESTED |
+| 2 | P2 drives the Shadowhawk home first | Shadowhawk at the main spot, Ranger proxy moves to the second spot, on both PCs | NOT TESTED |
+| 3 | Row 2 reversed: P1 drives the Ranger home first, Shadowhawk away | Ranger main, Shadowhawk proxy second, on both PCs | NOT TESTED |
+| 4 | After row 2, P1 brings the Ranger home | Ranger takes the second spot; the parked Shadowhawk does not move | NOT TESTED |
+| 5 | Drive a car off / past a proxy and park elsewhere | No proxy jump while driving; once parked the proxy goes to a free original spot on both PCs; the driven car never jumps | NOT TESTED |
+| 6 | P2 gets shot (bleeding), opens the right front door of a car in the same region, E on the medkit | Original heal (blood UI gone), sound, medkit disappears on BOTH PCs. P2 log `MEDKIT ... accepted`, host log `medkit car#.. by P2 -> Accepted` | NOT TESTED |
+| 7 | After row 6: other car's medkit, and reload / reconnect / host restart | No medkit in either car on either PC (single use per save) | NOT TESTED |
+| 8 | Fresh copy: P2 as passenger, first person, engine OFF, bleeding, look at the medkit, E | Heal, medkit gone on both PCs | NOT TESTED |
+| 9 | P2 passenger, engine running, right door closed, E on the medkit | Nothing happens (no exit, no heal) | NOT TESTED |
+| 10 | E on the medkit while NOT bleeding (foot and seat) | Original warning "not bleeding", medkit stays | NOT TESTED |
+| 11 | Medkit on a travel proxy (car elsewhere) | No prompt, E does nothing, nothing consumed | NOT TESTED |
+| 12 | P1 uses the medkit (original) | Medkit gone on both PCs; a later P2 attempt does nothing | NOT TESTED |
+| 13 | Regression: CarBox from the seat, passenger entry/exit, handoff, Auto Shop proxy, cargo + tailgate, fuel, W1 purchases | Unchanged | NOT TESTED |
+
+Send back both `LogOutput.log` files.
+
 ## 43. V1.4 checklist — hideout parking layout of both cars (release `TS2-Multiplayer-0.21.3.zip` on BOTH PCs, protocol 32)
 F8 test campaign with the garage and BOTH cars owned. Grep tag: `VEHICLE_HIDEOUT_LAYOUT` (one line per car on scene bind / change: region + holder, presentation, root, renderers on/total, pos, yaw, spot, park, overlap; `corrected … -> MainSpot/SecondSpot/Pose (reason)` on every move), `VEHICLE_STATS … hideoutLayout passes/moves`.
 Expected layout whenever no car has a parked hideout pose: **Ranger at the main spot (SpawnHideoutCar), Shadowhawk at the second spot (secondCarHideoutPos)** on both PCs; a car someone parked in the hideout stays where it was parked.

@@ -80,7 +80,7 @@ foreach ($s in $suites) {
 Copy-Item $lnl $outTests -Force
 Invoke-Csc 'TS2MP.NetSmoke.exe' (@('/target:exe', "/out:$outTests\TS2MP.NetSmoke.exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\NetSmoke.cs"))
 Invoke-Csc 'FakeGame.exe' @('/target:exe', "/out:$outTests\FakeGame.exe", "$RepoRoot\tests\FakeGame.cs")
-Invoke-Csc 'TS2MP.RedirectTest.exe' (@('/target:exe', '/platform:x64', "/out:$outTests\TS2MP.RedirectTest.exe", "/r:$core\0Harmony.dll", "/r:$lnl") + $shared + @("$src\Plugin\PathRedirect.cs", "$RepoRoot\tests\RedirectTest.cs"))
+Invoke-Csc 'TS2MP.RedirectTest.exe' (@('/target:exe', '/platform:x64', "/out:$outTests\TS2MP.RedirectTest.exe", "/r:$core\0Harmony.dll", "/r:$lnl") + $shared + @("$src\Plugin\PathRedirect.cs", "$src\Plugin\MedkitIL.cs", "$RepoRoot\tests\RedirectTest.cs"))
 Copy-Item "$core\*.dll" $outTests -Force
 
 $ini = Join-Path $BuildDir 'TS2-Multiplayer-Launcher.ini'

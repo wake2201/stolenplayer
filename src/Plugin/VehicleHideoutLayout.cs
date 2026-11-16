@@ -48,6 +48,7 @@ namespace TS2MP.Plugin
             var cur = ps != null ? _psVehicle(ps) as Component : null;
             var cars = _lyCars; var lcs = _lyLocal; var pres = _lyKind;
             cars.Clear(); lcs.Clear(); pres.Clear();
+            bool anyMoving = false;
             foreach (var lc in _local)
             {
                 if (lc.Go == null || !lc.Active) continue;
@@ -63,14 +64,14 @@ namespace TS2MP.Plugin
                         // V1.4 follow-up: a car someone sat in / drove has its place chosen by the driver -> never rearranged later
                         // (without this, a car first driven before its arrangement was moved to its identity spot after parking).
                         if (!lc.Arranged) { lc.Arranged = true; _log.Info("VEHICLE_HIDEOUT_LAYOUT " + CarName(lc.Id) + " Real (" + (moving ? "moving" : "driver seated") + ") at " + Fmt(lc.T.position) + ": driver's place, never repositioned"); }
-                        if (moving) continue;   // moving: not an obstacle yet (the other PC's observer also waits until it stopped)
+                        if (moving) { anyMoving = true; continue; }   // moving: not an obstacle yet (the other PC's observer also waits until it stopped)
                     }
                     role = lc.Arranged || JointHolds(lc.Id) ? LayoutRole.Fixed : LayoutRole.Arrange;   // stopped with the driver seated = Fixed obstacle, like Remote.Stopped on the other PC
                 }
                 else if (lc.Observed && lc.Pres == CarPresentation.ParkedOther)
                 {
                     kind = "ParkedOther";
-                    if (lc.FollowRecv > 0 && !lc.Remote.Stopped(now)) continue;   // moving under its holder: not an obstacle yet, never moved here
+                    if (lc.FollowRecv > 0 && !lc.Remote.Stopped(now)) { anyMoving = true; continue; }   // moving under its holder: not an obstacle yet, never moved here
                     role = lc.Arranged || lc.FollowRecv > 0 ? LayoutRole.Fixed : LayoutRole.Arrange;   // before its holder's snapshots: the same arrangement the holder runs (committed pose first)
                 }
                 else if (lc.IsProxy && !lc.Observed && lc.Pres == CarPresentation.AwayProxy) { kind = "AwayProxy"; role = LayoutRole.Proxy; }
@@ -80,7 +81,7 @@ namespace TS2MP.Plugin
             }
             if (cars.Count == 0) return;   // before the first reconcile: nothing presented yet (the scene bind is logged with the first cars)
             if (newScene) { _layoutGm = gm; _layoutSig = null; }
-            var plan = HideoutLayout.Plan(cars, V(main.position), V(second.position));
+            var plan = HideoutLayout.Plan(cars, V(main.position), V(second.position), anyMoving);   // V1.4.1: proxies hold while a car moves
             var psc = ps as Component;
             List<string> moved = null;
             for (int i = 0; i < plan.Length; i++)
@@ -109,7 +110,7 @@ namespace TS2MP.Plugin
                 if (c.Role == LayoutRole.Arrange) lc.Arranged = true;
                 _layoutMoves++;
                 if (moved == null) moved = new List<string>(2);
-                moved.Add(CarName(lc.Id) + " " + pres[i] + " " + Fmt(from) + " -> " + r.Choice + " " + Fmt(target) + " (" + (r.Overlapped ? "overlapped another car" : c.Role == LayoutRole.Proxy ? "proxy spot follows the shared layout" : c.HasPose ? "committed hideout pose" : "arrival without a hideout pose: identity spot") + ")");
+                moved.Add(CarName(lc.Id) + " " + pres[i] + " " + Fmt(from) + " -> " + r.Choice + " " + Fmt(target) + " (" + (r.Overlapped ? "overlapped another car" : c.Role == LayoutRole.Proxy ? "proxy spot follows the shared layout" : c.HasPose ? "committed hideout pose" : "arrival without a hideout pose: first free original spot (main first)") + ")");
             }
             string sig = "";
             for (int i = 0; i < plan.Length; i++) sig += cars[i].Id + ":" + pres[i] + ":" + cars[i].Role + ":" + plan[i].Choice + ";";

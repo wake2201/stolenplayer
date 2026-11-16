@@ -1,5 +1,34 @@
 ﻿# PROGRESS
 
+## V1.4.1 — First-arrival hideout main spot + Player-2 medkit — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-16
+Mod **0.22.0, protocol 33** (new proposal `medkitUse`, new state `medkit`). Both PCs need 0.22.0. Built on `841fe9e` (V1.4 follow-up). Manual QA: `docs/TESTING.md` §44.
+
+### A. Hideout parking (change of the V1.4 rule)
+- `HideoutLayout.Plan` (`src/Shared/Travel.cs`): an arriving real car without a committed hideout pose takes **`SpawnHideoutCar` first, whichever car it is** (V1.4: identity spot, Ranger main / Shadowhawk second), else `secondCarHideoutPos`. Proxies keep their identity preference and are planned after the real cars, so the other car's AwayProxy yields to the second spot. Both cars keep their travel proxy while away (presentation rules unchanged).
+- Arrangeable cars **with a committed hideout pose go first** (then lowest id): a car that settled earlier keeps its place on a PC that just loaded, before the poseless new arrival claims a spot (the host commits hideout poses of settled cars continuously, `ParkPolicy` / `IngestRemote` -> `vpark`). Without this the first arrival lost the main spot on the second arriver's PC (found by V14 test 14).
+- **Proxies hold while a car in the hideout moves** (`Plan(..., holdProxies)`, `anyMoving` in `VehicleHideoutLayout.LayoutFrame`): no proxy jump while someone drives off or past; the next pass after it stopped decides (same function on both PCs).
+- Unchanged: settled / driven / seated cars never moved, committed poses kept, no park pose written for a proxy, collision clearance 3.5 m.
+
+### B. Player-2 medkit (verified IL 1.27c, ilspycmd)
+- Original: `Medkit.Start` destroys the object when `SPrefs Medkit == 1` (one key for both cars' medkits). `Medkit.Update` (2 s) tags it `Medkit` only while `myCar.car_door_R.isOpen || (myCar.is_sitting_inside && !engine_running)`. `PlayerScript.Update` IL_729c: tag `Medkit` + E -> `isBleeding` ? IL_72f0 `Heal()`, `healSound.Play()`, `Object.Destroy(medkit)`, `SPrefs.SetInt("Medkit", 1)` : warning `not_bleeding`. `Heal()` has exactly one call site in `PlayerScript` (IL_72f1).
+- Bridge: one transpiler (`MedkitIL.Rewrite`) replaces exactly IL_72f0..IL_7328 by `ldarg.0; ldloca.s <hit>; call MedkitSync.OriginalUse`. Tag branch, highlight, E, bleeding check and warning stay original. Verified on the real `Assembly-CSharp.dll` by `RedirectTest` (1 site, 11072 -> 11060 instructions). Pattern not found exactly once -> feature disabled, method unpatched (logged).
+- Host / no session: the hook runs the replaced sequence unchanged, then commits `medkit` (used, car, by). Client: the use is the proposal `medkitUse` (arg = car id); `WorldHost.UseMedkit` decides (`MedkitRules.Decide`: unknown car Invalid, already used Stale, car region != requester region NotAuthorized = travel proxy, host loading Busy) and applies on the host (original key + removal) in one step; accepted -> the same original sequence runs on the client. `ProposalGate` caches a retransmission -> exactly once.
+- Committed `medkit` used -> both PCs remove every medkit object (`FindObjectsOfType` on that change only; the original `Medkit.Start` rule for key 1); the client sandbox key follows the host. **DESIGN DECISION:** the original removes only the used object until the next load (the other car's medkit stays usable once more in that scene); here both go at once, so the medkit is single use per save on both PCs as the persistent key says.
+- Passenger seat (`PassengerInteraction.Seated` -> `SeatAction.UseMedkit`): first person, the original 2.25 m ray on the medkit, reachable when the original rule tags it on this PC (right door open) **or** the car's engine is off (`MedkitRules.SeatReachable`, host-committed fleet flag; the original seated-driver rule). Then the original bleeding check / `not_bleeding` warning and the same use path. Not reachable -> nothing happens (as before).
+- Travel proxies: no medkit interaction (use refused locally and by the host; `Medkit.Update` postfix keeps a proxy's medkit `Untagged`, so no prompt).
+
+### C. Files
+New `src/Shared/Medkit.cs`, `src/Plugin/MedkitSync.cs`, `src/Plugin/MedkitIL.cs`. Changed `src/Shared/Travel.cs`, `src/Plugin/VehicleHideoutLayout.cs`, `src/Shared/WorldTime.cs` (`UseMedkit`, `PublishMedkit`, dispatch), `src/Shared/WorldState.cs` (keys), `src/Shared/Vehicles.cs` (`SeatAction.UseMedkit`, `SeatProbe.MedkitReachable`), `src/Plugin/VehicleSync.cs` (seat case, medkit object), `src/Plugin/VehicleShopSync.cs` (`CarOf`, `EngineOn`), `src/Plugin/WorldSync.cs` (`ProposalResultHook10`), `src/Plugin/Plugin.cs`, `src/Shared/Protocol.cs`, `tools/build.ps1` (RedirectTest compiles `MedkitIL.cs`), tests `V14Tests.cs` (8, 13 reworked; 14-18 new), `RedirectTest.cs`, version pins.
+
+### D. Tests / performance
+`tools/build.ps1 -Test`: **ALL 35 SUITES PASSED** (V14 18/18; RedirectTest medkit IL PASS). Offline only. Cost: medkit - no per-frame work except one float compare per medkit object in the `Medkit.Update` postfix (2 objects) and a registry head compare; `FindObjectsOfType` only on a committed change. Network: 1 B proposal per use, 4 B state per change. Layout: unchanged cost (one bool more). FPS not measured.
+
+### E. Remaining risks
+- Medkit reach from the passenger seat is a rule (right door open or engine off), not a measured arm reach; the 2.25 m original ray must also hit the medkit collider from the seat — unverified per car in game.
+- The heal sound is on the medkit object (`Medkit.healSound`), destroyed in the same frame like the original; audibility is the original's.
+- Two players pressing E on the medkit at the same moment: the host decides; the loser's PC gets Stale (no heal, medkit removed by the commit).
+- Layout: a proxy may move once when a car stops (after holding); still a single jump, never during driving.
+
 ## V1.4 — Hideout vehicle overlap, parking and missing vehicle visuals — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-16
 Mod **0.21.3, protocol 32 (wire unchanged)**. Both PCs need 0.21.3 (0.21.2 = first V1.4 build, superseded by the follow-up in G). Built on `b65ca51` (W1.1, confirmed in game). Manual QA: `docs/TESTING.md` §43.
 

@@ -56,7 +56,31 @@ static class RedirectTest
         Console.WriteLine((rewriteFail == 0 ? "PASS" : "FAIL") + "  rewrite leaves no persistentDataPath call in any of " + found.Count + " methods");
         bool evalOk = PathRedirect.Evaluate(rewritten, log) != null;
         Console.WriteLine((evalOk ? "PASS" : "FAIL") + "  critical methods (FBPPConfig.GetSaveFilePath, FBPP.BackupSaves, InitializePrefs.Reinitialize) covered");
+        // V1.4.1: the medkit use sequence of PlayerScript.Update is found exactly once and replaced by one hook call; the tag
+        // compare ("Medkit"), the bleeding check and the original "not_bleeding" warning stay.
+        bool medOk = false;
+        try
+        {
+            var psT = asms[0].GetType("PlayerScript");
+            var upd = psT.GetMethod("Update", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+            var orig = PatchProcessor.GetOriginalInstructions(upd);
+            var ldstr = System.Reflection.Emit.OpCodes.Ldstr;
+            int before = orig.Count(ci => ci.opcode == ldstr && (ci.operand as string) == "Medkit");
+            int sites;
+            var res = MedkitIL.Rewrite(new List<CodeInstruction>(orig), replacement, out sites);
+            int hookAt = res.FindIndex(ci => ci.operand as MethodInfo == replacement);
+            medOk = sites == 1 && res.Count(ci => ci.operand as MethodInfo == replacement) == 1
+                && !res.Any(ci => ci.operand is MethodInfo && ((MethodInfo)ci.operand).Name == "Heal")
+                && res.Count(ci => ci.opcode == ldstr && (ci.operand as string) == "Medkit") == before - 1
+                && res.Any(ci => ci.opcode == ldstr && (ci.operand as string) == "not_bleeding")
+                && res.Any(ci => ci.opcode == System.Reflection.Emit.OpCodes.Ldfld && ci.operand is FieldInfo && ((FieldInfo)ci.operand).Name == "isBleeding")
+                && hookAt >= 2 && res[hookAt - 2].opcode == System.Reflection.Emit.OpCodes.Ldarg_0
+                && (res[hookAt - 1].opcode == System.Reflection.Emit.OpCodes.Ldloca_S || res[hookAt - 1].opcode == System.Reflection.Emit.OpCodes.Ldloca)
+                && res.Count == orig.Count - 15 + 3;
+            Console.WriteLine((medOk ? "PASS" : "FAIL") + "  medkit: PlayerScript.Update use sequence (Heal .. SPrefs.SetInt Medkit 1) found " + sites + "x, replaced by one hook call (" + orig.Count + " -> " + res.Count + " instructions); tag, bleeding check, not_bleeding warning kept");
+        }
+        catch (Exception ex) { Console.WriteLine("FAIL  medkit IL check: " + ex.Message); }
         log.Dispose();
-        return scanOk && rewriteFail == 0 && evalOk ? 0 : 1;
+        return scanOk && rewriteFail == 0 && evalOk && medOk ? 0 : 1;
     }
 }

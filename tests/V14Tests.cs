@@ -33,6 +33,11 @@ static class V14Tests
         Run("11 glue: layout after every reconcile, no KeepClear leftovers, no park / record writes for proxies, diagnostics", Glue);
         Run("12 regressions: Auto Shop proxy, other regions, presentation rules unchanged; version pins", Regressions);
         Run("13 a car the driver sits in (stopped) is an obstacle on both PCs and is never rearranged after parking", SeatedStopped);
+        Run("14 V1.4.1: first real car home takes the main spot (Ranger or Shadowhawk); the other proxy yields; later arrival second", FirstArrivalMain);
+        Run("15 V1.4.1 medkit: Player-2 use is a host transaction, applied exactly once (retransmission cached, second use Stale), state committed", MedkitOnce);
+        Run("16 V1.4.1 medkit: travel proxy / other region refused, unknown car / malformed Invalid, host loading Busy, already used Stale", MedkitRefusals);
+        Run("17 V1.4.1 medkit: passenger seat reachability (right door open or engine off), seat actions, state codec", MedkitSeat);
+        Run("18 V1.4.1 medkit glue: original sequence kept, client proposal, proxy guard + prompt, removal on commit only, no per-frame search", MedkitGlue);
         Console.WriteLine();
         Console.WriteLine("RESULT: " + _passed + " passed, " + _failed + " failed");
         return _failed == 0 ? 0 : 1;
@@ -116,10 +121,11 @@ static class V14Tests
 
         public void RunLayout()
         {
-            var cars = new List<LayoutCar>();
+            var cars = new List<LayoutCar>(); bool hold = false;
             foreach (var id in new[] { Ranger, GT })
             {
                 if (!Active.Contains(id)) continue;
+                if (Driven.Contains(id) && (Pres[id] == CarPresentation.Real || Pres[id] == CarPresentation.ParkedOther)) hold = true;
                 var p = Pres[id];
                 ParkRecord pk; bool pose = F.Park.TryGetValue(id, out pk) && pk.HasPose && pk.Region == Hideout;
                 LayoutRole role;
@@ -129,7 +135,7 @@ static class V14Tests
                 else continue;
                 cars.Add(new LayoutCar { Id = id, Role = role, Pos = Pos[id], HasPose = pose, Pose = pose ? pk.Pos : default(Vec3) });
             }
-            var plan = HideoutLayout.Plan(cars, MainSpot, SecondSpot);
+            var plan = HideoutLayout.Plan(cars, MainSpot, SecondSpot, hold);
             for (int i = 0; i < plan.Length; i++)
             {
                 if (cars[i].Role == LayoutRole.Fixed) continue;
@@ -149,7 +155,9 @@ static class V14Tests
         public bool Shows(ushort id) { return Active.Contains(id) && Pres[id] != CarPresentation.Hidden; }
     }
 
-    static void Settle(Pc a, Pc b) { for (int k = 0; k < 3; k++) { a.Follow(b); b.Follow(a); } }
+    // the host commits the hideout pose of every settled real car (VehicleSync ParkPolicy / IngestRemote -> "vpark")
+    static void Commit(Pc pc) { foreach (var id in new[] { Ranger, GT }) if (pc.Shows(id) && pc.Pres[id] == CarPresentation.Real && !pc.Driven.Contains(id)) pc.F.ParkAt(id, Hideout, pc.Pos[id]); }
+    static void Settle(Pc a, Pc b) { for (int k = 0; k < 3; k++) { a.Follow(b); b.Follow(a); } Commit(a); Commit(b); }
 
     static void Separated(Pc pc, string who)
     {
@@ -177,7 +185,7 @@ static class V14Tests
         Expect(cli.Pres[GT] == CarPresentation.Real && cli.Pres[Ranger] == CarPresentation.AwayProxy, "Player 2: Shadowhawk Real, Ranger AwayProxy (client log)");
         Expect(host.Pres[GT] == CarPresentation.ParkedOther && host.Pres[Ranger] == CarPresentation.AwayProxy, "host: Shadowhawk ParkedOther, Ranger AwayProxy (host log)");
         Separated(host, "host"); Separated(cli, "Player 2"); Same(host, cli, "reported sequence");
-        Expect(At(host, Ranger, MainSpot) && At(host, GT, SecondSpot), "Ranger (proxy) at SpawnHideoutCar, Shadowhawk at secondCarHideoutPos on both PCs");
+        Expect(At(host, GT, MainSpot) && At(host, Ranger, SecondSpot) && At(cli, GT, MainSpot) && At(cli, Ranger, SecondSpot), "V1.4.1: the first real car home (Shadowhawk) takes SpawnHideoutCar, the Ranger proxy yields to secondCarHideoutPos on both PCs");
         Expect(f.Rec[Ranger].Region == AutoShop && f.Park[Ranger].Region == AutoShop, "the Ranger's region and park pose are untouched by its proxy");
     }
 
@@ -302,17 +310,51 @@ static class V14Tests
         var host = new Pc { Slot = 1, CurrentCar = 0, VanPref = true, F = f };
         var cli = new Pc { Slot = 2, CurrentCar = 1, VanPref = false, F = f };
         cli.Load(); host.Load(); Settle(host, cli);
-        // Player 2 drives the Shadowhawk onto the Ranger proxy's spot and stops there
-        cli.Driven.Add(GT); cli.Pos[GT] = MainSpot; cli.RunLayout();
-        Expect(At(cli, GT, MainSpot), "a driven car is never moved");
+        Expect(At(cli, GT, MainSpot) && At(host, Ranger, SecondSpot), "start: Shadowhawk main, Ranger proxy second");
+        // Player 2 drives the Shadowhawk onto the Ranger proxy's spot (second) and stops there
+        cli.Driven.Add(GT); cli.Pos[GT] = SecondSpot; cli.RunLayout();
+        Expect(At(cli, GT, SecondSpot), "a driven car is never moved");
         host.Driven.Add(GT); host.Follow(cli);
-        Expect(At(host, Ranger, MainSpot), "a moving observed car is not an obstacle: the proxy does not jump while it passes");
+        Expect(At(host, Ranger, SecondSpot), "a moving observed car is not an obstacle: the proxy does not jump while it passes");
         cli.Driven.Remove(GT); host.Driven.Remove(GT); host.Follow(cli); cli.RunLayout();
-        Expect(At(cli, GT, MainSpot) && At(host, GT, MainSpot), "the parked car stays where the driver left it");
-        Expect(At(host, Ranger, SecondSpot) && At(cli, Ranger, SecondSpot), "the proxy moves to the free spot once the car settled, on both PCs");
+        Expect(At(cli, GT, SecondSpot) && At(host, GT, SecondSpot), "the parked car stays where the driver left it");
+        Expect(At(host, Ranger, MainSpot) && At(cli, Ranger, MainSpot), "the proxy moves to the free spot once the car settled, on both PCs");
         Separated(host, "after parking"); Same(host, cli, "after parking");
         int moves = host.Moves; for (int i = 0; i < 5; i++) host.RunLayout();
         Expect(host.Moves == moves, "no reposition loop");
+    }
+
+    // V1.4.1: both cars away -> two proxies; the first real car home takes the main spot whichever it is, the other car's
+    // proxy yields to the second spot; the car arriving later takes the second spot (the first stays where it is).
+    static void FirstArrivalMain()
+    {
+        foreach (var first in new[] { Ranger, GT })
+        {
+            ushort other = first == Ranger ? GT : Ranger;
+            var f = new Fleet(true);
+            f.Set(Ranger, AutoShop, 0); f.Set(GT, Madison, 0);
+            var host = new Pc { Slot = 1, CurrentCar = 0, VanPref = true, F = f };
+            var cli = new Pc { Slot = 2, CurrentCar = 1, VanPref = false, F = f };
+            host.Load(); cli.Load();
+            Expect(host.Pres[Ranger] == CarPresentation.AwayProxy && host.Pres[GT] == CarPresentation.AwayProxy && cli.Pres[Ranger] == CarPresentation.AwayProxy && cli.Pres[GT] == CarPresentation.AwayProxy, "both away: both cars keep travel proxies on both PCs");
+            Separated(host, "two proxies host"); Same(host, cli, "two proxies");
+            // the driver of 'first' comes home (its PC loads the hideout scene); the other player is already there
+            byte holder = first == Ranger ? (byte)1 : (byte)2;
+            Pc arriving = holder == 1 ? host : cli, staying = holder == 1 ? cli : host;
+            f.Set(first, Hideout, holder); arriving.Load(); staying.Reconcile(); Settle(host, cli);
+            Expect(At(host, first, MainSpot) && At(cli, first, MainSpot), (first == Ranger ? "Ranger" : "Shadowhawk") + " home first: main spot on both PCs");
+            Expect(At(host, other, SecondSpot) && At(cli, other, SecondSpot), "the other car's proxy yields to the second spot");
+            Expect(host.Pres[other] == CarPresentation.AwayProxy && cli.Pres[other] == CarPresentation.AwayProxy, "the away car keeps its proxy");
+            Expect(f.Rec[other].Region != Hideout, "the proxy never changes its car's region");
+            // the other car comes home later: second spot, the first car is not moved
+            var before = host.Pos[first];
+            byte h2 = holder == 1 ? (byte)2 : (byte)1;
+            Pc arriving2 = h2 == 1 ? host : cli, staying2 = h2 == 1 ? cli : host;
+            f.Set(other, Hideout, h2); arriving2.Load(); staying2.Reconcile(); Settle(host, cli);
+            Expect(At(host, first, before) && At(cli, first, before), "settled first car never moved by the later arrival");
+            Expect(At(host, other, SecondSpot) && At(cli, other, SecondSpot), "later arrival takes the second spot");
+            Separated(host, "both home host"); Separated(cli, "both home Player 2"); Same(host, cli, "both home");
+        }
     }
 
     static void SeatedStopped()
@@ -359,7 +401,7 @@ static class V14Tests
             var h = new Pc { Slot = 1, CurrentCar = 0, VanPref = true, F = f }; var k = new Pc { Slot = 2, CurrentCar = 1, F = f };
             if (first == 0) { h.Load(); k.Load(); } else { k.Load(); h.Load(); }
             Settle(h, k);
-            Expect(At(h, Ranger, MainSpot) && At(h, GT, SecondSpot) && At(k, Ranger, MainSpot) && At(k, GT, SecondSpot), "load order " + first + ": same layout");
+            Expect(At(h, GT, MainSpot) && At(h, Ranger, SecondSpot) && At(k, GT, MainSpot) && At(k, Ranger, SecondSpot), "load order " + first + ": same layout (real car main, proxy second)");
         }
         // CurrentCar combinations of the two PCs
         for (int hc = 0; hc < 2; hc++) for (int cc = 0; cc < 2; cc++)
@@ -398,8 +440,8 @@ static class V14Tests
         var lf = Body(ly, "void LayoutFrame(UnityEngine.Object gm, UnityEngine.Object ps, int region, double now)");
         Expect(lf.Contains("if (region != TravelRules.Hideout || gm == null) return;"), "hideout only");
         Expect(lf.Contains("pk.Region == TravelRules.Hideout"), "only hideout poses count (a carried car keeps its origin pose until arrival)");
-        Expect(lf.Contains("if (seated || moving)") && lf.Contains("if (!lc.Arranged) { lc.Arranged = true;") && lf.Contains("if (moving) continue;") && lf.Contains("continue;   // moving under its holder"), "driven cars are never moved (marked arranged); moving cars are not obstacles, stopped seated cars are");
-        Expect(lf.Contains("HideoutLayout.Plan(cars, V(main.position), V(second.position))") && lf.Contains("_gmHideoutCar(gm)") && lf.Contains("_vmSecondPos(vm)"), "original spots GameManager.SpawnHideoutCar / VehiclesManager.secondCarHideoutPos");
+        Expect(lf.Contains("if (seated || moving)") && lf.Contains("if (!lc.Arranged) { lc.Arranged = true;") && lf.Contains("if (moving) { anyMoving = true; continue; }") && lf.Contains("anyMoving = true; continue; }   // moving under its holder"), "driven cars are never moved (marked arranged); moving cars are not obstacles, stopped seated cars are");
+        Expect(lf.Contains("HideoutLayout.Plan(cars, V(main.position), V(second.position), anyMoving)") && lf.Contains("_gmHideoutCar(gm)") && lf.Contains("_vmSecondPos(vm)"), "original spots GameManager.SpawnHideoutCar / VehiclesManager.secondCarHideoutPos");
         Expect(lf.Contains("_carRotYHideout(lc.Car)") && lf.Contains("second.rotation"), "original rotations (GameManager.Start rotY_hideout, InitiateMainCar)");
         Expect(!ly.Contains("SetPark") && !ly.Contains("SendProposal") && !ly.Contains("Commit(") && !ly.Contains("FlushFleet"), "no park pose / record / proposal written by the layout (proxy never changes its car)");
         Expect(!ly.Contains("FindObjectOfType") && !ly.Contains("FindObjectsOfType") && !ly.Contains("GameObject.Find"), "no scene search");
@@ -417,7 +459,105 @@ static class V14Tests
         Expect(PresentationRules.Decide(fleet[Ranger], Madison, 2) == CarPresentation.RemoteVisual && PresentationRules.Decide(fleet[GT], Madison, 1) == CarPresentation.Hidden, "other regions unchanged");
         var v = Src("Plugin", "VehicleSync.cs");
         Expect(Body(v, "void Activate(UnityEngine.Object gm, LocalCar lc, int region)").Contains("else if (!lc.Placed && region == TravelRules.Hideout) PlaceNewHideoutCar(gm, lc);"), "initial placement of an unplaced object kept (valid start pose before the layout)");
-        Expect(ProtocolInfo.ProtocolVersion == 32 && ProtocolInfo.ModVersion == "0.21.3", "protocol 32 / mod 0.21.3");
+        Expect(ProtocolInfo.ProtocolVersion == 33 && ProtocolInfo.ModVersion == "0.22.0", "protocol 33 / mod 0.22.0");
+    }
+
+    // ------------------------------------------------------------------------------------------------ V1.4.1 medkit
+    sealed class FakeMedkit : IMedkitHost
+    {
+        public bool Used, Loading; public int Applies; public byte LastSlot; public ushort LastCar;
+        public bool TryUsed(out bool used) { used = Used; return !Loading; }
+        public bool Apply(byte slot, ushort car) { Applies++; Used = true; LastSlot = slot; LastCar = car; return true; }
+    }
+    static uint _mpid;
+    static WorldHost MedHost(int p1, int p2, int rangerRegion, int gtRegion, out FakeMedkit m)
+    {
+        var wh = new WorldHost(31) { FallbackHours = 12f };
+        wh.SetPlayerRegion(1, p1, 0); wh.SetPlayerRegion(2, p2, 0);
+        wh.Fleet.Register(Ranger, 0, true, wh.Outbox); wh.Fleet.Register(GT, 1, true, wh.Outbox);
+        wh.Fleet.Place(Ranger, rangerRegion, wh.Outbox); wh.Fleet.Place(GT, gtRegion, wh.Outbox);
+        wh.FleetInitialized(0);
+        m = new FakeMedkit(); wh.MedkitHost = m; wh.Outbox.Clear();
+        return wh;
+    }
+    static ProposalCode UseMed(WorldHost wh, ushort car, uint pid = 0, byte[] raw = null)
+    {
+        uint rev; int sr; float sh;
+        var p = new StateEntry { Scope = StateScope.Session, ScopeArg = car, Key = WorldKeys.MedkitUse, Value = raw ?? new byte[] { 1 } };
+        return wh.HandleProposal("cli", 2, pid != 0 ? pid : ++_mpid, p, 1, out rev, out sr, out sh);
+    }
+    static bool MedState(WorldHost wh, out MedkitState s) { var e = wh.Reg.Get(StateScope.Session, 0, WorldKeys.Medkit); s = default(MedkitState); return e != null && MedkitState.TryParse(e.Value, out s); }
+
+    static void MedkitOnce()
+    {
+        FakeMedkit m; var wh = MedHost(Hideout, Hideout, Hideout, Hideout, out m);
+        uint pid = ++_mpid;
+        Expect(UseMed(wh, Ranger, pid) == ProposalCode.Accepted && m.Applies == 1 && m.LastSlot == 2 && m.LastCar == Ranger, "Player 2's use applied once on the host (original key + removal)");
+        MedkitState s; Expect(MedState(wh, out s) && s.Used && s.Car == Ranger && s.By == 2, "shared state committed: used, car, by P2");
+        Expect(wh.Outbox.Count > 0, "state change sent to the client");
+        Expect(UseMed(wh, Ranger, pid) == ProposalCode.Accepted && m.Applies == 1, "retransmitted proposal: cached answer, never applied twice");
+        Expect(UseMed(wh, GT) == ProposalCode.Stale && m.Applies == 1, "second use (other car's medkit too): Stale - single use per save");
+        FakeMedkit m2; var wh2 = MedHost(Hideout, Hideout, Hideout, Hideout, out m2);
+        m2.Used = true; Expect(wh2.PublishMedkit(new MedkitState { Used = true, Car = GT, By = 1 }), "host's own use committed");
+        Expect(!wh2.PublishMedkit(new MedkitState { Used = true, Car = GT, By = 1 }), "unchanged state not re-committed");
+        Expect(UseMed(wh2, GT) == ProposalCode.Stale && m2.Applies == 0, "host used it first: Player 2 refused, nothing applied");
+        Expect(wh2.PublishMedkit(new MedkitState()) && MedState(wh2, out s) && !s.Used, "host save state 'available' published at a scene bind (other save / new game)");
+    }
+
+    static void MedkitRefusals()
+    {
+        FakeMedkit m; var wh = MedHost(Hideout, Hideout, AutoShop, Hideout, out m);
+        Expect(UseMed(wh, Ranger) == ProposalCode.NotAuthorized && m.Applies == 0, "Ranger is at the Auto Shop: its hideout object is a travel proxy -> refused");
+        Expect(UseMed(wh, GT) == ProposalCode.Accepted && m.Applies == 1, "the real car in the requester's region works");
+        FakeMedkit m2; var wh2 = MedHost(Hideout, Madison, Hideout, Hideout, out m2);
+        Expect(UseMed(wh2, Ranger) == ProposalCode.NotAuthorized, "requester in another region than the car -> refused");
+        Expect(UseMed(wh2, 77) == ProposalCode.Invalid, "unknown car -> Invalid");
+        Expect(UseMed(wh2, Ranger, 0, new byte[] { 2 }) == ProposalCode.Invalid && UseMed(wh2, Ranger, 0, new byte[0]) == ProposalCode.Invalid && UseMed(wh2, 0) == ProposalCode.Invalid, "malformed -> Invalid");
+        FakeMedkit m3; var wh3 = MedHost(Hideout, Hideout, Hideout, Hideout, out m3); m3.Loading = true;
+        Expect(UseMed(wh3, Ranger) == ProposalCode.Busy && m3.Applies == 0, "host scene loading -> Busy, nothing consumed");
+        m3.Loading = false; Expect(UseMed(wh3, Ranger) == ProposalCode.Accepted, "after the load it works");
+        var wh4 = MedHost(Hideout, Hideout, Hideout, Hideout, out m3); wh4.MedkitHost = null;
+        Expect(UseMed(wh4, Ranger) == ProposalCode.Busy, "no host medkit subsystem -> Busy (fail closed)");
+        string why;
+        Expect(MedkitRules.Decide(Ranger, true, Hideout, Regions.None, false, out why) == ProposalCode.NotAuthorized, "requester region unknown -> refused");
+    }
+
+    static void MedkitSeat()
+    {
+        Expect(MedkitRules.SeatReachable(true, true) && MedkitRules.SeatReachable(false, false) && MedkitRules.SeatReachable(true, false) && !MedkitRules.SeatReachable(false, true),
+            "reachable from the seat: right door open (original tag) or engine off; not with door closed and engine running");
+        var sp = new SeatProbe { Gates = true, FirstPerson = true, Ray = InteractTarget.Medkit, MedkitReachable = true };
+        Expect(PassengerInteraction.Seated(sp) == SeatAction.UseMedkit, "first person, medkit reachable -> use");
+        sp.MedkitReachable = false; Expect(PassengerInteraction.Seated(sp) == SeatAction.OutOfReach, "not reachable -> nothing happens");
+        sp.FirstPerson = false; sp.MedkitReachable = true; Expect(PassengerInteraction.Seated(sp) == SeatAction.Exit, "third person has no original ray -> exit as before");
+        sp.FirstPerson = true; sp.Gates = false; Expect(PassengerInteraction.Seated(sp) == SeatAction.None, "gates closed -> nothing");
+        sp.Gates = true; sp.Ray = InteractTarget.CarBox; Expect(PassengerInteraction.Seated(sp) == SeatAction.OpenStorage, "CarBox unchanged");
+        var st = new MedkitState { Used = true, Car = GT, By = 2 }; MedkitState back;
+        Expect(MedkitState.TryParse(st.ToBytes(), out back) && back.Used && back.Car == GT && back.By == 2 && st.ToBytes().Length == 4, "4-byte state codec");
+        Expect(!MedkitState.TryParse(new byte[] { 2, 0, 0, 0 }, out back) && !MedkitState.TryParse(new byte[] { 1, 0, 0, 3 }, out back) && !MedkitState.TryParse(new byte[3], out back) && !MedkitState.TryParse(null, out back), "malformed state rejected");
+    }
+
+    static void MedkitGlue()
+    {
+        var mk = Src("Plugin", "MedkitSync.cs"); var il = Src("Plugin", "MedkitIL.cs"); var vs = Src("Plugin", "VehicleSync.cs"); var pl = Src("Plugin", "Plugin.cs");
+        var ro = Body(mk, "static void RunOriginal(object ps, GameObject go)");
+        int a = ro.IndexOf("_heal(ps)"), b = ro.IndexOf("snd.Play()"), c = ro.IndexOf("UnityEngine.Object.Destroy(go)"), d = ro.IndexOf("_prefSet(MedkitRules.PrefKey, 1)");
+        Expect(a > 0 && a < b && b < c && c < d, "the replaced original sequence runs unchanged and in order: Heal, healSound.Play, Destroy, SPrefs Medkit = 1");
+        Expect(il.Contains("mi.Name != \"Heal\"") && il.Contains("(code[k - 2].operand as string) == \"Medkit\"") && il.Contains("m2.Name == \"SetInt\"") && il.Contains("if (count != 1 || hook == null) return code;"), "IL rewrite bound to the verified pattern, applied only once (real IL verified by RedirectTest)");
+        Expect(mk.Contains("if (_sites != 1)") && mk.Contains("_h.UnpatchSelf()"), "pattern not found exactly once -> feature disabled, original untouched");
+        var use = Body(mk, "void Use(object ps, GameObject go, bool seat)");
+        Expect(use.IndexOf("if (proxy)") >= 0 && use.IndexOf("if (proxy)") < use.IndexOf("RunOriginal(ps, go)"), "travel proxy: nothing happens (checked before any use)");
+        Expect(use.Contains("Key = WorldKeys.MedkitUse") && use.Contains("if (_pend != null) return;"), "client: one host proposal at a time, never a local heal before the answer");
+        Expect(use.IndexOf("WorldKeys.MedkitUse") > use.IndexOf("if (_host)"), "only the host runs the original at once");
+        var res = Body(mk, "internal bool OnProposalResult(uint id, ProposalCode code)");
+        Expect(res.Contains("if (code == ProposalCode.Accepted)") && res.Contains("RunOriginal(p.Ps"), "client: original heal + consumption only after the host accepted");
+        Expect(Body(mk, "internal void SeatUse(object ps, GameObject go)").Contains("\"not_bleeding\""), "seat: original bleeding requirement + original warning key");
+        var tp = Body(mk, "static void TagPostfix(Component __instance)");
+        Expect(tp.Contains("\"Untagged\"") && !tp.Contains("FindObject"), "proxy medkit prompt suppressed without a search");
+        Expect(!Body(mk, "public void Update()").Contains("FindObject") && Body(mk, "void RemoveAll(string why)").Contains("FindObjectsOfType"), "FindObjectsOfType only when a committed change removes the medkits");
+        Expect(vs.Contains("case SeatAction.UseMedkit:") && vs.Contains("mk.SeatUse(ps, _seatMedkit)") && vs.Contains("MedkitRules.SeatReachable(_seatMedkit.CompareTag(\"Medkit\"), EngineOn(t.Car.Id))"), "passenger seat wired to the shared use path");
+        Expect(pl.Contains("_medkit = new MedkitSync(node, log, _world)") && pl.Contains("Release(ref _medkit, \"MEDKIT\")"), "subsystem created per session and released (offline game unpatched)");
+        Expect(Src("Plugin", "WorldSync.cs").Contains("ProposalResultHook10(id, code)"), "proposal results routed");
     }
 
     // ------------------------------------------------------------------------------------------------ source helpers

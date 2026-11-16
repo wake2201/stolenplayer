@@ -37,6 +37,16 @@ namespace TS2MP.Plugin
         // The car is presented here only as a frozen travel access point (AwayProxy), not as the car itself.
         internal bool IsTravelProxy(ushort id) { foreach (var lc in _local) if (lc.Id == id) return lc.Active && lc.IsProxy && !lc.Observed; return false; }
 
+        // V1.4.1 medkit: the fleet id of an original CarController (Medkit.myCar) and whether it is only a travel proxy here.
+        internal bool CarOf(object car, out ushort id, out bool proxy)
+        {
+            id = VehicleIds.None; proxy = false;
+            foreach (var lc in _local) if (ReferenceEquals(lc.Car, car)) { id = lc.Id; proxy = lc.IsProxy && !lc.Observed; return true; }
+            return false;
+        }
+        // host-committed fleet flag EngineOn (both PCs; the holder reports it)
+        internal bool EngineOn(ushort id) { VehicleRecord r; return Rec(id, out r) && (r.Flags & VehicleFlags.EngineOn) != 0; }
+
         sealed class BuyReq { public uint ProposalId; public UnityEngine.Object Tutorial; public double At; }
 
         Func<object, List<string>> _gmParcel, _gmMission;

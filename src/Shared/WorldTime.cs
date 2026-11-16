@@ -509,6 +509,37 @@ namespace TS2MP.Shared
             Outbox.Add(e); return true;
         }
 
+        // ---- V1.4.1 shared single-use car medkit ----
+        public IMedkitHost MedkitHost;   // host plugin: original key, removal of the local medkit objects
+        public long MedkitUses, MedkitRefusals;
+
+        // One Player-2 use (proposal "medkitUse", arg = car id): decided and applied in this single host step -> exactly once.
+        public ProposalCode UseMedkit(byte slot, ushort car, out string why)
+        {
+            bool used; VehicleRecord r;
+            if (MedkitHost == null || !MedkitHost.TryUsed(out used)) { why = "host not ready"; MedkitRefusals++; return ProposalCode.Busy; }
+            bool known = Fleet.TryGet(car, out r);
+            var code = MedkitRules.Decide(car, known, known ? r.Region : Regions.None, RegionOfSlot(slot), used, out why);
+            if (code == ProposalCode.Accepted)
+            {
+                if (!MedkitHost.Apply(slot, car)) { why = "host apply failed"; code = ProposalCode.Busy; }
+                else { MedkitUses++; PublishMedkit(new MedkitState { Used = true, Car = car, By = slot }); }
+            }
+            if (code != ProposalCode.Accepted) MedkitRefusals++;
+            return code;
+        }
+
+        // Host: commit the shared medkit state (host save key at a scene bind, the host's own use, an applied Player-2 use).
+        public bool PublishMedkit(MedkitState s)
+        {
+            var cur = Reg.Get(StateScope.Session, 0, WorldKeys.Medkit);
+            MedkitState old;
+            if (cur != null && MedkitState.TryParse(cur.Value, out old) && old.Used == s.Used && (!s.Used || old.Car == s.Car && old.By == s.By)) return false;
+            var e = Reg.Commit(StateScope.Session, 0, WorldKeys.Medkit, s.ToBytes());
+            if (e == null) return false;
+            Outbox.Add(e); return true;
+        }
+
         // ---- V1.2 vehicle purchase / unlock ----
         public IVehicleShopHost Shop;   // host plugin: shared balance, garage condition, charge (original money + unlock key)
         public long Purchases, PurchaseRefusals;
@@ -1047,6 +1078,14 @@ namespace TS2MP.Shared
                 HideoutBuyRequest hr; string why = null;
                 if (p.ScopeArg != 0 || !HideoutBuyRequest.TryParse(p.Value, out hr)) { code = ProposalCode.Invalid; LastNote = "hideout buy by P" + senderSlot + " -> Invalid"; }
                 else { code = BuyHideout(senderSlot, hr, out why); LastNote = "hideout buy " + hr + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : ""); }
+            }
+            else if (p.Scope == StateScope.Session && p.Key == WorldKeys.MedkitUse)
+            {
+                ushort vid = p.ScopeArg > 0 && p.ScopeArg <= ushort.MaxValue ? (ushort)p.ScopeArg : VehicleIds.None;
+                string why = null;
+                if (vid == VehicleIds.None || p.Value == null || p.Value.Length != 1 || p.Value[0] != 1) code = ProposalCode.Invalid;
+                else code = UseMedkit(senderSlot, vid, out why);
+                LastNote = "medkit car#" + vid + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
             }
             else if (p.Scope == StateScope.Session && p.Key == WorldKeys.VehicleBuy)
             {

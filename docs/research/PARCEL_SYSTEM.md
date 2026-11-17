@@ -44,7 +44,10 @@ Parcel loot: Madison 10, Hillville 6 `Pickupable`s with `lock_parcel_after_picku
 - Locker doors = region object kind `ParcelLocker` (22): `ParcelCode.OpenLocker` postfix, replica `WorldObjectBridge.OpenLocker`.
 - Parcel loot = existing W4.2D shared loot (one take, taker's inventory, host parcel list mutation).
 - Story clue: Player 2's read never runs `AdvanceStory` (no shared story yet, W6); the host's own read keeps it.
+  **Superseded by W6A (0.26.0):** Player 2's read of note_103 advances the shared story through the host's original
+  `AdvanceStory` (`src/Plugin/StorySync.cs`, `docs/research/STORY_SYSTEM.md`); the W2B suppression remains only as a
+  fallback when StorySync is not running. A note hidden by `ReadNote.Start` (parcel taken) stays readable while its step is current.
 
 ## 5. Open
 - [Q] Hacked-code path in game (which items carry `hacked_parcel_pref`).
-- Shared story steps from notes need W6 (shared missions).
+- Shared story steps from notes need W6 (shared missions). W6A: note_103 done; other story notes need their own verified trigger entry.

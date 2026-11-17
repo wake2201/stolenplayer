@@ -234,6 +234,8 @@ namespace TS2MP.Shared
         public const string Medkit = "medkit";       // Session scope (arg 0): MedkitState 4 B, host-committed single-use car medkit (V1.4.1)
         public const string ParcelCode = "parcelCode"; // Session scope (arg 0): ParcelCodeRequest (source + pref), Player-2 parcel-code discovery (client proposal, W2B protocol 36), never stored
         public const string Parcels = "parcels";     // Session scope (arg 0): ParcelState, host-committed shared parcel codes (host discoveredOnMap set, W2B)
+        public const string StoryAdvance = "storyAdvance"; // Session scope (arg 0): StoryAdvanceRequest, Player-2 original story trigger (client proposal, W6A protocol 37), never stored
+        public const string Story = "story";         // Session scope (arg 0): StoryState, host-committed shared story index + stage key (host StoryManager.story, W6A)
         public const string VehicleBuy = "vbuy";       // Session scope (arg = vehicle id): 1 byte 1 = buy this car (client proposal, V1.2 protocol 31), never stored
         public const string VehicleRide = "vehicleRide"; // Session scope (arg = vehicle id): 1 byte 1 = reserve passenger seat, 2 = seated (confirm), 0 = leave (M4.3, protocol 10)
         public const string P2Inv = "p2inv";             // Session scope (arg 2): committed Player-2 inventory (P2Inventory), host-owned (M4.3.3, protocol 13)

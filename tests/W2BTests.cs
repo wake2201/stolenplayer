@@ -21,7 +21,7 @@ static class W2BTests
 
     static int Main()
     {
-        Run("01 wire + rules: parcelCode request / parcels state codecs, fuzz, size bound, original conditions, keys, protocol 36 / mod 0.25.0", Wire);
+        Run("01 wire + rules: parcelCode request / parcels state codecs, fuzz, size bound, original conditions, keys, protocol 37 / mod 0.26.0", Wire);
         Run("02 first story code note (note_103, parcel1_madison): Player 2 reads it, the host campaign learns the code, Player 1 opens Madison locker1", FirstStoryNote);
         Run("03 independent code (note_201, parcel201 Hillville): Player 1 reads it, Player 2 opens the Hillville locker with 69999", IndependentCode);
         Run("04 across maps, saves, travel, reconnect, reload: shared codes stay available; reload without save = original loss on both", MapsAndReloads);
@@ -29,7 +29,7 @@ static class W2BTests
         Run("06 simultaneous discovery of the same code by both players: one host list entry, Unchanged for the late one", Simultaneous);
         Run("07 hacked electronic (hacked_parcel_pref): host queues like the original, usable on both after the host's save + load", Hack);
         Run("08 invalid / stale requests: unknown pref, malformed bytes, wrong arg, host not ready - nothing changes", Invalid);
-        Run("09 story clue: Player 2 never advances a private story; no objective, no loot, no money from a note; host keeps the original step", Story);
+        Run("09 story clue (parcel path): Player 2 never advances a private story copy; no loot, no money from a note; host keeps the original step (shared step: W6ATests)", Story);
         Run("10 parcel locker doors: region kind ParcelLocker, open by either player once, concurrent open, late join silent, region reload resets", Lockers);
         Run("11 parcel loot: one take per parcel (P1 claim vs P2 take race), taker's inventory only, host parcel list mutation once, sale money once", ParcelLoot);
         Run("12 Unity glue: hooks, story suppression restore, host apply mirrors the IL, set-true-only apply, no per-frame scans, regressions", Glue);
@@ -215,7 +215,7 @@ static class W2BTests
         Expect(ParcelRules.NoteDiscovers(false, 0) && !ParcelRules.NoteDiscovers(true, 0) && !ParcelRules.NoteDiscovers(false, 1) && !ParcelRules.NoteDiscovers(false, 2), "ReadNote condition IL_0081..IL_00a3");
         Expect(ParcelRules.HackQueues(0) && !ParcelRules.HackQueues(1) && !ParcelRules.HackQueues(2), "HackedElectronic condition IL_0039..IL_003f");
         Expect(WorldKeys.ParcelCode == "parcelCode" && WorldKeys.Parcels == "parcels", "keys");
-        Expect(ProtocolInfo.ProtocolVersion == 36 && ProtocolInfo.ModVersion == "0.25.0", "protocol 36 / mod 0.25.0 (new proposal + kind: both PCs need 0.25.0)");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.0", "protocol 37 / mod 0.26.0 (W6A on top of W2B: both PCs need 0.26.0)");
     }
 
     // ---------------------------------------------------------------- 02
@@ -231,7 +231,7 @@ static class W2BTests
         Expect(Shared(wh).Has("parcel1_madison") && Shared(wh).Discovered.Count == 1, "shared state lists the code");
         Expect(hg.G.EnterCode("16161", "Madison St.") && hc.Opened, "P1 opens Madison locker1 with the code P2 found");
         Expect(p2.G.Anim == 1, "P2 no second animation (own discovery)");
-        Expect(hg.G.StoryAdvanced == 0 && p2.G.StoryAdvanced == 0 && p2.StorySuppressed == 1, "story step not advanced by Player 2's read (W6 dependency)");
+        Expect(hg.G.StoryAdvanced == 0 && p2.G.StoryAdvanced == 0 && p2.StorySuppressed == 1, "Player 2's private copy never advances (this harness models the parcel path only; the shared step is W6A, tests/W6ATests.cs)");
         hg.G.Save();
         Expect(hg.G.Pref("parcel1_madison") == 1, "durable with the host's next checkpoint (original SPrefs 1)");
     }
@@ -348,7 +348,7 @@ static class W2BTests
         HostGame hg; var wh = NewHost(out hg); var p2 = new Client(wh);
         hg.G.Story = "story14"; p2.G.Story = "story14";
         p2.ReadNote(Note103);
-        Expect(p2.G.StoryAdvanced == 0 && hg.G.StoryAdvanced == 0, "Player 2: no private story step, host story untouched");
+        Expect(p2.G.StoryAdvanced == 0 && hg.G.StoryAdvanced == 0, "Player 2: no private story step; parcel path alone leaves the host story (W6A applies it, tests/W6ATests.cs 02)");
         Expect(hg.G.MissionList.Count == 0 && p2.G.MissionList.Count == 0 && hg.G.Inventory == 0 && p2.G.Inventory == 0 && hg.G.Money == 0 && p2.G.Money == 0, "a note grants no loot, no money, no mission string");
         Expect(p2.G.Xp == 1 && hg.G.Xp == 0, "note XP stays the reader's (original addPoint path untouched)");
         HostRead(wh, hg, Note103);
@@ -424,7 +424,7 @@ static class W2BTests
     {
         var ps = Src("Plugin", "ParcelSync.cs"); var code = Strip(ps);
         Expect(code.Contains("AccessTools.Method(note, \"BeginRead\", Type.EmptyTypes)") && code.Contains("AccessTools.Method(item, \"HackedElectronic\", Type.EmptyTypes)"), "hooks on the original ReadNote.BeginRead / ItemID.HackedElectronic");
-        Expect(code.Contains("if (!i._host && _noteAdvance(__instance)) { _setNoteAdvance(__instance, false);") && code.Contains("if ((__state & 2) != 0) _setNoteAdvance(__instance, true);"), "Player 2 story step suppressed for the one call and restored");
+        Expect(code.Contains("if (!i._host && !StorySync.ClientHandlesStory && _noteAdvance(__instance)) { _setNoteAdvance(__instance, false);") && code.Contains("if ((__state & 2) != 0) _setNoteAdvance(__instance, true);"), "fallback (StorySync not running): Player 2 story step suppressed for the one call and restored");
         int restore = code.IndexOf("if ((__state & 2) != 0) _setNoteAdvance(__instance, true);", StringComparison.Ordinal), inst = code.IndexOf("var i = Instance; if (i == null) return;", restore, StringComparison.Ordinal);
         Expect(restore > 0 && inst > restore, "restore happens before the session check (never left false)");
         Expect(code.Contains("ParcelRules.NoteDiscovers(_codeDiscovered(c), saved)") && code.Contains("_setDiscovered(c, true);") && code.Contains("list.Add(pref);") && code.Contains("_addNewCode(inv)"), "host apply = ReadNote IL_00b6..IL_00d8");

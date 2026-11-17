@@ -7,10 +7,10 @@
 //     (re)load (MainScene's ParcelStorage instance changed: travel / reload) and after a reconnect snapshot - so the original
 //     ParcelMinigame accepts the code on both PCs. A code learned from the other player plays the original "new code" phone
 //     animation (Inventory.AddNewParcelCode, live changes only).
-//   - Story clue: a note with advanceStory read by Player 2 never advances Player 2's own story (the original
-//     StoryManager.AdvanceStory would progress a private copy of the host campaign; shared story = W6). The prefix clears
-//     ReadNote.advanceStory for that one call and the postfix restores it; everything else of the note runs. The host's own
-//     reading keeps the original story step.
+//   - Story clue: W6A (src/Plugin/StorySync.cs) owns the story step of a note read by Player 2: the original
+//     AdvanceStory call becomes a host-applied shared step (note_103 -> story14). Fallback only while StorySync is not
+//     running: the prefix clears ReadNote.advanceStory for that one call and the postfix restores it (W2B behaviour, no
+//     private story copy on Player 2); everything else of the note runs. The host's own reading keeps the original step.
 //   - Locker doors (ParcelLocker.wasOpened) are region objects: WorldObjectSync / WorldObjectBridge.OpenLocker. Parcel loot
 //     inside: WorldLootSync (W4.2D: one take, the taker's inventory, host parcel list mutation).
 // Cost: client = one field read + one registry head compare per frame; host = one 14-entry bool scan every 2 s; hooks once per
@@ -89,7 +89,7 @@ namespace TS2MP.Plugin
             try
             {
                 if (_noteAddCode(__instance) && !i.Discovered(_notePref(__instance))) __state |= 1;
-                if (!i._host && _noteAdvance(__instance)) { _setNoteAdvance(__instance, false); __state |= 2; i._storySuppressed++; }
+                if (!i._host && !StorySync.ClientHandlesStory && _noteAdvance(__instance)) { _setNoteAdvance(__instance, false); __state |= 2; i._storySuppressed++; }   // W6A: fallback only
             }
             catch (Exception ex) { i._log.Error("PARCEL hook ReadNote (prefix)", ex); }
         }
@@ -99,7 +99,7 @@ namespace TS2MP.Plugin
             var i = Instance; if (i == null) return;
             try
             {
-                if ((__state & 2) != 0) { i._log.Info("PARCEL story note '" + ((Component)__instance).name + "' read by Player 2: its story step stays with the host (shared story needs W6)"); }
+                if ((__state & 2) != 0) { i._log.Info("PARCEL story note '" + ((Component)__instance).name + "' read by Player 2: its story step stays with the host (StorySync not running)"); }
                 string pref = _notePref(__instance);
                 if ((__state & 1) != 0 && i.Discovered(pref)) i.OnLocal(ParcelSource.Note, pref, ((Component)__instance).name);
             }

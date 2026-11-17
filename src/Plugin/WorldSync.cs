@@ -768,6 +768,7 @@ namespace TS2MP.Plugin
                 if (ProposalResultHook9 != null && ProposalResultHook9(id, code)) return; // W1 shared hideout purchases
                 if (ProposalResultHook10 != null && ProposalResultHook10(id, code)) return; // V1.4.1 shared medkit
                 if (ProposalResultHook11 != null && ProposalResultHook11(id, code)) return; // W2B shared parcel codes
+                if (ProposalResultHook12 != null && ProposalResultHook12(id, code)) return; // W6A shared story
                 if (_sleep.IsStart(id))
                 {
                     _sleep.StartResult(ok);
@@ -848,6 +849,7 @@ namespace TS2MP.Plugin
         internal Func<uint, ProposalCode, bool> ProposalResultHook9;   // W1 HideoutSync (hbuy)
         internal Func<uint, ProposalCode, bool> ProposalResultHook10;  // V1.4.1 MedkitSync (medkitUse)
         internal Func<uint, ProposalCode, bool> ProposalResultHook11;  // W2B ParcelSync (parcelCode)
+        internal Func<uint, ProposalCode, bool> ProposalResultHook12;  // W6A StorySync (storyAdvance)
         // M4.3.3 hotfix: bounded recovery when an expected entry (Player-2 record) is missing on the client.
         internal void RequestResync(string why)
         {

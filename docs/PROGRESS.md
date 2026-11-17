@@ -1,5 +1,36 @@
 ﻿# PROGRESS
 
+## W6A — Shared story progression foundation — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
+Mod **0.26.0, protocol 37** (wire change: proposal `storyAdvance`, session state `story`). Both PCs need 0.26.0. Built on `35adae2` (W2B). Manual QA: `docs/TESTING.md` §49. Research / mission-system map: `docs/research/STORY_SYSTEM.md`.
+
+### A. Preserved (classified before the change)
+- W2B parcel codes (`ParcelSync`: discovery proposal, host apply, shared set, locker doors, parcel loot) IMPLEMENTED BUT UNVERIFIED (QA pending) - unchanged except the story restriction, which is now a fallback only (used when StorySync is not running).
+- Campaign bootstrap (`CampaignBootstrap`: host `Story` key in the join snapshot), `WorldMirror` (`Story` key family HostWorld, not mirrored) - unchanged.
+- Before W6A: Player 2's own triggers / polls advanced a private sandbox copy of the story (DEFECTIVE for a shared campaign, WORLD_SYNC_AUDIT K); W2B blocked only the note_103 path.
+
+### B. Original (Cecil IL 1.27c)
+- `StoryManager.AdvanceStory` = `if (isFreeMode) return; story++; InitiateStory()`; `InitiateStory` = HUD + stage-start effects (calls, tutorials, unlocks, jobs, debt, chase, teleport, home / jail skips in place); `BeginStory` = `Story` key + `InitiateStory`; no checkpoints, `Story` saved only if higher. 29 `AdvanceStory` call sites. note_103 (`story object 103 notka/pPlane3`) exists only during stage 18 `story14` and calls `AdvanceStory` when the current key is `story14`; `ReadNote.Start` hides it when its parcel was taken (`SPrefs >= 2`).
+
+### C. Implementation
+- `src/Shared/Story.cs`: `StoryTriggers` (verified trigger table; W6A: note_103 -> story14), `StoryAdvanceRequest` / `StoryState` codecs, `IStoryHost`, `StoryRules` (host decision, client-stripped stage-start flags). `WorldTime.cs`: `WorldHost.AdvanceStory` / `PublishStory` + `storyAdvance` dispatch. `WorldState.cs`: keys.
+- `src/Plugin/StorySync.cs`: host publishes its live index (per-frame int compare, commit on change, only consistent states); Player 2: `AdvanceStory` prefix never runs the original, listed triggers (context from `ReadNote.BeginRead` prefix / postfix) are proposed (Busy retried <= 5), others logged once; follow = original `BeginStory` path (`story = host index`, `InitiateStory`, `SaveStory`) with `advance_if_home`, `advance_if_jail`, `police_chase_on_start`, `first_mission`, `deduct_debt` cleared for that call and restored; `ReadNote.Start` postfix keeps a parcel-hidden note while its step is current.
+- `ParcelSync.cs`: W2B story suppression only when StorySync is not running. `Plugin.cs`: lifecycle, update, PERF line. `WorldSync.cs`: result hook 12.
+
+### D. Evidence
+- `tools/build.ps1 -Test`: plugin 0 warnings; **ALL 40 SUITES PASSED** incl. new `tests/W6ATests.cs` (11/11: P2 and P1 read note_103, exactly once / retransmission / replay, concurrent both orders, prerequisites + host-only start effects on real stage data 0..40, personal XP vs shared code / step, save / reload / reconnect / late join / disconnect, note visibility, unlisted triggers, glue scans). Changed expectations only: version pins (13 suites + package test), V161 protocol pin, W2B story messages + glue (fallback condition).
+- Proves the host model, rules and glue structure only; no in-game run.
+
+### E. Performance
+- Per frame: one `story` int read (both roles); client + one registry head compare. Hooks: `AdvanceStory` prefix (one static check on the host), `ReadNote.BeginRead` / `Start` (once per read / note activation; path string built only for advancing notes). Follow: at most once per second while the index differs (normally once per story change). Traffic: <= 140 B proposal per Player-2 trigger, ~20 B `story` state per story change. FPS: no measurable impact expected; not measured in game.
+
+### F. Open / risks
+- Only note_103 / story14 is a supported Player-2 story action. All other Player-2 story triggers and polls now do nothing on Player 2 (before: private divergent copy). Player 2 still sees every host step. Next slices: `docs/research/STORY_SYSTEM.md` §6.
+- Player 2's `SecurityCamera` route for story14 is not listed (camera state not shared).
+- Direct `story++` paths on Player 2 (heist start, ending) are reset to the host index within 1 s; heists / ending need their own slice.
+- Location-based steps (home / jail skips) follow the host's location only (original runs on the host).
+- Player 2's debt display is not deducted by stage starts (host-only; W7).
+- Trust boundary: the host cannot verify that Player 2 really read the note (as for minigames / W2B).
+
 ## W2B — Shared parcel lockers, codes & story clues — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
 Mod **0.25.0, protocol 36** (wire change: proposal `parcelCode`, session state `parcels`, region-object kind `ParcelLocker = 22` / registry `wobj22`). Both PCs need 0.25.0. Built on `bbfe919` (W2A). Manual QA: `docs/TESTING.md` §48. Research: `docs/research/PARCEL_SYSTEM.md`.
 

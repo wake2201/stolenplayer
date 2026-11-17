@@ -570,6 +570,36 @@ namespace TS2MP.Shared
             Outbox.Add(e); return true;
         }
 
+        // ---- W6A shared story ----
+        public IStoryHost StoryHost;   // host plugin: the host's own StoryManager (src/Plugin/StorySync.cs)
+        public long StoryAdvances, StoryRefusals;
+
+        // One Player-2 story trigger (proposal "storyAdvance"): decided and applied in this single host step with the host's
+        // original AdvanceStory -> exactly once (retransmission: proposal cache; replay / concurrent: index moved -> Stale).
+        public ProposalCode AdvanceStory(byte slot, StoryAdvanceRequest r, out string why)
+        {
+            int idx = 0; string key = null; bool free = false;
+            bool ready = StoryHost != null && StoryHost.TryCurrent(out idx, out key, out free);
+            var code = StoryRules.Decide(ready, free, idx, key, r, out why);
+            if (code == ProposalCode.Accepted && !StoryHost.Advance(idx)) { code = ProposalCode.Busy; why = "host AdvanceStory did not move the story"; }
+            if (code == ProposalCode.Accepted) { StoryAdvances++; PublishStory(slot); }
+            else if (code != ProposalCode.Unchanged && code != ProposalCode.Stale) StoryRefusals++;
+            return code;
+        }
+
+        // Host: commit the host's live story index when it changed (by = who caused it: 0 host campaign, 2 Player 2).
+        public bool PublishStory(byte by)
+        {
+            int idx; string key; bool free;
+            if (StoryHost == null || !StoryHost.TryCurrent(out idx, out key, out free) || string.IsNullOrEmpty(key)) return false;
+            var s = new StoryState { Index = idx, Key = key, By = by };
+            var cur = Reg.Get(StateScope.Session, 0, WorldKeys.Story); StoryState old;
+            if (cur != null && StoryState.TryParse(cur.Value, out old) && old.SameAs(s)) return false;
+            var e = Reg.Commit(StateScope.Session, 0, WorldKeys.Story, s.ToBytes());
+            if (e == null) return false;
+            Outbox.Add(e); return true;
+        }
+
         // ---- V1.2 vehicle purchase / unlock ----
         public IVehicleShopHost Shop;   // host plugin: shared balance, garage condition, charge (original money + unlock key)
         public long Purchases, PurchaseRefusals;
@@ -1154,6 +1184,12 @@ namespace TS2MP.Shared
                 ParcelCodeRequest pr; string why = null;
                 if (p.ScopeArg != 0 || !ParcelCodeRequest.TryParse(p.Value, out pr)) { code = ProposalCode.Invalid; LastNote = "parcel code by P" + senderSlot + " -> Invalid"; }
                 else { code = DiscoverParcel(senderSlot, pr, out why); LastNote = "parcel code " + pr + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : ""); }
+            }
+            else if (p.Scope == StateScope.Session && p.Key == WorldKeys.StoryAdvance)
+            {
+                StoryAdvanceRequest sr; string why = null;
+                if (p.ScopeArg != 0 || !StoryAdvanceRequest.TryParse(p.Value, out sr)) { code = ProposalCode.Invalid; LastNote = "story advance by P" + senderSlot + " -> Invalid"; }
+                else { code = AdvanceStory(senderSlot, sr, out why); LastNote = sr + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : ""); }
             }
             else if (p.Scope == StateScope.Session && p.Key == WorldKeys.VehicleBuy)
             {

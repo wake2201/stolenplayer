@@ -151,6 +151,24 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 49. W6A checklist — shared story progression (release `TS2-Multiplayer-0.26.0.zip` on BOTH PCs, protocol 37)
+F8 test campaign at story step "Disable the 104 entrance camera with your drone" (stage 18 `story14`; reached after the RobTips step). Both players in Madison Street. Back up the host save first. Grep tag: `STORY`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Logs after loading on both PCs | `STORY shared story ready` (host / client); host `STORY host published story 18 'story14'`; client `STORY shared story 18 'story14'`. Same HUD objective on both PCs | NOT TESTED |
+| 2 | P2 enters House 103 and reads the note (`story object 103 notka`) | P2: original note text; parcel code on both phones (W2B). Story: BOTH HUDs switch to "Steal the cardboard box from 104 ..." (story15); the original story15 phone call plays on both PCs once. P2 log `STORY Player-2 story 18 'story14' via ReadNote ... proposed #n`, `-> Accepted`, `STORY followed host story 19 'story15'`; host log `STORY host AdvanceStory for Player 2: 18 -> 19` | NOT TESTED |
+| 3 | P2 reads the note again (if still shown) / P1 reads it | Nothing more happens to the story (no second call, no skipped objective) | NOT TESTED |
+| 4 | Repeat from a backup at story14, roles swapped: P1 reads the note | Original step on the host; P2's HUD follows to story15 (`STORY followed host`) | NOT TESTED |
+| 5 | Repeat from the backup: both read the note at the same moment | One step (story15), one call per PC; one P2 log `-> Stale` allowed | NOT TESTED |
+| 6 | Parcel first: from the backup, open Madison locker 1 with 16161 (code known) and take the parcel BEFORE anyone reads the note; then leave Madison and return; read the note | The note is still there (`STORY note ... kept visible`) and advances the story once | NOT TESTED |
+| 7 | After row 2: host checkpoint (travel to the hideout), host reload of the save, P2 disconnect + rejoin, P2 travel | Both PCs stay on story15 after every step; no repeated calls | NOT TESTED |
+| 8 | Host quits WITHOUT saving after row 2 and reloads | Original rule: back to story14 on both PCs; the note works again | NOT TESTED |
+| 9 | P2 does something that would advance the story in single player but is not supported (e.g. disables the 104 camera with the drone) | P2's objective does not change on its own; P2 log `STORY Player-2 story step ... not a listed shared trigger` (once). P1 doing it: original step on both | NOT TESTED |
+| 10 | Regression: W2B parcel codes / lockers / parcel loot, doors, loot, wallet, sleep | Unchanged | NOT TESTED |
+
+Note: §48 row 4 (P2's read leaves the story unchanged) is superseded by W6A (row 2 here). Send back both `LogOutput.log` files (lines `STORY`, `PERF STORY_STATS`, `PARCEL`).
+
 ## 48. W2B checklist — shared parcel codes, story clues, parcel lockers (release `TS2-Multiplayer-0.25.0.zip` on BOTH PCs, protocol 36)
 F8 test campaign (fresh enough that the codes below are not yet known), both players in Madison Street. Phone = the original phone's parcel-code page.
 

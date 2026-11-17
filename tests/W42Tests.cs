@@ -298,7 +298,7 @@ static class W42Tests
 
     static void Transport()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 36 && ProtocolInfo.ModVersion == "0.25.0", "protocol 32 / mod 0.21.1");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.0", "protocol 32 / mod 0.21.1");
         Expect((byte)MsgType.CampaignSnapshot == 16 && (byte)MsgType.CampaignRequest == 17, "message ids");
         int port = _port++;
         string code = JoinAuth.NewCode();

@@ -205,6 +205,7 @@ namespace TS2MP.Plugin
         HeavySync _heavy;    // H1 heavy-object leases (needs WorldLootSync: its PickUpHeavy hook + host catalogs)
         MedkitSync _medkit;      // V1.4.1 shared single-use car medkit
         ParcelSync _parcels;     // W2B shared parcel-locker codes
+        StorySync _story;        // W6A shared story progression
         HideoutSync _hideout;    // W1 shared hideout purchases / renovations (before WalletSync: it claims its money writers)
         HeavyCargoSync _cargo;   // H2 shared heavy vehicle cargo (needs HeavySync: loads / unloads are heavy-lease operations)
         CampaignBootstrap _campaign;
@@ -329,6 +330,8 @@ namespace TS2MP.Plugin
             catch (Exception ex) { log.Error("MEDKIT init failed (shared medkit disabled)", ex); _medkit = null; }
             try { _parcels = new ParcelSync(node, log, _world); if (!_parcels.Ready) { _parcels.Dispose(); _parcels = null; } }
             catch (Exception ex) { log.Error("PARCEL init failed (shared parcel codes disabled)", ex); _parcels = null; }
+            try { _story = new StorySync(node, log, _world); if (!_story.Ready) { _story.Dispose(); _story = null; } }
+            catch (Exception ex) { log.Error("STORY init failed (shared story disabled)", ex); _story = null; }
             try { _wallet = new WalletSync(node, log, _world); }
             catch (Exception ex) { log.Error("WALLET init failed (shared money disabled)", ex); _wallet = null; }
             try { _p2 = new Player2Sync(node, log, _world, _settings.DataDir); }
@@ -392,7 +395,7 @@ namespace TS2MP.Plugin
         void DisposeSystems()
         {
             Release(ref _doors, "WOBJ"); Release(ref _campaign, "CAMPAIGN"); Release(ref _cargo, "CARGO"); Release(ref _heavy, "HEAVY"); Release(ref _loot, "WLOOT"); Release(ref _mirror, "MIRROR");
-            Release(ref _census, "CENSUS"); Release(ref _items, "WITEM"); Release(ref _carbox, "CARBOX"); Release(ref _p2, "P2INV"); Release(ref _wallet, "WALLET"); Release(ref _hideout, "HIDEOUT"); Release(ref _medkit, "MEDKIT"); Release(ref _parcels, "PARCEL");
+            Release(ref _census, "CENSUS"); Release(ref _items, "WITEM"); Release(ref _carbox, "CARBOX"); Release(ref _p2, "P2INV"); Release(ref _wallet, "WALLET"); Release(ref _hideout, "HIDEOUT"); Release(ref _medkit, "MEDKIT"); Release(ref _parcels, "PARCEL"); Release(ref _story, "STORY");
             Release(ref _vehicles, "VEHICLE"); Release(ref _world, "WORLD"); Release(ref _sync, "SYNC");
         }
 
@@ -438,6 +441,7 @@ namespace TS2MP.Plugin
             if (_doors != null) _log.Info("PERF " + _doors.Stats);
             if (_medkit != null) _log.Info("PERF " + _medkit.Stats);
             if (_parcels != null) _log.Info("PERF " + _parcels.Stats);
+            if (_story != null) _log.Info("PERF " + _story.Stats);
             _modCost.Reset(); _gc0 = g0; _gc1 = g1; _gc2 = g2; _netOut0 = outB; _netIn0 = inB;
         }
 
@@ -494,6 +498,11 @@ namespace TS2MP.Plugin
             {
                 try { _parcels.Update(); }
                 catch (Exception ex) { _log.Error("PARCEL update exception (shared parcel codes disabled)", ex); _parcels.Dispose(); _parcels = null; }
+            }
+            if (_story != null)
+            {
+                try { _story.Update(); }
+                catch (Exception ex) { _log.Error("STORY update exception (shared story disabled)", ex); _story.Dispose(); _story = null; }
             }
             if (_hideout != null)
             {

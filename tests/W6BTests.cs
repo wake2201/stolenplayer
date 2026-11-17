@@ -30,6 +30,8 @@ static class W6BTests
         Run("08 reload paths: member leaves / returns keeps state, last member gone or alone reload -> active again (original), no second story step", Reload);
         Run("09 story call: either player answers, one committed answer, other PC mirrors (ringing -> answer, pending -> bypass), stale / duplicate / own / in-call", Calls);
         Run("10 Unity glue: drone hooks, camera prefix 999 only + OnEnable, original methods reused, call hooks mirror the IL branches", Glue);
+        Run("12 W6B.1 Player-2 inventory during a flight: the flown drone stays owned (no 1 <-> 0 flip, no loss on a mid-flight disconnect); lost drone still reported", InventoryInFlight);
+        Run("13 W6B.1 event diagnostics: drone start / end (body, drone, transform), remote shown, camera paths, P2 camera story step, ring start, answer", Diagnostics);
         Run("11 regressions + versions: snapshot still 34 B on foot, existing kinds unchanged, protocol 38 / mod 0.27.0", Versions);
         Console.WriteLine(_failed == 0 ? "W6B TESTS PASSED (" + _passed + ")" : "W6B TESTS FAILED: " + _failed + " of " + (_passed + _failed));
         return _failed == 0 ? 0 : 1;
@@ -372,12 +374,38 @@ static class W6BTests
         Expect(ss.Contains("if (reg.HeadRev != _callHead || reg.Epoch != _callEpoch)"), "call state parsed only on registry change");
     }
 
+    // Original ActivateDrone / landing (IL): take-off item_amount--; in-range landing ++; out of range: drop, unassign (stays 0).
+    static void InventoryInFlight()
+    {
+        int amount = 1; var reports = new List<int>();
+        reports.Add(DroneRules.OwnedCount(amount, false));            // on foot
+        amount--; reports.Add(DroneRules.OwnedCount(amount, true));    // take-off: captured mid-flight
+        reports.Add(DroneRules.OwnedCount(amount, true));              // disconnect mid-flight: final report
+        amount++; reports.Add(DroneRules.OwnedCount(amount, false));   // in-range landing
+        Expect(reports.TrueForAll(c => c == 1), "drone count stays 1 across take-off, mid-flight disconnect and landing: " + string.Join(",", reports.ConvertAll(x => x.ToString()).ToArray()));
+        int lost = 0;   // out-of-range landing: drop object, UnassignDrone, item_amount stays 0 -> no longer flying
+        Expect(DroneRules.OwnedCount(lost, false) == 0, "a drone really lost by the original (out of range) is reported as gone");
+        var p2 = Src("Plugin", "Player2Sync.cs");
+        Expect(p2.Contains("bool flying = LocalDrone.Active(ps, out dT, out bT, out did) && did > 0;") && p2.Contains("s.Items[did] = DroneRules.OwnedCount(c, true);"), "Capture counts the flown drone");
+    }
+
+    static void Diagnostics()
+    {
+        var ps = Src("Plugin", "PlayerSync.cs"); var wo = Src("Plugin", "WorldObjectSync.cs"); var ss = Src("Plugin", "StorySync.cs"); var p2 = Src("Plugin", "Player2Sync.cs");
+        Expect(ps.Contains("DRONE local flight started (item ") && ps.Contains("DRONE local flight ended: body back at ") && ps.Contains("if (drone != _localDrone)"), "drone start / end once per transition (both roles: PlayerSync runs on both PCs)");
+        Expect(ps.Contains("DRONE remote flight shown (item ") && ps.Contains("DRONE remote flight hidden"), "remote presentation transitions");
+        Expect(wo.Contains("disable proposed #") && wo.Contains("accepted: original DisablePermamently runs") && wo.Contains("disabled from the shared state") && wo.Contains("disabled locally only: region "), "camera paths: proposed, accepted, replica, local-only");
+        Expect(ss.Contains("from SecurityCamera onDisableAdvanceStory: not advanced here") && wo.Contains("InCameraDisable = run; return run;") && wo.Contains("finalizer: hm(\"CamDisableFinal\")"), "P2 camera story step logged precisely (replaces the misleading 'unlisted trigger' line)");
+        Expect(ss.Contains("STORY call ringing here: stage '") && ss.Contains("answered the ") && ss.Contains("ringing here -> original answer branch"), "ring start / answer / mirror");
+        Expect(p2.Contains("P2INV drone item ") && p2.Contains("if (flying != _flightCounted)"), "inventory flight accounting logged on change only");
+    }
+
     static void Versions()
     {
         Expect(PlayerStateCodec.WireSize == 34, "on-foot snapshot size unchanged");
         foreach (var k in new[] { ObjectKind.Door, ObjectKind.Lockpick, ObjectKind.LockedWindow, ObjectKind.Breakable, ObjectKind.ParcelLocker }) Expect(ObjectStateRules.SupportedKind(k), k + " still shared");
         Expect(!ObjectStateRules.SupportedKind(ObjectKind.SecurityPanel), "security panels not shared (not in scope)");
-        Expect(ProtocolInfo.ProtocolVersion == 38 && ProtocolInfo.ModVersion == "0.27.0", "protocol 38 / mod 0.27.0");
+        Expect(ProtocolInfo.ProtocolVersion == 38 && ProtocolInfo.ModVersion == "0.27.1", "protocol 38 / mod 0.27.0");
     }
 
     // ---------------------------------------------------------------- helpers

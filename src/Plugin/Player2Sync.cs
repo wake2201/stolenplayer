@@ -746,6 +746,7 @@ namespace TS2MP.Plugin
             return true;
         }
 
+        bool _flightCounted;
         P2Inventory Capture()
         {
             var ps = Ps(); var items = Items(ps);
@@ -754,6 +755,11 @@ namespace TS2MP.Plugin
             var s = new P2Inventory();
             foreach (var o in items) { if (o == null) continue; int c = _amt(o); if (c > 0 && !s.Items.ContainsKey(_id(o))) s.Items[_id(o)] = c; }
             foreach (var kv in _unknown) if (!s.Items.ContainsKey(kv.Key)) s.Items[kv.Key] = kv.Value;
+            // W6B.1: the drone in the air is still Player 2's (ActivateDrone item_amount--, restored on landing)
+            Transform dT, bT; int did;
+            bool flying = LocalDrone.Active(ps, out dT, out bT, out did) && did > 0;
+            if (flying) { int c; s.Items.TryGetValue(did, out c); s.Items[did] = DroneRules.OwnedCount(c, true); }
+            if (flying != _flightCounted) { _flightCounted = flying; _log.Info("P2INV drone item " + did + (flying ? " in flight: counted as owned in reports (original item_amount is 0 until landing)" : " flight over: reports use the original item_amount again")); }
             s.BatonLife = _baton(ps); s.CrowbarLife = _crowbar(ps);
             // W4.1B: legacy personal money / bank stay exactly as restored (dormant); the shared-money counters come from the
             // mirror after one more observation of the live field (a purchase is never reported without its money change)

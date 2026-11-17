@@ -145,13 +145,14 @@ namespace TS2MP.Plugin
         // original bypassCall branch instead (isCalling = false, pickUp.Play, Beginn), no ring on this PC.
         static bool CallRingPre(object __instance)
         {
-            var i = Instance; if (i == null || !_callOk || i._call == null) return true;
+            var i = Instance; if (i == null || !_callOk) return true;
+            if (i._call == null) { i.LogRing(null, __instance); return true; }
             try
             {
                 int idx; string key; bool free;
                 if (!i.Local(out idx, out key, out free)) return true;
                 var m = StoryCallRules.Decide(i._call, i.Slot, key, i.SeqIndex(__instance), false, true, false);
-                if (m != CallMirror.AnswerWhenRung) return true;
+                if (m != CallMirror.AnswerWhenRung) { i.LogRing(key, __instance); return true; }
                 i.Mirror(__instance, false);
                 i._callsBypassed++;
                 return false;
@@ -160,6 +161,13 @@ namespace TS2MP.Plugin
         }
 
         byte Slot { get { return _host ? (byte)1 : (byte)2; } }
+
+        // W6B.1 diagnostics: one line per ring start (event, not per frame)
+        void LogRing(string key, object seq)
+        {
+            if (key == null) { int idx; bool free; Local(out idx, out key, out free); }
+            _log.Info("STORY call ringing here: stage '" + (key ?? "?") + "' sequence " + SeqIndex(seq) + " (original PhoneCall1; answer on either PC is shared)");
+        }
 
         void OnLocalAnswer(object seq)
         {
@@ -269,6 +277,12 @@ namespace TS2MP.Plugin
             int idx; string key; bool free;
             if (!Local(out idx, out key, out free)) return;
             var t = _ctxPath != null ? StoryTriggers.Find(key, _ctxKind, _ctxPath) : null;
+            if (t == null && WorldObjectSync.InCameraDisable)
+            {   // W6B.1: SecurityCamera.DisableCamera onDisableAdvanceStory on Player 2 - the shared camera commit decides on the host
+                if (_loggedUnsupported.Count < 200 && _loggedUnsupported.Add(key + "|camera"))
+                    _log.Info("STORY Player-2 story step '" + key + "' (" + idx + ") from SecurityCamera onDisableAdvanceStory: not advanced here; the host applies the shared camera disable with its original DisableCamera, which advances the host story once");
+                return;
+            }
             if (t == null || free)
             {
                 string tag = key + "|" + (_ctxPath ?? "-");

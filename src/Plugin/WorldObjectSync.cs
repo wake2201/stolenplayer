@@ -87,6 +87,7 @@ namespace TS2MP.Plugin
         readonly Dictionary<uint, Component> _camWait = new Dictionary<uint, Component>();     // W6B: client proposal id -> SecurityCamera to disable on acceptance
         long _camLocal, _camApplied, _camLate;
         static MethodInfo _camDisableM;
+        public static bool InCameraDisable;   // W6B.1: set around every original permanent camera disable (StorySync log context)
 
         static long Key(ObjectKind k, uint h) { return ((long)(byte)k << 32) | h; }
         static int KI(ObjectKind k) { return k == ObjectKind.Lockpick ? 0 : k == ObjectKind.LockedWindow ? 1 : k == ObjectKind.Breakable ? 2 : k == ObjectKind.ParcelLocker ? 3 : k == ObjectKind.SecurityCamera ? 5 : 4; }   // = index in Kinds
@@ -159,7 +160,7 @@ namespace TS2MP.Plugin
                 // W6B: permanent camera disables (optional): DisableCamera(float) prefix + OnEnable postfix (culled interiors)
                 _camDisableM = _b.CamOk ? AccessTools.Method(_b.CamT, "DisableCamera", new[] { typeof(float) }) : null;
                 var camEnable = _b.CamOk ? AccessTools.Method(_b.CamT, "OnEnable") : null;
-                if (_camDisableM != null && camEnable != null) { _h.Patch(_camDisableM, prefix: hm("CamDisablePre")); _h.Patch(camEnable, postfix: hm("CamEnablePost")); }
+                if (_camDisableM != null && camEnable != null) { _h.Patch(_camDisableM, prefix: hm("CamDisablePre"), finalizer: hm("CamDisableFinal")); _h.Patch(camEnable, postfix: hm("CamEnablePost")); }
                 else _log.Error("WOBJ SecurityCamera.DisableCamera / OnEnable not found: camera disables stay local");
                 // W2B: parcel lockers (optional as well)
                 var openLocker = _b.LockerOk ? AccessTools.Method(AccessTools.TypeByName("ParcelCode"), "OpenLocker") : null;
@@ -893,7 +894,8 @@ namespace TS2MP.Plugin
         // on Player 2: StorySync); the host applies the committed state with the original method -> story advances there once.
         bool AllowCamera(Component o)
         {
-            if (_bypass || !Sharing || !_b.CamOk || _b.CamDisabled(o)) return true;
+            if (_bypass || !_b.CamOk || _b.CamDisabled(o)) return true;
+            if (!Sharing) { if (_logged.Add(0x7E00000000L | (uint)o.GetInstanceID())) _log.Info("WOBJ camera '" + o.name + "' disabled locally only: region " + Regions.Name(_region) + " not shared right now (offline / unsupported region / census pending)"); return true; }
             var census = WorldCensus.Instance; WorldObjectId id;
             if (census == null || !census.TryObjectId(o, ObjectKind.SecurityCamera, out id) || id.Namespace != _region) { Unidentified(o); return true; }   // not shared: vanilla, local only
             long key = Key(ObjectKind.SecurityCamera, id.Hash);
@@ -948,10 +950,12 @@ namespace TS2MP.Plugin
 
         static bool CamDisablePre(object __instance, float disableTime)
         {
-            var i = Instance; if (i == null || WorldObjectBridge.Applying || disableTime != 999f) return true;   // temporary disables stay local
-            try { return i.AllowCamera((Component)__instance); }
+            var i = Instance; if (i == null || disableTime != 999f) return true;   // temporary disables stay local
+            if (WorldObjectBridge.Applying) { InCameraDisable = true; return true; }
+            try { bool run = i.AllowCamera((Component)__instance); InCameraDisable = run; return run; }
             catch (Exception ex) { i._log.Error("WOBJ hook DisableCamera", ex); return i._host; }   // Player 2 fails closed (no unconfirmed story trigger)
         }
+        static void CamDisableFinal() { InCameraDisable = false; }
         static void CamEnablePost(object __instance)
         {
             var i = Instance; if (i == null) return;

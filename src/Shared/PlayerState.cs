@@ -267,6 +267,12 @@ namespace TS2MP.Shared
         // Remote drone shown only while the sender pilots it in the same scene (cleanup on stop, scene change, disconnect).
         public static bool ShowRemoteDrone(bool connected, bool sameScene, bool fresh, MoveFlags latest) { return connected && sameScene && fresh && (latest & MoveFlags.Drone) != 0; }
 
+        // W6B.1: ActivateDrone IL does assigned_drone_script.item_amount-- at take-off and item_amount++ on an in-range landing
+        // (out of range: drop object, UnassignDrone, the item stays 0). A Player-2 inventory capture during the flight therefore
+        // saw the drone as gone (host log "items 1" <-> "items 0" per flight); committed at a mid-flight disconnect, the drone
+        // would be lost although the original never saves during a flight (CheckIfCanSave). The flown drone counts as owned.
+        public static int OwnedCount(int amountNow, bool flyingThisItem) { return flyingThisItem ? amountNow + 1 : amountNow; }
+
         // The body must never be reported where the drone is (P2 spawn reports, host live position).
         public static bool PositionReportAllowed(bool droneActive) { return !droneActive; }
     }

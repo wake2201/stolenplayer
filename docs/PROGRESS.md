@@ -1,5 +1,25 @@
 ﻿# PROGRESS
 
+## W6B.1 — Two-PC log follow-up (0.26.5 logs) — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
+Mod **0.27.1, protocol 38** (no wire change vs 0.27.0). Built on `e6a4951` (W6B).
+
+### A. Log findings mapped
+- `STORY Player-2 story step 'story14' (18) from an unlisted trigger / poll`: the call came from `SecurityCamera.DisableCamera` (`onDisableAdvanceStory`) on P2; 0.26.5 had no camera sync, so nothing reached the host (W6B cause 3). Since 0.27.0 the host applies the committed disable with its original `DisableCamera`, which advances the host story. 0.27.1 logs this case precisely instead of "unlisted trigger".
+- Host published story 19 and P2 followed: story publication works; the host advanced through its OWN camera / trigger, not P2's.
+- Cameras in the census but no committed state: correct for 0.26.5 (`SecurityCamera` was not a shared kind; W6B cause 2). Since 0.27.0: kind `SecurityCamera`, `wobj6` pages, `disabled cameras N` in the ready log.
+- **P2 inventory "items 1" <-> "items 0":** original equipment behaviour, verified IL: `DroneManager.ActivateDrone` does `assigned_drone_script.item_amount--` at take-off and `++` on an in-range landing; `Player2Sync.Capture` reports `item_amount > 0`, so every flight dropped the drone from the report. Risk: a disconnect mid-flight commits the record without the drone (the original never saves during a flight: `CheckIfCanSave`). Fix: `Capture` counts the flown drone as owned (`DroneRules.OwnedCount`); a drone really lost by the original (out-of-range landing: drop object + `UnassignDrone`) is still reported as gone after landing.
+
+### B. Diagnostics (event-driven, no per-frame lines)
+- `DRONE local flight started` (item, body, drone, PlayerScript transform) / `DRONE local flight ended` (body, last drone) - both roles.
+- `DRONE remote flight shown` (item, slot, remote body) / `hidden`.
+- `WOBJ camera … disable proposed / accepted / disabled by the host / disabled from the shared state / disabled locally only (region not shared)`.
+- `STORY Player-2 story step … from SecurityCamera onDisableAdvanceStory: not advanced here; the host applies …` (context flag `WorldObjectSync.InCameraDisable`, prefix + finalizer).
+- `STORY call ringing here: stage … sequence N`, existing answer / mirror lines.
+- `P2INV drone item N in flight: counted as owned …` / `flight over …`.
+
+### C. Evidence
+- `tools/build.ps1 -Test`: plugin 0 warnings; **ALL 46 SUITES PASSED** (W6B 13/13 incl. new 12 inventory-in-flight, 13 diagnostics). No in-game run.
+
 ## W6B — Shared drone flight, persistent security cameras, cooperative story call — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
 Mod **0.27.0, protocol 38** (wire change: both PCs need 0.27.0). Built on `41361f2` (W6A.5). Manual QA: `docs/TESTING.md` §55.
 

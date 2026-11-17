@@ -70,7 +70,7 @@ namespace TS2MP.Plugin
         long _accepted, _stale, _invalid, _wrongSlot;
         double _nextStats;
         // W6B drone flight: local body latch (feet / yaw before the flight) + the remote drone's own interpolation buffer
-        Vec3 _latchedFeet; float _latchedYaw; bool _haveLatched, _localDrone;
+        Vec3 _latchedFeet, _lastDronePos; float _latchedYaw; bool _haveLatched, _localDrone;
         readonly SnapshotBuffer _droneBuffer = new SnapshotBuffer { TeleportDistance = 30f };
         RemoteDrone _drone; sbyte _droneRoll; ushort _remoteDroneItem; long _droneSent, _droneRecv;
 
@@ -269,7 +269,14 @@ namespace TS2MP.Plugin
                     else s.Flags = DroneRules.BodyFlags(flags) & ~MoveFlags.Drone;
                 }
                 else { _latchedFeet = s.Pos; _latchedYaw = yaw; _haveLatched = true; }
-                if (drone != _localDrone) { _localDrone = drone; _log.Info("DRONE local " + (drone ? "flight started (item " + did + "): the body stays at " + s.Pos + ", drone pose sent separately" : "flight ended")); }
+                if (drone) _lastDronePos = s.DronePos;
+                if (drone != _localDrone)
+                {
+                    _localDrone = drone;
+                    var pt = _ps.transform.position;
+                    if (drone) _log.Info("DRONE local flight started (item " + did + "): body " + s.Pos + (bT != null ? " (joystick_character)" : " (latched feet)") + ", drone " + s.DronePos + ", PlayerScript transform " + new Vec3(pt.x, pt.y, pt.z) + " (rides the drone, never sent)");
+                    else _log.Info("DRONE local flight ended: body back at " + s.Pos + ", last drone " + _lastDronePos + " (original exit: PlayerScript = joystick_character + 1.2 m)");
+                }
             }
             _w.Reset();
             PlayerStateCodec.Write(_w, s);
@@ -378,7 +385,8 @@ namespace TS2MP.Plugin
             {
                 _drone = RemoteDrone.Spawn(_ps, _remoteDroneItem, _log);
                 if (_drone == null) { _remoteFlags &= ~MoveFlags.Drone; return; }
-                _log.Info("DRONE remote flight shown (item " + _remoteDroneItem + "); the remote body stands at its own position");
+                RemoteSample rb; bool hb = _buffer.TrySample(Now, out rb);
+                _log.Info("DRONE remote flight shown (item " + _remoteDroneItem + ", slot " + _remoteSlot + "); remote body stands at " + (hb ? rb.Pos.ToString() : "?"));
             }
             RemoteSample d;
             if (_droneBuffer.TrySample(Now, out d)) _drone.Apply(d, _droneRoll);

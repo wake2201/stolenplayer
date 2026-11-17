@@ -151,7 +151,7 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
-## 55. W6B checklist — drone flight, House 104 camera, story14 by Player 2, story call (release `TS2-Multiplayer-0.27.0.zip` on BOTH PCs, F10 developer menu, index 18)
+## 55. W6B checklist — drone flight, House 104 camera, story14 by Player 2, story call (release `TS2-Multiplayer-0.27.1.zip` on BOTH PCs, F10 developer menu, index 18)
 Grep tags: `DRONE`, `WOBJ camera`, `STORY`, `WOBJ_STATS`, `SYNC_STATS`.
 
 | # | Steps | Expected evidence | Result |
@@ -167,6 +167,7 @@ Grep tags: `DRONE`, `WOBJ camera`, `STORY`, `WOBJ_STATS`, `SYNC_STATS`.
 | 9 | Story call (story15 call after row 5/7): P2 answers | P1 stops ringing at once and hears the same dialogue; log `STORY … answered by P2`, P1 `ringing here -> original answer branch` | NOT TESTED |
 | 10 | Next call: P1 answers (or P2 busy e.g. in a car while P1 answers) | P2 stops ringing / gets the dialogue without ringing (`bypass branch`) | NOT TESTED |
 | 11 | Regression: F8 normal host + join, doors, loot, cars | Unchanged | NOT TESTED |
+| 12 | (0.27.1) P2 flies, then quits to the main menu mid-flight; rejoins | Host log `P2INV report committed … items 1` during the flight (no `items 0`), P2 still owns the drone after rejoin | NOT TESTED |
 
 ## 54. W6A.5 checklist — story-test join deadlock, readiness state, drones (release `TS2-Multiplayer-0.26.5.zip` on BOTH PCs, developer menu enabled on both)
 Grep tags: `HOST_READINESS`, `TEST_STORY`, `TEST_SCENARIO`, `JOIN_DEFERRED`, `JOIN_REFUSED`, `REJECT`, `P2INV`, `STORY`.

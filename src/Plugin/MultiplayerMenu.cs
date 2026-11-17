@@ -81,15 +81,15 @@ namespace TS2MP.Plugin
             // in the host's main menu before the host save / Player-2 record were bound (CAMPAIGN snapshot NOT sent, the
             // client waited forever). Same readiness rules as the F8 host; the client keeps retrying (HostNotReady).
             var n = runner.Node;
-            if (legacy && n != null && n.Role == Role.Host) { n.HostGate = () => _hostGateReason; _legacyHostGate = true; log.Info("MENU launcher host: joins wait until the host is gameplay-ready (" + _hostGateReason + ")"); }
+            if (legacy && n != null && n.Role == Role.Host) { n.HostGate = () => _gateNow; _legacyHostGate = true; log.Info("MENU launcher host: joins wait until the host is gameplay-ready (" + _hostGateReason + ")"); }
             log.Info("MENU ready key=" + settings.MenuKey + (legacy ? " (launcher mode: status only)" : " isolationAvailable=" + _isolationAvailable)
                 + "; developer menu " + (_devAllowed ? "ENABLED key=" + settings.DevMenuKey + " (Developer.EnableDeveloperMenu)" : "off"));
         }
-        bool _legacyHostGate; float _nextGate; string _loggedGate;
+        bool _legacyHostGate; float _nextGate;
         JoinLoadingScreen _loading;   // v0.16.1 (F8 mode only)
         bool _worldLoadedOnce, _mismatchChecked;   // W4.2B.2 multiplayer test campaign (prepared flag: _lc.TestPrepared, W4.2C.A)
 
-        void LegacyHostGate() { if (_legacyHostGate) RefreshHostGate(Context()); }
+        void LegacyHostGate() { if (_legacyHostGate) { RefreshHostGate(Context()); UpdateGate(); } }
 
         // Host readiness re-evaluated 4 times per second (it is only read at a join attempt; launcher host and F8 host use the
         // same rules); transitions are logged as HOST_READINESS.
@@ -98,7 +98,19 @@ namespace TS2MP.Plugin
             if (Time.realtimeSinceStartup < _nextGate) return;
             _nextGate = Time.realtimeSinceStartup + 0.25f;
             _hostGateReason = HostReadiness.Check(Facts(ctx));
-            if (!string.Equals(_loggedGate, _hostGateReason)) { _loggedGate = _hostGateReason; _log.Info("HOST_READINESS " + (_hostGateReason ?? "ready: Player 2 may join")); }
+        }
+
+        // W6A.5: the ONE readiness state (JoinGate) = world readiness + developer scenario state. The network gate (HostGate /
+        // HostGateFatal), HOST_READINESS log, lifecycle status, F8 chip and F10 status all read _gateNow; it changes reference
+        // only on a real transition (logged once). Before: the log / F10 read the world gate alone ("Player 2 may join") while
+        // the network also applied the scenario gate and refused every join.
+        string _gateNow = "Host startet";
+        void UpdateGate()
+        {
+            string g = JoinGate.Reason(_hostGateReason, _scenarioState, _scenarioDetail);
+            if (string.Equals(g, _gateNow)) return;
+            _gateNow = g;
+            _log.Info("HOST_READINESS " + JoinGate.LogLine(g, JoinGate.Fatal(_scenarioState)));
         }
 
         void ResolveTypes()
@@ -206,9 +218,10 @@ namespace TS2MP.Plugin
             if (node == null) { _lc.Fail("Host-Sitzung nicht vorhanden", now); _hostCode = null; return; }
             bool entered = _lc.HostWorldEntered;
             RefreshHostGate(ctx);
-            if (_lc.HostTick(ctx, _hostGateReason, node.IsConnected, now)) { StopSession("host returned to the main menu"); return; }
-            if (!entered && _lc.HostWorldEntered) _log.Info("HOST world loading started: the multiplayer systems were attached in the main menu; joins open once HOST_READINESS reports ready");
             if (_devHosting) DevHostTick(ctx);   // W6A.3: verify the loaded story index once, report "host ready"
+            UpdateGate();                         // W6A.5: world + scenario -> one readiness state
+            if (_lc.HostTick(ctx, _gateNow, node.IsConnected, now)) { StopSession("host returned to the main menu"); return; }
+            if (!entered && _lc.HostWorldEntered) _log.Info("HOST world loading started: the multiplayer systems were attached in the main menu; joins open once HOST_READINESS reports ready");
         }
 
         void ClientFrame(GameContext ctx, double now)
@@ -389,9 +402,10 @@ namespace TS2MP.Plugin
             node.BindAddress = "0.0.0.0";
             if (test) node.JoinKey = MenuRouting.SessionKey(true, null);   // W6A.2: developer key, no code (F10 Test Join)
             else node.JoinKey = JoinAuth.DeriveKey(code);
-            node.HostGate = () => _hostGateReason ?? _scenarioGate;   // W6A.4: story-test joins also wait for the scenario check
+            node.HostGate = () => _gateNow;                                   // W6A.5: one readiness state (JoinGate)
+            node.HostGateFatal = () => JoinGate.Fatal(_scenarioState);         // invalid story test: permanent refusal, client stops
             node.TestCampaign = _lc.TestPrepared && SaveGuard.DevHost && _runner.TestCampaignActive;   // W4.2B.2: told to Player 2 in Welcome
-            _hostGateReason = "Host startet";
+            _hostGateReason = "Host startet"; _gateNow = _hostGateReason;
             if (!node.Start())
             {
                 node.Dispose();
@@ -410,7 +424,7 @@ namespace TS2MP.Plugin
             }
             _hostCode = test ? DevHostLabel : JoinAuth.Format(code); _devHosting = test;
             _hint = null;
-            _loggedGate = null; _nextGate = 0;
+            _nextGate = 0;
             _lc.HostStarted(true, null, now);
             _log.Info("HOST prepared in the main menu: UDP 0.0.0.0:" + _port + " listening, session systems attached before the save loads (join code shown in the menu only)"
                 + (node.TestCampaign ? " - MULTIPLAYER TEST CAMPAIGN" : "") + "; joins wait for the loaded world (HOST_READINESS)");

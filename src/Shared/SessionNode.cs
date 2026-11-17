@@ -55,6 +55,7 @@ namespace TS2MP.Shared
         // N1.2 host: null = gameplay-ready; otherwise the reason new joins are refused (RejectCode.HostNotReady, retryable).
         // Checked at the connection request and again right before Welcome. Null delegate = always ready (launcher dev mode).
         public Func<string> HostGate;
+        public Func<bool> HostGateFatal;   // W6A.5: true = the HostGate refusal is permanent (RejectCode.ScenarioInvalid, client stops)
         // W4.2B.2: host = this session plays the isolated multiplayer test campaign (sent in Welcome); client = the host said so.
         public bool TestCampaign;
         public bool HostTestCampaign { get; private set; }
@@ -345,7 +346,11 @@ namespace TS2MP.Shared
             // One remote player: an authenticated client, a welcomed client preparing, or a peer in the challenge occupies the only slot.
             if (rej == null && (_net.ConnectedPeersCount >= ProtocolInfo.MaxClients || _peer != null || _joining != null || _pending.Count > 0)) rej = RejectCode.SessionFull;
             string notReady = rej == null ? GateReason() : null;
-            if (notReady != null) { rej = RejectCode.HostNotReady; _log.Info("JOIN_DEFERRED " + req.RemoteEndPoint + ": host not gameplay-ready (" + notReady + ")"); }
+            if (notReady != null)
+            {
+                rej = JoinGate.Reject(notReady, GateFatal());
+                _log.Info((rej == RejectCode.ScenarioInvalid ? "JOIN_REFUSED " : "JOIN_DEFERRED ") + req.RemoteEndPoint + ": " + (rej == RejectCode.ScenarioInvalid ? "permanent" : "host not gameplay-ready") + " (" + notReady + ")");
+            }
 
             if (rej != null)
             {
@@ -369,6 +374,12 @@ namespace TS2MP.Shared
             try { return HostGate(); } catch (Exception ex) { _log.Error("HostGate threw (treated as not ready)", ex); return "gate error"; }
         }
 
+        bool GateFatal()
+        {
+            if (HostGateFatal == null) return false;
+            try { return HostGateFatal(); } catch (Exception ex) { _log.Error("HostGateFatal threw (treated as retryable)", ex); return false; }
+        }
+
         // Authenticated (or loopback) client: re-check gameplay readiness, send Welcome, then wait for ClientReady.
         void SendWelcome(NetPeer peer, string clientInstance, byte[] hostProof)
         {
@@ -376,7 +387,7 @@ namespace TS2MP.Shared
             if (notReady != null)
             {
                 _log.Info("JOIN_DEFERRED " + peer + " instance=" + clientInstance + ": host not gameplay-ready (" + notReady + ")");
-                peer.Disconnect(new[] { (byte)RejectCode.HostNotReady });
+                peer.Disconnect(new[] { (byte)JoinGate.Reject(notReady, GateFatal()).Value });
                 return;
             }
             _joining = peer; _joiningInstance = clientInstance; _joiningSince = Now;

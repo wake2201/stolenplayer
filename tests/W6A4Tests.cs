@@ -111,10 +111,10 @@ static class W6A4Tests
         Expect(NewRecord(18, false).CountOf(89) == 0 && NewRecord(-1, true).CountOf(89) == 0 && NewRecord(15, true).CountOf(89) == 0, "never outside a developer host scenario / before the drone step");
         Expect(NewRecord(18, true).CountOf(89) == 1, "reset scenario (fresh folder -> new record): granted once again");
         var src = Strip(Src("Plugin", "Player2Sync.cs"));
-        int nb = src.IndexOf("b = new P2Book(P2Inventory.Initial(free), mark);", StringComparison.Ordinal), g = src.IndexOf("if (MultiplayerMenu.ActiveScenario >= 0 && SaveGuard.DevHost)", StringComparison.Ordinal);
+        int nb = src.IndexOf("b = new P2Book(P2Inventory.Initial(free), mark);", StringComparison.Ordinal), g = src.IndexOf("foreach (var pr in ScenarioPrereqs.P2Grants(MultiplayerMenu.ActiveScenario, SaveGuard.DevHost, b.Rec.CountOf))", StringComparison.Ordinal);
         int end = src.IndexOf("if (_get(HistoryKey) != b.HistoryId)", StringComparison.Ordinal);
         Expect(nb > 0 && g > nb && g < end, "grant only inside the new-record branch of LoadBook");
-        Expect(src.Contains("if (pr.P2ItemId != 0 && b.Rec.CountOf(pr.P2ItemId) < pr.P2ItemCount)"), "idempotent grant");
+        Expect(ScenarioPrereqs.P2Grants(18, true, id => 1).Count == 0 && ScenarioPrereqs.P2Grants(18, true, id => 0).Count == 1, "idempotent grant (W6A.5: ScenarioPrereqs.P2Grants)");
     }
 
     // ---------------------------------------------------------------- 04
@@ -139,7 +139,7 @@ static class W6A4Tests
     static ScenarioFacts Good()
     {
         var f = new ScenarioFacts { Expected = 18, LiveIndex = 18, LiveKey = "story14", FreeMode = false, Region = 99, EquippedDrone = 89, P2RecordKnown = true, SpawnOk = true, SpawnNote = "ok" };
-        f.Prefs["Item_89"] = 1; f.Prefs["Drone"] = 0; f.Prefs["flyby_upgrade3"] = 1; f.P2Items[89] = 1; f.ActiveObjects.Add("story object 103 notka");
+        f.Prefs["Item_89"] = 1; f.Prefs["Drone"] = 0; f.Prefs["flyby_upgrade3"] = 1; f.P2Items[89] = 1;
         return f;
     }
     static void Check()
@@ -153,7 +153,6 @@ static class W6A4Tests
         f = Good(); f.Prefs["flyby_upgrade3"] = 0; Expect(DevScenario.Check(f) != null, "camera module missing");
         f = Good(); f.P2Items.Clear(); Expect(DevScenario.Check(f) != null, "Player 2 has no drone");
         f = Good(); f.P2RecordKnown = false; Expect(DevScenario.Check(f) != null, "Player-2 record not bound");
-        f = Good(); f.ActiveObjects.Clear(); Expect(DevScenario.Check(f).Contains("story object 103 notka"), "note_103 parent not active");
         f = Good(); f.SpawnOk = false; Expect(DevScenario.Check(f) != null, "invalid Player-2 spawn plan");
         var g5 = new ScenarioFacts { Expected = 5, LiveIndex = 5, LiveKey = "story5b", Region = 99, SpawnOk = true };
         Expect(DevScenario.Check(g5) == null, "a step without prerequisites / objects passes on index + region + spawn");
@@ -165,16 +164,16 @@ static class W6A4Tests
         var dev = Strip(Src("Plugin", "MultiplayerMenu.Dev.cs")); var code = Strip(Src("Plugin", "MultiplayerMenu.cs"));
         int t = dev.IndexOf("void DevHostTick(GameContext ctx)", StringComparison.Ordinal);
         string tick = dev.Substring(t, dev.IndexOf("ScenarioFacts GatherFacts(int index)", t, StringComparison.Ordinal) - t);
-        int wait = tick.IndexOf("if (_hostGateReason != null) { _scenarioGate =", StringComparison.Ordinal), check = tick.IndexOf("DevScenario.Check(f)", StringComparison.Ordinal);
+        int wait = tick.IndexOf("if (_hostGateReason != null) { _scenarioState = ScenarioState.Waiting; return; }", StringComparison.Ordinal), check = tick.IndexOf("DevScenario.Check(f)", StringComparison.Ordinal);
         Expect(wait > 0 && check > wait, "no check before HOST_READINESS (StoryManager / scene initialised)");
         Expect(tick.Contains("_nextCheck = now + 0.5;") && tick.Contains("else if (now - _checkSince > 20)"), "retried every 0.5 s, final after 20 s");
         int ok = tick.IndexOf("if (bad == null)", StringComparison.Ordinal), ready = tick.IndexOf("TEST_CAMPAIGN HOST READY", ok, StringComparison.Ordinal), fail = tick.IndexOf("else if (now - _checkSince > 20)", StringComparison.Ordinal);
         Expect(ok > 0 && ready > ok && ready < fail, "HOST READY only in the OK branch");
         int n = 0, at = 0; while ((at = dev.IndexOf("HOST READY:", at, StringComparison.Ordinal)) >= 0) { n++; at++; }
         Expect(n == 2 && tick.Contains("if (_checkIndex < 0)"), "the other HOST READY is only for sessions without a scenario (copy mode)");
-        Expect(tick.Contains("_scenarioDone = true; _scenarioGate = \"Story-Test ungültig: \" + bad;"), "final failure keeps joins closed with the reason");
-        Expect(code.Contains("node.HostGate = () => _hostGateReason ?? _scenarioGate;"), "joins wait for the scenario check (HostNotReady with the reason)");
-        Expect(dev.Contains("if (bad != null) { _devError = \"Story-Testspielstand ungültig: \" + bad; _scenarioGate ="), "an invalid seed closes the gate too");
+        Expect(tick.Contains("ScenarioInvalid(bad);"), "final failure closes joins permanently with the reason (W6A.5)");
+        Expect(code.Contains("node.HostGate = () => _gateNow;") && code.Contains("node.HostGateFatal = () => JoinGate.Fatal(_scenarioState);"), "joins read the one readiness state (W6A.5)");
+        Expect(dev.Contains("if (bad != null) { _devError = \"Story-Testspielstand ungültig: \" + bad; ScenarioInvalid("), "an invalid seed closes the gate too");
         Expect(dev.Contains("GatherFacts(_checkIndex)") && dev.Contains("f.EquippedDrone = EquippedDrone();") && dev.Contains("f.P2RecordKnown = rec != null;") && dev.Contains("f.SpawnOk = plan.Mode == SpawnMode.RestoreNear"), "facts: live story, drone, Player-2 record, spawn plan");
     }
 
@@ -189,7 +188,7 @@ static class W6A4Tests
         Expect(DevScenario.Plan(18, "C:\\x\\TS2MP", true, "C:\\y", "C:\\z", "1", out a) == null && a.MoveAsideTo != null && DevScenario.Plan(18, "C:\\x\\TS2MP", false, "C:\\y", "C:\\z", "2", out b) == null && b.MoveAsideTo == null, "reset: old seed moved aside, fresh seed + fresh records");
         Expect(ui.Contains("StartHost(false);") && ui.Contains("StartJoin(JoinKind.Public);") && code.Contains("else node.JoinKey = JoinAuth.DeriveKey(code);"), "F8 host / join unchanged");
         Expect(ui.Contains("var m = Event.current.mousePosition;") && ui.Contains("DrawPointer();"), "cursor implementation unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.4", "protocol 37 / mod 0.26.4");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.5", "protocol 37 / mod 0.26.4");
     }
 
     // ---------------------------------------------------------------- helpers

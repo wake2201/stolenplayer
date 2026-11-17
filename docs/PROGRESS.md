@@ -1,5 +1,38 @@
 ﻿# PROGRESS
 
+## W6A.5 — Story-test join deadlock fixed, cooperative drone ownership defined — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
+Mod **0.26.5, protocol 37** (no wire-format change; new reject value 14, both PCs need 0.26.5). Built on `c87eb3d` (W6A.4). Manual QA: `docs/TESTING.md` §54.
+
+### A. Verified root cause (real two-PC log + scene asset + IL)
+- The log shows a valid index-18 world (`Story = 18`, `Item_89 = 1`, `Drone = 89`, `flyby_upgrade3 = 1`, story 18 'story14' published). The W6A.4 check then required `story object 103 notka` to be active. It never was, so the check failed after 20 s, joins stayed closed, and the client got `HostNotReady (13)` forever. Not an auth or network fault.
+- MadisonSt asset (level3, `tools/research/unity_reader.py`, 1.27c): `DOMY/Dom 103/Interior_103` activeSelf False; `.../story object 103 notka` activeSelf **False**. It is the only story-keyed `StoryObject` serialized inactive. Its `obj_to_activate` is the child `pPlane3` (the `ReadNote`), not itself. No MonoBehaviour references the holder, and no game code finds it by name. An inactive object runs no `Start` / `Update`, so `StoryObject.UpdateObject` never runs and **the note never appears in the original game**. The note is unavailable, not mis-detected.
+- Second, independent defect: `Interior_103` is only active while the local player stands in House 103's info trigger on foot (`AssignInteriors.Start` deactivates it; `OnPossesion.Update` toggles `interior_holder`). `GameObject.Find` from the Madison spawn could never see anything inside it.
+- The live story14 objective is the drone camera: `Junkyard/SECURITY CAM (1)/Security Camera` (`SecurityCamera` `canBeDisabledDrone`, `onDisableAdvanceStory`, `storyName story14`), gated by `DISABLE CAMERA 104 MISSION` (`StoryObject` story14, scene root, not culled). This matches the objective text "Disable the 104 entrance camera with your drone".
+- Inconsistent readiness: `HOST_READINESS` / F10 / F8 read only the world gate ("Player 2 may join"), while the network applied `_hostGateReason ?? _scenarioGate` and refused.
+
+### B. Changes
+- `src/Shared/DevScenario.cs`: `RequiredObjects` removed from the critical check. New `ScenarioActions` (diagnostics only: `camera_104_drone` primary, `note_103` statically unavailable with the asset evidence). New `ScenarioState` + `JoinGate` (one readiness state: reason, fatal, reject code, log line). New `ScenarioPrereqs.P2Grants` (developer grant rule, pure).
+- `src/Shared/Protocol.cs`: `RejectCode.ScenarioInvalid = 14` (fatal, client stops). Mod 0.26.5.
+- `src/Shared/SessionNode.cs`: `HostGateFatal`; connection request and Welcome re-check both use `JoinGate.Reject`.
+- `src/Shared/MultiplayerLifecycle.cs`: client text for `ScenarioInvalid`.
+- `src/Plugin/MultiplayerMenu.cs`: `UpdateGate` / `_gateNow` = the one state for `HostGate`, `HostGateFatal`, `HOST_READINESS` log, lifecycle status (`HostTick`), launcher host. Order: world gate, scenario tick, combined gate, lifecycle.
+- `src/Plugin/MultiplayerMenu.Dev.cs`: scenario fields replaced by `_scenarioState` / `_scenarioDetail`; final failure and invalid seed are permanent (`ScenarioInvalid`); story actions evaluated once after OK and logged as diagnostics; F10 menu and in-world status use `HostLine` (BEREIT / NICHT BEREIT, wartet automatisch / BEITRITT GESPERRT).
+- `src/Plugin/MultiplayerMenu.Ui.cs`: F8 chip reads `_gateNow`.
+- `src/Plugin/Player2Sync.cs`: grant through `ScenarioPrereqs.P2Grants` (same behaviour: fresh isolated record only, absolute `Set`).
+- Tests: new `tests/W6A5Tests.cs` (9). Changed expectations: version pins, W6A3 04 / 06, W6A4 05 / 06 / 03, LifecycleTests 21, W42B 22.
+
+### C. Evidence
+- `tools/build.ps1 -Test`: plugin 0 warnings (launcher's pre-existing `_yes` warning unchanged); **ALL 45 SUITES PASSED** incl. W6A5 9/9 (real-log facts pass; UDP join before host world -> HostNotReady through loading + checking -> automatic join once valid; invalid -> `ScenarioInvalid`, client Failed, no further attempts; join after ready; normal F8 code join).
+- No in-game run.
+
+### D. Drone ownership (decision recorded, normal-campaign change deferred)
+- Design: `docs/research/DRONE_SYSTEM.md` §9. Existing behaviour already matches the per-player item model (`Item_<id>` = `PlayerOwnP1`, Player 2 in its own record; `Drone` / `flyby_*` upgrade keys = `World`, bought once per campaign). Not implemented in W6A.5: Player 2 receiving its own drone from the shared story unlock in a normal campaign (needs the story11 pickup to be host-transacted per player + Player-2 `DroneTech` purchase / restore as a host transaction). That is an inventory milestone, deferred.
+- Test-only grants unchanged: F10 isolated seeds only; normal campaigns never get developer equipment (`P2Grants` returns nothing without a scenario / developer host).
+
+### E. Limitations
+- W6A's shared note trigger (`note_103`) is kept but unreachable in the original game. Story14 can be completed in QA only by **Player 1's** drone on camera 104 (host original `AdvanceStory`, shared). Player 2's camera disable is not a listed shared trigger (and camera state is not synced) - a separate W6 slice.
+- `ScenarioActions` lists only story14.
+
 ## W6A.4 — Story-test prerequisites, Player-2 spawn, scenario check — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
 Mod **0.26.4, protocol 37** (no wire change). Built on `cf247e0` (W6A.3). Manual QA: `docs/TESTING.md` §53. Cursor and developer connection unchanged.
 

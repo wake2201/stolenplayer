@@ -124,7 +124,8 @@ static class W6A3Tests
         Expect(StoryRules.Decide(true, true, 80, "story73_freemode", r, out why) != ProposalCode.Accepted, "and would NOT be on the free-mode copy (W6A.2 failure)");
         Expect(StoryCatalog.Get(idx + 1).Key == "story15", "next step story15");
         var dev = Strip(Src("Plugin", "MultiplayerMenu.Dev.cs"));
-        Expect(dev.Contains("foreach (var o in ScenarioPrereqs.RequiredObjects(index)) { var go = GameObject.Find(o);") && ScenarioPrereqs.RequiredObjects(18)[0] == "story object 103 notka", "host scenario check requires note_103 for story14 (W6A.4)");
+        // W6A.5: the W6A.4 note_103 requirement is gone (holder inactive in the original asset); story actions are diagnostics.
+        Expect(dev.Contains("_actionsLine = ActionsLine(_checkIndex);") && ScenarioActions.For(18).Length == 2, "story14 actions reported as diagnostics (W6A.5)");
         Expect(dev.Contains("int _devStory = 18"), "F10 preselects index 18");
     }
 
@@ -173,7 +174,7 @@ static class W6A3Tests
             Expect(c.HostTestCampaign && MenuRouting.JoinMismatch(JoinKind.Developer, true) == null, "developer join, test campaign, no code");
         }
         var dev = Strip(Src("Plugin", "MultiplayerMenu.Dev.cs")); var code = Strip(Src("Plugin", "MultiplayerMenu.cs"));
-        Expect(dev.Contains("TEST_CAMPAIGN HOST READY") && dev.Contains(">>> HOST BEREIT") && dev.Contains("HOST LÄDT"), "unmistakable ready status (log + F10)");
+        Expect(dev.Contains("TEST_CAMPAIGN HOST READY") && dev.Contains(">>> HOST BEREIT") && dev.Contains("HOST NICHT BEREIT"), "unmistakable ready status (log + F10)");
         Expect(code.Contains("else if (_joinKind == JoinKind.Developer) _hint = MenuRouting.DevHostUnreachableText;"), "unreachable host explained on the client");
     }
 
@@ -207,7 +208,7 @@ static class W6A3Tests
         Expect(code.Contains("else node.JoinKey = JoinAuth.DeriveKey(code);") && code.Contains(": _lc.RequestJoin(Context(), _isolationAvailable, _joinHost, _joinPort, _joinCode, out req, now);"), "F8 host / join keys and code validation unchanged");
         Expect(ui.Contains("StartHost(false);") && ui.Contains("StartJoin(JoinKind.Public);") && ui.IndexOf("DevPrepare", StringComparison.Ordinal) < 0 && ui.IndexOf("DevAutoLoad", StringComparison.Ordinal) < 0, "F8 never reaches the developer flow");
         Expect(MenuRouting.JoinMismatch(JoinKind.Public, true) != null && MenuRouting.JoinMismatch(JoinKind.Public, false) == null, "routing unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.4", "protocol 37 / mod 0.26.4");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.5", "protocol 37 / mod 0.26.4");
     }
 
     // ---------------------------------------------------------------- helpers

@@ -151,6 +151,23 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 54. W6A.5 checklist — story-test join deadlock, readiness state, drones (release `TS2-Multiplayer-0.26.5.zip` on BOTH PCs, developer menu enabled on both)
+Grep tags: `HOST_READINESS`, `TEST_STORY`, `TEST_SCENARIO`, `JOIN_DEFERRED`, `JOIN_REFUSED`, `REJECT`, `P2INV`, `STORY`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | P2 F10 *Testkampagne beitreten* FIRST, then P1 F10 → Index 18 → *Testkampagne starten* | P2 waits (`HostNotReady`, F10 "Host ist nicht bereit"), no failure. P1 log: `HOST_READINESS not ready: …` while loading / checking, NEVER "may join" before `TEST_STORY scenario check OK`; then `HOST_READINESS ready: Player 2 may join` + `TEST_CAMPAIGN HOST READY` | NOT TESTED |
+| 2 | Wait (no clicks on P2) | P2 joins by itself within ~5 s of HOST READY; spawns in Madison beside P1 | NOT TESTED |
+| 3 | P1 log after OK | `TEST_STORY story actions (diagnostic, not a join condition): camera_104_drone (Ziel): verfügbar; note_103: im Originalspiel 1.27c nicht verfügbar …` | NOT TESTED |
+| 4 | P1 F10 in the world | "HOST BEREIT …", "Story: Index 18 · story14 … geprüft OK", "Aktionen: …" as in row 3 | NOT TESTED |
+| 5 | Both: own drone | P1 drone 89 equipped; P2 log `TEST_SCENARIO Player 2 check OK: own drone 89 equipped`; host log one `P2INV story-test grant … item 89` | NOT TESTED |
+| 6 | P1 flies its drone to the 104 entrance camera (Junkyard) and disables it | Story advances once to story15 on BOTH HUDs (`STORY host published story 19 'story15'`) | NOT TESTED |
+| 7 | P2 leaves to the main menu and rejoins via F10 | Joins again; NO second `P2INV story-test grant`; P2 still exactly one drone | NOT TESTED |
+| 8 | House 103 (optional): walk in | The note is not there (original 1.27c asset); nothing breaks | NOT TESTED |
+| 9 | Normal F8 host + code join (fresh start) | Join before load waits, then joins; chip "BEREIT – SPIELER 2 KANN BEITRETEN" only when the join works; no developer grant in any log | NOT TESTED |
+
+Not reproducible on demand: the permanent-failure path (`TEST_STORY scenario check FAILED`, P1 F10 "BEITRITT GESPERRT – …", P2 "Story-Test des Hosts ist ungültig … kein weiterer Versuch", host log `JOIN_REFUSED … permanent`). Report it if it ever appears. Send back both `LogOutput.log` files.
+
 ## 53. W6A.4 checklist — story14 prerequisites, Player-2 spawn, scenario check (release `TS2-Multiplayer-0.26.4.zip` on BOTH PCs, developer menu enabled on both)
 | # | Steps | Expected evidence | Result |
 |---|---|---|---|
@@ -158,7 +175,7 @@ Known/expected: shared calendar, rent and bank interest advance only from the ho
 | 2 | Host: inventory / drone key | The Flyby drone is in the inventory and launches with the original drone key in Madison; the camera disable works on the 104 entrance camera | NOT TESTED |
 | 3 | Client F10 join (before and after host ready) | Before OK: waits (`HostNotReady`, reason "Story-Test …"); after: P2 spawns in Madison beside P1 (log `P2SPAWN RestoreNear (FirstJoin) in MadisonSt`, host `spawn … story test: first join beside the host`), not in the hideout or inside a car | NOT TESTED |
 | 4 | Client: own drone | `P2INV story-test grant … item 89` on the host; P2 log `TEST_SCENARIO Player 2 check OK: own drone 89 equipped`; P2 launches its own drone independently of P1 | NOT TESTED |
-| 5 | Story14 completion via note_103 (§49 row 2) or the drone camera (P1) | story15 on both | NOT TESTED |
+| 5 | Story14 completion via note_103 (§49 row 2) or the drone camera (P1) | story15 on both. W6A.5: note_103 does not exist in the original 1.27c asset, only the drone camera path is testable (§54 row 6) | NOT TESTED |
 | 6 | P2 leaves to the main menu and rejoins | Spawns at its own last position (Restore), still exactly one drone | NOT TESTED |
 | 7 | Restart both, start index 18 again | Fresh seed, both players get exactly one drone again | NOT TESTED |
 | 8 | Host F10 in the world | Status shows "geprüft OK (Region, Voraussetzungen, Story-Objekte, Spawn)" | NOT TESTED |

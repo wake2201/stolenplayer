@@ -73,13 +73,86 @@ namespace TS2MP.Shared
             return l.ToArray();
         }
 
-        // Story objects that must be present after the load for a valid scenario (GameObject names, active in hierarchy).
-        public static string[] RequiredObjects(int index)
+        // W6A.5: Player 2's developer grants for a FRESH isolated record (Player2Sync.LoadBook, new-record branch only). Pure rule:
+        // only a developer story test (scenario >= 0, isolated developer host), only items the record does not yet hold in the
+        // required count, applied with Set (absolute, never Add). A reconnect / late join loads the existing record and never
+        // reaches this rule; a second evaluation of the same record yields nothing -> no duplicate drone.
+        public static System.Collections.Generic.List<ScenarioPrereq> P2Grants(int scenario, bool devHost, Func<int, int> countOf)
+        {
+            var l = new System.Collections.Generic.List<ScenarioPrereq>();
+            if (scenario < 0 || !devHost || countOf == null) return l;
+            foreach (var p in For(scenario)) if (p.P2ItemId != 0 && countOf(p.P2ItemId) < p.P2ItemCount) l.Add(p);
+            return l;
+        }
+    }
+
+    // W6A.5: an original action that completes a scenario's story step. DIAGNOSTIC ONLY - never part of the session-readiness
+    // gate (a missing optional alternative must not block joins). Primary = the step's live objective; StaticUnavailable = the
+    // original asset itself never lets the action appear (scene evidence), so it is reported as unavailable, never as testable.
+    public sealed class ScenarioAction
+    {
+        public readonly string Id, FindPath, StaticUnavailable, Evidence; public readonly bool Primary;
+        public ScenarioAction(string id, bool primary, string findPath, string staticUnavailable, string evidence)
+        { Id = id; Primary = primary; FindPath = findPath; StaticUnavailable = staticUnavailable; Evidence = evidence; }
+    }
+
+    public static class ScenarioActions
+    {
+        // MadisonSt (level3) asset reads 2026-11-17 (tools/research/unity_reader.py, game 1.27c):
+        //   DOMY/Dom 103/Interior_103                          activeSelf False (AssignInteriors / OnPossesion: active only while the
+        //                                                      local player stands in House 103's info trigger, on foot)
+        //   .../Interior_103/story object 103 notka            activeSelf False - the ONLY story-keyed StoryObject serialized
+        //                                                      inactive; its obj_to_activate is the child pPlane3 (the ReadNote), not
+        //                                                      itself, and no MonoBehaviour / game code references or finds it -> its
+        //                                                      StoryObject never runs and the note never appears in the original game.
+        //   DISABLE CAMERA 104 MISSION (StoryObject story14) -> enable (pid 6010), scene root, not distance-culled.
+        //   Junkyard/SECURITY CAM (1)/Security Camera: SecurityCamera canBeDisabledDrone, onDisableAdvanceStory, storyName story14,
+        //                                              discovered_camera_prefs Camera_104_1.
+        public static ScenarioAction[] For(int index)
         {
             var s = StoryCatalog.Get(index);
-            if (s != null && s.Key == "story14") return new[] { "story object 103 notka" };   // StoryObject story_desc_to_activate story14 (note_103)
-            return new string[0];
+            if (s != null && s.Key == "story14") return new[]
+            {
+                new ScenarioAction("camera_104_drone", true, "Junkyard/SECURITY CAM (1)/Security Camera", null,
+                    "SecurityCamera onDisableAdvanceStory story14 (drone camera disable); marker DISABLE CAMERA 104 MISSION/enable"),
+                new ScenarioAction("note_103", false, null,
+                    "im Originalspiel 1.27c nicht verfügbar: 'story object 103 notka' ist im Szenen-Asset deaktiviert und wird von nichts aktiviert",
+                    "ReadNote advanceStory story14 under an inactive, unreferenced StoryObject holder"),
+            };
+            return new ScenarioAction[0];
         }
+
+        // One status line per action (F10 + log). active: FindPath -> GameObject active in hierarchy (Unity side).
+        public static string Describe(ScenarioAction a, bool active)
+        {
+            if (a.StaticUnavailable != null) return a.Id + ": " + a.StaticUnavailable;
+            return a.Id + (a.Primary ? " (Ziel)" : "") + ": " + (active ? "verfügbar" : "Objekt nicht aktiv (" + a.FindPath + ")");
+        }
+    }
+
+    // W6A.5: the ONE host readiness state. Network join decisions, HOST_READINESS log, F8 chip and F10 status all read it.
+    //   world  = HostReadiness.Check (loaded world, persistence bound); null = ready
+    //   scenario state (developer story test only): None / Waiting / Checking / Valid / Invalid
+    public enum ScenarioState : byte { None, Waiting, Checking, Valid, Invalid }
+
+    public static class JoinGate
+    {
+        // null = Player 2 may join now; else the reason joins are refused.
+        public static string Reason(string world, ScenarioState s, string scenarioDetail)
+        {
+            if (s == ScenarioState.Invalid) return "Story-Test ungültig: " + scenarioDetail;   // permanent, even while the world reloads
+            if (world != null) return world;
+            if (s == ScenarioState.Waiting) return "Story-Test wartet auf die geladene Welt";
+            if (s == ScenarioState.Checking) return "Story-Test wird geprüft" + (scenarioDetail != null ? ": " + scenarioDetail : "");
+            return null;
+        }
+
+        // Permanent refusal (the client stops retrying): only an invalid scenario. Everything else is retryable HostNotReady.
+        public static bool Fatal(ScenarioState s) { return s == ScenarioState.Invalid; }
+
+        public static RejectCode? Reject(string reason, bool fatal) { return reason == null ? (RejectCode?)null : fatal ? RejectCode.ScenarioInvalid : RejectCode.HostNotReady; }
+
+        public static string LogLine(string reason, bool fatal) { return reason == null ? "ready: Player 2 may join" : (fatal ? "closed permanently: " : "not ready: ") + reason; }
     }
 
     // Live facts the host gathers for the scenario check (Unity side: MultiplayerMenu.Dev.cs).
@@ -88,7 +161,6 @@ namespace TS2MP.Shared
         public int Expected, LiveIndex, Region; public string LiveKey; public bool FreeMode;
         public int EquippedDrone; public System.Collections.Generic.Dictionary<string, int> Prefs = new System.Collections.Generic.Dictionary<string, int>();
         public System.Collections.Generic.Dictionary<int, int> P2Items = new System.Collections.Generic.Dictionary<int, int>(); public bool P2RecordKnown;
-        public System.Collections.Generic.HashSet<string> ActiveObjects = new System.Collections.Generic.HashSet<string>();
         public bool SpawnOk; public string SpawnNote;
     }
 
@@ -198,7 +270,9 @@ namespace TS2MP.Shared
                     int c; if (!f.P2Items.TryGetValue(p.P2ItemId, out c) || c < p.P2ItemCount) return "Voraussetzung " + p.Id + ": Spieler 2 hat Gegenstand " + p.P2ItemId + " nicht.";
                 }
             }
-            foreach (var o in ScenarioPrereqs.RequiredObjects(f.Expected)) if (!f.ActiveObjects.Contains(o)) return "Story-Objekt '" + o + "' nicht aktiv.";
+            // W6A.5: story objects / actions are NOT checked here (ScenarioActions = diagnostics). The W6A.4 'story object 103
+            // notka' requirement blocked every join: that holder is inactive in the original asset (and inside a distance-culled
+            // interior), so the check could never pass on a valid index-18 world.
             if (!f.SpawnOk) return "Spawn für Spieler 2 ungültig: " + f.SpawnNote;
             return null;
         }

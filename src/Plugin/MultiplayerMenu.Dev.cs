@@ -134,7 +134,7 @@ namespace TS2MP.Plugin
                 _fbppSave();
                 _appliedStory = plan.Story; StartScenarioCheck(plan.Story);
                 string bad = DevScenario.VerifySeed(plan.Story, _spGet);
-                if (bad != null) { _devError = "Story-Testspielstand ungültig: " + bad; _scenarioGate = "Story-Test ungültig: " + bad; _log.Error("TEST_STORY seed invalid: " + bad); }
+                if (bad != null) { _devError = "Story-Testspielstand ungültig: " + bad; ScenarioInvalid("Spielstand: " + bad); _log.Error("TEST_STORY seed invalid: " + bad); }
                 else _log.Info("TEST_STORY seed: original MainMenu.StartNewGame (skip intro) in the sandbox, then " + string.Join(", ", keys.Select((kk, ii) => kk + " = " + vals[ii]).ToArray()) + " (" + DevScenario.Label(plan.Story) + "), FreeMode 0, CurrentLocation " + DevScenario.SeedLocation + "; loading MainScene");
             }
             catch (Exception ex)
@@ -146,21 +146,29 @@ namespace TS2MP.Plugin
             }
         }
 
-        // ---------------------------------------------------------------- W6A.4 scenario check (gates joins + HOST READY)
+        // ---------------------------------------------------------------- W6A.4 / W6A.5 scenario check (gates joins + HOST READY)
         // Active story-test scenario of this process (-1 = none): read by CampaignBootstrap (Player-2 spawn) and Player2Sync
         // (Player 2's fresh record) on the host. Set only by the developer story start, cleared when the session stops.
         internal static int ActiveScenario = -1;
-        string _scenarioGate;         // HostGate addition while the scenario is unchecked / invalid (null = valid or no scenario)
-        int _checkIndex = -1; bool _scenarioDone, _pendingLogged; double _checkSince, _nextCheck;
+        // W6A.5: scenario part of the ONE readiness state (JoinGate). None = no story test; Waiting = world not ready yet; Checking
+        // = critical check pending (retried); Valid; Invalid = permanent (RejectCode.ScenarioInvalid, client stops retrying).
+        ScenarioState _scenarioState = ScenarioState.None; string _scenarioDetail, _actionsLine;
+        int _checkIndex = -1; bool _pendingLogged; double _checkSince, _nextCheck;
 
         void StartScenarioCheck(int index)
         {
-            ActiveScenario = index; _checkIndex = index; _scenarioDone = false; _pendingLogged = false; _checkSince = -1; _nextCheck = 0;
-            _scenarioGate = "Story-Test wartet auf die geladene Welt";
-            _log.Info("TEST_SCENARIO " + DevScenario.Label(index) + ": prerequisites " + string.Join(", ", ScenarioPrereqs.For(index).Select(p => p.Id).ToArray()) + "; required objects " + string.Join(", ", ScenarioPrereqs.RequiredObjects(index)) + "; joins wait until the scenario check passes");
+            ActiveScenario = index; _checkIndex = index; _pendingLogged = false; _checkSince = -1; _nextCheck = 0;
+            _scenarioState = ScenarioState.Waiting; _scenarioDetail = null; _actionsLine = null;
+            _log.Info("TEST_SCENARIO " + DevScenario.Label(index) + ": prerequisites " + string.Join(", ", ScenarioPrereqs.For(index).Select(p => p.Id).ToArray()) + "; story actions (diagnostic, never gate joins) " + string.Join(", ", ScenarioActions.For(index).Select(a => a.Id).ToArray()) + "; joins wait until the critical scenario check passes");
         }
 
-        void ClearScenario() { ActiveScenario = -1; _checkIndex = -1; _scenarioGate = null; _scenarioDone = false; _devCheck = null; }
+        void ScenarioInvalid(string why)
+        {
+            if (_scenarioState == ScenarioState.Invalid) return;
+            _scenarioState = ScenarioState.Invalid; _scenarioDetail = why;
+        }
+
+        void ClearScenario() { ActiveScenario = -1; _checkIndex = -1; _scenarioState = ScenarioState.None; _scenarioDetail = null; _actionsLine = null; _devCheck = null; }
 
         static Func<object, object> _gmStoryMgr, _smCurrent, _psDrone, _dmAssigned; static Func<object, int> _smStory, _itemId; static Func<object, bool> _smFree; static Func<object, string> _scriptKey; static bool _liveResolved;
         static void ResolveLive(Type gmType)
@@ -182,8 +190,9 @@ namespace TS2MP.Plugin
             return it != null && it && _itemId != null ? _itemId(it) : 0;
         }
 
-        // Host in the loaded world: the full scenario check (index + objective, region, prerequisites, story objects, Player-2
-        // spawn plan) every 0.5 s once the world is ready (HOST_READINESS), at most 20 s; joins stay closed until it passes.
+        // Host in the loaded world: the CRITICAL scenario check (index + objective, region, prerequisites, Player-2 record,
+        // Player-2 spawn plan) every 0.5 s once the world is ready (HOST_READINESS), at most 20 s; joins stay closed until it
+        // passes. Story actions (ScenarioActions) are reported once as diagnostics and never close the gate.
         void DevHostTick(GameContext ctx)
         {
             if (ctx != GameContext.InWorld) return;
@@ -192,9 +201,9 @@ namespace TS2MP.Plugin
                 if (!_readyLogged && _hostGateReason == null) { _readyLogged = true; _log.Info("TEST_CAMPAIGN HOST READY: Player 2 can join now with F10 -> Testkampagne beitreten (address of this PC, UDP " + _port + ", no code)"); }
                 return;
             }
-            if (_scenarioDone) return;
+            if (_scenarioState == ScenarioState.Valid || _scenarioState == ScenarioState.Invalid) return;
             double now = Time.realtimeSinceStartup;
-            if (_hostGateReason != null) { _scenarioGate = "Story-Test wartet auf die geladene Welt"; return; }   // StoryManager / scene not initialised yet
+            if (_hostGateReason != null) { _scenarioState = ScenarioState.Waiting; return; }   // StoryManager / scene not initialised yet
             if (now < _nextCheck) return;
             _nextCheck = now + 0.5;
             if (_checkSince < 0) _checkSince = now;
@@ -203,23 +212,40 @@ namespace TS2MP.Plugin
             string bad = f == null ? "StoryManager noch nicht bereit" : DevScenario.Check(f);
             if (bad == null)
             {
-                _scenarioDone = true; _scenarioGate = null;
-                _devCheck = DevScenario.Label(_checkIndex) + " – geprüft OK (Region, Voraussetzungen, Story-Objekte, Spawn)";
-                _log.Info("TEST_STORY scenario check OK after " + (now - _checkSince).ToString("0.0") + " s: live " + DevScenario.Label(_checkIndex) + ", region " + Regions.Name(f.Region) + ", drone " + f.EquippedDrone + ", Player-2 record ok, objects ok, spawn: " + f.SpawnNote);
+                _scenarioState = ScenarioState.Valid; _scenarioDetail = null;
+                _actionsLine = ActionsLine(_checkIndex);
+                _devCheck = DevScenario.Label(_checkIndex) + " – geprüft OK (Region, Voraussetzungen, Spieler-2-Datensatz, Spawn)" + (_actionsLine != null ? "\nAktionen: " + _actionsLine : "");
+                _log.Info("TEST_STORY scenario check OK after " + (now - _checkSince).ToString("0.0") + " s: live " + DevScenario.Label(_checkIndex) + ", region " + Regions.Name(f.Region) + ", drone " + f.EquippedDrone + ", Player-2 record ok, spawn: " + f.SpawnNote);
+                if (_actionsLine != null) _log.Info("TEST_STORY story actions (diagnostic, not a join condition): " + _actionsLine);
                 _readyLogged = true;
                 _log.Info("TEST_CAMPAIGN HOST READY: Player 2 can join now with F10 -> Testkampagne beitreten (address of this PC, UDP " + _port + ", no code)");
             }
             else if (now - _checkSince > 20)
             {
-                _scenarioDone = true; _scenarioGate = "Story-Test ungültig: " + bad;
-                _devCheck = "FEHLER – " + bad; _devError = "Story-Test ungültig: " + bad + " Spieler 2 kann nicht beitreten.";
-                _log.Error("TEST_STORY scenario check FAILED (final after 20 s): " + bad + " - joins stay closed, no HOST READY");
+                ScenarioInvalid(bad);
+                _devCheck = "FEHLER – " + bad; _devError = "Story-Test ungültig: " + bad + " Spieler 2 kann nicht beitreten (Beitritte werden endgültig abgelehnt, Spieler 2 versucht es nicht erneut).";
+                _log.Error("TEST_STORY scenario check FAILED (final after 20 s): " + bad + " - joins refused permanently (ScenarioInvalid), no HOST READY");
             }
             else
             {
-                _scenarioGate = "Story-Test wird geprüft: " + bad;
+                _scenarioState = ScenarioState.Checking; _scenarioDetail = bad;
                 if (!_pendingLogged) { _pendingLogged = true; _log.Info("TEST_STORY scenario check pending (retried every 0.5 s, max 20 s): " + bad); }
             }
+        }
+
+        // One diagnostic pass over the scenario's story actions (<= 2 GameObject.Find per scenario, once).
+        static string ActionsLine(int index)
+        {
+            var acts = ScenarioActions.For(index);
+            if (acts.Length == 0) return null;
+            var parts = new string[acts.Length];
+            for (int i = 0; i < acts.Length; i++)
+            {
+                bool active = false;
+                if (acts[i].StaticUnavailable == null && acts[i].FindPath != null) { var go = GameObject.Find(acts[i].FindPath); active = go != null && go.activeInHierarchy; }
+                parts[i] = ScenarioActions.Describe(acts[i], active);
+            }
+            return string.Join("; ", parts);
         }
 
         ScenarioFacts GatherFacts(int index)
@@ -233,7 +259,6 @@ namespace TS2MP.Plugin
             var p2 = Player2Sync.Instance; var rec = p2 != null ? p2.HostRecord : null;
             f.P2RecordKnown = rec != null;
             if (rec != null) foreach (var kv in rec.Items) f.P2Items[kv.Key] = kv.Value;
-            foreach (var o in ScenarioPrereqs.RequiredObjects(index)) { var go = GameObject.Find(o); if (go != null && go.activeInHierarchy) f.ActiveObjects.Add(o); }   // <= 40 lookups per scenario
             var cb = _runner.Campaign; Vec3 hp = default(Vec3); bool ok = cb != null && cb.HostLivePosition(out hp);
             string note; var plan = SpawnRules.TestScenario(new SpawnPlan { Mode = SpawnMode.OriginalSpawn, Reason = SpawnReason.FirstJoin, Region = SpawnRegions.Fallback }, f.Region, ok, hp, out note);
             f.SpawnOk = plan.Mode == SpawnMode.RestoreNear && plan.Region == f.Region; f.SpawnNote = note;
@@ -333,7 +358,7 @@ namespace TS2MP.Plugin
             if (_legacy) GUILayout.Label(MenuRules.LegacyText);
             else if (_hostCode != null && (_lc.IsHostState || _lc.State == MpState.Connected))
             {
-                GUILayout.Label(_hostGateReason == null ? ">>> HOST BEREIT – Spieler 2 kann jetzt über F10 beitreten (UDP " + _port + ", kein Code) <<<" : "HOST LÄDT – Spieler 2 noch nicht beitreten: " + _hostGateReason);
+                GUILayout.Label(HostLine(true));
                 GUILayout.Label("UDP " + _port + (_runner.TestCampaignActive ? " – TESTKAMPAGNE" : " – normale Kampagne") + (_appliedStory >= 0 ? " – " + DevScenario.Label(_appliedStory) : ""));
                 if (GUILayout.Button("Hosten abbrechen")) CancelHost("cancelled in the developer menu");
             }
@@ -437,12 +462,21 @@ namespace TS2MP.Plugin
                 _statusAt = now + 0.5f;
                 var n = _runner.Node;
                 string host = !_lc.IsHostState && !_devHosting ? (n != null ? "Spieler 2: " + _lc.Status : "keine Sitzung")
-                    : _hostGateReason == null ? "HOST BEREIT – Spieler 2 kann über F10 beitreten (UDP " + _port + ", kein Code)" : "HOST LÄDT – noch nicht beitreten: " + _hostGateReason;
+                    : HostLine(false);
                 _statusText = "TS2MP Entwickler-Status (" + _settings.DevMenuKey + ")\n" + host
                     + "\nStory: " + (_devCheck ?? (_appliedStory >= 0 ? DevScenario.Label(_appliedStory) + " (Prüfung läuft)" : "–"))
                     + "\nSpieler 2: " + (n != null && n.IsConnected ? "verbunden" : "nicht verbunden") + (_devError != null ? "\n!! " + _devError : "");
             }
             GUI.Box(new Rect(10, 10, Mathf.Min(760, Screen.width - 20), _devError != null ? 120 : 80), _statusText);
+        }
+
+        // W6A.5: F10 host line from the ONE readiness state (the same string the network gate refuses with).
+        string HostLine(bool menu)
+        {
+            string g = _gateNow;
+            if (g == null) return menu ? ">>> HOST BEREIT – Spieler 2 kann jetzt über F10 beitreten (UDP " + _port + ", kein Code) <<<" : "HOST BEREIT – Spieler 2 kann über F10 beitreten (UDP " + _port + ", kein Code)";
+            if (JoinGate.Fatal(_scenarioState)) return "BEITRITT GESPERRT – " + g;
+            return "HOST NICHT BEREIT – Spieler 2 wartet automatisch: " + g;
         }
 
         // Technical status, rebuilt at most twice per second (no per-frame string building).

@@ -369,6 +369,7 @@ namespace TS2MP.Shared
                     case RejectCode.SessionFull: return "Es ist bereits ein Spieler 2 verbunden";
                     case RejectCode.RateLimited: return "Zu viele Fehlversuche – bitte 2 Minuten warten";
                     case RejectCode.HostNotReady: return "Host ist nicht bereit";
+                    case RejectCode.ScenarioInvalid: return "Story-Test des Hosts ist ungültig (Ursache im F10-Menü des Hosts) – kein weiterer Versuch";
                 }
             if (fatal != null)
             {

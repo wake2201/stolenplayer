@@ -330,12 +330,10 @@ namespace TS2MP.Plugin
                 b.Rec.AppliedTxn = mark;                                     // transfer ids continue above any id already in this save
                 b.Rec.Rev = 1;
                 _log.Info("P2INV new Player-2 inventory for profile " + profile + " (original new-game state: empty backpack, money " + b.Rec.Money + ", tools 100) - never a copy of Player 1");
-                if (MultiplayerMenu.ActiveScenario >= 0 && SaveGuard.DevHost)
-                {   // W6A.4 developer story test: Player 2's own copy of each scenario item, once, in this fresh isolated record only
-                    foreach (var pr in ScenarioPrereqs.For(MultiplayerMenu.ActiveScenario))
-                        if (pr.P2ItemId != 0 && b.Rec.CountOf(pr.P2ItemId) < pr.P2ItemCount)
-                        { b.Rec.Set(pr.P2ItemId, pr.P2ItemCount); _log.Info("P2INV story-test grant (isolated record only): item " + pr.P2ItemId + " x" + pr.P2ItemCount + " for " + pr.Id); }
-                }
+                // W6A.4 developer story test: Player 2's own copy of each scenario item, once, in this fresh isolated record only
+                // (W6A.5: rule extracted to ScenarioPrereqs.P2Grants; absolute Set, never in a normal campaign or on reconnect).
+                foreach (var pr in ScenarioPrereqs.P2Grants(MultiplayerMenu.ActiveScenario, SaveGuard.DevHost, b.Rec.CountOf))
+                { b.Rec.Set(pr.P2ItemId, pr.P2ItemCount); _log.Info("P2INV story-test grant (isolated record only): item " + pr.P2ItemId + " x" + pr.P2ItemCount + " for " + pr.Id); }
                 _dirtyFile = true;
             }
             if (_get(HistoryKey) != b.HistoryId) _set(HistoryKey, b.HistoryId);   // reaches the disk with the next original save

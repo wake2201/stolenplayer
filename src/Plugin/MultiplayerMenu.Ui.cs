@@ -410,9 +410,10 @@ namespace TS2MP.Plugin
         {
             var node = _runner.Node;
             bool p2 = node != null && node.IsConnected;
-            string chip = p2 ? "SPIELER 2 VERBUNDEN" : _hostGateReason == null ? "BEREIT – SPIELER 2 KANN BEITRETEN" : "WARTET: " + _hostGateReason.ToUpperInvariant();
+            string gate = _gateNow;
+            string chip = p2 ? "SPIELER 2 VERBUNDEN" : gate == null ? "BEREIT – SPIELER 2 KANN BEITRETEN" : "WARTET: " + gate.ToUpperInvariant();
             GUILayout.BeginHorizontal();
-            GUILayout.Label(chip, p2 || _hostGateReason == null ? st.Chip : st.ChipWarn);
+            GUILayout.Label(chip, p2 || gate == null ? st.Chip : st.ChipWarn);
             if (_runner.TestCampaignActive) { GUILayout.Space(8); GUILayout.Label("ENTWICKLER-TESTKAMPAGNE", st.ChipWarn); }
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();

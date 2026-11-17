@@ -210,7 +210,7 @@ static class CarBoxTests
         Expect(wh.HandleProposal("cli", 2, ++_pid, new StateEntry { Scope = StateScope.Session, ScopeArg = 5, Key = WorldKeys.CarBoxReq, Value = CarBoxRequest.Encode(CarBoxOp.Open, 0) }, 1, out rev, out sr, out sh) == ProposalCode.Invalid, "wrong scope arg");
         Expect(wh.HandleProposal("cli", 2, ++_pid, new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.CarBox, Value = new CarBoxLeaseState { Owner = 2, Session = 1 }.ToBytes() }, 1, out rev, out sr, out sh) == ProposalCode.NotAuthorized, "the client can never write the lease itself");
         Expect(wh.HandleProposal("cli", 2, ++_pid, new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.CarBoxItems, Value = new byte[6] }, 1, out rev, out sr, out sh) == ProposalCode.NotAuthorized, "the client can never write storage contents");
-        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.4", "protocol 32 / mod 0.21.1");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.5", "protocol 32 / mod 0.21.1");
     }
 
     static void SnapshotLimits()

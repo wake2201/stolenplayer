@@ -572,7 +572,7 @@ static class W42BTests
     // ---------------------------------------------------------------- 17
     static void CodecsAndScans()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.4", "protocol 32 / mod 0.21.1");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.5", "protocol 32 / mod 0.21.1");
         var t = new ObjectTxnRequest { Txn = 5, Op = ObjectOp.Reserve, Kind = L, Ns = Madison, Hash = 7, State = 1, BaseVer = 3, Epoch = 9 }; ObjectTxnRequest t2;
         Expect(t.ToBytes().Length == ObjectTxnRequest.Bytes && ObjectTxnRequest.TryParse(t.ToBytes(), out t2) && t2.Op == ObjectOp.Reserve && t2.Epoch == 9 && t2.BaseVer == 3, "txn 19 B");
         var bad = t.ToBytes(); bad[4] = 9; Expect(!ObjectTxnRequest.TryParse(bad, out t2), "unknown op refused");
@@ -724,7 +724,7 @@ static class W42BTests
         Expect(HostReadiness.Check(new HostFacts { Context = GameContext.InWorld, LoadedMap = true, PlayerPresent = true, ProfileValid = true, SecondsSinceSceneLoad = 10, SystemsReady = true, RegionKnown = true, PersistenceReady = false }) != null, "Player-2 record not bound -> deferred");
         Expect(HostReadiness.Check(new HostFacts { Context = GameContext.InWorld, LoadedMap = true, PlayerPresent = true, ProfileValid = true, SecondsSinceSceneLoad = 10, SystemsReady = true, RegionKnown = true, PersistenceReady = true }) == null, "ready");
         var menu = Src("MultiplayerMenu.cs");
-        Expect(menu.Contains("if (legacy && n != null && n.Role == Role.Host) { n.HostGate = () => _hostGateReason;") && menu.Contains("if (_legacy) { LegacyHostGate(); return; }"), "launcher host installs the readiness gate");
+        Expect(menu.Contains("if (legacy && n != null && n.Role == Role.Host) { n.HostGate = () => _gateNow;") && menu.Contains("if (_legacy) { LegacyHostGate(); return; }"), "launcher host installs the readiness gate");
         var cb = Src("CampaignBootstrap.cs");
         Expect(!cb.Contains("host readiness should have prevented this join") && cb.Contains("_snapshotDeferred = true") && cb.Contains("deferred until the host's save was loaded"), "an early connection gets the snapshot once the record is bound (no silent dead end)");
         // developer test mode: isolated folders

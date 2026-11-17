@@ -78,3 +78,12 @@ region listed by the host census, (3) adding the namespace to the supported set,
 - Persisted state: `Item_89` (ItemID.Save_Item_Amount), `Drone` = equipped item id (SaveGameNewSystem IL_03c8..IL_03fa); restored by `DroneManager.<FindDrone>` (0.5 s after start) -> `AssignDrone` -> `ApplyUpgrades`.
 - Flyby upgrades (level1 `DroneShopScript`, decoded): `flyby_upgrade1` speed_module (250, lvl 2), `flyby_upgrade2` battery_module (300), `flyby_upgrade3` camera_module (300, camera_upgrade, advanceStory story12).
 - Story-test seed for index >= 16 / 17 writes these keys (src/Shared/DevScenario.cs `ScenarioPrereqs`); Player 2 gets item 89 in its fresh record and the World keys with the host campaign.
+
+## 9. Cooperative drone ownership — decision W6A.5 [M]
+Product decision: after the shared campaign unlock, BOTH players own one personal, functional drone. No host-only drone, no drop / hand-over.
+- **Unlock once:** the story index is shared (W6A). The drone step (story11 pickup at index 15) happens once in the campaign.
+- **One drone per player:** the drone is an inventory item (`Item_<id>`, `CampaignPolicy` PlayerOwnP1). Player 1 keeps it in the host campaign; Player 2 in its host-owned record (`P2Inventory`). Equip with the original `Inventory.EquipDrone` -> `DroneManager.AssignDrone` on each PC.
+- **No duplicates:** a grant is an absolute count (`Set`, never `Add`) on a record that does not yet hold the item; late join / reconnect load the existing record (same rule as `ScenarioPrereqs.P2Grants`).
+- **No double charge:** upgrade keys (`flyby_upgradeN`, `Drone`) are `World` campaign keys, bought once on the shared balance; a purchase by either player must be a host transaction (W4.1B wallet) that writes the key once. `DroneTech.RestoreDrone` (repair) stays per player, paid by the player who repairs.
+- **Developer tests:** F10 isolated seeds may provision the drone (seed keys + Player-2 fresh record). Normal campaigns never receive developer grants (`P2Grants` requires a scenario and the isolated developer host).
+- **Deferred (not in W6A.5):** granting Player 2 its own drone from the shared story11 unlock in a normal campaign, and Player-2 `DroneShopScript` / `DroneUpgradePanel.BuyUpgrade` as host transactions (`BuyUpgrade` can call `AdvanceStory`, see §6). Needs its own inventory milestone.

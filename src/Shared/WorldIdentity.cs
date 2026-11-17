@@ -51,7 +51,7 @@ namespace TS2MP.Shared
             new KindInfo(ObjectKind.Lockpick,       "Lockpick",            IdentityCategory.Static,        "lock on a door set; NPCs relock (Door.ResetLock)"),
             new KindInfo(ObjectKind.LockedWindow,   "LockedWindow",        IdentityCategory.Static,        "window glass/alarm"),
             new KindInfo(ObjectKind.Safe,           "SafeMaster",          IdentityCategory.Static,        "safe minigame"),
-            new KindInfo(ObjectKind.SecurityCamera, "SecurityCamera",      IdentityCategory.Static,        "camera; discovery marker key only"),
+            new KindInfo(ObjectKind.SecurityCamera, "SecurityCamera",      IdentityCategory.Static,        "camera; W6B: permanent disable shared per region epoch (DisableCamera(999)); discovery key Camera_*"),
             new KindInfo(ObjectKind.SecurityPanel,  "SecurityPanel",       IdentityCategory.Static,        "panel deactivation"),
             new KindInfo(ObjectKind.LightSwitch,    "LightSwitch",         IdentityCategory.Static,        "lights"),
             new KindInfo(ObjectKind.FuseBox,        "FuseBoxSwitch",       IdentityCategory.Static,        "residence power"),

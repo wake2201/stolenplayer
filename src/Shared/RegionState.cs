@@ -60,8 +60,13 @@ namespace TS2MP.Shared
         public const byte BreakIntact = 0, BreakDestroyed = 1;
         // W2B: ParcelLocker = original parcel-locker door (one bit: LockerOpen = ParcelLocker.wasOpened, terminal for the epoch).
         public const byte LockerClosed = 0, LockerOpen = 1;
+        // W6B: SecurityCamera = original permanent disable (SecurityCamera.DisableCamera(999) = DisablePermamently: drone
+        // camera module, security panel, CheckCameras). One bit, terminal for the region epoch (disabledPerma is never cleared;
+        // the original restores the camera only by reloading the scene). Temporary disables (fuse box, hack 240 s, remote drone
+        // 60 s) stay local.
+        public const byte CamActive = 0, CamDisabled = 1;
 
-        public static bool SupportedKind(ObjectKind k) { return k == ObjectKind.Door || k == ObjectKind.Lockpick || k == ObjectKind.LockedWindow || k == ObjectKind.Breakable || k == ObjectKind.ParcelLocker; }
+        public static bool SupportedKind(ObjectKind k) { return k == ObjectKind.Door || k == ObjectKind.Lockpick || k == ObjectKind.LockedWindow || k == ObjectKind.Breakable || k == ObjectKind.ParcelLocker || k == ObjectKind.SecurityCamera; }
         // W4.2C Phase B: Madison Street (99), Hillville (97) and the hideout (0). Every rule below is per namespace; the scene
         // digest gate (OnScene) still refuses a region whose census differs between the instances (it then stays local).
         public static bool SupportedNamespace(int ns) { return ns == 99 || ns == 97 || ns == 0; }
@@ -77,6 +82,7 @@ namespace TS2MP.Shared
                 case ObjectKind.Lockpick: return s <= LockPadlock;
                 case ObjectKind.Breakable: return s <= BreakDestroyed;
                 case ObjectKind.ParcelLocker: return s <= LockerOpen;
+                case ObjectKind.SecurityCamera: return s <= CamDisabled;
                 case ObjectKind.LockedWindow:
                     if ((s & ~31) != 0) return false;
                     if ((s & GlassMask) == GlassIntact) return (s & ~GlassMask) == 0;            // a locked window has no movable sash
@@ -135,6 +141,10 @@ namespace TS2MP.Shared
                 case ObjectKind.ParcelLocker:
                     // ParcelCode.OpenLocker only sets wasOpened; ParcelLocker.Update only lerps toward openRot: no original close.
                     if (cur == LockerOpen && next != LockerOpen) return "an opened parcel locker stays open until the region reloads";
+                    return null;
+                case ObjectKind.SecurityCamera:
+                    // SecurityCamera.Update returns at once while disabledPerma: no original re-enable within the scene.
+                    if (cur == CamDisabled && next != CamDisabled) return "a permanently disabled camera stays disabled until the region reloads";
                     return null;
             }
             return "unsupported kind";

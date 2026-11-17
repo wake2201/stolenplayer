@@ -41,6 +41,8 @@ namespace TS2MP.Plugin
         public readonly Type DoorT, LockpickT, WindowT, MissionItemT, BreakT;
         public readonly bool BreakOk;   // W2A: DestroyObject members found (doors / locks / windows do not depend on it)
         public readonly Type LockerT, ParcelContainerT; public readonly bool LockerOk;   // W2B parcel lockers
+        public readonly Type CamT; public readonly bool CamOk;                            // W6B security cameras
+        readonly Func<object, bool> _camPerma; readonly Func<object, object> _camVlb; readonly Action<object, float> _camDisable;
 
         // Door
         readonly Func<object, bool> _open, _opening, _canUse, _broken, _slowly, _rotateOpen, _useVector, _moveOpen;
@@ -121,6 +123,26 @@ namespace TS2MP.Plugin
             }
             LockerOk = _plOpened != null && _plSetOpened != null && _pcSetOpened != null && _pcLocker != null && _psCodes != null && _pcoSound != null;
             if (!LockerOk) log.Error("WOBJ original ParcelLocker / ParcelCode members not found: shared parcel lockers disabled (they stay local)");
+            CamT = AccessTools.TypeByName("SecurityCamera");
+            if (CamT != null) { _camPerma = Fast.Getter<bool>(CamT, "disabledPerma"); _camVlb = Fast.Getter<object>(CamT, "vlb"); _camDisable = Fast.Call<float>(CamT, "DisableCamera"); }
+            CamOk = CamT != null && _camPerma != null && _camVlb != null && _camDisable != null;
+            if (!CamOk) log.Error("WOBJ original SecurityCamera members not found: shared camera disables off (they stay local)");
+        }
+
+        // ---------------- security cameras (W6B) ----------------
+        public bool CamDisabled(Component c) { return _camPerma(c); }
+        // DisableCamera dereferences vlb (set by the camera's first OnEnable): a camera that was never active here (culled
+        // interior) cannot run it yet; the OnEnable postfix re-applies the committed state when it appears.
+        public bool CamReady(Component c) { return c.gameObject.activeInHierarchy && _camVlb(c) != null; }
+        // Replica / host application: the ORIGINAL SecurityCamera.DisableCamera(999) (= DisablePermamently): visuals, isDisabled,
+        // disabledPerma and - on the host while its story step is current - onDisableAdvanceStory -> original AdvanceStory.
+        // No actor effects live in it (the drone charge and sound belong to PlayerScript, the caller on the acting PC).
+        public void CamDisable(Component c)
+        {
+            if (_camPerma(c)) return;
+            Applying = true;
+            try { _camDisable(c, 999f); }
+            finally { Applying = false; }
         }
 
         // ---------------- readers ----------------

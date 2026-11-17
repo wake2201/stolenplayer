@@ -69,6 +69,10 @@ namespace TS2MP.Plugin
         int _seatFrame = -10;   // M4.2.2: last Time.frameCount VehicleSync posed the avatar in a driver seat
         long _accepted, _stale, _invalid, _wrongSlot;
         double _nextStats;
+        // W6B drone flight: local body latch (feet / yaw before the flight) + the remote drone's own interpolation buffer
+        Vec3 _latchedFeet; float _latchedYaw; bool _haveLatched, _localDrone;
+        readonly SnapshotBuffer _droneBuffer = new SnapshotBuffer { TeleportDistance = 30f };
+        RemoteDrone _drone; sbyte _droneRoll; ushort _remoteDroneItem; long _droneSent, _droneRecv;
 
         public PlayerSync(SessionNode node, InstanceLog log, SyncSettings cfg)
         {
@@ -76,6 +80,7 @@ namespace TS2MP.Plugin
             _localSlot = node.Role == Role.Host ? (byte)1 : (byte)2;
             _remoteSlot = node.Role == Role.Host ? (byte)2 : (byte)1;
             _buffer.InterpolationDelay = cfg.InterpolationDelayMs / 1000.0;
+            _droneBuffer.InterpolationDelay = _buffer.InterpolationDelay;
             node.MessageReceived += OnMessage;
             node.RemoteConnected += OnRemoteConnected;
             node.RemoteDisconnected += OnRemoteDisconnected;
@@ -140,7 +145,7 @@ namespace TS2MP.Plugin
                 _nextStats = Now + 30;
                 if (_node.IsConnected)
                     _log.Info("SYNC_STATS sent=" + _sent + " accepted=" + _accepted + " stale=" + (_stale + _buffer.StaleDropped) + " invalid=" + _invalid + " wrongSlot=" + _wrongSlot
-                        + " buffer=" + _buffer.Count + " view=" + _view + " clip=" + (_avatar != null ? _avatar.CurrentClip : "-") + " gear " + (_gear != null ? _gear.Status : "off") + " localScene=" + _sceneKey + " remoteScene=" + _remoteSceneKey);
+                        + " buffer=" + _buffer.Count + " drone sent/recv=" + _droneSent + "/" + _droneRecv + (_drone != null ? " shown" : "") + " view=" + _view + " clip=" + (_avatar != null ? _avatar.CurrentClip : "-") + " gear " + (_gear != null ? _gear.Status : "off") + " localScene=" + _sceneKey + " remoteScene=" + _remoteSceneKey);
             }
         }
 
@@ -244,6 +249,27 @@ namespace TS2MP.Plugin
                 s.Yaw = yaw;
                 s.Flags = flags;
                 ReadGear(ref s, cam);
+                // W6B: while the original DroneManager flies the drone, PS.transform rides the drone (DroneManager.Update
+                // playerAttach): send the standing body (joystick_character / feet latched before the flight) + the drone pose.
+                Transform dT, bT; int did;
+                bool drone = LocalDrone.Active(_ps, out dT, out bT, out did);
+                if (drone)
+                {
+                    var p = _ps.transform.position;
+                    s.Pos = DroneRules.BodyFeet(bT != null, bT != null ? new Vec3(bT.position.x, bT.position.y, bT.position.z) : default(Vec3), _haveLatched, _latchedFeet, new Vec3(p.x, p.y, p.z));
+                    s.Yaw = _haveLatched ? _latchedYaw : yaw; s.Pitch = 0;
+                    if (did > 0 && did <= ushort.MaxValue)
+                    {
+                        s.Flags = DroneRules.BodyFlags(flags);
+                        var e = dT.eulerAngles;
+                        s.DroneItem = (ushort)did; s.DronePos = new Vec3(dT.position.x, dT.position.y, dT.position.z); s.DroneYaw = e.y;
+                        s.DronePitch = PlayerStateCodec.QuantizeAngle(e.x); s.DroneRoll = PlayerStateCodec.QuantizeAngle(e.z);
+                        _droneSent++;
+                    }
+                    else s.Flags = DroneRules.BodyFlags(flags) & ~MoveFlags.Drone;
+                }
+                else { _latchedFeet = s.Pos; _latchedYaw = yaw; _haveLatched = true; }
+                if (drone != _localDrone) { _localDrone = drone; _log.Info("DRONE local " + (drone ? "flight started (item " + did + "): the body stays at " + s.Pos + ", drone pose sent separately" : "flight ended")); }
             }
             _w.Reset();
             PlayerStateCodec.Write(_w, s);
@@ -305,8 +331,10 @@ namespace TS2MP.Plugin
                 _hasLast = true; _lastSeq = s.Seq; _accepted++;
                 _remoteFlags = s.Flags;
                 _remoteSceneHash = s.SceneHash;
-                if (s.SceneHash != _lastRemoteScene) { _buffer.Clear(); _lastRemoteScene = s.SceneHash; }
+                if (s.SceneHash != _lastRemoteScene) { _buffer.Clear(); _droneBuffer.Clear(); _lastRemoteScene = s.SceneHash; }
                 if (s.Has(MoveFlags.Present)) { _buffer.Add(s, Now); _lastRecvAt = Now; }
+                if (s.Has(MoveFlags.Drone) && s.Has(MoveFlags.Present)) { _droneBuffer.Add(DroneRules.AsDroneSample(s), Now); _droneRoll = s.DroneRoll; _remoteDroneItem = s.DroneItem; _droneRecv++; }
+                else if (_droneBuffer.HasData) _droneBuffer.Clear();
                 if (_node.Role == Role.Host)
                 {
                     // Host authority: only validated states are relayed (no other clients exist while MaxClients = 1).
@@ -335,8 +363,32 @@ namespace TS2MP.Plugin
 
         void OnRemoteDisconnected(string reason)
         {
-            _hasLast = false; _buffer.Clear(); _remotePresent = false; _remoteSceneKey = "?";
+            _hasLast = false; _buffer.Clear(); _droneBuffer.Clear(); _remotePresent = false; _remoteSceneKey = "?";
             DestroyAvatar("remote disconnected (" + reason + ")");
+            DestroyDrone("remote disconnected");
+        }
+
+        // W6B: the other player's drone (visual clone of the original model), shown only while it is flown in our scene.
+        void UpdateRemoteDrone(bool fresh)
+        {
+            bool show = DroneRules.ShowRemoteDrone(_node.IsConnected, _localPresent && _remoteSceneHash == _sceneHash, fresh, _remoteFlags) && _droneBuffer.HasData;
+            if (!show) { if (_drone != null) { _drone.Hide(); if (!_node.IsConnected || (_remoteFlags & MoveFlags.Drone) == 0) DestroyDrone(null); } return; }
+            if (_drone != null && _drone.ItemId != _remoteDroneItem) DestroyDrone("drone item changed");
+            if (_drone == null)
+            {
+                _drone = RemoteDrone.Spawn(_ps, _remoteDroneItem, _log);
+                if (_drone == null) { _remoteFlags &= ~MoveFlags.Drone; return; }
+                _log.Info("DRONE remote flight shown (item " + _remoteDroneItem + "); the remote body stands at its own position");
+            }
+            RemoteSample d;
+            if (_droneBuffer.TrySample(Now, out d)) _drone.Apply(d, _droneRoll);
+        }
+
+        void DestroyDrone(string why)
+        {
+            if (_drone == null) return;
+            _drone.Destroy(); _drone = null;
+            _log.Info("DRONE remote flight hidden" + (why != null ? " (" + why + ")" : " (landed / left the scene)"));
         }
 
         // ---------------- remote avatar ----------------
@@ -344,6 +396,7 @@ namespace TS2MP.Plugin
         {
             double now = Now;
             bool fresh = _buffer.HasData && now - _lastRecvAt < 3.0;
+            UpdateRemoteDrone(fresh);
             var view = RemoteVisibility.Decide(_node.IsConnected, _localPresent, _remotePresent, _sceneHash, _remoteSceneHash, _remoteFlags, fresh);
             if (view != _view)
             {
@@ -452,6 +505,7 @@ namespace TS2MP.Plugin
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
             DestroyAvatar("shutdown");
+            DestroyDrone("shutdown");
             if (_h != null) { _h.UnpatchSelf(); _h = null; }
         }
     }

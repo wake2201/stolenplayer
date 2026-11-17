@@ -222,6 +222,8 @@ namespace TS2MP.Plugin
             p = default(Vec3);
             var gm = _world.GameManagerObject; var ps = gm != null ? _gmPs(gm) as Component : null;
             if (ps == null || !ps) return false;
+            Transform dT, bT; int did;
+            if (LocalDrone.Active(ps, out dT, out bT, out did)) { if (bT == null) return false; p = new Vec3(bT.position.x, bT.position.y + DroneRules.JoystickBelowPlayer, bT.position.z); return SpawnValidation.PositionOk(p); }   // W6B: the body, not the drone
             var t = ps.transform.position; p = new Vec3(t.x, t.y, t.z);
             return SpawnValidation.PositionOk(p);
         }
@@ -476,6 +478,7 @@ namespace TS2MP.Plugin
             bool inVeh = _psInVeh(ps);
             if (!inVeh && (!Alive(pmb) || !_pmbGrounded(pmb))) return;
             if (_psLockpicking != null && _psLockpicking(ps)) return;
+            if (!DroneRules.PositionReportAllowed(LocalDrone.Active(ps))) return;   // W6B: PS.transform rides the drone while piloting
             Vec3 feet; float yaw;
             if (!LocalFeet(out feet, out yaw) || !SpawnValidation.PositionOk(feet)) return;
             var rep = new P2PosReport { Region = region, Pos = feet, Yaw = yaw, Context = Context(gm, ps) };

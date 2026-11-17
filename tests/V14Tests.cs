@@ -459,7 +459,7 @@ static class V14Tests
         Expect(PresentationRules.Decide(fleet[Ranger], Madison, 2) == CarPresentation.RemoteVisual && PresentationRules.Decide(fleet[GT], Madison, 1) == CarPresentation.Hidden, "other regions unchanged");
         var v = Src("Plugin", "VehicleSync.cs");
         Expect(Body(v, "void Activate(UnityEngine.Object gm, LocalCar lc, int region)").Contains("else if (!lc.Placed && region == TravelRules.Hideout) PlaceNewHideoutCar(gm, lc);"), "initial placement of an unplaced object kept (valid start pose before the layout)");
-        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.5", "protocol 34 / mod 0.23.0");
+        Expect(ProtocolInfo.ProtocolVersion == 38 && ProtocolInfo.ModVersion == "0.27.0", "protocol 34 / mod 0.23.0");
     }
 
     // ------------------------------------------------------------------------------------------------ V1.4.1 medkit

@@ -14,8 +14,13 @@
 //   - Note visibility: ReadNote.Start hides a code note whose parcel was already taken (SPrefs >= 2). A parcel taken through
 //     the shared parcel / loot sync before the story step happened would then block the step for everyone; the postfix keeps
 //     a note visible while its own advanceStory step is the current one (never otherwise).
+//   - W6B cooperative story call (src/Shared/Story.cs StoryCallState): StorySequence.Beginn prefix detects an ANSWER of a
+//     ringing call (the original answer branch calls Beginn while PlayerScript.callIncoming / the vibrate source are on; the
+//     bypass branch and the nextSequence chain call it without). The answer is committed once ("storyCall": host directly,
+//     Player 2 by proposal). The other PC mirrors it with the original answer branch (ringing) or, when its ring is still
+//     pending, with the original bypassCall branch at PhoneCall1 (no ring, dialogue at once). Declining stays personal.
 // Cost: per frame one int field read (+ client: one registry head compare); hooks once per AdvanceStory / note read / note
-// Start. Network: one <= 140 B proposal per Player-2 trigger, one <= 40 B state per story change.
+// Start / call answer / ring start. Network: one <= 140 B proposal per Player-2 trigger, one <= 40 B state per story change.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -42,6 +47,11 @@ namespace TS2MP.Plugin
         // trigger context (set by the original trigger's hook around its own AdvanceStory call)
         static StoryTriggerKind _ctxKind; static string _ctxPath; static bool _applying;
 
+        // W6B story call
+        static Func<object, object> _seqManager, _smPickUp, _smVibrate, _smPs, _gmSeqs; static Func<object, bool> _seqCalling, _seqTry, _psIncoming, _psConvo;
+        static Action<object, bool> _setCalling; static Action<object> _seqBeginn, _psStopCall; static bool _callOk, _mirroring;
+        StoryCallState _call; string _mirroredCall; uint _callHead = uint.MaxValue, _callEpoch; double _nextCallCheck; readonly Dictionary<uint, StoryCallState> _callPending = new Dictionary<uint, StoryCallState>();
+        long _callsAnswered, _callsMirrored, _callsBypassed;
         object _boundSm; int _lastLocal = int.MinValue; uint _seenHead = uint.MaxValue, _seenEpoch; StoryState _committed; double _nextApply;
         sealed class Pending { public StoryAdvanceRequest Req; public int Tries; public double At; }
         readonly Dictionary<uint, Pending> _pending = new Dictionary<uint, Pending>();
@@ -81,6 +91,7 @@ namespace TS2MP.Plugin
                 _h.Patch(advance, prefix: new HarmonyMethod(AccessTools.Method(typeof(StorySync), "AdvancePre")));
                 _h.Patch(beginRead, prefix: new HarmonyMethod(AccessTools.Method(typeof(StorySync), "NoteReadPre")), postfix: new HarmonyMethod(AccessTools.Method(typeof(StorySync), "NoteReadPost")));
                 _h.Patch(noteStart, postfix: new HarmonyMethod(AccessTools.Method(typeof(StorySync), "NoteStartPost")));
+                PatchCalls(gm);
                 if (_host && world.Host != null) world.Host.StoryHost = this;
                 else world.ProposalResultHook12 = OnProposalResult;
                 node.RemoteDisconnected += OnDisconnected;
@@ -88,6 +99,127 @@ namespace TS2MP.Plugin
                 _log.Info("STORY shared story ready (" + (_host ? "host: publishes its StoryManager index, applies listed Player-2 triggers with the original AdvanceStory" : "client: follows the host index (original InitiateStory presentation), listed triggers proposed, own AdvanceStory never runs") + "; " + StoryTriggers.All.Length + " listed trigger(s))");
             }
             catch (Exception ex) { _log.Error("STORY init failed: shared story disabled", ex); _ok = false; if (_h != null) { _h.UnpatchSelf(); _h = null; } }
+        }
+
+        // ================================================================ W6B story call
+        void PatchCalls(Type gm)
+        {
+            try
+            {
+                var seq = AccessTools.TypeByName("StorySequence"); var sm = AccessTools.TypeByName("StoryManager"); var ps = AccessTools.TypeByName("PlayerScript");
+                _seqManager = Fast.Getter<object>(seq, "Manager"); _seqCalling = Fast.Getter<bool>(seq, "isCalling"); _setCalling = Fast.Setter<bool>(seq, "isCalling");
+                _seqTry = Fast.Getter<bool>(seq, "tryToCall"); _seqBeginn = Fast.Call0(seq, "Beginn");
+                _smPickUp = Fast.Getter<object>(sm, "pickUp"); _smVibrate = Fast.Getter<object>(sm, "phoneVibrateSource"); _smPs = Fast.Getter<object>(sm, "PS");
+                _psIncoming = Fast.Getter<bool>(ps, "callIncoming"); _psConvo = Fast.Getter<bool>(ps, "having_phone_convo"); _psStopCall = Fast.Call0(ps, "StopPhoneCall");
+                _gmSeqs = Fast.Getter<object>(gm, "StorySequences");
+                var beginn = seq != null ? AccessTools.Method(seq, "Beginn", Type.EmptyTypes) : null; var ring = seq != null ? AccessTools.Method(seq, "PhoneCall1", Type.EmptyTypes) : null;
+                _callOk = _seqManager != null && _seqCalling != null && _setCalling != null && _seqTry != null && _seqBeginn != null && _smPickUp != null && _smVibrate != null && _smPs != null
+                    && _psIncoming != null && _psConvo != null && _psStopCall != null && _gmSeqs != null && beginn != null && ring != null;
+                if (!_callOk) { _log.Warn("STORY call members not found: story calls stay per PC"); return; }
+                _h.Patch(beginn, prefix: new HarmonyMethod(AccessTools.Method(typeof(StorySync), "CallBeginnPre")));
+                _h.Patch(ring, prefix: new HarmonyMethod(AccessTools.Method(typeof(StorySync), "CallRingPre")));
+            }
+            catch (Exception ex) { _callOk = false; _log.Error("STORY call hooks failed: story calls stay per PC", ex); }
+        }
+
+        int SeqIndex(object seq)
+        {
+            var gm = _world.GameManagerObject; var arr = gm != null ? _gmSeqs(gm) as Array : null;
+            if (arr == null) return -1;
+            int i = Array.IndexOf(arr, seq); return i >= 0 && i < 256 ? i : -1;
+        }
+
+        static void CallBeginnPre(object __instance)
+        {
+            var i = Instance; if (i == null || _mirroring || !_callOk) return;
+            try
+            {
+                var sm = _seqManager(__instance); var ps = sm != null ? _smPs(sm) : null; var vib = sm != null ? _smVibrate(sm) as AudioSource : null;
+                bool answer = (ps != null && _psIncoming(ps)) || (vib != null && vib.isPlaying);   // original answer branch (not bypass / chain)
+                if (answer) i.OnLocalAnswer(__instance);
+            }
+            catch (Exception ex) { i._log.Error("STORY hook StorySequence.Beginn", ex); }
+        }
+
+        // Ring about to start (StorySequence.Update tryToCall branch): the other player already answered this call -> the
+        // original bypassCall branch instead (isCalling = false, pickUp.Play, Beginn), no ring on this PC.
+        static bool CallRingPre(object __instance)
+        {
+            var i = Instance; if (i == null || !_callOk || i._call == null) return true;
+            try
+            {
+                int idx; string key; bool free;
+                if (!i.Local(out idx, out key, out free)) return true;
+                var m = StoryCallRules.Decide(i._call, i.Slot, key, i.SeqIndex(__instance), false, true, false);
+                if (m != CallMirror.AnswerWhenRung) return true;
+                i.Mirror(__instance, false);
+                i._callsBypassed++;
+                return false;
+            }
+            catch (Exception ex) { i._log.Error("STORY hook StorySequence.PhoneCall1", ex); return true; }
+        }
+
+        byte Slot { get { return _host ? (byte)1 : (byte)2; } }
+
+        void OnLocalAnswer(object seq)
+        {
+            int idx; string key; bool free;
+            if (!Local(out idx, out key, out free) || free) return;
+            int si = SeqIndex(seq); if (si < 0) { _log.Info("STORY call answered here (sequence not in GameManager.StorySequences: not shared)"); return; }
+            var st = new StoryCallState { Key = key, Seq = (byte)si, By = Slot };
+            _callsAnswered++;
+            if (_call != null && _call.SameCall(st)) return;   // the other player answered first: nothing to commit
+            if (_host)
+            {
+                string why = null; var code = _world.Host != null ? _world.Host.AnswerStoryCall(1, st, out why) : ProposalCode.Busy;
+                _world.FlushOutbox();
+                _log.Info("STORY host answered the " + st + " -> " + code + (code != ProposalCode.Accepted && why != null ? " (" + why + ")" : ""));
+                return;
+            }
+            if (!_node.IsConnected || !_world.Synced) { _log.Info("STORY " + st + " not shared: not connected"); return; }
+            uint id = _world.SendProposal(new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.StoryCallAnswer, Value = st.ToBytes() });
+            _callPending[id] = st;
+            _log.Info("STORY Player-2 answered the " + st + ": proposed #" + id);
+        }
+
+        // The original answer branch (ringing) / bypass branch (ring pending), run for the other player's committed answer.
+        void Mirror(object seq, bool ringing)
+        {
+            var sm = _seqManager(seq); var ps = sm != null ? _smPs(sm) : null;
+            var pick = sm != null ? _smPickUp(sm) as AudioSource : null; var vib = sm != null ? _smVibrate(sm) as AudioSource : null;
+            _mirroring = true;
+            try
+            {
+                _setCalling(seq, false);
+                if (pick != null) pick.Play();
+                _seqBeginn(seq);
+                if (ringing) { if (vib != null) vib.Stop(); if (ps != null) _psStopCall(ps); }
+            }
+            finally { _mirroring = false; }
+            _callsMirrored++; _mirroredCall = _call.Key + "|" + _call.Seq;
+            _log.Info("STORY " + _call + ": " + (ringing ? "ringing here -> original answer branch" : "ring pending here -> original bypass branch (no ring)") + ", same dialogue on both PCs");
+        }
+
+        void CallTick()
+        {
+            if (!_callOk) return;
+            var reg = _world.Registry;
+            if (reg.HeadRev != _callHead || reg.Epoch != _callEpoch)   // parse only when the registry changed (no per-frame allocation)
+            {
+                _callHead = reg.HeadRev; _callEpoch = reg.Epoch;
+                var e = reg.Get(StateScope.Session, 0, WorldKeys.StoryCall); StoryCallState s;
+                if (e != null && StoryCallState.TryParse(e.Value, out s) && (_call == null || !_call.SameCall(s) || _call.By != s.By)) { _call = s; _log.Info("STORY shared " + s); }
+            }
+            if (_call == null || _call.By == Slot || _mirroredCall == _call.Key + "|" + _call.Seq) return;
+            double now = Now; if (now < _nextCallCheck) return; _nextCallCheck = now + 0.25;
+            int idx; string key; bool free;
+            if (!Local(out idx, out key, out free)) return;
+            var gm = _world.GameManagerObject; var arr = gm != null ? _gmSeqs(gm) as Array : null;
+            if (arr == null || _call.Seq >= arr.Length) return;
+            var seq = arr.GetValue(_call.Seq); if (seq == null) return;
+            var sm = _seqManager(seq); var ps = sm != null ? _smPs(sm) : null;
+            var m = StoryCallRules.Decide(_call, Slot, key, _call.Seq, _seqCalling(seq), _seqTry(seq), ps != null && _psConvo(ps));
+            if (m == CallMirror.AnswerRinging) Mirror(seq, true);
         }
 
         // ================================================================ hooks
@@ -158,6 +290,8 @@ namespace TS2MP.Plugin
 
         internal bool OnProposalResult(uint id, ProposalCode code)
         {
+            StoryCallState cs;
+            if (_callPending.TryGetValue(id, out cs)) { _callPending.Remove(id); _log.Info("STORY call answer #" + id + " " + cs + " -> " + code); return true; }
             Pending p;
             if (_host || !_pending.TryGetValue(id, out p)) return false;
             _pending.Remove(id);
@@ -169,7 +303,7 @@ namespace TS2MP.Plugin
             return true;
         }
 
-        void OnDisconnected(string reason) { _pending.Clear(); _retry.Clear(); }
+        void OnDisconnected(string reason) { _pending.Clear(); _retry.Clear(); _callPending.Clear(); }
 
         // ================================================================ per frame (Plugin.Update)
         public void Update()
@@ -179,6 +313,7 @@ namespace TS2MP.Plugin
             var sm = _gmStory(gm); if (sm == null) return;
             if (!ReferenceEquals(sm, _boundSm)) { _boundSm = sm; _lastLocal = int.MinValue; _seenHead = uint.MaxValue; }
             int local = _smStory(sm);
+            if (_callOk && (_host || _world.Synced)) { try { CallTick(); } catch (Exception ex) { _callOk = false; _log.Error("STORY call sync failed: story calls stay per PC", ex); } }
             if (_host)
             {
                 if (local == _lastLocal || _world.Host == null) return;
@@ -253,7 +388,7 @@ namespace TS2MP.Plugin
 
         string Committed() { var e = _world.Registry.Get(StateScope.Session, 0, WorldKeys.Story); StoryState s; return e != null && StoryState.TryParse(e.Value, out s) ? s.ToString() : "none"; }
 
-        public string Stats { get { return "STORY_STATS " + (_host ? "host" : "client") + " suppressed " + _suppressed + " proposed " + _proposed + " ok " + _accepted + " stale " + _stale + " refused " + _refused + " published " + _published + " followed " + _followed + " notesKept " + _notesKept + (_host && _world.Host != null ? " hostApplied " + _world.Host.StoryAdvances : "") + " | " + Committed(); } }
+        public string Stats { get { return "STORY_STATS " + (_host ? "host" : "client") + " suppressed " + _suppressed + " proposed " + _proposed + " ok " + _accepted + " stale " + _stale + " refused " + _refused + " published " + _published + " followed " + _followed + " notesKept " + _notesKept + " calls answered/mirrored/bypassed " + _callsAnswered + "/" + _callsMirrored + "/" + _callsBypassed + (_host && _world.Host != null ? " hostApplied " + _world.Host.StoryAdvances : "") + " | " + Committed(); } }
 
         public void Dispose()
         {

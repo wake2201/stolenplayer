@@ -175,4 +175,69 @@ namespace TS2MP.Shared
         // Client: which host index to follow. Returns false when nothing is to do.
         public static bool ClientShouldFollow(int localIndex, bool localBegun, StoryState shared) { return localBegun && shared != null && shared.Index != localIndex; }
     }
+
+    // W6B cooperative story phone call. Original (IL 1.27c, docs/research/STORY_SYSTEM.md section 6):
+    //   StoryManager.InitiateStory: call_sequence.PhoneCall() (tryToCall = true) unless call_only_once and <key>_Call >= 1.
+    //   StorySequence.Update: tryToCall -> (player free) SPrefs <key>_Call = 1; bypassCall ? (pickUp.Play, Beginn) : PhoneCall1
+    //     (caller id, ringtone, vibrate, isCalling, PlayerScript.StartPhoneCall). isCalling + accept_call -> isCalling = false,
+    //     pickUp.Play, Beginn (dialogue: speakSource clip, subtitles, nextSequence chain, end: GM.CheckStory), vibrate stop,
+    //     PlayerScript.StopPhoneCall. cancel_phone -> ForceStop (personal: not shared).
+    //   No campaign effect lives in the answer: <key>_Call is written when the ring starts (World key, host campaign); the
+    //   dialogue and CheckStory are presentation on each PC. So the shared part is only "this stage's call was answered".
+    // Identity: stage key + index of the sequence in GameManager.StorySequences (the same MainScene data on both PCs).
+    public sealed class StoryCallState
+    {
+        public const byte Version = 1;
+        public string Key; public byte Seq; public byte By;   // By: 1 host, 2 Player 2
+
+        public byte[] ToBytes()
+        {
+            var k = Encoding.ASCII.GetBytes(Key ?? "");
+            var b = new byte[4 + k.Length];
+            b[0] = Version; b[1] = Seq; b[2] = By; b[3] = (byte)k.Length; Buffer.BlockCopy(k, 0, b, 4, k.Length);
+            return b;
+        }
+
+        public static bool TryParse(byte[] b, out StoryCallState s)
+        {
+            s = null;
+            if (b == null || b.Length < 5 || b[0] != Version || b[2] < 1 || b[2] > 2) return false;
+            int kl = b[3]; string k;
+            if (kl < 1 || kl > StoryAdvanceRequest.MaxKeyChars || 4 + kl != b.Length || !StoryState.TryText(b, 4, kl, false, out k)) return false;
+            s = new StoryCallState { Seq = b[1], By = b[2], Key = k };
+            return true;
+        }
+
+        public bool SameCall(StoryCallState o) { return o != null && o.Seq == Seq && string.Equals(o.Key, Key, StringComparison.Ordinal); }
+        public override string ToString() { return "call '" + Key + "' sequence " + Seq + " answered by P" + By; }
+    }
+
+    public enum CallMirror : byte { None, AnswerRinging, AnswerWhenRung }
+
+    public static class StoryCallRules
+    {
+        // Host decision for "this stage's call was answered" (by either player). Exactly one committed answer per call.
+        public static ProposalCode Decide(bool hostReady, bool freeMode, string hostKey, StoryCallState committed, StoryCallState req, out string why)
+        {
+            why = null;
+            if (!hostReady) { why = "host story not ready"; return ProposalCode.Busy; }
+            if (req == null || string.IsNullOrEmpty(req.Key)) { why = "malformed"; return ProposalCode.Invalid; }
+            if (freeMode) { why = "free mode: no story calls"; return ProposalCode.Unchanged; }
+            if (!string.Equals(hostKey, req.Key, StringComparison.Ordinal)) { why = "stale: host stage '" + hostKey + "', call of '" + req.Key + "'"; return ProposalCode.Stale; }
+            if (committed != null && committed.SameCall(req)) { why = "already answered by P" + committed.By; return ProposalCode.Unchanged; }
+            return ProposalCode.Accepted;
+        }
+
+        // What this PC does with a committed answer of the OTHER player. Only for its current stage and the same sequence,
+        // never after this PC answered / is talking itself: ringing -> the original answer branch; ring pending (tryToCall,
+        // player busy) -> the original bypassCall branch when the ring would start (no ring, dialogue at once).
+        public static CallMirror Decide(StoryCallState committed, byte localSlot, string localKey, int seqIndex, bool isCalling, bool tryToCall, bool inConversation)
+        {
+            if (committed == null || committed.By == localSlot || seqIndex < 0 || seqIndex != committed.Seq) return CallMirror.None;
+            if (!string.Equals(committed.Key, localKey, StringComparison.Ordinal) || inConversation) return CallMirror.None;
+            if (isCalling) return CallMirror.AnswerRinging;
+            if (tryToCall) return CallMirror.AnswerWhenRung;
+            return CallMirror.None;
+        }
+    }
 }

@@ -43,6 +43,11 @@ Legend: **[V]** verified IL / asset, **[M]** mod source, **[A]** assumption, **[
 - `ReadNote.Start` IL_0062..IL_007f: hides the note when `addParcelCode` and `SPrefs(parcel1_madison) >= 2` (parcel taken). In single-player the parcel cannot be taken before the note is read during story14; in multiplayer it can (shared code / shared loot), which would block the step.
 - Next stage 19 `story15` ("Steal the cardboard box from 104 …"): start effects tutorial + call; completes by `advance_if_item_pref` poll.
 
+## 4b. Story phone calls (W6B) [V IL]
+- Ring: `InitiateStory` → `call_sequence.PhoneCall()` (skipped when `call_only_once` and `<key>_Call >= 1`). `StorySequence.Update` tryToCall (player free) → `<key>_Call = 1` → `bypassCall ? (pickUp, Beginn) : PhoneCall1` (caller id, ringtone, vibrate, `isCalling`, `PlayerScript.StartPhoneCall`).
+- Answer: `isCalling && accept_call` → `isCalling = false`, `pickUp.Play`, `Beginn` (dialogue, subtitles, `nextSequence` chain, end `GM.CheckStory`), vibrate stop, `StopPhoneCall`. Decline: `ForceStop`.
+- No campaign effect in the answer (`_Call` is written at ring start). W6B shares only "answered" (`storyCall`); the other PC mirrors the original answer / bypass branch.
+
 ## 5. Multiplayer design (W6A, 0.26.0) [M]
 - **Ownership:** the host's `StoryManager.story` is the campaign index; durable only through the host's original saves. Record `story` (Session scope) = host index + stage key + last advance by.
 - **Player 2 triggers:** `AdvanceStory` never runs on Player 2's copy (Harmony prefix). A call from a listed trigger (`StoryTriggers`, matched by stage key + kind + object path suffix) whose original condition just passed is proposed as `storyAdvance` (from index, key, trigger). The host decides with `StoryRules.Decide` (ready / listed / free mode / from index == live index / key == live key) and runs its own original `AdvanceStory()` once. Retransmission → proposal cache; replay / concurrent / late → `Stale`.

@@ -14,7 +14,8 @@ namespace TS2MP.Shared
         Running = 8,
         Crouching = 16,
         InVehicle = 32,
-        Hidden = 64      // in a hiding spot
+        Hidden = 64,     // in a hiding spot
+        Drone = 128      // W6B: piloting the own drone (DroneManager.activated); Pos = the standing body, drone block appended
     }
 
     public struct Vec3
@@ -87,6 +88,8 @@ namespace TS2MP.Shared
         public byte Swing;       // W3.1: attack counter 0..15 (shares the gear byte on the wire)
         public byte Held;        // W3: PlayerScript.currentItem (0 = empty hands)
         public ushort CarryItem; // W3: item_ID + 1 of the carried heavy object (0 = none / unknown)
+        // W6B drone block (only on the wire while Flags has Drone): the original drone item id and its world pose.
+        public ushort DroneItem; public Vec3 DronePos; public float DroneYaw; public sbyte DronePitch, DroneRoll;
 
         public bool Has(MoveFlags f) { return (Flags & f) != 0; }
     }
@@ -94,6 +97,7 @@ namespace TS2MP.Shared
     public static class PlayerStateCodec
     {
         public const int WireSize = 34;
+        public const int DroneBlockSize = 18;   // W6B: 2 item + 12 pos + 2 yaw + 1 pitch + 1 roll, only when Flags has Drone
 
         public static void Write(NetDataWriter w, PlayerSnapshot s)
         {
@@ -106,6 +110,11 @@ namespace TS2MP.Shared
             w.Put(QuantizeYaw(s.Yaw));
             w.Put((byte)s.Flags);
             w.Put(s.Pitch); w.Put((byte)(((byte)s.Gear & 0x0F) | ((s.Swing & 0x0F) << 4))); w.Put(s.Held); w.Put(s.CarryItem);
+            if (s.Has(MoveFlags.Drone))
+            {
+                w.Put(s.DroneItem); w.Put(s.DronePos.X); w.Put(s.DronePos.Y); w.Put(s.DronePos.Z);
+                w.Put(QuantizeYaw(s.DroneYaw)); w.Put(s.DronePitch); w.Put(s.DroneRoll);
+            }
         }
 
         // Reader positioned after the MsgType byte.
@@ -121,8 +130,16 @@ namespace TS2MP.Shared
             s.Yaw = DequantizeYaw(r.GetUShort());
             s.Flags = (MoveFlags)r.GetByte();
             s.Pitch = r.GetSByte(); byte g = r.GetByte(); s.Gear = (GearFlags)(g & 7); s.Swing = (byte)(g >> 4); s.Held = r.GetByte(); s.CarryItem = r.GetUShort();
+            if (s.Has(MoveFlags.Drone))
+            {
+                if (r.AvailableBytes < DroneBlockSize) return false;
+                s.DroneItem = r.GetUShort(); s.DronePos = new Vec3(r.GetFloat(), r.GetFloat(), r.GetFloat());
+                s.DroneYaw = DequantizeYaw(r.GetUShort()); s.DronePitch = r.GetSByte(); s.DroneRoll = r.GetSByte();
+            }
             return true;
         }
+
+        public static sbyte QuantizeAngle(float euler) { float a = euler > 180f ? euler - 360f : euler; return (sbyte)Math.Max(-127, Math.Min(127, (int)Math.Round(a))); }
 
         public static sbyte QuantizePitch(float eulerX)
         {
@@ -191,6 +208,8 @@ namespace TS2MP.Shared
             if (s.Slot != expectedSlot) return SnapshotVerdict.WrongSlot;
             if (!Finite(s.Pos.X) || !Finite(s.Pos.Y) || !Finite(s.Pos.Z) || !Finite(s.Yaw)) return SnapshotVerdict.Invalid;
             if (Math.Abs(s.Pos.X) > MaxCoordinate || Math.Abs(s.Pos.Y) > MaxCoordinate || Math.Abs(s.Pos.Z) > MaxCoordinate) return SnapshotVerdict.Invalid;
+            if (s.Has(MoveFlags.Drone) && (s.DroneItem == 0 || !Finite(s.DronePos.X) || !Finite(s.DronePos.Y) || !Finite(s.DronePos.Z) || !Finite(s.DroneYaw)
+                || Math.Abs(s.DronePos.X) > MaxCoordinate || Math.Abs(s.DronePos.Y) > MaxCoordinate || Math.Abs(s.DronePos.Z) > MaxCoordinate)) return SnapshotVerdict.Invalid;
             if (hasLast && !IsNewer(s.Seq, lastSeq)) return SnapshotVerdict.Stale;
             return SnapshotVerdict.Accepted;
         }
@@ -214,5 +233,41 @@ namespace TS2MP.Shared
             if (!hasSamples) return RemoteView.WaitingForData;
             return RemoteView.Visible;
         }
+    }
+
+    // W6B: drone flight presentation (pure). Original DroneManager (IL 1.27c, docs/research/DRONE_SYSTEM.md section 10):
+    //   ActivateDrone: PMB / PCB / main camera off, droneObj placed 3 m above the player and activated, joystick_character (the
+    //     standing pilot body) placed at PS.y - 0.829 and activated, playerAttach = true.
+    //   Update while activated && playerAttach: PS.transform.position / rotation = droneObj's (the PlayerScript object rides the
+    //     drone; the CharacterController is disabled). Exit: PS.transform = joystick_character + 1.2 m, body + drone deactivated.
+    // A snapshot built from PS.transform therefore made the other player see the body fly. While the drone is active the
+    // snapshot carries the standing body (joystick_character, else the last on-foot feet) and the drone pose separately.
+    public static class DroneRules
+    {
+        public const float JoystickBelowPlayer = 0.829f;   // ActivateDrone: joystick_character.y = PS.y - 0.829 (feet level)
+
+        // Body feet for the snapshot / position reports while piloting: the original joystick_character when it exists,
+        // otherwise the feet latched before the flight (never the drone / PlayerScript transform).
+        public static Vec3 BodyFeet(bool joystickActive, Vec3 joystick, bool haveLatched, Vec3 latched, Vec3 playerTransform)
+        {
+            if (joystickActive) return joystick;
+            if (haveLatched) return latched;
+            return new Vec3(playerTransform.X, playerTransform.Y - JoystickBelowPlayer, playerTransform.Z);
+        }
+
+        // Moving / Running cleared: the pilot stands still (original: PMB disabled for the whole flight).
+        public static MoveFlags BodyFlags(MoveFlags f) { return (f & ~(MoveFlags.Moving | MoveFlags.Running)) | MoveFlags.Grounded | MoveFlags.Drone; }
+
+        // The drone pose as a snapshot for its own interpolation buffer (same timing / sequence as the body snapshot).
+        public static PlayerSnapshot AsDroneSample(PlayerSnapshot s)
+        {
+            return new PlayerSnapshot { Slot = s.Slot, Seq = s.Seq, TimeMs = s.TimeMs, SceneHash = s.SceneHash, Pos = s.DronePos, Yaw = s.DroneYaw, Pitch = s.DronePitch, Flags = MoveFlags.Present };
+        }
+
+        // Remote drone shown only while the sender pilots it in the same scene (cleanup on stop, scene change, disconnect).
+        public static bool ShowRemoteDrone(bool connected, bool sameScene, bool fresh, MoveFlags latest) { return connected && sameScene && fresh && (latest & MoveFlags.Drone) != 0; }
+
+        // The body must never be reported where the drone is (P2 spawn reports, host live position).
+        public static bool PositionReportAllowed(bool droneActive) { return !droneActive; }
     }
 }

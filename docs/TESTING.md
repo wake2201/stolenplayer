@@ -151,6 +151,23 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 55. W6B checklist — drone flight, House 104 camera, story14 by Player 2, story call (release `TS2-Multiplayer-0.27.0.zip` on BOTH PCs, F10 developer menu, index 18)
+Grep tags: `DRONE`, `WOBJ camera`, `STORY`, `WOBJ_STATS`, `SYNC_STATS`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | P1 launches its drone near P2 and flies around | P2 sees P1's body STANDING at the launch spot and a separate drone flying smoothly. P1 log `DRONE local flight started`; P2 log `DRONE remote flight shown (item 89)` | NOT TESTED |
+| 2 | P1 lands (drone key) | Drone disappears on P2, body unchanged; P2 log `DRONE remote flight hidden` | NOT TESTED |
+| 3 | Rows 1-2 with roles swapped (P2 flies) | Same on P1 | NOT TESTED |
+| 4 | P2 flies, P2 quits to the main menu mid-flight | P1: drone and avatar vanish, no leftover drone | NOT TESTED |
+| 5 | Fresh index-18 session. P2 disables the 104 entrance camera (Junkyard) with its drone | Both HUDs switch to story15 once; host log `WOBJ camera … disabled from the shared state … host story step checked by the original`, `STORY host published story 19 'story15'`; P2 log `disable proposed #`, `accepted: original DisablePermamently runs` | NOT TESTED |
+| 6 | After row 5: P1 launches its drone and flies to the camera | Camera stays dark / disabled on P1 (no light, no detection) | NOT TESTED |
+| 7 | Fresh session: P1 disables the camera instead | story15 once on both; P2's camera dark too | NOT TESTED |
+| 8 | Both leave Madison (travel to hideout) and come back | Camera active again (original reload), story stays story15 | NOT TESTED |
+| 9 | Story call (story15 call after row 5/7): P2 answers | P1 stops ringing at once and hears the same dialogue; log `STORY … answered by P2`, P1 `ringing here -> original answer branch` | NOT TESTED |
+| 10 | Next call: P1 answers (or P2 busy e.g. in a car while P1 answers) | P2 stops ringing / gets the dialogue without ringing (`bypass branch`) | NOT TESTED |
+| 11 | Regression: F8 normal host + join, doors, loot, cars | Unchanged | NOT TESTED |
+
 ## 54. W6A.5 checklist — story-test join deadlock, readiness state, drones (release `TS2-Multiplayer-0.26.5.zip` on BOTH PCs, developer menu enabled on both)
 Grep tags: `HOST_READINESS`, `TEST_STORY`, `TEST_SCENARIO`, `JOIN_DEFERRED`, `JOIN_REFUSED`, `REJECT`, `P2INV`, `STORY`.
 

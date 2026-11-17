@@ -83,7 +83,7 @@ namespace TS2MP.Plugin
             return best;
         }
 
-        static int Strip(GameObject root)
+        internal static int Strip(GameObject root)   // W6B: also used for the remote drone clone (RemoteDrone)
         {
             int removed = 0;
             for (int pass = 0; pass < 4; pass++)

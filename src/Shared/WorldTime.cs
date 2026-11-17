@@ -587,6 +587,25 @@ namespace TS2MP.Shared
             return code;
         }
 
+        // ---- W6B cooperative story call: one committed answer per stage call (either player) ----
+        public long CallAnswers, CallRefusals;
+        public ProposalCode AnswerStoryCall(byte slot, StoryCallState req, out string why)
+        {
+            int idx = 0; string key = null; bool free = false;
+            bool ready = StoryHost != null && StoryHost.TryCurrent(out idx, out key, out free);
+            StoryCallState cur = null; var e = Reg.Get(StateScope.Session, 0, WorldKeys.StoryCall);
+            if (e != null) StoryCallState.TryParse(e.Value, out cur);
+            var code = StoryCallRules.Decide(ready, free, key, cur, req, out why);
+            if (code == ProposalCode.Accepted)
+            {
+                var c = Reg.Commit(StateScope.Session, 0, WorldKeys.StoryCall, new StoryCallState { Key = req.Key, Seq = req.Seq, By = slot }.ToBytes());
+                if (c == null) { why = "commit failed"; return ProposalCode.Busy; }
+                Outbox.Add(c); CallAnswers++;
+            }
+            else if (code != ProposalCode.Unchanged && code != ProposalCode.Stale) CallRefusals++;
+            return code;
+        }
+
         // Host: commit the host's live story index when it changed (by = who caused it: 0 host campaign, 2 Player 2).
         public bool PublishStory(byte by)
         {
@@ -1190,6 +1209,12 @@ namespace TS2MP.Shared
                 StoryAdvanceRequest sr; string why = null;
                 if (p.ScopeArg != 0 || !StoryAdvanceRequest.TryParse(p.Value, out sr)) { code = ProposalCode.Invalid; LastNote = "story advance by P" + senderSlot + " -> Invalid"; }
                 else { code = AdvanceStory(senderSlot, sr, out why); LastNote = sr + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : ""); }
+            }
+            else if (p.Scope == StateScope.Session && p.Key == WorldKeys.StoryCallAnswer)
+            {
+                StoryCallState cr; string why = null;
+                if (p.ScopeArg != 0 || !StoryCallState.TryParse(p.Value, out cr) || cr.By != senderSlot) { code = ProposalCode.Invalid; LastNote = "story call answer by P" + senderSlot + " -> Invalid"; }
+                else { code = AnswerStoryCall(senderSlot, cr, out why); LastNote = cr + " -> " + code + (why != null ? " (" + why + ")" : ""); }
             }
             else if (p.Scope == StateScope.Session && p.Key == WorldKeys.VehicleBuy)
             {

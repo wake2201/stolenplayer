@@ -49,7 +49,7 @@ namespace TS2MP.Plugin
         readonly SessionNode _node; readonly InstanceLog _log; readonly WorldSync _world; readonly bool _host;
         readonly WorldObjectBridge _b; bool _ok;
         Func<object, object> _gmPs, _psAssign; Func<object, bool> _gmLoaded, _psLockpicking;
-        static readonly ObjectKind[] Kinds = { ObjectKind.Lockpick, ObjectKind.LockedWindow, ObjectKind.Breakable, ObjectKind.ParcelLocker, ObjectKind.Door };   // apply order (W2A: a broken barrier before the doors behind it)
+        static readonly ObjectKind[] Kinds = { ObjectKind.Lockpick, ObjectKind.LockedWindow, ObjectKind.Breakable, ObjectKind.ParcelLocker, ObjectKind.Door, ObjectKind.SecurityCamera };   // apply order (W2A: a broken barrier before the doors behind it)
         static readonly string[][] PageKeys = BuildKeys();
 
         enum Phase { Idle, Reported, Initializing, Ready }
@@ -59,7 +59,7 @@ namespace TS2MP.Plugin
         uint _reportPid; bool _initSent; uint _txn;
 
         // committed state per kind, kept from the registry pages (only changed pages are parsed, W4.2C Phase B)
-        readonly ObjectPageCache[] _com = { new ObjectPageCache(), new ObjectPageCache(), new ObjectPageCache(), new ObjectPageCache(), new ObjectPageCache() };
+        readonly ObjectPageCache[] _com = { new ObjectPageCache(), new ObjectPageCache(), new ObjectPageCache(), new ObjectPageCache(), new ObjectPageCache(), new ObjectPageCache() };
         readonly Func<int, StateEntry>[] _pageOf = new Func<int, StateEntry>[Kinds.Length];
         readonly List<uint>[] _changedKinds = new List<uint>[Kinds.Length];
         // local tracked states (this scene instance): locks and window glass are not reliably readable from tags
@@ -84,9 +84,12 @@ namespace TS2MP.Plugin
         long _breakLocal, _breakApplied, _lockerLocal, _lockerApplied;
         Func<object, object> _gmStorage;   // W2B GameManager.ParcelStorag (MainScene)
         readonly Dictionary<uint, Component> _breakWait = new Dictionary<uint, Component>();   // W2A: client proposal id -> DestroyObject to break on acceptance
+        readonly Dictionary<uint, Component> _camWait = new Dictionary<uint, Component>();     // W6B: client proposal id -> SecurityCamera to disable on acceptance
+        long _camLocal, _camApplied, _camLate;
+        static MethodInfo _camDisableM;
 
         static long Key(ObjectKind k, uint h) { return ((long)(byte)k << 32) | h; }
-        static int KI(ObjectKind k) { return k == ObjectKind.Lockpick ? 0 : k == ObjectKind.LockedWindow ? 1 : k == ObjectKind.Breakable ? 2 : k == ObjectKind.ParcelLocker ? 3 : 4; }   // = index in Kinds
+        static int KI(ObjectKind k) { return k == ObjectKind.Lockpick ? 0 : k == ObjectKind.LockedWindow ? 1 : k == ObjectKind.Breakable ? 2 : k == ObjectKind.ParcelLocker ? 3 : k == ObjectKind.SecurityCamera ? 5 : 4; }   // = index in Kinds
         static string[][] BuildKeys()
         {
             var r = new string[Kinds.Length][];
@@ -153,12 +156,17 @@ namespace TS2MP.Plugin
                 _destroyThing = _b.BreakOk ? AccessTools.Method(_b.BreakT, "Destroy_Thing") : null;
                 if (_destroyThing != null) _h.Patch(_destroyThing, prefix: hm("DestroyPre"));
                 else _log.Error("WOBJ DestroyObject.Destroy_Thing not found: breakables stay local");
+                // W6B: permanent camera disables (optional): DisableCamera(float) prefix + OnEnable postfix (culled interiors)
+                _camDisableM = _b.CamOk ? AccessTools.Method(_b.CamT, "DisableCamera", new[] { typeof(float) }) : null;
+                var camEnable = _b.CamOk ? AccessTools.Method(_b.CamT, "OnEnable") : null;
+                if (_camDisableM != null && camEnable != null) { _h.Patch(_camDisableM, prefix: hm("CamDisablePre")); _h.Patch(camEnable, postfix: hm("CamEnablePost")); }
+                else _log.Error("WOBJ SecurityCamera.DisableCamera / OnEnable not found: camera disables stay local");
                 // W2B: parcel lockers (optional as well)
                 var openLocker = _b.LockerOk ? AccessTools.Method(AccessTools.TypeByName("ParcelCode"), "OpenLocker") : null;
                 if (openLocker != null) _h.Patch(openLocker, postfix: hm("LockerOpenedPost"));
                 else _log.Error("WOBJ ParcelCode.OpenLocker not found: parcel lockers stay local");
                 _patched = true;
-                _log.Info("WOBJ hooks: DestroyObject.Destroy_Thing (W2A), ParcelCode.OpenLocker (W2B), Door.OpenDestroyed/ResetLock, AI.OnTriggerEnter (NPC context), Lockpick.StartLockpicking/DoorUnlock/DoorUnlockKey/BreakPadlock, PlayerScript.BreakinCrowbar, LockedWindow.BeginCut/UnlockWindow/UnlockWindowNoAlarm/BrokeWindow");
+                _log.Info("WOBJ hooks: SecurityCamera.DisableCamera/OnEnable (W6B), DestroyObject.Destroy_Thing (W2A), ParcelCode.OpenLocker (W2B), Door.OpenDestroyed/ResetLock, AI.OnTriggerEnter (NPC context), Lockpick.StartLockpicking/DoorUnlock/DoorUnlockKey/BreakPadlock, PlayerScript.BreakinCrowbar, LockedWindow.BeginCut/UnlockWindow/UnlockWindowNoAlarm/BrokeWindow");
                 return true;
             }
             catch (Exception ex) { _log.Error("WOBJ Harmony patching failed: shared doors / locks / windows disabled", ex); try { if (_h != null) _h.UnpatchSelf(); } catch { } return false; }
@@ -245,7 +253,7 @@ namespace TS2MP.Plugin
         void ClearTransient()
         {
             _b.ClearSlow();
-            _watch.Clear(); _expect.Clear(); _pending.Clear(); _breakWait.Clear(); _queue.Clear(); _dirty.Clear(); _initPids.Clear(); _initSent = false; _recOk = false; _recRev = uint.MaxValue; _appliedHead = uint.MaxValue; _seenHead = uint.MaxValue;
+            _watch.Clear(); _expect.Clear(); _pending.Clear(); _breakWait.Clear(); _camWait.Clear(); _queue.Clear(); _dirty.Clear(); _initPids.Clear(); _initSent = false; _recOk = false; _recRev = uint.MaxValue; _appliedHead = uint.MaxValue; _seenHead = uint.MaxValue;
             foreach (var c in _com) c.Clear();
             _res.Clear();
         }
@@ -342,6 +350,7 @@ namespace TS2MP.Plugin
                 case ObjectKind.Lockpick: return _lockLocal.TryGetValue(hash, out s) ? s : (byte)0;
                 case ObjectKind.Breakable: return _b.BreakOk && _b.Destroyed(c) ? ObjectStateRules.BreakDestroyed : ObjectStateRules.BreakIntact;
                 case ObjectKind.ParcelLocker: return _b.LockerOk && _b.LockerOpened(c) ? ObjectStateRules.LockerOpen : ObjectStateRules.LockerClosed;
+                case ObjectKind.SecurityCamera: return _b.CamOk && _b.CamDisabled(c) ? ObjectStateRules.CamDisabled : ObjectStateRules.CamActive;
                 case ObjectKind.LockedWindow:
                     byte glass = _glassLocal.TryGetValue(hash, out s) ? s : (byte)0;
                     if (glass == 0) return 0;
@@ -354,7 +363,7 @@ namespace TS2MP.Plugin
         {
             _phase = Phase.Ready; _reconciledEpoch = _rec.Epoch;
             Reconcile(census, true);
-            _log.Info("WOBJ " + Regions.Name(_region) + " ready: epoch " + _rec.Epoch + ", " + _rec + "; furniture leaves in the scene " + _furnitureInScene + "; committed doors " + _com[KI(ObjectKind.Door)].Count + ", locks " + _com[0].Count + ", windows " + _com[1].Count + ", broken objects " + _com[KI(ObjectKind.Breakable)].Count + ", open parcel lockers " + _com[KI(ObjectKind.ParcelLocker)].Count);
+            _log.Info("WOBJ " + Regions.Name(_region) + " ready: epoch " + _rec.Epoch + ", " + _rec + "; furniture leaves in the scene " + _furnitureInScene + "; committed doors " + _com[KI(ObjectKind.Door)].Count + ", locks " + _com[0].Count + ", windows " + _com[1].Count + ", broken objects " + _com[KI(ObjectKind.Breakable)].Count + ", open parcel lockers " + _com[KI(ObjectKind.ParcelLocker)].Count + ", disabled cameras " + _com[KI(ObjectKind.SecurityCamera)].Count);
         }
 
         // ================================================================ committed -> local
@@ -437,6 +446,21 @@ namespace TS2MP.Plugin
                     if (a == BreakApply.Shatter) { _b.Shatter(c, silent); _breakApplied++; Count(silent); return true; }
                     if (a == BreakApply.SkipPending) { _skipBusy++; _retryAt = Now + 0.25; _dirty.Add(key); }
                     else if (a == BreakApply.Diverged) Diverged(key, "breakable " + Hex(hash) + " '" + c.name + "' is destroyed here but intact in the committed state");
+                    return false;
+                }
+                case ObjectKind.SecurityCamera:
+                {
+                    if (!_b.CamOk) return false;
+                    var a = WorldBreakRules.Decide(want, _b.CamDisabled(c), pending);   // same one-shot semantics as a breakable
+                    if (a == BreakApply.Shatter)
+                    {
+                        if (!_b.CamReady(c)) { _camLate++; return false; }   // culled interior: applied by the OnEnable postfix
+                        _b.CamDisable(c); _camApplied++; Count(silent);
+                        _log.Info("WOBJ camera " + Hex(hash) + " '" + c.name + "' disabled from the shared state (original DisablePermamently" + (_host ? "; host story step checked by the original" : "") + ")");
+                        return true;
+                    }
+                    if (a == BreakApply.SkipPending) { _skipBusy++; _retryAt = Now + 0.25; _dirty.Add(key); }
+                    else if (a == BreakApply.Diverged) Diverged(key, "camera " + Hex(hash) + " '" + c.name + "' is disabled here but active in the committed state");
                     return false;
                 }
                 case ObjectKind.ParcelLocker:
@@ -639,6 +663,8 @@ namespace TS2MP.Plugin
             _pending.Remove(pid);
             Component breakObj; bool breakWait = _breakWait.TryGetValue(pid, out breakObj);
             if (breakWait) _breakWait.Remove(pid);
+            Component camObj; bool camWait = _camWait.TryGetValue(pid, out camObj);
+            if (camWait) _camWait.Remove(pid);
             long key = Key(p.Kind, p.Hash);
             bool stillPending = false; foreach (var v in _pending.Values) if (Key(v.Kind, v.Hash) == key) { stillPending = true; break; }
             if (p.Op == ObjectOp.Reserve) { ReserveResult(key, pid, code); return true; }
@@ -652,6 +678,7 @@ namespace TS2MP.Plugin
             }
             Res r; if (_res.TryGetValue(key, out r) && r.Committed) _res.Remove(key);
             if (breakWait && code == ProposalCode.Accepted) ResumeBreak(breakObj, key);
+            if (camWait && code == ProposalCode.Accepted) ResumeCamera(camObj, key);
             return true;
         }
 
@@ -859,6 +886,78 @@ namespace TS2MP.Plugin
         }
         static void LockerOpenedPost(object __instance) { var i = Instance; if (i == null || WorldObjectBridge.Applying) return; try { i.OnLockerOpened(__instance); } catch (Exception ex) { i._log.Error("WOBJ hook OpenLocker", ex); } }
 
+        // ================================================================ security cameras (W6B)
+        // Original permanent disable (SecurityCamera.DisableCamera(999): drone camera module PlayerScript IL ~5814, security
+        // panel, CheckCameras). Same gate as a breakable: host = commit then the original runs (its onDisableAdvanceStory
+        // checks the host's live story step); Player 2 = propose, the original runs on acceptance (its AdvanceStory is a no-op
+        // on Player 2: StorySync); the host applies the committed state with the original method -> story advances there once.
+        bool AllowCamera(Component o)
+        {
+            if (_bypass || !Sharing || !_b.CamOk || _b.CamDisabled(o)) return true;
+            var census = WorldCensus.Instance; WorldObjectId id;
+            if (census == null || !census.TryObjectId(o, ObjectKind.SecurityCamera, out id) || id.Namespace != _region) { Unidentified(o); return true; }   // not shared: vanilla, local only
+            long key = Key(ObjectKind.SecurityCamera, id.Hash);
+            bool waiting = false; foreach (var w in _camWait.Values) if (ReferenceEquals(w, o)) { waiting = true; break; }
+            var g = WorldBreakRules.Gate(_host, _phase == Phase.Ready, Committed(ObjectKind.SecurityCamera, id.Hash) != 0, waiting || PendingFor(key));
+            switch (g)
+            {
+                case BreakGate.Refuse:
+                    _gateRefused++;
+                    _log.Info("WOBJ camera " + Hex(id.Hash) + " '" + o.name + "' disable ignored: " + (_phase != Phase.Ready ? "region still initializing" : "already waiting for the host"));
+                    return false;
+                case BreakGate.ApplyCommitted:
+                    _gateRefused++; _dirty.Add(key); _retryAt = Now;
+                    _log.Info("WOBJ camera " + Hex(id.Hash) + " '" + o.name + "' already disabled in the shared state: replica applied instead");
+                    return false;
+                case BreakGate.CommitThenRun:
+                    _local++; _camLocal++;
+                    _lastHostCode = ProposalCode.Invalid;
+                    Propose(ObjectKind.SecurityCamera, id.Hash, ObjectStateRules.CamDisabled, ObjectOp.Set);
+                    if (_lastHostCode == ProposalCode.Unchanged) { _dirty.Add(key); _retryAt = Now; }
+                    if (_lastHostCode == ProposalCode.Accepted) _log.Info("WOBJ camera " + Hex(id.Hash) + " '" + o.name + "' disabled by the host (committed; original runs)");
+                    return _lastHostCode == ProposalCode.Accepted;
+                default:
+                    _local++; _camLocal++;
+                    uint pid = Propose(ObjectKind.SecurityCamera, id.Hash, ObjectStateRules.CamDisabled, ObjectOp.Set);
+                    if (pid != 0) _camWait[pid] = o;
+                    _log.Info("WOBJ camera " + Hex(id.Hash) + " '" + o.name + "' disable proposed #" + pid + " (original runs once the host accepted)");
+                    return false;
+            }
+        }
+
+        void ResumeCamera(Component o, long key)
+        {
+            if ((object)o == null || o == null || _b.CamDisabled(o)) return;
+            if (_phase != Phase.Ready || !Sharing) { _dirty.Add(key); _retryAt = Now; return; }
+            _log.Info("WOBJ camera " + Hex((uint)key) + " '" + o.name + "' accepted: original DisablePermamently runs");
+            _bypass = true;
+            try { _camDisableM.Invoke(o, new object[] { 999f }); }
+            catch (Exception ex) { _log.Error("WOBJ original DisableCamera failed", ex); }
+            finally { _bypass = false; }
+            if (!_b.CamDisabled(o)) { _dirty.Add(key); _retryAt = Now; }
+        }
+
+        // A camera that becomes active (culled interior entered) gets the committed state now.
+        void OnCameraEnabled(Component o)
+        {
+            if (!Sharing || _phase != Phase.Ready || _b.CamDisabled(o)) return;
+            var census = WorldCensus.Instance; WorldObjectId id;
+            if (census == null || !census.TryObjectId(o, ObjectKind.SecurityCamera, out id) || id.Namespace != _region) return;
+            if (Committed(ObjectKind.SecurityCamera, id.Hash) == ObjectStateRules.CamDisabled) { _dirty.Add(Key(ObjectKind.SecurityCamera, id.Hash)); _retryAt = Now; }
+        }
+
+        static bool CamDisablePre(object __instance, float disableTime)
+        {
+            var i = Instance; if (i == null || WorldObjectBridge.Applying || disableTime != 999f) return true;   // temporary disables stay local
+            try { return i.AllowCamera((Component)__instance); }
+            catch (Exception ex) { i._log.Error("WOBJ hook DisableCamera", ex); return i._host; }   // Player 2 fails closed (no unconfirmed story trigger)
+        }
+        static void CamEnablePost(object __instance)
+        {
+            var i = Instance; if (i == null) return;
+            try { i.OnCameraEnabled((Component)__instance); } catch (Exception ex) { i._log.Error("WOBJ hook SecurityCamera.OnEnable", ex); }
+        }
+
         static bool DestroyPre(object __instance)
         {
             var i = Instance; if (i == null || WorldObjectBridge.Applying) return true;
@@ -1017,7 +1116,7 @@ namespace TS2MP.Plugin
             {
                 return "WOBJ_STATS phase=" + _phase + " local=" + _local + " proposed=" + _proposed + " committed=" + _committed + " refused=" + _refused + " applied=" + _applied + " restoredSilently=" + _silent
                     + " skippedLocked=" + _skipLocked + " skippedBusy=" + _skipBusy + " unidentified=" + _unidentified + " diverged=" + _diverged + " npcRelockSuppressed=" + _npcSuppressed
-                    + " storyBlocked=" + _storyBlocked + " gateRefused=" + _gateRefused + " initEntries=" + _initEntries + " localOnlyDoors=" + _localOnly + " furniture local/applied=" + _furnitureLocal + "/" + _furnitureApplied + " inactiveSnaps=" + _inactiveSnaps + " breakables local/applied/waiting=" + _breakLocal + "/" + _breakApplied + "/" + _breakWait.Count + " lockers local/applied=" + _lockerLocal + "/" + _lockerApplied + " pagesParsed=" + (_com[0].PagesParsed + _com[1].PagesParsed + _com[2].PagesParsed + _com[3].PagesParsed + _com[4].PagesParsed) + " slowReplicas=" + _slowApplied + " fastFinish sent/applied=" + _fastFinishSent + "/" + _fastFinishes + (_host && _world.Host != null ? " | book " + _world.Host.Objects.Stats : "");
+                    + " storyBlocked=" + _storyBlocked + " gateRefused=" + _gateRefused + " initEntries=" + _initEntries + " localOnlyDoors=" + _localOnly + " furniture local/applied=" + _furnitureLocal + "/" + _furnitureApplied + " inactiveSnaps=" + _inactiveSnaps + " breakables local/applied/waiting=" + _breakLocal + "/" + _breakApplied + "/" + _breakWait.Count + " lockers local/applied=" + _lockerLocal + "/" + _lockerApplied + " cameras local/applied/waiting/late=" + _camLocal + "/" + _camApplied + "/" + _camWait.Count + "/" + _camLate + " pagesParsed=" + (_com[0].PagesParsed + _com[1].PagesParsed + _com[2].PagesParsed + _com[3].PagesParsed + _com[4].PagesParsed + _com[5].PagesParsed) + " slowReplicas=" + _slowApplied + " fastFinish sent/applied=" + _fastFinishSent + "/" + _fastFinishes + (_host && _world.Host != null ? " | book " + _world.Host.Objects.Stats : "");
             }
         }
 

@@ -1,5 +1,37 @@
 ﻿# PROGRESS
 
+## W6B — Shared drone flight, persistent security cameras, cooperative story call — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
+Mod **0.27.0, protocol 38** (wire change: both PCs need 0.27.0). Built on `41361f2` (W6A.5). Manual QA: `docs/TESTING.md` §55.
+
+### A. Verified root causes (decompiled 1.27c + our code)
+1. **Body flies with the drone:** `DroneManager.Update` sets `PS.transform.position / rotation` to the drone every frame while `activated && playerAttach`; the standing body is the separate `joystick_character` (placed at `PS.y - 0.829` by `ActivateDrone`). `PlayerSync.SendSnapshot` used `PS.transform` (CharacterController disabled) → the other PC saw the body fly. `CampaignBootstrap` position reports could also record the drone position.
+2. **Camera "re-enables" for P1:** the mod had no SecurityCamera sync at all (grep: no hook). `DisablePermamently` ran only on P2's PC; P1's camera was never disabled. It only looked off because `SecurityCamera.Update` hides the light beyond 50 m of `PS.transform`; when P1 flies its drone, `PS.transform` is at the drone, so the never-disabled camera lights up.
+3. **P2 cannot finish story14:** `SecurityCamera.DisableCamera` calls `AdvanceStory` (`onDisableAdvanceStory`, storyName story14). On P2 the W6A `StorySync` prefix suppresses it, and only `ReadNote` triggers were listed → nothing reached the host.
+4. **Call answered only locally:** `StorySequence.Update` answer branch (`accept_call` → `isCalling = false`, `pickUp`, `Beginn`, vibrate stop, `StopPhoneCall`) is per PC; both PCs ring because P2 follows `InitiateStory`. No answer was shared.
+
+### B. Changes
+- `src/Shared/PlayerState.cs`: `MoveFlags.Drone`, optional 18 B drone block (item, pose), validation, `DroneRules` (body feet, flags, drone sample, visibility, report guard).
+- `src/Plugin/RemoteDrone.cs` (new): `LocalDrone` (original `DroneManager` members) + `RemoteDrone` (renderer-only clone of the original `ItemID.droneObject`, instantiated under an inactive holder, stripped like `RemoteAvatar`).
+- `src/Plugin/PlayerSync.cs`: while piloting send the `joystick_character` body (fallback: latched pre-flight feet) + drone pose; observer keeps a second `SnapshotBuffer` for the drone; cleanup on landing, scene change, disconnect, shutdown.
+- `src/Plugin/CampaignBootstrap.cs`: no Player-2 position report mid-flight; host live position = body.
+- `src/Shared/RegionState.cs` + `WorldIdentity.cs` + `src/Plugin/WorldCensus.cs`: region object kind `SecurityCamera` (0 active / 1 disabled permanently, terminal per region epoch).
+- `src/Plugin/WorldObjectBridge.cs` / `WorldObjectSync.cs`: prefix `SecurityCamera.DisableCamera(float)` (only 999 = permanent; temporary disables stay local), same gate as W2A breakables; Player 2 proposes and runs the original on acceptance; replicas run the ORIGINAL `DisableCamera(999)` - on the host its `onDisableAdvanceStory` advances story14 once; `OnEnable` postfix re-applies to cameras in culled interiors.
+- `src/Shared/Story.cs` / `WorldState.cs` / `WorldTime.cs`: `StoryCallState`, `StoryCallRules`, keys `storyCall` (host state) / `storyCallAnswer` (P2 proposal), host `AnswerStoryCall`.
+- `src/Plugin/StorySync.cs`: `StorySequence.Beginn` prefix detects an answer (callIncoming / vibrate playing); commit once; the other PC runs the original answer branch (ringing) or the original `bypassCall` branch at `PhoneCall1` (ring pending). Declining stays personal.
+- Tests: new `tests/W6BTests.cs` (11). Changed pins: protocol / version, W2A 11 (kind order, census list), V161 C6.
+
+### C. Evidence
+- `tools/build.ps1 -Test`: plugin 0 warnings; **ALL 46 SUITES PASSED** (W6B 11/11).
+- Scene data: all 22 MadisonSt `SecurityCamera` paths unique (atlas), the story camera `Junkyard/SECURITY CAM (1)/Security Camera` included → census-identifiable.
+- No in-game run.
+
+### D. Limitations / risks
+- Remote pilot body uses the associate avatar idle (no remote joystick animation; `joystick_character` is the local original stand-in).
+- Remote drone propellers do not spin (`DronePropelers` stripped).
+- Player 2 pressing disable twice during the host round trip spends a second camera charge (original `CameraDisabled` runs before our prefix); the second press does nothing else.
+- Temporary camera disables (fuse box, hack, remote ground drone) and security panels stay local.
+- Story call: subtitle / audio timing per PC; a call declined on one PC keeps ringing on the other until answered or declined there.
+
 ## W6A.5 — Story-test join deadlock fixed, cooperative drone ownership defined — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
 Mod **0.26.5, protocol 37** (no wire-format change; new reject value 14, both PCs need 0.26.5). Built on `c87eb3d` (W6A.4). Manual QA: `docs/TESTING.md` §54.
 

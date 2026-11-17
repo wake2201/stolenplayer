@@ -131,6 +131,10 @@ namespace TS2MP.Plugin
         void Hotkey(MenuPanel pressed)
         {
             var ctx = Context();
+            if (pressed == MenuPanel.Developer && _devAllowed && ctx == GameContext.InWorld && _panel == MenuPanel.None)
+            {   // W6A.3: read-only developer status in the world (no pointer / input / cursor change)
+                _devStatus = !_devStatus; _log.Info("MENU developer status " + (_devStatus ? "shown" : "hidden") + " (in the world, read-only)"); return;
+            }
             bool main = MenuRules.MenuOpens(ctx);
             var next = MenuRouting.Toggle(_panel, pressed, _devAllowed, GUIUtility.keyboardControl != 0, main);
             if (next == _panel)
@@ -281,7 +285,7 @@ namespace TS2MP.Plugin
         // ---------------------------------------------------------------- drawing
         public void OnGUI()
         {
-            if (!_open) return;
+            if (!_open) { if (_devStatus) DrawDevStatus(); return; }
             if (_panel == MenuPanel.Developer) { DrawDeveloper(); DrawPointer(); return; }
             if (_styles == null) _styles = BuildStyles();
             var st = _styles;

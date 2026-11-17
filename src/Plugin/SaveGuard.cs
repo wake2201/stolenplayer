@@ -64,7 +64,11 @@ namespace TS2MP.Plugin
         // the copy. Process-sticky once a world was loaded from the copy (solo play or a normal campaign then needs a game
         // restart). W4.2C.A: before any world load, cancelling the prepared host releases it again (ReleaseTestHostSave).
         static bool _f8TestHost;   // armed by PrepareTestHostSave (never by the launcher's InstallDevHost)
-        public static bool PrepareTestHostSave(string testDataDir, out string why)
+        public static bool PrepareTestHostSave(string testDataDir, out string why) { return PrepareTestHostSave(testDataDir, true, out why); }
+        // W6A.3: seedFromReal = false for the story-test seed: the sandbox is NOT seeded from the real save folder (the original
+        // MainMenu.StartNewGame then creates the campaign inside the sandbox); the real folder is not even read.
+        static bool _seedFromReal = true;
+        public static bool PrepareTestHostSave(string testDataDir, bool seedFromReal, out string why)
         {
             why = null;
             if (Armed) { why = DevHost ? null : "this game already runs as Player 2"; return DevHost; }
@@ -72,7 +76,7 @@ namespace TS2MP.Plugin
             string sandbox = SaveIsolation.Norm(Path.Combine(testDataDir, "host-save"));
             string layout = SaveIsolation.LayoutError(sandbox, RealDir, GameDir);
             if (layout != null) { why = layout; _log.Error("SAVE_GUARD test campaign " + layout); return false; }
-            DevHost = true; _f8TestHost = true; SandboxDir = sandbox;
+            DevHost = true; _f8TestHost = true; SandboxDir = sandbox; _seedFromReal = seedFromReal;
             _log.Info("SAVE_GUARD multiplayer test campaign (host): save copy " + SandboxDir + " (the real save folder is only read)");
             return Arm(out why);
         }
@@ -91,11 +95,11 @@ namespace TS2MP.Plugin
         {
             why = null; ReArmFailed = false;
             if (!Armed || !DevHost || !_f8TestHost) { why = "no F8 test-campaign host copy is armed"; return false; }
-            string copy = SandboxDir;
+            string copy = SandboxDir; bool seedWas = _seedFromReal;
             try
             {
                 Armed = false;
-                DevHost = false; _f8TestHost = false; SandboxDir = _defaultSandbox;
+                DevHost = false; _f8TestHost = false; SandboxDir = _defaultSandbox; _seedFromReal = true;
                 var fbpp = AccessTools.TypeByName("FBPP");
                 var cfg = AccessTools.Field(fbpp, "_config").GetValue(null);
                 if (cfg != null)
@@ -117,7 +121,7 @@ namespace TS2MP.Plugin
             {
                 why = ex is TargetInvocationException && ex.InnerException != null ? ex.InnerException.Message : ex.Message;
                 _log.Error("SAVE_GUARD test campaign release failed (" + why + "): re-arming the test copy (fail closed)");
-                DevHost = true; _f8TestHost = true; SandboxDir = copy;
+                DevHost = true; _f8TestHost = true; SandboxDir = copy; _seedFromReal = seedWas;
                 string w2;
                 if (!Arm(out w2)) { ReArmFailed = true; why += "; re-arm failed: " + w2; }
                 return false;
@@ -271,6 +275,7 @@ namespace TS2MP.Plugin
         // Armed = true, so the File guards are not active yet and the destination is checked by LayoutError (Precheck).
         static void SeedDevHostSave()
         {
+            if (!_seedFromReal) { _log.Info("DEVTEST story-test sandbox " + SandboxDir + ": not seeded from the real save folder (the original new game is created inside the sandbox)"); return; }
             bool hasSave = Directory.GetFiles(SandboxDir, "saveData*", SearchOption.TopDirectoryOnly).Length > 0;
             if (hasSave) { _log.Info("DEVTEST host save copy kept (" + SandboxDir + "); the real save folder is not read"); return; }
             if (!Directory.Exists(RealDir)) { _log.Info("DEVTEST real save folder does not exist: the developer host starts without a save"); return; }

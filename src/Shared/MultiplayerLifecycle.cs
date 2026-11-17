@@ -142,6 +142,7 @@ namespace TS2MP.Shared
         public const string PublicJoinTestHostText = "Der Host spielt eine Entwickler-Testkampagne. Beitritt nur über das Entwicklermenü.";
         public const string DevJoinNormalHostText = "Der Host spielt keine Testkampagne. Über das Entwicklermenü nur Testkampagnen beitreten (normal: F8).";
         // W6A.2: a developer join (fixed developer key) reaching a normal F8 host fails authentication.
+        public const string DevHostUnreachableText = "Test-Host nicht erreichbar. Auf dem Host-PC zuerst F10 → „Testkampagne starten“; F10 dort zeigt „HOST BEREIT“, sobald seine Welt geladen ist. Adresse, Port und Portweiterleitung prüfen.";
         public const string DevAuthFailedText = "Unter dieser Adresse läuft kein Entwickler-Test-Host (Authentifizierung abgelehnt). Normale Sitzungen nur über F8 mit Beitrittscode.";
 
         // Key of a join / host session: normal = code-derived (unchanged), developer = JoinAuth.DevTestKey. null = refuse.
@@ -196,15 +197,11 @@ namespace TS2MP.Shared
             return Availability.Yes;
         }
 
-        // Developer test step (-1 = keep the copied save's step). null = may be applied to the isolated copy.
-        public static string DevStoryRefusal(int index, bool copyHasSave, bool copyFreeMode)
+        // W6A.3: copy mode (no story index) only - a copy of the genuine save needs a save and must not be free mode when it is
+        // meant as a story campaign; story steps never use the copy (src/Shared/DevScenario.cs).
+        public static string DevCopyRefusal(bool copyHasSave)
         {
-            if (index < 0) return null;
-            string r = StoryCatalog.Refusal(index);
-            if (r != null) return r;
-            if (!copyHasSave) return "Die Testkopie hat keinen Spielstand (dein echter Spielstand fehlt oder ist leer). Erst einen Spielstand anlegen.";
-            if (copyFreeMode) return "Die Testkopie ist im Freien Modus (FreeMode = 1): StoryManager erzwingt dort Schritt 80.";
-            return null;
+            return copyHasSave ? null : "Die Kopie deines Spielstands enthält keinen Spielstand. Wähle einen Story-Index (eigener Test-Spielstand, kein echter Spielstand nötig).";
         }
     }
 

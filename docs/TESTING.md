@@ -151,6 +151,20 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 52. W6A.3 checklist — isolated story-test startup (release `TS2-Multiplayer-0.26.3.zip` on BOTH PCs, `[Developer] EnableDeveloperMenu = true` on both)
+Note the genuine save's file timestamps first (`%USERPROFILE%\AppData\LocalLow\CookieDev\Thief Simulator 2`). Grep tags: `TEST_CAMPAIGN`, `TEST_STORY`, `HOST_READINESS`, `STORY`, `JOIN`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Host (genuine save in free mode is fine): F10 → keep "Index 18 · story14 · Disable the 104 entrance camera…" → *Testkampagne starten* | No click in the original menu; the world loads by itself in Madison Street. Log: `TEST_CAMPAIGN prepared: story seed Index 18 …`, `TEST_STORY seed: original MainMenu.StartNewGame …`, `TEST_STORY world check OK … note_103 …`, `TEST_CAMPAIGN HOST READY`. HUD objective: "Disable the 104 entrance camera with your drone" | NOT TESTED |
+| 2 | Host in the world: press F10 | Read-only status box: "HOST BEREIT …", "Story: Index 18 · story14 … geprüft OK"; F10 again hides it | NOT TESTED |
+| 3 | Client: F10 → host address + port → *Testkampagne beitreten* (also try it BEFORE the host is ready) | Joins without a code; before readiness it waits (log `HostNotReady`), then loads the host world on story14 | NOT TESTED |
+| 4 | Either player reads the note in House 103 (§49 row 2) | Both HUDs switch to story15 ("Steal the cardboard box from 104 …") once | NOT TESTED |
+| 5 | Unsupported index (e.g. 20) → *Testkampagne starten* | F10 shows "!! TESTKAMPAGNE NICHT GESTARTET – …"; nothing loads; F8 / original menu unchanged | NOT TESTED |
+| 6 | Restart, start index 18 again | Fresh seed (`story.old-<time>` folder appears), same result as row 1 | NOT TESTED |
+| 7 | After all rows: compare the genuine save timestamps | Unchanged | NOT TESTED |
+| 8 | Normal F8 host / join with code (fresh game start) | Unchanged behaviour | NOT TESTED |
+
 ## 51. W6A.2 checklist — menu pointer, developer join without code, story list (release `TS2-Multiplayer-0.26.2.zip` on BOTH PCs, protocol 37)
 | # | Steps | Expected evidence | Result |
 |---|---|---|---|

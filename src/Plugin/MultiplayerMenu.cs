@@ -208,6 +208,7 @@ namespace TS2MP.Plugin
             RefreshHostGate(ctx);
             if (_lc.HostTick(ctx, _hostGateReason, node.IsConnected, now)) { StopSession("host returned to the main menu"); return; }
             if (!entered && _lc.HostWorldEntered) _log.Info("HOST world loading started: the multiplayer systems were attached in the main menu; joins open once HOST_READINESS reports ready");
+            if (_devHosting) DevHostTick(ctx);   // W6A.3: verify the loaded story index once, report "host ready"
         }
 
         void ClientFrame(GameContext ctx, double now)
@@ -242,6 +243,7 @@ namespace TS2MP.Plugin
                 case ClientAction.Abort: node.AbortPreparation("aborted"); EndClient("aborted: " + _lc.Error); break;
                 case ClientAction.GiveUp:
                     if (_joinKind == JoinKind.Developer && node.LastReject == RejectCode.AuthFailed) { _hint = MenuRouting.DevAuthFailedText; _log.Warn("JOIN developer test join refused by the host (AuthFailed): no developer test host at that address"); }
+                    else if (_joinKind == JoinKind.Developer) _hint = MenuRouting.DevHostUnreachableText;
                     EndClient("connection ended: " + _lc.Error); break;
                 case ClientAction.EndSession: StopSession("player 2 returned to the main menu"); break;
             }
@@ -375,11 +377,12 @@ namespace TS2MP.Plugin
             int port;
             if (!NetConfig.TryParsePort(_portText, out port)) { _hint = "Ungültiger Port (1024–65535)."; return; }
             _port = port;
-            if (test && _devStory >= 0) { string r = StoryCatalog.Refusal(_devStory); if (r != null) { _hint = r; return; } }
-            if (test && !_lc.TestPrepared && !PrepareTestCampaign()) return;
-            if (test && !ApplyTestStory()) { ReleaseTestIfDue("story step refused"); return; }
+            // W6A.3: plan -> isolated sandbox armed + verified -> seed source checked; any failure is a visible F10 error and the
+            // sandbox is released (no test campaign is active then). The listener starts only after this succeeded.
+            DevPlan plan = null;
+            if (test && !DevPrepare(out plan)) return;
             string deny = _lc.RequestHost(ctx, _port, now);
-            if (deny != null) { _hint = deny; ReleaseTestIfDue("host request refused"); return; }
+            if (deny != null) { _hint = deny; if (test) DevError(deny); ReleaseTestIfDue("host request refused"); return; }
             string code = JoinAuth.NewCode();
             var node = new SessionNode(Role.Host, RandomHex(6), RandomHex(4), Application.version, _port, _log);
             node.BindAddress = "0.0.0.0";
@@ -392,6 +395,7 @@ namespace TS2MP.Plugin
             {
                 node.Dispose();
                 _lc.HostStarted(false, "UDP-Port " + _port + " ist belegt oder blockiert – anderen Port wählen", now);
+                if (test) DevError("UDP-Port " + _port + " ist belegt oder blockiert – anderen Port wählen.");
                 ReleaseTestIfDue("host start failed");
                 return;
             }
@@ -399,6 +403,7 @@ namespace TS2MP.Plugin
             {
                 _runner.DetachSession("host systems failed");
                 _lc.HostStarted(false, "Mehrspieler-Systeme konnten nicht gestartet werden (siehe Log)", now);
+                if (test) DevError("Mehrspieler-Systeme konnten nicht gestartet werden (siehe Log).");
                 ReleaseTestIfDue("host systems failed");
                 return;
             }
@@ -408,6 +413,7 @@ namespace TS2MP.Plugin
             _lc.HostStarted(true, null, now);
             _log.Info("HOST prepared in the main menu: UDP 0.0.0.0:" + _port + " listening, session systems attached before the save loads (join code shown in the menu only)"
                 + (node.TestCampaign ? " - MULTIPLAYER TEST CAMPAIGN" : "") + "; joins wait for the loaded world (HOST_READINESS)");
+            if (test) DevAutoLoad(plan);   // W6A.3: the original load starts by itself (no click in the original menu)
         }
 
         void StartJoin(JoinKind kind)

@@ -534,7 +534,7 @@ static class LifecycleTests
         int sh = code.IndexOf("void StartHost(bool test)", StringComparison.Ordinal), sj = code.IndexOf("void StartJoin(JoinKind kind)", StringComparison.Ordinal);
         Expect(sh > 0 && sj > sh, "StartHost found");
         string host = code.Substring(sh, sj - sh);
-        int rule = host.IndexOf("MenuRules.Host(ctx", StringComparison.Ordinal), prep = host.IndexOf("PrepareTestCampaign()", StringComparison.Ordinal),
+        int rule = host.IndexOf("MenuRules.Host(ctx", StringComparison.Ordinal), prep = host.IndexOf("DevPrepare(out plan)", StringComparison.Ordinal),
             start = host.IndexOf("node.Start()", StringComparison.Ordinal), attach = host.IndexOf("_runner.AttachSession(node)", StringComparison.Ordinal);
         Expect(rule > 0 && prep > rule && start > prep && attach > start, "main-menu rule -> test campaign isolation -> listen -> systems attached, in this order");
         Expect(host.IndexOf("node.HostGate = () => _hostGateReason;", StringComparison.Ordinal) > 0 && host.IndexOf("node.JoinKey = JoinAuth.DeriveKey(code);", StringComparison.Ordinal) > 0, "join code + readiness gate on the prepared host");
@@ -742,7 +742,7 @@ static class LifecycleTests
         string sh = menu.Substring(menu.IndexOf("void StartHost(bool test)", StringComparison.Ordinal));
         sh = sh.Substring(0, sh.IndexOf("void StartJoin(JoinKind kind)", StringComparison.Ordinal));
         int n = 0, at = 0; while ((at = sh.IndexOf("ReleaseTestIfDue(", at, StringComparison.Ordinal)) >= 0) { n++; at++; }
-        Expect(n == 4, "every failed host start after the test preparation releases it (story step refused / host refused / port / systems): " + n);
+        Expect(n == 3, "every failed host start after the test preparation releases it (host refused / port / systems; W6A.3: DevPrepare releases its own failures): " + n);
         string guard = StripComments(File.ReadAllText(Path.Combine(root, "src", "Plugin", "SaveGuard.cs")));
         int rg = guard.IndexOf("public static bool ReleaseTestHostSave(out string why)", StringComparison.Ordinal);
         Expect(rg > 0, "release present");

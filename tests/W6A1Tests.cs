@@ -98,7 +98,7 @@ static class W6A1Tests
         Expect(ui.Contains("StartHost(false);") && ui.Contains("StartJoin(JoinKind.Public);"), "F8 = normal host / join");
         Expect(dev.Contains("StartHost(true);") && dev.Contains("StartJoin(JoinKind.Developer);") && dev.Contains("ResetScenario();"), "F10 = test host / join / reset");
         Expect(code.IndexOf("DrawTestSection", StringComparison.Ordinal) < 0 && code.IndexOf("\"Testkampagne hosten\"", StringComparison.Ordinal) < 0, "old F8 test section removed (capability moved, not deleted)");
-        Expect(dev.Contains("bool PrepareTestCampaign()") && dev.Contains("SaveGuard.PrepareTestHostSave(dir, out why)") && dev.Contains("_runner.EnableTestCampaign(dir,"), "test campaign preparation preserved in the developer menu");
+        Expect(dev.Contains("bool PrepareTestCampaign(DevPlan plan)") && dev.Contains("SaveGuard.PrepareTestHostSave(dir, plan.SeedFromReal, out why)") && dev.Contains("_runner.EnableTestCampaign(dir,"), "test campaign preparation preserved in the developer menu");
     }
 
     // ---------------------------------------------------------------- 04
@@ -124,10 +124,9 @@ static class W6A1Tests
         var code = Menu();
         int sh = code.IndexOf("void StartHost(bool test)", StringComparison.Ordinal);
         string host = code.Substring(sh, code.IndexOf("void StartJoin(JoinKind kind)", sh, StringComparison.Ordinal) - sh);
-        int refusal = host.IndexOf("StoryCatalog.Refusal(_devStory)", StringComparison.Ordinal), prep = host.IndexOf("PrepareTestCampaign()", StringComparison.Ordinal), apply = host.IndexOf("ApplyTestStory()", StringComparison.Ordinal),
-            req = host.IndexOf("_lc.RequestHost(ctx, _port, now)", StringComparison.Ordinal), start = host.IndexOf("node.Start()", StringComparison.Ordinal);
-        Expect(refusal > 0 && prep > refusal && apply > prep && req > apply && start > req, "step refusal -> isolated copy armed -> step applied -> host session");
-        Expect(host.Contains("if (test && !ApplyTestStory()) { ReleaseTestIfDue(\"story step refused\"); return; }"), "refused step releases the prepared copy (clean main menu again)");
+        int prep = host.IndexOf("if (test && !DevPrepare(out plan)) return;", StringComparison.Ordinal),
+            req = host.IndexOf("_lc.RequestHost(ctx, _port, now)", StringComparison.Ordinal), start = host.IndexOf("node.Start()", StringComparison.Ordinal), load = host.IndexOf("if (test) DevAutoLoad(plan);", StringComparison.Ordinal);
+        Expect(prep > 0 && req > prep && start > req && load > start, "W6A.3: plan + isolated sandbox -> host session -> automatic original load");
         Expect(host.Contains("node.TestCampaign = _lc.TestPrepared && SaveGuard.DevHost && _runner.TestCampaignActive;"), "test flag in Welcome only for a prepared, armed copy");
     }
 
@@ -157,25 +156,23 @@ static class W6A1Tests
         Expect(StoryCatalog.Steps[18].Support == StepSupport.Supported && StoryCatalog.Steps[19].Support == StepSupport.Supported, "W6A slice steps supported");
         Expect(StoryCatalog.Steps[3].Support == StepSupport.Limited && StoryCatalog.Steps[12].Support == StepSupport.Limited && StoryCatalog.Steps[40].Reason.Contains("debt"), "special starts named (teleport, chase, debt)");
         Expect(StoryCatalog.Refusal(-1) != null && StoryCatalog.Refusal(81) != null && StoryCatalog.Get(81) == null, "out of range refused");
-        Expect(MenuRouting.DevStoryRefusal(-1, false, true) == null, "keep the copy's own step: always allowed");
-        Expect(MenuRouting.DevStoryRefusal(18, true, false) == null && MenuRouting.DevStoryRefusal(18, false, false) != null && MenuRouting.DevStoryRefusal(18, true, true) != null && MenuRouting.DevStoryRefusal(20, true, false) != null, "needs a save, no free mode, supported step");
+        Expect(MenuRouting.DevCopyRefusal(true) == null && MenuRouting.DevCopyRefusal(false) != null, "copy mode needs a save (W6A.3: story steps never use the copy)");
     }
 
     // ---------------------------------------------------------------- 06
     static void StoryApply()
     {
+        // W6A.3: the step is written right after the ORIGINAL StartNewGame ran inside the verified sandbox (tests/W6A3Tests.cs).
         var dev = Strip(Src("Plugin", "MultiplayerMenu.Dev.cs"));
-        int a = dev.IndexOf("bool ApplyTestStory()", StringComparison.Ordinal);
-        string body = dev.Substring(a, dev.IndexOf("void ResetScenario()", a, StringComparison.Ordinal) - a);
-        int refuse = body.IndexOf("MenuRouting.DevStoryRefusal(_devStory, hasSave", StringComparison.Ordinal), guard = body.IndexOf("if (!SaveGuard.Armed || !SaveGuard.DevHost || !SaveGuard.RuntimeCheck())", StringComparison.Ordinal),
-            write = body.IndexOf("_spSet(\"Story\", _devStory); _spSet(\"StoryBackup\", _devStory); _fbppSave();", StringComparison.Ordinal);
-        Expect(refuse > 0 && guard > refuse && write > guard, "refusal -> isolated copy verified -> original keys written");
+        int a = dev.IndexOf("void DevAutoLoad(DevPlan plan)", StringComparison.Ordinal);
+        string body = dev.Substring(a, dev.IndexOf("void DevHostTick(GameContext ctx)", a, StringComparison.Ordinal) - a);
+        int guard = body.IndexOf("if (!SaveGuard.Armed || !SaveGuard.DevHost || !SaveGuard.RuntimeCheck())", StringComparison.Ordinal), start = body.IndexOf("_startNewGame.Invoke(mm, null);", StringComparison.Ordinal),
+            write = body.IndexOf("_spSet(\"Story\", plan.Story); _spSet(\"StoryBackup\", plan.Story); _fbppSave();", StringComparison.Ordinal);
+        Expect(guard > 0 && start > guard && write > start, "sandbox verified -> original new game -> index written");
         int sets = 0, at = 0; while ((at = body.IndexOf("_spSet(", at, StringComparison.Ordinal)) >= 0) { sets++; at++; }
-        Expect(sets == 2, "only Story / StoryBackup are written (" + sets + ")");
-        foreach (var bad in new[] { "AdvanceStory(", "InitiateStory(", "_advance(", "_initiate(", "debtAm", "moneyAm", "AddXP", "StartPoliceChase", "Debt", "_deduct", "_Call", "mission_" })
+        Expect(sets == 2, "only Story / StoryBackup are written by the mod (" + sets + ")");
+        foreach (var bad in new[] { "AdvanceStory(", "InitiateStory(", "_advance(", "_initiate(", "debtAm", "moneyAm", "AddXP", "StartPoliceChase", "_deduct", "_Call", "mission_" })
             Expect(body.IndexOf(bad, StringComparison.Ordinal) < 0, "story preparation never touches " + bad);
-        Expect(body.Contains("if (_devStory < 0) {") && body.Contains("_appliedStory = _devStory;"), "keep-the-copy option + applied step recorded");
-        // the host's campaign (incl. the Story key) reaches Player 2 through the existing bootstrap; the live index through W6A
         var cb = Strip(Src("Shared", "Campaign.cs"));
         Expect(cb.Contains("TryInt(\"Story\""), "campaign snapshot carries the host's Story");
         var ss = Strip(Src("Plugin", "StorySync.cs"));
@@ -208,7 +205,7 @@ static class W6A1Tests
         Expect(StoryRules.Decide(true, false, 18, "story14", r, out why) == ProposalCode.Accepted && StoryRules.Decide(true, false, 19, "story15", r, out why) == ProposalCode.Stale, "W6A decision unchanged");
         var ps = Strip(Src("Plugin", "ParcelSync.cs"));
         Expect(ps.Contains("if (!i._host && !StorySync.ClientHandlesStory && _noteAdvance(__instance)) { _setNoteAdvance(__instance, false);"), "W2B fallback unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.2", "protocol 37 / mod 0.26.1");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.3", "protocol 37 / mod 0.26.1");
     }
 
     // ---------------------------------------------------------------- helpers

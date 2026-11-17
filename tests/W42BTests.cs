@@ -572,7 +572,7 @@ static class W42BTests
     // ---------------------------------------------------------------- 17
     static void CodecsAndScans()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.2", "protocol 32 / mod 0.21.1");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.3", "protocol 32 / mod 0.21.1");
         var t = new ObjectTxnRequest { Txn = 5, Op = ObjectOp.Reserve, Kind = L, Ns = Madison, Hash = 7, State = 1, BaseVer = 3, Epoch = 9 }; ObjectTxnRequest t2;
         Expect(t.ToBytes().Length == ObjectTxnRequest.Bytes && ObjectTxnRequest.TryParse(t.ToBytes(), out t2) && t2.Op == ObjectOp.Reserve && t2.Epoch == 9 && t2.BaseVer == 3, "txn 19 B");
         var bad = t.ToBytes(); bad[4] = 9; Expect(!ObjectTxnRequest.TryParse(bad, out t2), "unknown op refused");
@@ -835,9 +835,9 @@ static class W42BTests
         Expect(MenuRules.Host(GameContext.MainMenu, MpState.Offline, false, false).Enabled && !MenuRules.Host(GameContext.InWorld, MpState.Offline, false, false).Enabled, "W4.2B.3: hosting is prepared in the main menu, never from a loaded world");
         // isolation order (source)
         var menu = Src("MultiplayerMenu.cs") + Src("MultiplayerMenu.Dev.cs");   // W6A.1: test campaign preparation lives in the developer menu partial
-        int prep = menu.IndexOf("bool PrepareTestCampaign()", StringComparison.Ordinal);
+        int prep = menu.IndexOf("bool PrepareTestCampaign(DevPlan plan)", StringComparison.Ordinal);
         string pb = menu.Substring(prep, menu.IndexOf("void RefreshContinueText()", prep, StringComparison.Ordinal) - prep);
-        Expect(pb.IndexOf("SaveGuard.PrepareTestHostSave(dir, out why)", StringComparison.Ordinal) > 0 && pb.IndexOf("SaveGuard.PrepareTestHostSave", StringComparison.Ordinal) < pb.IndexOf("_runner.EnableTestCampaign(dir", StringComparison.Ordinal)
+        Expect(pb.IndexOf("SaveGuard.PrepareTestHostSave(dir, plan.SeedFromReal, out why)", StringComparison.Ordinal) > 0 && pb.IndexOf("SaveGuard.PrepareTestHostSave", StringComparison.Ordinal) < pb.IndexOf("_runner.EnableTestCampaign(dir", StringComparison.Ordinal)
             && pb.Contains("_runner.RequestQuit("), "host: armed (fail closed) before the test records are enabled");
         int cp = menu.IndexOf("void Prepare(SessionNode node", StringComparison.Ordinal);
         string cb = menu.Substring(cp, menu.IndexOf("bool ContinueOriginal()", cp, StringComparison.Ordinal) - cp);

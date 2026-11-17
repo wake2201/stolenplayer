@@ -2,12 +2,12 @@
 // GENERATED from docs/game-atlas/data/mission_catalog.json (VERIFIED_ASSET byte-exact decode of MainScene
 // MANAGERS/STORY MANAGER) by a one-off script; the support classification and reasons are hand-checked against the
 // completion triggers / start effects in the same file (docs/research/STORY_SYSTEM.md §8).
-//   Supported   - the step's own completion can be reached from a save loaded at this step (original BeginStory ->
-//                 InitiateStory runs the step's start effects once, exactly as when the original loads a save at this step).
-//   Limited     - loads like Supported, but the listed state comes from the copied save or the step has a special start.
+//   Supported   - the step's own completion can be reached from the W6A.3 story seed loaded at this step (original
+//                 StartNewGame baseline, then BeginStory -> InitiateStory runs the step's start effects once).
+//   Limited     - loads like Supported, but the listed state is the new-game baseline or the step has a special start.
 //   Unsupported - needs an item / scene produced by an earlier step (or is not a story step): refused by the selector.
 // Earlier steps are never replayed: items, completed tasks, debt deductions and counters before the selected step are
-// whatever the copied save contains.
+// absent (new-game baseline, src/Shared/DevScenario.cs).
 namespace TS2MP.Shared
 {
     public enum StepSupport : byte { Supported, Limited, Unsupported }
@@ -53,9 +53,9 @@ namespace TS2MP.Shared
             new StoryStep(27, "story23", "Break out the associate from her jail cell", StepSupport.Unsupported, "Needs the arrest / Jail scene of step 26 (CurrentLocation 93). Select step 26 and get caught."),
             new StoryStep(28, "story24", "Escape jail together (find the exit key)", StepSupport.Unsupported, "Needs the Jail scene and the associate freed in step 27. Select step 26 and get caught."),
             new StoryStep(29, "story26", "Steal a briefcase from 108 and send it via Blackbay", StepSupport.Supported, ""),
-            new StoryStep(30, "story27", "Complete 7 missions from HellNeighbour", StepSupport.Limited, "Counter step: the completed-missions counter comes from the copied save."),
+            new StoryStep(30, "story27", "Complete 7 missions from HellNeighbour", StepSupport.Limited, "Counter step: the completed-missions counter starts at the new-game baseline (0)."),
             new StoryStep(31, "story28", "Learn 'Agility (Level 1)'", StepSupport.Supported, ""),
-            new StoryStep(32, "story29", "Complete 109 residences and go home (all loot, missions)", StepSupport.Limited, "Residence step: loot / mission state of 109 comes from the copied save."),
+            new StoryStep(32, "story29", "Complete 109 residences and go home (all loot, missions)", StepSupport.Limited, "Residence step: loot / mission state of 109 starts at the new-game baseline (0)."),
             new StoryStep(33, "story30", "Get to the Heist board at your hideout", StepSupport.Supported, ""),
             new StoryStep(34, "story30b", "Start the 'Forestside Resort' heist in your hideout", StepSupport.Supported, ""),
             new StoryStep(35, "story30c", "Steal diamond earrings from Forestside Resort and send them via Blackbay", StepSupport.Unsupported, "Needs the diamond earrings from the Forestside heist (started in step 34). Select step 34."),
@@ -71,7 +71,7 @@ namespace TS2MP.Shared
             new StoryStep(45, "story40", "Learn 'Car theft (Level 1)' and buy a car lock pick gun", StepSupport.Supported, ""),
             new StoryStep(46, "story41", "Steal the red car from 106 and drive home", StepSupport.Supported, ""),
             new StoryStep(47, "story43", "Take off the Transmission and catalytic converter and send them via BlackBay", StepSupport.Unsupported, "Needs the parts of the red car stolen in step 46. Select step 46."),
-            new StoryStep(48, "story43b", "Complete 5 contracts", StepSupport.Limited, "Counter step: the completed-contracts counter comes from the copied save."),
+            new StoryStep(48, "story43b", "Complete 5 contracts", StepSupport.Limited, "Counter step: the completed-contracts counter starts at the new-game baseline (0)."),
             new StoryStep(49, "story44", "Go to 204 and leave a note at garage 2A (unspotted)", StepSupport.Supported, "Starts with the original debt deduction of this step (once)."),
             new StoryStep(50, "story45", "Learn 'Electronics (Level 1)'", StepSupport.Supported, ""),
             new StoryStep(51, "story46", "Steal a laptop with confidential data from 207 and go home", StepSupport.Supported, ""),
@@ -84,15 +84,15 @@ namespace TS2MP.Shared
             new StoryStep(58, "story53", "Steal a car from 206 and take it home", StepSupport.Supported, ""),
             new StoryStep(59, "story54", "Sell 'Prospect' at Car Service", StepSupport.Unsupported, "Needs the 'Prospect' car stolen in step 58. Select step 58."),
             new StoryStep(60, "story55", "Buy an ATM hacking tool and hack the ATM in Madison St.", StepSupport.Supported, "Starts with the original debt deduction of this step (once)."),
-            new StoryStep(61, "story55_2", "Steal 10 heavy items", StepSupport.Limited, "Counter step: the stolen-heavy-items counter comes from the copied save."),
-            new StoryStep(62, "story55_3", "Complete 201 residence (all loot, missions)", StepSupport.Limited, "Residence step: loot / mission state of 201 comes from the copied save."),
+            new StoryStep(61, "story55_2", "Steal 10 heavy items", StepSupport.Limited, "Counter step: the stolen-heavy-items counter starts at the new-game baseline (0)."),
+            new StoryStep(62, "story55_3", "Complete 201 residence (all loot, missions)", StepSupport.Limited, "Residence step: loot / mission state of 201 starts at the new-game baseline (0)."),
             new StoryStep(63, "story56", "Learn 'Specialization (Level 2)' and buy sleeping gas", StepSupport.Supported, ""),
-            new StoryStep(64, "story57", "Complete the 203 residence (all loot, missions)", StepSupport.Limited, "Residence step: loot / mission state of 203 comes from the copied save."),
+            new StoryStep(64, "story57", "Complete the 203 residence (all loot, missions)", StepSupport.Limited, "Residence step: loot / mission state of 203 starts at the new-game baseline (0)."),
             new StoryStep(65, "story60", "Get to 113 and disable a camera security panel", StepSupport.Supported, "Starts with the original debt deduction of this step (once)."),
             new StoryStep(66, "story61", "Take a few photos at 113", StepSupport.Supported, ""),
             new StoryStep(67, "story62", "Get home", StepSupport.Supported, ""),
             new StoryStep(68, "story63", "Go to sleep", StepSupport.Supported, ""),
-            new StoryStep(69, "story63_2", "Complete 25 HellNeighbour missions", StepSupport.Limited, "Counter step: the completed-missions counter comes from the copied save."),
+            new StoryStep(69, "story63_2", "Complete 25 HellNeighbour missions", StepSupport.Limited, "Counter step: the completed-missions counter starts at the new-game baseline (0)."),
             new StoryStep(70, "story64", "Learn 'Electronics (Level 2)' and buy a hacking laptop", StepSupport.Supported, ""),
             new StoryStep(71, "story65", "Steal the bank construction plan from 202 and go home", StepSupport.Supported, ""),
             new StoryStep(72, "story66", "Start the 'Central Bank' heist", StepSupport.Supported, ""),
@@ -100,8 +100,8 @@ namespace TS2MP.Shared
             new StoryStep(74, "story68", "You got the gold, escape home!", StepSupport.Unsupported, "Takes place inside the Central Bank heist (started in step 72). Select step 72."),
             new StoryStep(75, "story69", "Send the gold bars via Blackbay", StepSupport.Unsupported, "Needs the gold bars from the Central Bank heist (step 72). Select step 72."),
             new StoryStep(76, "story70", "Get some sleep", StepSupport.Supported, "Starts with the original debt deduction of this step (once)."),
-            new StoryStep(77, "story71", "Meet your friend in a secluded place on Madison St.", StepSupport.Limited, "Ending: the trigger starts the credits (Credits.Start writes Story + 1 into the isolated copy)."),
-            new StoryStep(78, "story72_end", "Keep making money", StepSupport.Limited, "Money counter (MoneyMade) comes from the copied save."),
+            new StoryStep(77, "story71", "Meet your friend in a secluded place on Madison St.", StepSupport.Limited, "Ending: the trigger starts the credits (Credits.Start writes Story + 1 into the isolated test save)."),
+            new StoryStep(78, "story72_end", "Keep making money", StepSupport.Limited, "Money counter (MoneyMade) starts at the new-game baseline (0)."),
             new StoryStep(79, "story73_end", "Do whatever you want", StepSupport.Limited, "Final step: no objective to complete."),
             new StoryStep(80, "story73_freemode", "Free mode", StepSupport.Unsupported, "Free-mode stage (FreeMode = 1 only): StoryManager forces it, never a story step."),
         };

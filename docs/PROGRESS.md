@@ -1,5 +1,35 @@
 ﻿# PROGRESS
 
+## W6A.3 — Reliable isolated story-test startup — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
+Mod **0.26.3, protocol 37** (no wire change). Built on `28f5067` (W6A.2). Manual QA: `docs/TESTING.md` §52. Cursor code unchanged.
+
+### A. Root causes (confirmed by the user's logs + IL)
+1. W6A.1 / W6A.2 wrote the story index into a COPY of the genuine save. The user's genuine save is a free-mode save (`FreeMode = 1`): `StoryManager.Start` sets `isFreeMode`, `InitiateStory` forces index 80, `AdvanceStory` does nothing - no story step can exist in such a copy. The refusal (`TEST_STORY refused: ... FreeMode = 1`) released the copy (redirect back to the genuine folder) and left the original main menu; the user's next click started / loaded a genuine campaign at the first mission.
+2. The host listener is created only after the preparation; the refusal came first, so Player 2 saw repeated `ConnectionFailed` on 27960.
+
+### B. Startup flow (F10)
+Host: F10 → choose a story index (preselected: Index 18 · story14) → **Testkampagne starten**:
+1. `DevScenario.Plan` (unsupported index refused before anything changes); the previous `<TS2MP>\testcampaign\story` folder is moved aside (`story.old-<time>`, never deleted).
+2. `SaveGuard.PrepareTestHostSave(<...>\story, seedFromReal: false)`: redirect + guards armed and verified on `<...>\story\host-save`; the genuine folder is not read.
+3. Host session starts (listener, developer key) - only after 1-2 succeeded.
+4. Automatic original load: `MainMenu.StartNewGame` with `skipIntro = true` inside the verified sandbox (IL: DeleteAll, CurrentLocation 99, Story 3, defaults, Save, LoadNewSceneAsync), then `Story` / `StoryBackup` = index before `BeginStory` reads it; seed prefs checked (FreeMode 0, index, Madison). No click in the original menu.
+5. In the world: live StoryManager checked once (`TEST_STORY world check OK/FAILED`, note_103 presence for story14); `TEST_CAMPAIGN HOST READY` when HOST_READINESS is ready. F10 in the world shows a read-only status (host ready / loading, story check, Player 2).
+Any failure: persistent F10 error "TESTKAMPAGNE NICHT GESTARTET – … keine Testkampagne aktiv", sandbox released, host cancelled.
+Client: F10 → address + port → **Testkampagne beitreten** (no code; waits automatically with HostNotReady until the host is ready; unreachable host explained).
+Copy mode (no index): the W4.2B.2 copy of the genuine save, loaded automatically through the original Continue.
+
+### C. Baseline
+Story seed = original new game (skip intro) at the selected index; earlier steps are not replayed (StoryCatalog per-step reasons; DevTestMode still gives all skills + test money). Not an authentic checkpoint.
+
+### D. Evidence
+- `tools/build.ps1 -Test`: plugin 0 warnings; **ALL 43 SUITES PASSED** incl. new `tests/W6A3Tests.cs` (8/8) and W6A 11/11, W2B 12/12, W6A.1 8/8, W6A.2 8/8. Changed expectations: version pins, W6A1 (prepare / story write moved), LifecycleTests (3 release paths in StartHost), W42BTests 26 (new PrepareTestCampaign signature).
+- No in-game run.
+
+### E. Limitations / risks
+- Player spawn position of a skip-intro new game loaded on an index > 3 is untested ([Q]): stage 3's `first_mission` teleport does not run.
+- Steps that need earlier progress (items, residence state, counters) start from the new-game baseline (Limited reasons shown).
+- The in-world F10 status is a developer-only, explicitly opened text box (developer menu enabled), like `Debug.ShowOverlay`.
+
 ## W6A.2 — Menu pointer, developer join without code, story list cleanup — **BUILT — PENDING MANUAL QA**, 2026-11-17
 Mod **0.26.2, protocol 37** (no wire change). Built on `6a32ddf` (W6A.1). Manual QA: `docs/TESTING.md` §51.
 

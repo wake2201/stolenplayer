@@ -147,6 +147,7 @@ namespace TS2MP.Plugin
                 if (pickHeavy != null) _h.Patch(pickHeavy, new HarmonyMethod(AccessTools.Method(typeof(HeavySync), "AssociatePrefix")));
                 else _log.Warn("HEAVY CodenameAI.PickHeavy not found: the associate's heavy carry is not guarded");
                 InitSale();   // H3 heavy shop sale gate (HeavySaleSync.cs)
+                InitUnpack(); // W6B.2 mission-box unpacking (HeavyUnpackSync.cs)
                 if (_host && world.Host != null) world.Host.HeavyCatalog = HostCatalog;
                 if (!_host) world.ProposalResultHook8 = OnResult;
                 _node.MessageReceived += OnMessage;
@@ -257,6 +258,7 @@ namespace TS2MP.Plugin
         bool OnResult(uint id, ProposalCode code)
         {
             if (OnSaleResultHook(id, code)) return true;
+            if (OnUnpackResultHook(id, code)) return true;
             if (_req != null && id == _req.Id) { var q = _req; _req = null; OnLeaseResult(q, code); return true; }
             Req ab;
             if (_abandoned.TryGetValue(id, out ab))
@@ -538,6 +540,7 @@ namespace TS2MP.Plugin
             double now = Now;
             if (now >= _nextStats) { _nextStats = now + 30; if (_p1Leases + _p2Requests + _drops + _hidden + _placed + _motionRecv + _salesHost + _salesRequested + _salesRefused > 0) _log.Info(Stats); }
             SaleFrame(now);
+            UnpackFrame(now);
             if (_req != null && (!Live || now - _req.At > 15.0))
             {
                 _lost++; _log.Warn("HEAVY pickup request of '" + _req.Name + "' unanswered" + (Live ? " after 15 s" : " (disconnected)") + ": abandoned (a late grant is released)");
@@ -613,7 +616,7 @@ namespace TS2MP.Plugin
                     if (o != null) { Adopt(o, r, region); sim = true; }
                     else SendTxn(HeavyOp.Release, region, r.Hash, r.Lease, default(Vector3), Quaternion.identity, 0u, r.Cargo, "handed over but not in this census");
                 }
-                if (o == null || SaleHold(r.Hash)) continue;                    // H3: a pending sale keeps the object as shown
+                if (o == null || SaleHold(r.Hash) || UnpackHold(r.Hash)) continue;                    // H3: a pending sale keeps the object as shown
                 var show = HeavyRules.Present(true, r, Me, sim);
                 if (r.State == HeavyState.Carried && r.Actor == Other) { _remoteCarryGo = o.Go; _remoteCarryItem = o.ItemId; _remoteCarryHash = r.Hash; }
                 Apply(o, show, r);
@@ -625,7 +628,7 @@ namespace TS2MP.Plugin
             _scratch.Clear();
             foreach (var h in _sims.Keys) if (!keep.Contains(h)) _scratch.Add(h);
             foreach (var h in _scratch) { Sim s; if (_sims.TryGetValue(h, out s)) EndSim(s, default(HeavyRecord)); }
-            foreach (var kv in _objs) if (!keep.Contains(kv.Key) && !_sims.ContainsKey(kv.Key) && !SaleHold(kv.Key)) Apply(kv.Value, HeavyRules.Show.ScenePose, default(HeavyRecord));
+            foreach (var kv in _objs) if (!keep.Contains(kv.Key) && !_sims.ContainsKey(kv.Key) && !SaleHold(kv.Key) && !UnpackHold(kv.Key)) Apply(kv.Value, HeavyRules.Show.ScenePose, default(HeavyRecord));
             return true;
         }
 
@@ -985,7 +988,7 @@ namespace TS2MP.Plugin
                     + " | motion sent " + _motionSent + " (" + _motionSentBytes + " B) recv " + _motionRecv + " (" + _motionRecvBytes + " B) stale " + _filter.Stale + " rejected " + _filter.Rejected + " malformed " + _motionMalformed + " unknown " + _motionUnknown
                     + " following " + _motions.Count + " followed " + _followed + " maxCorrection " + _correctionMax.ToString("0.000") + "m adopted " + _adopted
                     + " | cargo loads sent " + _loadsSent + " done " + _loadsDone + " refused " + _loadsRefused + " picks " + _cargoPicks
-                    + (b != null ? " | book total " + b.Total + " leases " + b.Leases + " drops " + b.Drops + " settles " + b.Settles + " releases " + b.Releases + " removes " + b.Removes + " refused " + b.Refused + " cleared " + b.Cleared + " slotReleases " + b.SlotReleases + " handovers " + b.Handovers + " stowed " + b.Stowed + " sold " + b.Sold + " saleRefused " + b.SaleRefused + " unsold " + b.Unsold + " pendingSales " + b.PendingSales : "") + SaleStats
+                    + (b != null ? " | book total " + b.Total + " leases " + b.Leases + " drops " + b.Drops + " settles " + b.Settles + " releases " + b.Releases + " removes " + b.Removes + " refused " + b.Refused + " cleared " + b.Cleared + " slotReleases " + b.SlotReleases + " handovers " + b.Handovers + " stowed " + b.Stowed + " sold " + b.Sold + " saleRefused " + b.SaleRefused + " unsold " + b.Unsold + " pendingSales " + b.PendingSales : "") + SaleStats + UnpackStats
                     + " frameMax " + _costMaxMs.ToString("0.00") + "ms";
             }
         }
@@ -995,6 +998,7 @@ namespace TS2MP.Plugin
         public void Dispose()
         {
             if (ReferenceEquals(Instance, this)) Instance = null;
+            if (_world.Host != null && ReferenceEquals(_world.Host.UnpackHost, this)) _world.Host.UnpackHost = null;
             _node.MessageReceived -= OnMessage;
             try
             {

@@ -381,6 +381,6 @@ static class V161Tests
         Expect(cb.Contains("if (region == _plan.Region) PlaceSpawn(gm);"), "placement only where the original loaded the planned region (travel / vehicle arrivals untouched)");
         var c = Shared("Campaign.cs");
         Expect(c.Contains("PlayerScript.Quicksave") && c.Contains("SaveGameNewSystem(savePos, time)") && c.Contains("Inventory.autoSaveToggle"), "verified save rules documented next to the code");
-        Expect(Shared("Protocol.cs").Contains("public const int ProtocolVersion = 38;"), "v0.16.1 spawn changes added no wire values (protocol 28 = W4.2D loot namespaces, 29 = H1 heavy leases, 30 = H2 heavy cargo, 31 = V1.2 vehicle purchase, 32 = W1 hideout purchases, 33 = V1.4.1 medkit, 34 = H3 heavy sale, 35 = W2A breakables, 36 = W2B parcel codes, 37 = W6A shared story, 38 = W6B drone / cameras / story call)");
+        Expect(Shared("Protocol.cs").Contains("public const int ProtocolVersion = 39;"), "v0.16.1 spawn changes added no wire values (protocol 28 = W4.2D loot namespaces, 29 = H1 heavy leases, 30 = H2 heavy cargo, 31 = V1.2 vehicle purchase, 32 = W1 hideout purchases, 33 = V1.4.1 medkit, 34 = H3 heavy sale, 35 = W2A breakables, 36 = W2B parcel codes, 37 = W6A shared story, 38 = W6B drone / cameras / story call, 39 = W6B.2 unpack)");
     }
 }

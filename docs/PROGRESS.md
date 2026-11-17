@@ -1,5 +1,33 @@
 ﻿# PROGRESS
 
+## W6B.2 — Mission box unpacking exactly once — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
+Mod **0.28.0, protocol 39** (new heavyTxn op 9 Unpack; both PCs need 0.28.0). Built on `19942bb` (W6B.1). Manual QA: `docs/TESTING.md` §56.
+
+### A. Verified original (ilspycmd 1.27c + scene reads)
+- Table: hideout `CARDBOARD BOX MINIGAME/Place_Trigger` (`PlaceCardboard`, TriggerSensor): a box with `ItemID.is_cardboard` on it -> `PlayerScript.cardboard_minigame_script.current_box`, knife trigger (tag `CardboardTrigger`) shown.
+- Open: `PlayerScript.Update` ray on `CardboardTrigger` + interact -> `CardboardMinigame.SkipMinigameWin()` = `SpawnItem()` (Instantiate `current_box` `Pickupable.itemScript.cardboard_spawn_item_ID.drop_object` at `spawn_pos` -> `spawnedObj1`), `PS.animVentFade.Play()`, `cutSound.Play()`, `Object.Destroy(current_box)`. `MinigameWon` = same via the tape minigame; `ActivateMinigame` has no caller in 1.27c.
+- No story / XP / money in the open. Persistence: `SaveGame` -> `TrySaveItem`: SPrefs `ItemCardboard` = content id while `spawnedObj1` exists; `CardboardMinigame.Start` -> `SpawnItemOnStart` re-creates it (MainScene `MINIGAMES CONTAINER/Cutboard Minigame`).
+- Story box: `ITEM IDs/90_cardboard_box` -> `91_black_package` (`isStoryItem`; its drop object is the runtime `paczka_1_a_low`).
+
+### B. Root cause
+The open ran only on the opener's PC. The box record (`Hideout:805A0001` = cargo object of item 90, Ranger cargo #1) was never consumed, so the other PC kept a closed box; its own original `SkipMinigameWin` created a second package. `WLOOT` refused P2's pickup of that runtime package only because runtime objects are never verified scene loot - not an exactly-once guarantee. `ItemCardboard` (World key) would also re-create a package on P2 at load.
+
+### C. Changes
+- `src/Shared/HeavyItems.cs`: `HeavyOp.Unpack = 9`, `IUnpackHost`, `UnpackRules`; `HeavyBook.Sell(..., undoable)` - an unpack leaves no Unsell right.
+- `src/Shared/WorldTime.cs`: host `HeavyOp.Unpack`: box in a car -> Stale; consumed / gone -> Stale; Player 2: the host's own copy must lie on the host's table (`IUnpackHost.CanUnpack`) else Busy (nothing committed); then the H3 consume (first committed wins, lease view, replays Stale); Player 2: `RunUnpack` in the same host step.
+- `src/Plugin/HeavyUnpackSync.cs` (new, partial `HeavySync`): prefixes `SkipMinigameWin` / `MinigameWon` (host: commit then original; P2: propose, original never runs, fade + cut sound on acceptance), `SpawnItem` / `SpawnItemOnStart` (P2 never creates contents); host `CanUnpack` (`PlaceCardboard.placedObj` = that box, has contents) / `RunUnpack` (original `SpawnItem` on its copy, cut sound, `Destroy(box)`, no fade); untracked box: host vanilla, P2 refused; pending hold, 15 s timeout.
+- `src/Plugin/HeavySync.cs`: wiring, stats.
+- Tests: new `tests/W6B2Tests.cs` (10); changed: op-9 pins in H1 / H3, version pins.
+
+### D. Evidence
+- `tools/build.ps1 -Test`: plugin 0 warnings; **ALL 47 SUITES PASSED** (W6B2 10/10). No in-game run.
+
+### E. Limitations (explicit)
+- Contents are **host-owned**: they appear only on Player 1's table (story item 91 is never a shared drop). Player 2 sees its box disappear and no package; P1 picks the package (story16 / Blackbay is host-driven anyway).
+- Player 2 can open only while Player 1 is in the hideout and P1's copy of the box lies on P1's table (fail closed: nothing happens otherwise, the log names the reason).
+- Same rule for every `is_cardboard` box (383 antique horn, 256 3D printer): contents always on the host's table.
+- Untracked boxes (not a census / cargo heavy object): host opens locally (vanilla); Player 2 refused.
+
 ## W6B.1 — Two-PC log follow-up (0.26.5 logs) — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
 Mod **0.27.1, protocol 38** (no wire change vs 0.27.0). Built on `e6a4951` (W6B).
 

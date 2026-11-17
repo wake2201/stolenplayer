@@ -83,7 +83,8 @@ $suites = @(
     @('TS2MP.W6A3Tests', 'W6A3Tests.cs', 'W6A.3 isolated story-test startup: free-mode genuine save / copy, fresh story seed via the original new game, invalid seeds, story14 + note_103, failure / retry, host readiness, no genuine writes, F8 unchanged'),
     @('TS2MP.W6A4Tests', 'W6A4Tests.cs', 'W6A.4 story-test prerequisites (drone, camera module, Player-2 copy), test-session Player-2 spawn beside the host, scenario check ordering + gate, rejoin, reset'),
     @('TS2MP.W6A5Tests', 'W6A5Tests.cs', 'W6A.5 story-test join deadlock: real-log reproduction (note_103 holder inactive in the original asset), story actions as diagnostics, one readiness state, join before / after host ready, permanent ScenarioInvalid, drone grant once, regressions'),
-    @('TS2MP.W6BTests', 'W6BTests.cs', 'W6B drone flight presentation (body stays, drone separate), shared permanent camera disables + Player-2 story14 via the host original, cooperative story call')
+    @('TS2MP.W6BTests', 'W6BTests.cs', 'W6B drone flight presentation (body stays, drone separate), shared permanent camera disables + Player-2 story14 via the host original, cooperative story call'),
+    @('TS2MP.W6B2Tests', 'W6B2Tests.cs', 'W6B.2 mission-box unpacking exactly once: host consumes the box record, host original SpawnItem creates the contents once, P2 never spawns, replays / races / reloads / validation')
 )
 foreach ($s in $suites) {
     Invoke-Csc "$($s[0]).exe" (@('/target:exe', "/out:$outTests\$($s[0]).exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\$($s[1])"))

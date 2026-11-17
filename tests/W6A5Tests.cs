@@ -252,7 +252,7 @@ static class W6A5Tests
         var dev = Strip(Src("Plugin", "MultiplayerMenu.Dev.cs"));
         foreach (var bad in new[] { "Directory.Delete", "File.Delete", "File.Copy" }) Expect(dev.IndexOf(bad, StringComparison.Ordinal) < 0, "developer menu never " + bad);
         Expect(dev.IndexOf(".SetActive(true)", StringComparison.Ordinal) < 0, "no story object is force-enabled");
-        Expect(ProtocolInfo.ProtocolVersion == 38 && ProtocolInfo.ModVersion == "0.27.1", "protocol 37 / mod 0.26.5");
+        Expect(ProtocolInfo.ProtocolVersion == 39 && ProtocolInfo.ModVersion == "0.28.0", "protocol 37 / mod 0.26.5");
     }
 
     // ---------------------------------------------------------------- helpers

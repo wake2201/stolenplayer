@@ -188,7 +188,7 @@ static class W6A4Tests
         Expect(DevScenario.Plan(18, "C:\\x\\TS2MP", true, "C:\\y", "C:\\z", "1", out a) == null && a.MoveAsideTo != null && DevScenario.Plan(18, "C:\\x\\TS2MP", false, "C:\\y", "C:\\z", "2", out b) == null && b.MoveAsideTo == null, "reset: old seed moved aside, fresh seed + fresh records");
         Expect(ui.Contains("StartHost(false);") && ui.Contains("StartJoin(JoinKind.Public);") && code.Contains("else node.JoinKey = JoinAuth.DeriveKey(code);"), "F8 host / join unchanged");
         Expect(ui.Contains("var m = Event.current.mousePosition;") && ui.Contains("DrawPointer();"), "cursor implementation unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 38 && ProtocolInfo.ModVersion == "0.27.1", "protocol 37 / mod 0.26.4");
+        Expect(ProtocolInfo.ProtocolVersion == 39 && ProtocolInfo.ModVersion == "0.28.0", "protocol 37 / mod 0.26.4");
     }
 
     // ---------------------------------------------------------------- helpers

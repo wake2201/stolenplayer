@@ -572,6 +572,8 @@ namespace TS2MP.Shared
 
         // ---- W6A shared story ----
         public IStoryHost StoryHost;   // host plugin: the host's own StoryManager (src/Plugin/StorySync.cs)
+        public IUnpackHost UnpackHost; // W6B.2 host plugin: the host's original CardboardMinigame (src/Plugin/HeavyUnpackSync.cs)
+        public long Unpacks, UnpackRefusals;
         public long StoryAdvances, StoryRefusals;
 
         // One Player-2 story trigger (proposal "storyAdvance"): decided and applied in this single host step with the host's
@@ -988,6 +990,33 @@ namespace TS2MP.Shared
                     return Heavy.Sell(slot, region, t.Ns, t.Hash, t.Lease, known, t.Cargo, now, Reg, Outbox, out why);
                 }
                 case HeavyOp.Unsell: lease = t.Lease; return Heavy.Unsell(slot, t.Ns, t.Hash, t.Lease, now, Reg, Outbox, out why);
+                case HeavyOp.Unpack:
+                {
+                    // W6B.2: mission-box unpacking. Player 2: the host's own box must lie on the host's mission table (its original
+                    // SpawnItem creates the contents once, right after the commit); Player 1: its own original runs after the commit.
+                    lease = t.Lease;
+                    if (t.Cargo) { ushort car; CargoEntry ce; if (Cargo.TryFind(HeavyCargo.IdOf(t.Hash), out car, out ce)) { UnpackRefusals++; why = "box is in vehicle " + car; return ProposalCode.Stale; } }
+                    HeavyRecord pr; bool hasRec = Heavy.TryGet(t.Ns, t.Hash, out pr);
+                    if ((t.Cargo && !hasRec) || (hasRec && pr.State == HeavyState.Removed)) { UnpackRefusals++; why = "box already opened / gone"; return ProposalCode.Stale; }   // before the location check: a consumed box is never "busy"
+                    if (slot == 2)
+                    {
+                        if (UnpackHost == null) { UnpackRefusals++; why = "mission-box unpacking unavailable on the host"; return ProposalCode.NotAuthorized; }
+                        if (!UnpackHost.CanUnpack(t.Ns, t.Hash, t.Cargo, out why)) { UnpackRefusals++; return ProposalCode.Busy; }
+                    }
+                    HeavyRecord ur; bool uknown = slot == 1 || t.Cargo || Heavy.TryGet(t.Ns, t.Hash, out ur);
+                    if (!uknown)
+                    {
+                        if (HeavyCatalog == null) { why = "heavy-object sync unavailable on the host"; return ProposalCode.NotAuthorized; }
+                        var c = HeavyCatalog(t.Ns, t.Hash, t.Digest, out why);
+                        if (c != ProposalCode.Accepted) { UnpackRefusals++; return c; }
+                        uknown = true;
+                    }
+                    var uc = Heavy.Sell(slot, region, t.Ns, t.Hash, t.Lease, uknown, t.Cargo, now, Reg, Outbox, out why, false);
+                    if (uc != ProposalCode.Accepted) { UnpackRefusals++; return uc; }
+                    Unpacks++;
+                    if (slot == 2) UnpackHost.RunUnpack(t.Ns, t.Hash, t.Cargo);
+                    return uc;
+                }
                 default: why = "op"; return ProposalCode.Invalid;
             }
         }

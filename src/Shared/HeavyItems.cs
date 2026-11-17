@@ -43,7 +43,9 @@ namespace TS2MP.Shared
     // Sell (H3) = the seller's ORIGINAL heavy shop sale of this resting object (Lease = the record lease the seller saw, 0 = no
     // record: untouched census object). Unsell (H3, Player 2 only) = its granted sale could not run any more (shop closed in
     // the round trip): the object returns exactly as it was, within HeavyBook.UnsellWindow.
-    public enum HeavyOp : byte { Lease = 1, Drop = 2, Release = 3, Remove = 4, Settle = 5, Load = 6, Sell = 7, Unsell = 8 }
+    // Unpack (W6B.2) = the opener's ORIGINAL mission-box unpacking (CardboardMinigame.SkipMinigameWin / MinigameWon): the host
+    // consumes the box record exactly once (same rules as Sell) and the HOST's original SpawnItem creates the contents once.
+    public enum HeavyOp : byte { Lease = 1, Drop = 2, Release = 3, Remove = 4, Settle = 5, Load = 6, Sell = 7, Unsell = 8, Unpack = 9 }
 
     // One touched heavy object. Actor: Carried -> carrier slot; Placed -> simulating slot (0 = nobody, presented at rest);
     // Removed -> 0. HasPose: the object has a committed pose (Carried keeps the previous one: restored if the carry ends
@@ -133,7 +135,7 @@ namespace TS2MP.Shared
             t = default(HeavyTxnRequest);
             if (v == null || v.Length != WireSize) return false;
             int op = v[0] & ~CargoFlag;
-            if (op < 1 || op > (int)HeavyOp.Unsell) return false;
+            if (op < 1 || op > (int)HeavyOp.Unpack) return false;
             try
             {
                 var r = new NetDataReader(v);
@@ -143,7 +145,7 @@ namespace TS2MP.Shared
             }
             catch { return false; }
         }
-        public override string ToString() { return Op + " " + IdentityNamespace.Name(Ns) + ":" + (Cargo ? "cargo " : "") + Hash.ToString("X8") + (Op == HeavyOp.Lease ? "" : (Op == HeavyOp.Sell || Op == HeavyOp.Unsell) && Lease == 0 ? " (untouched)" : " lease " + Lease) + (Op == HeavyOp.Drop || Op == HeavyOp.Settle ? " at " + Pos : "") + (Op == HeavyOp.Load ? " into vehicle " + Digest + " at local " + Pos : ""); }
+        public override string ToString() { return Op + " " + IdentityNamespace.Name(Ns) + ":" + (Cargo ? "cargo " : "") + Hash.ToString("X8") + (Op == HeavyOp.Lease ? "" : (Op == HeavyOp.Sell || Op == HeavyOp.Unsell || Op == HeavyOp.Unpack) && Lease == 0 ? " (untouched)" : " lease " + Lease) + (Op == HeavyOp.Drop || Op == HeavyOp.Settle ? " at " + Pos : "") + (Op == HeavyOp.Load ? " into vehicle " + Digest + " at local " + Pos : ""); }
     }
 
     // H1.1 movement snapshot of one heavy object from its simulating holder (MsgType.HeavyMotion, unreliable: the per-object
@@ -415,8 +417,8 @@ namespace TS2MP.Shared
         public long Sold, SaleRefused, Unsold;
         public int PendingSales { get { return _pending.Count; } }
 
-        public ProposalCode Sell(byte slot, int slotRegion, int ns, uint hash, ushort seen, bool known, bool cargo, double now, StateRegistry reg, List<StateEntry> outbox, out string why)
-        {
+        public ProposalCode Sell(byte slot, int slotRegion, int ns, uint hash, ushort seen, bool known, bool cargo, double now, StateRegistry reg, List<StateEntry> outbox, out string why, bool undoable = true)
+        {   // W6B.2: undoable = false for an unpack (the host created the contents in the same step: never restored by Unsell)
             why = null;
             if (slot < 1 || slot > 2) { why = "slot"; return ProposalCode.Invalid; }
             if (ns == Regions.None || slotRegion != ns) { SaleRefused++; why = "seller not in " + IdentityNamespace.Name(ns); return ProposalCode.NotAuthorized; }
@@ -443,7 +445,7 @@ namespace TS2MP.Shared
                 else { r.State = HeavyState.Removed; r.Actor = 0; r.HasPose = false; r.Moving = false; r.Lease = NextLease(); l[i] = r; }
             }
             Sold++;
-            if (slot == 2)
+            if (slot == 2 && undoable)
             {
                 for (int k = _pending.Count - 1; k >= 0; k--) if (_pending[k].Ns == ns && _pending[k].Hash == hash) _pending.RemoveAt(k);
                 if (_pending.Count >= MaxPendingSales) _pending.RemoveAt(0);
@@ -546,5 +548,46 @@ namespace TS2MP.Shared
             var e = reg.Commit(StateScope.Region, ns, WorldKeys.Heavy, HeavyList.Encode(l));
             if (e != null) outbox.Add(e);
         }
+    }
+
+    // W6B.2 mission-box unpacking. Original (IL 1.27c, docs/research/STORY_SYSTEM.md section 4c):
+    //   hideout PlaceCardboard (TriggerSensor on the table) -> PlayerScript.cardboard_minigame_script.current_box = the box,
+    //   knifeTrigger tagged "CardboardTrigger". PlayerScript.Update: ray on CardboardTrigger + interact ->
+    //   CardboardMinigame.SkipMinigameWin(): SpawnItem() (Instantiate current_box Pickupable.itemScript.cardboard_spawn_item_ID
+    //   .drop_object at spawn_pos -> spawnedObj1), PS.animVentFade.Play(), cutSound.Play(), Object.Destroy(current_box).
+    //   (MinigameWon = the same via the tape minigame; ActivateMinigame has no caller in 1.27c.) No story / XP / money in the open
+    //   itself. Persistence: SaveGame -> TrySaveItem: SPrefs ItemCardboard = content id while spawnedObj1 exists (else -1);
+    //   CardboardMinigame.Start -> SpawnItemOnStart re-creates it. Item 90 (story box) -> item 91 black_package (isStoryItem).
+    // Root cause of the 0.27.1 duplication: the open ran only on the opener's PC; the box record (cargo object
+    // Hideout:805A0001) stayed, so the other PC kept a closed box, opened it again and its original SpawnItem made a second
+    // package (P2's pickup of it was refused by WLOOT only because it is a runtime object).
+    // Multiplayer: the box record is consumed once by the host (HeavyOp.Unpack, HeavyBook.Sell rules: first committed wins,
+    // stale views / replays refused); the contents exist only in the host campaign (story items are never shared drops,
+    // WorldItemSync), created by the host's ORIGINAL SpawnItem once; Player 2 never runs SpawnItem / SpawnItemOnStart.
+    public interface IUnpackHost
+    {
+        // Player 2's request: the host's own copy of that box lies on the host's mission table (PlaceCardboard detected it).
+        bool CanUnpack(int ns, uint hash, bool cargo, out string why);
+        // After the commit (same host step): the host's original SpawnItem + box removal, exactly once.
+        void RunUnpack(int ns, uint hash, bool cargo);
+    }
+
+    public enum UnpackGate : byte { RunOriginal, CommitThenRun, Propose, Refuse }
+
+    public static class UnpackRules
+    {
+        // Prefix decision on CardboardMinigame.SkipMinigameWin / MinigameWon.
+        //   tracked = the box resolves to a shared heavy id (census object or cargo object); live = connected + synced.
+        public static UnpackGate Gate(bool session, bool host, bool tracked, bool live, bool pending)
+        {
+            if (!session) return UnpackGate.RunOriginal;                 // single player / no session: vanilla
+            if (!tracked) return host ? UnpackGate.RunOriginal : UnpackGate.Refuse;   // untracked box: host-local original, P2 fails closed
+            if (host) return UnpackGate.CommitThenRun;
+            if (!live || pending) return UnpackGate.Refuse;
+            return UnpackGate.Propose;
+        }
+
+        // Player 2 never creates mission-box contents itself (also not from the mirrored ItemCardboard key at load).
+        public static bool ClientMaySpawn(bool session, bool host, bool hostGrantedRun) { return !session || host || hostGrantedRun; }
     }
 }

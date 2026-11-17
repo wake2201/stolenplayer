@@ -43,6 +43,10 @@ Legend: **[V]** verified IL / asset, **[M]** mod source, **[A]** assumption, **[
 - `ReadNote.Start` IL_0062..IL_007f: hides the note when `addParcelCode` and `SPrefs(parcel1_madison) >= 2` (parcel taken). In single-player the parcel cannot be taken before the note is read during story14; in multiplayer it can (shared code / shared loot), which would block the step.
 - Next stage 19 `story15` ("Steal the cardboard box from 104 …"): start effects tutorial + call; completes by `advance_if_item_pref` poll.
 
+## 4c. Mission cardboard box (story15 -> story16, W6B.2) [V IL]
+- `ITEM IDs/90_cardboard_box` (heavy, `is_cardboard`) -> `cardboard_spawn_item_ID` `91_black_package` (`isStoryItem`). Hideout table `PlaceCardboard` sets `CardboardMinigame.current_box`; interact on `CardboardTrigger` -> `SkipMinigameWin` (`SpawnItem` + fade + cut sound + `Destroy(current_box)`); `ItemCardboard` persists an unpicked package. No story effect in the open; story16 = "Open the box and send the contents via Blackbay".
+- Multiplayer: host consumes the box record once (`HeavyOp.Unpack`), the host's original `SpawnItem` creates the package once on the host's table; Player 2 never creates contents.
+
 ## 4b. Story phone calls (W6B) [V IL]
 - Ring: `InitiateStory` → `call_sequence.PhoneCall()` (skipped when `call_only_once` and `<key>_Call >= 1`). `StorySequence.Update` tryToCall (player free) → `<key>_Call = 1` → `bypassCall ? (pickUp, Beginn) : PhoneCall1` (caller id, ringtone, vibrate, `isCalling`, `PlayerScript.StartPhoneCall`).
 - Answer: `isCalling && accept_call` → `isCalling = false`, `pickUp.Play`, `Beginn` (dialogue, subtitles, `nextSequence` chain, end `GM.CheckStory`), vibrate stop, `StopPhoneCall`. Decline: `ForceStop`.

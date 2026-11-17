@@ -405,7 +405,7 @@ static class W6BTests
         Expect(PlayerStateCodec.WireSize == 34, "on-foot snapshot size unchanged");
         foreach (var k in new[] { ObjectKind.Door, ObjectKind.Lockpick, ObjectKind.LockedWindow, ObjectKind.Breakable, ObjectKind.ParcelLocker }) Expect(ObjectStateRules.SupportedKind(k), k + " still shared");
         Expect(!ObjectStateRules.SupportedKind(ObjectKind.SecurityPanel), "security panels not shared (not in scope)");
-        Expect(ProtocolInfo.ProtocolVersion == 38 && ProtocolInfo.ModVersion == "0.27.1", "protocol 38 / mod 0.27.0");
+        Expect(ProtocolInfo.ProtocolVersion == 39 && ProtocolInfo.ModVersion == "0.28.0", "protocol 38 / mod 0.27.0");
     }
 
     // ---------------------------------------------------------------- helpers

@@ -130,8 +130,8 @@ static class H3Tests
                 var v = t.Encode(); HeavyTxnRequest back;
                 Expect(v.Length == HeavyTxnRequest.WireSize && HeavyTxnRequest.TryParse(v, out back) && back.Op == op && back.Cargo == cargo && back.Lease == 42 && back.Hash == t.Hash, op + " codec (cargo " + cargo + ")");
             }
-        var bad = Req(HeavyOp.Sell, TV, 0, Hideout, false).Encode(); bad[0] = 9; HeavyTxnRequest x;
-        Expect(!HeavyTxnRequest.TryParse(bad, out x), "op 9 refused");
+        var bad = Req(HeavyOp.Sell, TV, 0, Hideout, false).Encode(); bad[0] = 10; HeavyTxnRequest x;   // W6B.2: op 9 = Unpack
+        Expect(!HeavyTxnRequest.TryParse(bad, out x), "op 10 refused (op 9 = W6B.2 Unpack)");
         Expect(Sell(TV, 0, Hideout, false).ToString().Contains("(untouched)"), "log shows an untouched sale");
         // vdoor v2
         Expect(VehicleDoors.Count == 3 && VehicleDoors.OpenBits == 0x07 && VehicleDoors.SlowBits == 0x38 && VehicleDoors.SlowBit(2) == 0x20, "3 doors: open bits 0-2, slow bits 3-5");
@@ -140,7 +140,7 @@ static class H3Tests
         Expect(VehicleDoors.TryParseProposal(VehicleDoors.Proposal(2, true, DoorMode.Slow), out d, out open, out mode) && d == 2 && open && mode == DoorMode.Slow, "door 2 proposal");
         Expect(!VehicleDoors.TryParseProposal(new byte[] { 3, 1, 0 }, out d, out open, out mode), "door 3 refused");
         Expect(VehicleDoors.Name(2) == "rear hatch" && VehicleDoors.Name(0) == "L" && VehicleDoors.Name(1) == "R", "log names");
-        Expect(ProtocolInfo.ProtocolVersion == 38 && ProtocolInfo.ModVersion == "0.27.1", "protocol 34 / mod 0.23.0 (wire change: both PCs need 0.23.0)");
+        Expect(ProtocolInfo.ProtocolVersion == 39 && ProtocolInfo.ModVersion == "0.28.0", "protocol 34 / mod 0.23.0 (wire change: both PCs need 0.23.0)");
         Expect(Validation.Check(new Hello { ModVersion = "0.22.1", ClientNonce = new byte[JoinAuth.NonceBytes], InstanceId = "x" }, null, null, "h", false) == RejectCode.ModVersionMismatch, "0.22.1 client refused");
     }
 

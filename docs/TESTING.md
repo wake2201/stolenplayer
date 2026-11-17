@@ -151,6 +151,20 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 56. W6B.2 checklist — mission box unpacking (release `TS2-Multiplayer-0.28.0.zip` on BOTH PCs, story15 or later)
+Grep tags: `HEAVY unpack`, `HEAVY_STATS` (`unpack host / req / granted / hostRuns / refused / spawnBlocked`), `CARGO`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Bring the 104 box home (P2 carries, Ranger cargo, travel), P2 puts it on the hideout table; P1 opens it (knife) | P1: fade, sound, package on the table. P2: box disappears, no package. P1 log `HEAVY unpack of '…' by Player 1 (Unpack Hideout:cargo 805A0001 …): box record consumed once` | NOT TESTED |
+| 2 | After row 1: P2 aims at the table | Nothing to open; no second package anywhere | NOT TESTED |
+| 3 | Fresh run of row 1 but P2 opens it (P1 in the hideout) | P2: fade + sound, box disappears; P1: box disappears, package on P1's table. P2 log `requested (proposal N)` then `granted`; P1 log `opened by Player 2: host original SpawnItem created the contents once` | NOT TESTED |
+| 4 | P2 opens while P1 is NOT in the hideout | Nothing happens; P2 log `-> Busy`, P1 log `refused: host is not in …`; box still there; repeat with P1 present -> row 3 | NOT TESTED |
+| 5 | Both press the knife at the same moment | Exactly one package (on P1's table); the second open logs Stale | NOT TESTED |
+| 6 | P1 saves (bed) with the package still on the table, both quit, reload, P2 rejoins | Package on P1's table only; P2 log `contents not created here` once; no box | NOT TESTED |
+| 7 | P1 picks the package | Normal pickup, story continues (story16 send via Blackbay by P1) | NOT TESTED |
+| 8 | Regression: heavy sale at the junkyard, other heavy cargo, parcel lockers, drone camera story14 | Unchanged | NOT TESTED |
+
 ## 55. W6B checklist — drone flight, House 104 camera, story14 by Player 2, story call (release `TS2-Multiplayer-0.27.1.zip` on BOTH PCs, F10 developer menu, index 18)
 Grep tags: `DRONE`, `WOBJ camera`, `STORY`, `WOBJ_STATS`, `SYNC_STATS`.
 

@@ -72,3 +72,9 @@ as in `FURNITURE_SYSTEM.md`. Also covers the "other regions" audit (§7).
 No per-region copy of the architecture is needed: the registry, identities, reservations and bridges are namespace-
 generic. Enabling a region = (1) census digest equality verified in logs, (2) story/mission restricted objects of that
 region listed by the host census, (3) adding the namespace to the supported set, (4) a manual QA pass in that region.
+
+## 8. Story-test prerequisites (W6A.4) [V]
+- Story drone = item 89 `flyby_drone` (Flyby Lite), stolen at index 15 (story11, `STEAL DRONE 103 MISSION/enable/flyby drone pickup`, `advance_story_if_picked`).
+- Persisted state: `Item_89` (ItemID.Save_Item_Amount), `Drone` = equipped item id (SaveGameNewSystem IL_03c8..IL_03fa); restored by `DroneManager.<FindDrone>` (0.5 s after start) -> `AssignDrone` -> `ApplyUpgrades`.
+- Flyby upgrades (level1 `DroneShopScript`, decoded): `flyby_upgrade1` speed_module (250, lvl 2), `flyby_upgrade2` battery_module (300), `flyby_upgrade3` camera_module (300, camera_upgrade, advanceStory story12).
+- Story-test seed for index >= 16 / 17 writes these keys (src/Shared/DevScenario.cs `ScenarioPrereqs`); Player 2 gets item 89 in its fresh record and the World keys with the host campaign.

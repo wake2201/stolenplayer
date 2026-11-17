@@ -247,6 +247,7 @@ namespace TS2MP.Plugin
                     EndClient("connection ended: " + _lc.Error); break;
                 case ClientAction.EndSession: StopSession("player 2 returned to the main menu"); break;
             }
+            if (_joinKind == JoinKind.Developer && _lc.State == MpState.Connected) DevClientTick(ctx);   // W6A.4
         }
 
         // Authenticated + welcomed by a gameplay-ready host, still in the main menu: arm the isolation BEFORE anything
@@ -332,7 +333,7 @@ namespace TS2MP.Plugin
             _lc.BeginStop(Time.realtimeSinceStartup);
             if (_pendingClient != null) { _pendingClient.Dispose(); _pendingClient = null; }
             _runner.DetachSession(why);
-            _hostCode = null; _hint = null; _devHosting = false;
+            _hostCode = null; _hint = null; _devHosting = false; ClearScenario(); _p2CheckState = 0;
             _lc.Stopped(Time.realtimeSinceStartup);
         }
 
@@ -388,7 +389,7 @@ namespace TS2MP.Plugin
             node.BindAddress = "0.0.0.0";
             if (test) node.JoinKey = MenuRouting.SessionKey(true, null);   // W6A.2: developer key, no code (F10 Test Join)
             else node.JoinKey = JoinAuth.DeriveKey(code);
-            node.HostGate = () => _hostGateReason;
+            node.HostGate = () => _hostGateReason ?? _scenarioGate;   // W6A.4: story-test joins also wait for the scenario check
             node.TestCampaign = _lc.TestPrepared && SaveGuard.DevHost && _runner.TestCampaignActive;   // W4.2B.2: told to Player 2 in Welcome
             _hostGateReason = "Host startet";
             if (!node.Start())

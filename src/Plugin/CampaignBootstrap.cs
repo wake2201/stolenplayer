@@ -173,6 +173,12 @@ namespace TS2MP.Plugin
             var cp = Checkpoint(model, hostRegion);
             string note;
             var plan = SpawnRules.Decide(_rec, p2.HostHistoryId, cp, out note);
+            if (MultiplayerMenu.ActiveScenario >= 0 && _node.TestCampaign)
+            {   // W6A.4: developer story test - first join beside the host (P1 at the scenario start), checked ring placement
+                Vec3 hp; string tn; bool ok = HostLivePosition(out hp);
+                plan = SpawnRules.TestScenario(plan, hostRegion, ok, hp, out tn);
+                note = tn + " (normal decision: " + note + ")";
+            }
             int[] removed;
             // W4.1B: the client sandbox starts with the shared balance (live host money; the saved key if the wallet is not up yet)
             int shared; var wal = WalletSync.Instance;
@@ -208,6 +214,16 @@ namespace TS2MP.Plugin
                 { var p = arr[idx].transform.position; cp.LeavePoint = new Vec3(p.x, p.y, p.z); cp.HasLeavePoint = true; }
             }
             return cp;
+        }
+
+        // W6A.4: the host player's live position (developer story test spawn), false while no player exists.
+        internal bool HostLivePosition(out Vec3 p)
+        {
+            p = default(Vec3);
+            var gm = _world.GameManagerObject; var ps = gm != null ? _gmPs(gm) as Component : null;
+            if (ps == null || !ps) return false;
+            var t = ps.transform.position; p = new Vec3(t.x, t.y, t.z);
+            return SpawnValidation.PositionOk(p);
         }
 
         // Live position of Player 2 for a rejoin while this host session's world keeps running (memory only).

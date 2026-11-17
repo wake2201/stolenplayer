@@ -151,6 +151,18 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 53. W6A.4 checklist — story14 prerequisites, Player-2 spawn, scenario check (release `TS2-Multiplayer-0.26.4.zip` on BOTH PCs, developer menu enabled on both)
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Host F10 → Index 18 → *Testkampagne starten* | Log `TEST_SCENARIO Index 18 · story14 …: prerequisites flyby_drone, drone_camera_module`, `TEST_STORY seed: … Item_89 = 1, Drone = 89, flyby_upgrade3 = 1`, then `TEST_STORY scenario check pending …` (may appear) and `TEST_STORY scenario check OK … drone 89 …`, then `TEST_CAMPAIGN HOST READY` — never READY before OK | NOT TESTED |
+| 2 | Host: inventory / drone key | The Flyby drone is in the inventory and launches with the original drone key in Madison; the camera disable works on the 104 entrance camera | NOT TESTED |
+| 3 | Client F10 join (before and after host ready) | Before OK: waits (`HostNotReady`, reason "Story-Test …"); after: P2 spawns in Madison beside P1 (log `P2SPAWN RestoreNear (FirstJoin) in MadisonSt`, host `spawn … story test: first join beside the host`), not in the hideout or inside a car | NOT TESTED |
+| 4 | Client: own drone | `P2INV story-test grant … item 89` on the host; P2 log `TEST_SCENARIO Player 2 check OK: own drone 89 equipped`; P2 launches its own drone independently of P1 | NOT TESTED |
+| 5 | Story14 completion via note_103 (§49 row 2) or the drone camera (P1) | story15 on both | NOT TESTED |
+| 6 | P2 leaves to the main menu and rejoins | Spawns at its own last position (Restore), still exactly one drone | NOT TESTED |
+| 7 | Restart both, start index 18 again | Fresh seed, both players get exactly one drone again | NOT TESTED |
+| 8 | Host F10 in the world | Status shows "geprüft OK (Region, Voraussetzungen, Story-Objekte, Spawn)" | NOT TESTED |
+
 ## 52. W6A.3 checklist — isolated story-test startup (release `TS2-Multiplayer-0.26.3.zip` on BOTH PCs, `[Developer] EnableDeveloperMenu = true` on both)
 Note the genuine save's file timestamps first (`%USERPROFILE%\AppData\LocalLow\CookieDev\Thief Simulator 2`). Grep tags: `TEST_CAMPAIGN`, `TEST_STORY`, `HOST_READINESS`, `STORY`, `JOIN`.
 

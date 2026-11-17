@@ -537,7 +537,7 @@ static class LifecycleTests
         int rule = host.IndexOf("MenuRules.Host(ctx", StringComparison.Ordinal), prep = host.IndexOf("DevPrepare(out plan)", StringComparison.Ordinal),
             start = host.IndexOf("node.Start()", StringComparison.Ordinal), attach = host.IndexOf("_runner.AttachSession(node)", StringComparison.Ordinal);
         Expect(rule > 0 && prep > rule && start > prep && attach > start, "main-menu rule -> test campaign isolation -> listen -> systems attached, in this order");
-        Expect(host.IndexOf("node.HostGate = () => _hostGateReason;", StringComparison.Ordinal) > 0 && host.IndexOf("node.JoinKey = JoinAuth.DeriveKey(code);", StringComparison.Ordinal) > 0, "join code + readiness gate on the prepared host");
+        Expect(host.IndexOf("node.HostGate = () => _hostGateReason ?? _scenarioGate;", StringComparison.Ordinal) > 0 && host.IndexOf("node.JoinKey = JoinAuth.DeriveKey(code);", StringComparison.Ordinal) > 0, "join code + readiness gate on the prepared host");
         string plugin = StripComments(File.ReadAllText(Path.Combine(root, "src", "Plugin", "Plugin.cs")));
         int ds = plugin.IndexOf("void DisposeSystems()", StringComparison.Ordinal), rq = plugin.IndexOf("internal void RequestQuit", StringComparison.Ordinal);
         Expect(ds > 0 && rq > ds && plugin.Substring(ds, rq - ds).IndexOf("catch { }", StringComparison.Ordinal) < 0, "session cleanup failures are logged, not swallowed");

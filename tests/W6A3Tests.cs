@@ -124,7 +124,7 @@ static class W6A3Tests
         Expect(StoryRules.Decide(true, true, 80, "story73_freemode", r, out why) != ProposalCode.Accepted, "and would NOT be on the free-mode copy (W6A.2 failure)");
         Expect(StoryCatalog.Get(idx + 1).Key == "story15", "next step story15");
         var dev = Strip(Src("Plugin", "MultiplayerMenu.Dev.cs"));
-        Expect(dev.Contains("GameObject.Find(\"story object 103 notka\")") && dev.Contains("if (StoryCatalog.Get(expect).Key == \"story14\")"), "host world check reports note_103 presence for story14");
+        Expect(dev.Contains("foreach (var o in ScenarioPrereqs.RequiredObjects(index)) { var go = GameObject.Find(o);") && ScenarioPrereqs.RequiredObjects(18)[0] == "story object 103 notka", "host scenario check requires note_103 for story14 (W6A.4)");
         Expect(dev.Contains("int _devStory = 18"), "F10 preselects index 18");
     }
 
@@ -207,7 +207,7 @@ static class W6A3Tests
         Expect(code.Contains("else node.JoinKey = JoinAuth.DeriveKey(code);") && code.Contains(": _lc.RequestJoin(Context(), _isolationAvailable, _joinHost, _joinPort, _joinCode, out req, now);"), "F8 host / join keys and code validation unchanged");
         Expect(ui.Contains("StartHost(false);") && ui.Contains("StartJoin(JoinKind.Public);") && ui.IndexOf("DevPrepare", StringComparison.Ordinal) < 0 && ui.IndexOf("DevAutoLoad", StringComparison.Ordinal) < 0, "F8 never reaches the developer flow");
         Expect(MenuRouting.JoinMismatch(JoinKind.Public, true) != null && MenuRouting.JoinMismatch(JoinKind.Public, false) == null, "routing unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.3", "protocol 37 / mod 0.26.3");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.4", "protocol 37 / mod 0.26.4");
     }
 
     // ---------------------------------------------------------------- helpers

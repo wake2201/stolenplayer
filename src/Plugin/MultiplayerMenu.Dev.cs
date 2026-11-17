@@ -14,6 +14,7 @@
 //     uses it; the next Dev Host copies the real save again = clean, repeatable starting point.
 using System;
 using System.IO;
+using System.Linq;
 using HarmonyLib;
 using TS2MP.Shared;
 using UnityEngine;
@@ -28,7 +29,7 @@ namespace TS2MP.Plugin
 
         // ---------------------------------------------------------------- W6A.3 story-test scenario (src/Shared/DevScenario.cs)
         string _devError;           // visible in F10 until the next start attempt
-        int _verifyStory = -1; bool _readyLogged; float _verifyAt;
+        bool _readyLogged;
 
         void DevError(string why)
         {
@@ -40,7 +41,7 @@ namespace TS2MP.Plugin
         // is active (sandbox released), _devError says why.
         bool DevPrepare(out DevPlan plan)
         {
-            _devError = null; _verifyStory = -1; _readyLogged = false;
+            _devError = null; _readyLogged = false; ClearScenario();
             string why, storyDir = DevScenario.StoryDataDir(_settings.DataDir);
             why = DevScenario.Plan(_devStory, _settings.DataDir, storyDir != null && Directory.Exists(storyDir), SaveGuard.RealDir, SaveGuard.GameDir, DateTime.Now.ToString("yyyyMMdd-HHmmss"), out plan);
             if (why != null) { DevError(why); return false; }
@@ -125,12 +126,16 @@ namespace TS2MP.Plugin
                 bool prev = _skipIntro(mm);
                 _setSkipIntro(mm, true);
                 try { _startNewGame.Invoke(mm, null); } finally { _setSkipIntro(mm, prev); }
-                // Before the scene's StoryManager.BeginStory reads it (the scene loads asynchronously).
-                _spSet("Story", plan.Story); _spSet("StoryBackup", plan.Story); _fbppSave();
-                _appliedStory = plan.Story; _verifyStory = plan.Story; _verifyAt = Time.realtimeSinceStartup;
-                string bad = DevScenario.VerifySeedPrefs(plan.Story, _spGet("Story"), _spGet("StoryBackup"), _spGet("FreeMode"), _spGet("CurrentLocation"));
-                if (bad != null) { _devError = "Story-Testspielstand ungültig: " + bad; _log.Error("TEST_STORY seed invalid: " + bad); }
-                else _log.Info("TEST_STORY seed: original MainMenu.StartNewGame (skip intro) in the sandbox, then Story = StoryBackup = " + plan.Story + " (" + DevScenario.Label(plan.Story) + "), FreeMode 0, CurrentLocation " + DevScenario.SeedLocation + "; loading MainScene");
+                // Before the scene's StoryManager.BeginStory / ItemID.Start / DroneManager.<FindDrone> read them (the scene loads
+                // asynchronously): story index + the verified prerequisites of earlier steps (DevScenario.SeedKeys, ScenarioPrereqs).
+                var keys = new System.Collections.Generic.List<string>(); var vals = new System.Collections.Generic.List<int>();
+                DevScenario.SeedKeys(plan.Story, keys, vals);
+                for (int k = 0; k < keys.Count; k++) _spSet(keys[k], vals[k]);
+                _fbppSave();
+                _appliedStory = plan.Story; StartScenarioCheck(plan.Story);
+                string bad = DevScenario.VerifySeed(plan.Story, _spGet);
+                if (bad != null) { _devError = "Story-Testspielstand ungültig: " + bad; _scenarioGate = "Story-Test ungültig: " + bad; _log.Error("TEST_STORY seed invalid: " + bad); }
+                else _log.Info("TEST_STORY seed: original MainMenu.StartNewGame (skip intro) in the sandbox, then " + string.Join(", ", keys.Select((kk, ii) => kk + " = " + vals[ii]).ToArray()) + " (" + DevScenario.Label(plan.Story) + "), FreeMode 0, CurrentLocation " + DevScenario.SeedLocation + "; loading MainScene");
             }
             catch (Exception ex)
             {
@@ -141,44 +146,118 @@ namespace TS2MP.Plugin
             }
         }
 
-        // Host in the loaded world: verify the live story index once, then report "host ready" once.
-        static Func<object, object> _gmStoryMgr, _smCurrent; static Func<object, int> _smStory; static Func<object, bool> _smFree; static Func<object, string> _scriptKey; static bool _liveResolved;
+        // ---------------------------------------------------------------- W6A.4 scenario check (gates joins + HOST READY)
+        // Active story-test scenario of this process (-1 = none): read by CampaignBootstrap (Player-2 spawn) and Player2Sync
+        // (Player 2's fresh record) on the host. Set only by the developer story start, cleared when the session stops.
+        internal static int ActiveScenario = -1;
+        string _scenarioGate;         // HostGate addition while the scenario is unchecked / invalid (null = valid or no scenario)
+        int _checkIndex = -1; bool _scenarioDone, _pendingLogged; double _checkSince, _nextCheck;
+
+        void StartScenarioCheck(int index)
+        {
+            ActiveScenario = index; _checkIndex = index; _scenarioDone = false; _pendingLogged = false; _checkSince = -1; _nextCheck = 0;
+            _scenarioGate = "Story-Test wartet auf die geladene Welt";
+            _log.Info("TEST_SCENARIO " + DevScenario.Label(index) + ": prerequisites " + string.Join(", ", ScenarioPrereqs.For(index).Select(p => p.Id).ToArray()) + "; required objects " + string.Join(", ", ScenarioPrereqs.RequiredObjects(index)) + "; joins wait until the scenario check passes");
+        }
+
+        void ClearScenario() { ActiveScenario = -1; _checkIndex = -1; _scenarioGate = null; _scenarioDone = false; _devCheck = null; }
+
+        static Func<object, object> _gmStoryMgr, _smCurrent, _psDrone, _dmAssigned; static Func<object, int> _smStory, _itemId; static Func<object, bool> _smFree; static Func<object, string> _scriptKey; static bool _liveResolved;
+        static void ResolveLive(Type gmType)
+        {
+            if (_liveResolved) return;
+            _liveResolved = true;
+            var sm = AccessTools.TypeByName("StoryManager"); var ss = AccessTools.TypeByName("StoryScript"); var ps = AccessTools.TypeByName("PlayerScript");
+            var dm = AccessTools.TypeByName("DroneManager"); var item = AccessTools.TypeByName("ItemID");
+            _gmStoryMgr = Fast.Getter<object>(gmType, "story_manager"); _smCurrent = Fast.Getter<object>(sm, "currentStoryScript");
+            _smStory = Fast.Getter<int>(sm, "story"); _smFree = Fast.Getter<bool>(sm, "isFreeMode"); _scriptKey = Fast.Getter<string>(ss, "story_description");
+            _psDrone = Fast.Getter<object>(ps, "droneManager"); _dmAssigned = Fast.Getter<object>(dm, "assigned_drone_script"); _itemId = Fast.Getter<int>(item, "item_ID");
+        }
+
+        int EquippedDrone()
+        {
+            var ps = _gm != null && _gmPs != null ? _gmPs(_gm) : null;
+            var dm = ps != null && _psDrone != null ? _psDrone(ps) : null;
+            var it = dm != null && _dmAssigned != null ? _dmAssigned(dm) as UnityEngine.Object : null;
+            return it != null && it && _itemId != null ? _itemId(it) : 0;
+        }
+
+        // Host in the loaded world: the full scenario check (index + objective, region, prerequisites, story objects, Player-2
+        // spawn plan) every 0.5 s once the world is ready (HOST_READINESS), at most 20 s; joins stay closed until it passes.
         void DevHostTick(GameContext ctx)
         {
             if (ctx != GameContext.InWorld) return;
-            if (_verifyStory >= 0 && Time.realtimeSinceStartup - _verifyAt > 1f && _gm != null)
+            if (_checkIndex < 0)
             {
-                if (!_liveResolved)
-                {
-                    _liveResolved = true;
-                    var sm = AccessTools.TypeByName("StoryManager"); var ss = AccessTools.TypeByName("StoryScript");
-                    _gmStoryMgr = Fast.Getter<object>(_gmType, "story_manager"); _smCurrent = Fast.Getter<object>(sm, "currentStoryScript");
-                    _smStory = Fast.Getter<int>(sm, "story"); _smFree = Fast.Getter<bool>(sm, "isFreeMode"); _scriptKey = Fast.Getter<string>(ss, "story_description");
-                }
-                var mgr = _gmStoryMgr != null ? _gmStoryMgr(_gm) : null; var cur = mgr != null && _smCurrent != null ? _smCurrent(mgr) : null;
-                if (cur != null && _smStory != null && _smFree != null && _scriptKey != null)
-                {
-                    int expect = _verifyStory; _verifyStory = -1;
-                    string bad = DevScenario.VerifyLoaded(expect, _smStory(mgr), _scriptKey(cur), _smFree(mgr));
-                    if (bad != null) { _devError = "Story-Test ungültig: " + bad; _devCheck = "FEHLER – " + bad; _log.Error("TEST_STORY world check FAILED: " + bad); }
-                    else
-                    {
-                        string note = "";
-                        if (StoryCatalog.Get(expect).Key == "story14")
-                        {
-                            var go = GameObject.Find("story object 103 notka");   // once, after the load: active only while story14 is current
-                            note = go != null && go.activeInHierarchy ? "; note_103 (House 103) present" : "; note_103 parent not active yet (Madison Street not loaded or StoryObject pending)";
-                        }
-                        _devCheck = DevScenario.Label(expect) + " – geprüft OK" + note;
-                        _log.Info("TEST_STORY world check OK: live " + DevScenario.Label(expect) + ", free mode off" + note);
-                    }
-                }
+                if (!_readyLogged && _hostGateReason == null) { _readyLogged = true; _log.Info("TEST_CAMPAIGN HOST READY: Player 2 can join now with F10 -> Testkampagne beitreten (address of this PC, UDP " + _port + ", no code)"); }
+                return;
             }
-            if (!_readyLogged && _hostGateReason == null)
+            if (_scenarioDone) return;
+            double now = Time.realtimeSinceStartup;
+            if (_hostGateReason != null) { _scenarioGate = "Story-Test wartet auf die geladene Welt"; return; }   // StoryManager / scene not initialised yet
+            if (now < _nextCheck) return;
+            _nextCheck = now + 0.5;
+            if (_checkSince < 0) _checkSince = now;
+            ResolveLive(_gmType);
+            var f = GatherFacts(_checkIndex);
+            string bad = f == null ? "StoryManager noch nicht bereit" : DevScenario.Check(f);
+            if (bad == null)
             {
+                _scenarioDone = true; _scenarioGate = null;
+                _devCheck = DevScenario.Label(_checkIndex) + " – geprüft OK (Region, Voraussetzungen, Story-Objekte, Spawn)";
+                _log.Info("TEST_STORY scenario check OK after " + (now - _checkSince).ToString("0.0") + " s: live " + DevScenario.Label(_checkIndex) + ", region " + Regions.Name(f.Region) + ", drone " + f.EquippedDrone + ", Player-2 record ok, objects ok, spawn: " + f.SpawnNote);
                 _readyLogged = true;
-                _log.Info("TEST_CAMPAIGN HOST READY: Player 2 can join now with F10 → Testkampagne beitreten (address of this PC, UDP " + _port + ", no code)");
+                _log.Info("TEST_CAMPAIGN HOST READY: Player 2 can join now with F10 -> Testkampagne beitreten (address of this PC, UDP " + _port + ", no code)");
             }
+            else if (now - _checkSince > 20)
+            {
+                _scenarioDone = true; _scenarioGate = "Story-Test ungültig: " + bad;
+                _devCheck = "FEHLER – " + bad; _devError = "Story-Test ungültig: " + bad + " Spieler 2 kann nicht beitreten.";
+                _log.Error("TEST_STORY scenario check FAILED (final after 20 s): " + bad + " - joins stay closed, no HOST READY");
+            }
+            else
+            {
+                _scenarioGate = "Story-Test wird geprüft: " + bad;
+                if (!_pendingLogged) { _pendingLogged = true; _log.Info("TEST_STORY scenario check pending (retried every 0.5 s, max 20 s): " + bad); }
+            }
+        }
+
+        ScenarioFacts GatherFacts(int index)
+        {
+            var mgr = _gm != null && _gmStoryMgr != null ? _gmStoryMgr(_gm) : null; var cur = mgr != null && _smCurrent != null ? _smCurrent(mgr) : null;
+            if (cur == null || _smStory == null || _smFree == null || _scriptKey == null) return null;
+            var f = new ScenarioFacts { Expected = index, LiveIndex = _smStory(mgr), LiveKey = _scriptKey(cur), FreeMode = _smFree(mgr) };
+            var w = _runner.World; f.Region = w != null ? w.LocalRegion : Regions.None;
+            foreach (var p in ScenarioPrereqs.For(index)) foreach (var k in p.SeedKeys) if (!f.Prefs.ContainsKey(k)) f.Prefs[k] = _spGet(k);
+            f.EquippedDrone = EquippedDrone();
+            var p2 = Player2Sync.Instance; var rec = p2 != null ? p2.HostRecord : null;
+            f.P2RecordKnown = rec != null;
+            if (rec != null) foreach (var kv in rec.Items) f.P2Items[kv.Key] = kv.Value;
+            foreach (var o in ScenarioPrereqs.RequiredObjects(index)) { var go = GameObject.Find(o); if (go != null && go.activeInHierarchy) f.ActiveObjects.Add(o); }   // <= 40 lookups per scenario
+            var cb = _runner.Campaign; Vec3 hp = default(Vec3); bool ok = cb != null && cb.HostLivePosition(out hp);
+            string note; var plan = SpawnRules.TestScenario(new SpawnPlan { Mode = SpawnMode.OriginalSpawn, Reason = SpawnReason.FirstJoin, Region = SpawnRegions.Fallback }, f.Region, ok, hp, out note);
+            f.SpawnOk = plan.Mode == SpawnMode.RestoreNear && plan.Region == f.Region; f.SpawnNote = note;
+            return f;
+        }
+
+        // Player 2 (developer join) in the world: its own drone check once (log + in-world F10 status), no gameplay effect.
+        int _p2CheckState; double _p2CheckSince;
+        void DevClientTick(GameContext ctx)
+        {
+            if (ctx != GameContext.InWorld || _p2CheckState == 2) return;
+            double now = Time.realtimeSinceStartup;
+            if (_p2CheckState == 0) { _p2CheckState = 1; _p2CheckSince = now; _nextCheck = now + 2; return; }
+            if (now < _nextCheck) return;
+            _nextCheck = now + 1;
+            ResolveLive(_gmType);
+            var mgr = _gm != null && _gmStoryMgr != null ? _gmStoryMgr(_gm) : null;
+            if (mgr == null || _smStory == null) return;
+            int idx = _smStory(mgr); int need = 0;
+            foreach (var p in ScenarioPrereqs.For(idx)) if (p.EquippedDroneId != 0) need = p.EquippedDroneId;
+            int have = EquippedDrone();
+            if (need == 0) { _p2CheckState = 2; _devCheck = "Spieler 2: " + DevScenario.Label(idx) + " (keine Ausrüstungs-Voraussetzung)"; return; }
+            if (have == need) { _p2CheckState = 2; _devCheck = "Spieler 2: " + DevScenario.Label(idx) + " – eigene Drohne " + have + " ausgerüstet"; _log.Info("TEST_SCENARIO Player 2 check OK: own drone " + have + " equipped (original FindDrone / AssignDrone)"); }
+            else if (now - _p2CheckSince > 20) { _p2CheckState = 2; _devCheck = "Spieler 2: FEHLER – Drohne " + need + " nicht ausgerüstet"; _log.Error("TEST_SCENARIO Player 2 check FAILED: drone " + need + " not equipped (have " + have + ")"); }
         }
 
         // The main menu's save info was read from the real folder; the original LoadContinueTxt re-reads it (now redirected).

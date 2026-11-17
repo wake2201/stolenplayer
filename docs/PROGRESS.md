@@ -1,5 +1,29 @@
 ﻿# PROGRESS
 
+## W6A.4 — Story-test prerequisites, Player-2 spawn, scenario check — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
+Mod **0.26.4, protocol 37** (no wire change). Built on `cf247e0` (W6A.3). Manual QA: `docs/TESTING.md` §53. Cursor and developer connection unchanged.
+
+### A. Verified causes
+1. **No drone at index 18:** the seed is a new game at the selected index; the drone comes from index 15 (story11, `STEAL DRONE 103 MISSION/enable/flyby drone pickup`, item 89 "Flyby Lite' Drone") and the camera module from index 16 (story12, DroneTech). Persistence (IL): `ItemID.Save_Item_Amount` -> `Item_89`; `SaveGame.SaveGameNewSystem` IL_03c8..IL_03fa -> `Drone = assigned_drone_script.item_ID`; load: `ItemID.Start` + `DroneManager.<FindDrone>` IL_003e..IL_0095 (Drone key -> `PS.item_IDs` entry with `item_amount > 0` -> `AssignDrone`) -> `ApplyUpgrades` IL_0013..IL_002f (`drone_upgrade_pref == 1`). Scene data (level1 `DroneShopScript`): `flyby_upgrade1` speed_module, `flyby_upgrade2` battery_module, **`flyby_upgrade3` camera_module** (camera_upgrade, advanceStory story12).
+2. **Player 2 in the hideout:** a fresh skip-intro seed has `CurrentLocation 99`, `Saved_Pos 0` and no `MadisonPoint`, so `SpawnRules.Checkpoint` takes "no usable leave point -> hideout original spawn" (reproduced offline).
+3. **World check "Index 0":** the W6A.3 check ran 1 s after the world scene appeared, when `currentStoryScript` already existed but `StoryManager.BeginStory` (called from `GameManager.Update` after the map is loaded) had not run yet; HOST READY was logged independently of it.
+
+### B. Changes
+- `src/Shared/DevScenario.cs`: `ScenarioPrereq` / `ScenarioPrereqs` (reusable table: id, first index, original seed keys, Player-2 item, equipped drone, evidence; `flyby_drone` from index 16: `Item_89 = 1`, `Drone = 89`, Player 2 item 89; `drone_camera_module` from index 17: `flyby_upgrade3 = 1`), `RequiredObjects` (story14: `story object 103 notka`), `SeedKeys`, `VerifySeed`, `ScenarioFacts`, `Check` (index + objective, region, prerequisites, Player-2 record, story objects, spawn plan).
+- `MultiplayerMenu.Dev.cs`: seed writes `DevScenario.SeedKeys` after the original StartNewGame; `ActiveScenario`; `DevHostTick` runs the full check every 0.5 s only after HOST_READINESS, max 20 s; HOST READY only after it passed; Player-2 own-drone check (`DevClientTick`).
+- `MultiplayerMenu.cs`: `HostGate = _hostGateReason ?? _scenarioGate` (joins wait with the reason; a failed check keeps them closed); scenario cleared with the session.
+- `Player2Sync.cs`: a NEW Player-2 record of an active scenario gets item 89 once (isolated record only). Player 2 receives `Drone` / `flyby_upgrade3` as World keys of the host campaign, so its own original load equips its own drone.
+- `Campaign.cs` `SpawnRules.TestScenario` + `CampaignBootstrap`: story-test first join = `RestoreNear` (client's checked ring) around the host's live position; rejoins keep their own position; normal F8 untouched.
+
+### C. Evidence
+- `tools/build.ps1 -Test`: plugin 0 warnings; **ALL 44 SUITES PASSED** incl. new `tests/W6A4Tests.cs` (7/7). Changed expectations: version pins, LifecycleTests 21 (HostGate), W6A1 06 (seed keys), W6A3 04 (required objects).
+- No in-game run.
+
+### D. Limitations
+- Only the drone + camera module chain (indices >= 16 / 17) is a modelled prerequisite; other later-step prerequisites are not reconstructed (StoryCatalog reasons).
+- The drone's battery / upgrades other than the camera module are not granted (not required by story14).
+- The spawn ring placement is the client's existing check; exact P2 position beside P1 is [Q].
+
 ## W6A.3 — Reliable isolated story-test startup — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
 Mod **0.26.3, protocol 37** (no wire change). Built on `28f5067` (W6A.2). Manual QA: `docs/TESTING.md` §52. Cursor code unchanged.
 

@@ -32,6 +32,66 @@ namespace TS2MP.Shared
         public DevMode Mode; public int Story = -1; public string DataDir, MoveAsideTo; public bool SeedFromReal;
     }
 
+    // W6A.4: one verified story-test prerequisite = the ORIGINAL persisted state an authentic save has after the step that
+    // produces it. Applied only to a fresh story seed (before the scene loads, through the original load path) and to Player 2's
+    // fresh host-owned record - exactly once per scenario, never to genuine saves.
+    public sealed class ScenarioPrereq
+    {
+        public readonly string Id, Evidence; public readonly int FromIndex;
+        public readonly string[] SeedKeys; public readonly int[] SeedValues;   // SPrefs ints written into the seed
+        public readonly int P2ItemId, P2ItemCount;                            // Player 2's own copy (host-owned record), 0 = none
+        public readonly int EquippedDroneId;                                  // world check: DroneManager.assigned_drone_script.item_ID
+        public ScenarioPrereq(string id, int fromIndex, string[] keys, int[] values, int p2Item, int p2Count, int drone, string evidence)
+        { Id = id; FromIndex = fromIndex; SeedKeys = keys; SeedValues = values; P2ItemId = p2Item; P2ItemCount = p2Count; EquippedDroneId = drone; Evidence = evidence; }
+    }
+
+    public static class ScenarioPrereqs
+    {
+        public const int FlybyDrone = 89;   // ITEM IDs/89_flyby_drone ("Flyby Lite' Drone", isDrone + isTool)
+
+        public static readonly ScenarioPrereq[] All =
+        {
+            // story11 (index 15) "Break into 103 and steal the drone": STEAL DRONE 103 MISSION/enable/flyby drone pickup (item 89,
+            // advance_story_if_picked). Persisted by ItemID.Save_Item_Amount (Item_89) and SaveGame.SaveGameNewSystem IL_03c8..IL_03fa
+            // (Drone = assigned_drone_script.item_ID); restored by ItemID.Start + DroneManager.<FindDrone> IL_003e..IL_0095
+            // (SPrefs Drone -> PS.item_IDs entry with item_amount > 0 -> original AssignDrone).
+            new ScenarioPrereq("flyby_drone", 16, new[] { "Item_89", "Drone" }, new[] { 1, FlybyDrone }, FlybyDrone, 1, FlybyDrone,
+                "index 15 story11 pickup; Item_89 + Drone keys; DroneManager.<FindDrone> -> AssignDrone"),
+            // story12 (index 16) "buy a 'Camera disable module' on Dronetech": MainScene DroneShopScript upgrade flyby_upgrade3 =
+            // camera_module (camera_upgrade true, advanceStory story12; decoded from level1). DroneUpgradePanel.BuyUpgrade writes
+            // SPrefs flyby_upgrade3 = 1; DroneManager.ApplyUpgrades IL_0013..IL_002f applies it in AssignDrone. World key: Player 2
+            // receives it with the host campaign (CampaignPolicy World).
+            new ScenarioPrereq("drone_camera_module", 17, new[] { "flyby_upgrade3" }, new[] { 1 }, 0, 0, 0,
+                "index 16 story12 purchase; flyby_upgrade3 (camera_module); DroneManager.ApplyUpgrades"),
+        };
+
+        public static ScenarioPrereq[] For(int index)
+        {
+            var l = new System.Collections.Generic.List<ScenarioPrereq>();
+            if (index < 0) return l.ToArray();
+            foreach (var p in All) if (index >= p.FromIndex) l.Add(p);
+            return l.ToArray();
+        }
+
+        // Story objects that must be present after the load for a valid scenario (GameObject names, active in hierarchy).
+        public static string[] RequiredObjects(int index)
+        {
+            var s = StoryCatalog.Get(index);
+            if (s != null && s.Key == "story14") return new[] { "story object 103 notka" };   // StoryObject story_desc_to_activate story14 (note_103)
+            return new string[0];
+        }
+    }
+
+    // Live facts the host gathers for the scenario check (Unity side: MultiplayerMenu.Dev.cs).
+    public sealed class ScenarioFacts
+    {
+        public int Expected, LiveIndex, Region; public string LiveKey; public bool FreeMode;
+        public int EquippedDrone; public System.Collections.Generic.Dictionary<string, int> Prefs = new System.Collections.Generic.Dictionary<string, int>();
+        public System.Collections.Generic.Dictionary<int, int> P2Items = new System.Collections.Generic.Dictionary<int, int>(); public bool P2RecordKnown;
+        public System.Collections.Generic.HashSet<string> ActiveObjects = new System.Collections.Generic.HashSet<string>();
+        public bool SpawnOk; public string SpawnNote;
+    }
+
     public static class DevScenario
     {
         public const string StoryFolder = "story";
@@ -80,6 +140,17 @@ namespace TS2MP.Shared
         }
 
         // Prefs of the seed right before the scene loads (after the original StartNewGame and the index write).
+        // W6A.4: seed prefs incl. prerequisites (get = SPrefs.GetInt of the seed).
+        public static string VerifySeed(int expectedStory, Func<string, int> get)
+        {
+            string bad = VerifySeedPrefs(expectedStory, get("Story"), get("StoryBackup"), get("FreeMode"), get("CurrentLocation"));
+            if (bad != null) return bad;
+            foreach (var p in ScenarioPrereqs.For(expectedStory))
+                for (int i = 0; i < p.SeedKeys.Length; i++)
+                    if (get(p.SeedKeys[i]) != p.SeedValues[i]) return "Voraussetzung " + p.Id + ": " + p.SeedKeys[i] + " = " + get(p.SeedKeys[i]) + " (erwartet " + p.SeedValues[i] + ").";
+            return null;
+        }
+
         public static string VerifySeedPrefs(int expectedStory, int story, int storyBackup, int freeMode, int currentLocation)
         {
             if (freeMode != 0) return "FreeMode = " + freeMode + " im Story-Testspielstand (erwartet 0).";
@@ -95,6 +166,40 @@ namespace TS2MP.Shared
             if (liveFreeMode) return "Die geladene Welt ist im Freien Modus (Schritt 80) – Story-Test ungültig.";
             if (liveIndex != expected) return "Die geladene Welt steht auf Index " + liveIndex + " ('" + liveKey + "'), erwartet " + expected + ".";
             if (s != null && !string.Equals(liveKey, s.Key, StringComparison.Ordinal)) return "Stufe '" + liveKey + "' passt nicht zu Index " + expected + " ('" + s.Key + "').";
+            return null;
+        }
+
+        // Seed keys of the scenario (story index + prerequisites), applied after the original StartNewGame, before the load.
+        public static void SeedKeys(int index, System.Collections.Generic.List<string> keys, System.Collections.Generic.List<int> values)
+        {
+            keys.Clear(); values.Clear();
+            keys.Add("Story"); values.Add(index); keys.Add("StoryBackup"); values.Add(index);
+            foreach (var p in ScenarioPrereqs.For(index)) for (int i = 0; i < p.SeedKeys.Length; i++) { keys.Add(p.SeedKeys[i]); values.Add(p.SeedValues[i]); }
+        }
+
+        // W6A.4 full scenario check (host world). null = valid; else the first failing requirement. Pending (retry) vs final is the
+        // caller's timeout decision: a check is never reported OK while any line fails.
+        public static string Check(ScenarioFacts f)
+        {
+            string bad = VerifyLoaded(f.Expected, f.LiveIndex, f.LiveKey, f.FreeMode);
+            if (bad != null) return bad;
+            if (f.Region != SeedLocation) return "Host ist in " + Regions.Name(f.Region) + ", Testregion ist " + Regions.Name(SeedLocation) + ".";
+            foreach (var p in ScenarioPrereqs.For(f.Expected))
+            {
+                for (int i = 0; i < p.SeedKeys.Length; i++)
+                {
+                    if (p.SeedKeys[i] == "Drone") continue;   // persisted only by the next save; the live assignment is checked below
+                    int v; if (!f.Prefs.TryGetValue(p.SeedKeys[i], out v) || v != p.SeedValues[i]) return "Voraussetzung " + p.Id + ": " + p.SeedKeys[i] + " = " + (f.Prefs.ContainsKey(p.SeedKeys[i]) ? v.ToString() : "?") + " (erwartet " + p.SeedValues[i] + ").";
+                }
+                if (p.EquippedDroneId != 0 && f.EquippedDrone != p.EquippedDroneId) return "Voraussetzung " + p.Id + ": Drohne " + p.EquippedDroneId + " nicht ausgerüstet (DroneManager: " + f.EquippedDrone + ").";
+                if (p.P2ItemId != 0)
+                {
+                    if (!f.P2RecordKnown) return "Spieler-2-Datensatz noch nicht gebunden.";
+                    int c; if (!f.P2Items.TryGetValue(p.P2ItemId, out c) || c < p.P2ItemCount) return "Voraussetzung " + p.Id + ": Spieler 2 hat Gegenstand " + p.P2ItemId + " nicht.";
+                }
+            }
+            foreach (var o in ScenarioPrereqs.RequiredObjects(f.Expected)) if (!f.ActiveObjects.Contains(o)) return "Story-Objekt '" + o + "' nicht aktiv.";
+            if (!f.SpawnOk) return "Spawn für Spieler 2 ungültig: " + f.SpawnNote;
             return null;
         }
 

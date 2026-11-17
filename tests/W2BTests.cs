@@ -215,7 +215,7 @@ static class W2BTests
         Expect(ParcelRules.NoteDiscovers(false, 0) && !ParcelRules.NoteDiscovers(true, 0) && !ParcelRules.NoteDiscovers(false, 1) && !ParcelRules.NoteDiscovers(false, 2), "ReadNote condition IL_0081..IL_00a3");
         Expect(ParcelRules.HackQueues(0) && !ParcelRules.HackQueues(1) && !ParcelRules.HackQueues(2), "HackedElectronic condition IL_0039..IL_003f");
         Expect(WorldKeys.ParcelCode == "parcelCode" && WorldKeys.Parcels == "parcels", "keys");
-        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.3", "protocol 37 / mod 0.26.0 (W6A on top of W2B: both PCs need 0.26.0)");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.4", "protocol 37 / mod 0.26.0 (W6A on top of W2B: both PCs need 0.26.0)");
     }
 
     // ---------------------------------------------------------------- 02

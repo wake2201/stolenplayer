@@ -319,6 +319,20 @@ namespace TS2MP.Shared
             return new SpawnPlan { Mode = SpawnMode.OriginalSpawn, Reason = SpawnReason.FirstJoin, Region = cp.Region };
         }
 
+        // W6A.4 developer story test only: Player 2's FIRST spawn of the session goes beside the host's live position (P1 is at the
+        // scenario start; a fresh story seed has neither a saved position nor a leave point, so Checkpoint() falls back to the
+        // hideout). Reuses RestoreNear = the client's checked ring placement (never the exact spot, never inside a vehicle).
+        // Live rejoins keep the normal decision (their own last valid position). Normal F8 sessions never call this.
+        public static SpawnPlan TestScenario(SpawnPlan normal, int hostRegion, bool hostPosOk, Vec3 hostPos, out string note)
+        {
+            if (normal.Reason == SpawnReason.Rejoin || normal.Reason == SpawnReason.VehicleOrHiding || normal.Reason == SpawnReason.StoryContext)
+            { note = "story test: live rejoin keeps its own position (" + normal + ")"; return normal; }
+            if (!SpawnRegions.IsFreeRoam(hostRegion) || !hostPosOk || !SpawnValidation.PositionOk(hostPos))
+            { note = "story test: host live position unusable (region " + Regions.Name(hostRegion) + (hostPosOk ? "" : ", no position") + ") -> normal plan " + normal; return normal; }
+            note = "story test: first join beside the host's live position in " + Regions.Name(hostRegion) + " (checked ring placement)";
+            return new SpawnPlan { Mode = SpawnMode.RestoreNear, Reason = SpawnReason.FirstJoin, Region = hostRegion, HasTarget = true, Target = hostPos };
+        }
+
         // Host acceptance of a client position report (validation boundary: the host cannot see the client's scene; it checks
         // identity, the registry region and plausibility only).
         public static string CheckReport(byte slot, int scopeArg, int registryRegion, P2PosReport r)

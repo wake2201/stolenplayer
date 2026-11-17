@@ -167,10 +167,10 @@ static class W6A1Tests
         int a = dev.IndexOf("void DevAutoLoad(DevPlan plan)", StringComparison.Ordinal);
         string body = dev.Substring(a, dev.IndexOf("void DevHostTick(GameContext ctx)", a, StringComparison.Ordinal) - a);
         int guard = body.IndexOf("if (!SaveGuard.Armed || !SaveGuard.DevHost || !SaveGuard.RuntimeCheck())", StringComparison.Ordinal), start = body.IndexOf("_startNewGame.Invoke(mm, null);", StringComparison.Ordinal),
-            write = body.IndexOf("_spSet(\"Story\", plan.Story); _spSet(\"StoryBackup\", plan.Story); _fbppSave();", StringComparison.Ordinal);
+            write = body.IndexOf("for (int k = 0; k < keys.Count; k++) _spSet(keys[k], vals[k]);", StringComparison.Ordinal);
         Expect(guard > 0 && start > guard && write > start, "sandbox verified -> original new game -> index written");
         int sets = 0, at = 0; while ((at = body.IndexOf("_spSet(", at, StringComparison.Ordinal)) >= 0) { sets++; at++; }
-        Expect(sets == 2, "only Story / StoryBackup are written by the mod (" + sets + ")");
+        Expect(sets == 1 && body.Contains("DevScenario.SeedKeys(plan.Story, keys, vals);"), "W6A.4: only DevScenario.SeedKeys (index + verified prerequisites) are written (" + sets + ")");
         foreach (var bad in new[] { "AdvanceStory(", "InitiateStory(", "_advance(", "_initiate(", "debtAm", "moneyAm", "AddXP", "StartPoliceChase", "_deduct", "_Call", "mission_" })
             Expect(body.IndexOf(bad, StringComparison.Ordinal) < 0, "story preparation never touches " + bad);
         var cb = Strip(Src("Shared", "Campaign.cs"));
@@ -205,7 +205,7 @@ static class W6A1Tests
         Expect(StoryRules.Decide(true, false, 18, "story14", r, out why) == ProposalCode.Accepted && StoryRules.Decide(true, false, 19, "story15", r, out why) == ProposalCode.Stale, "W6A decision unchanged");
         var ps = Strip(Src("Plugin", "ParcelSync.cs"));
         Expect(ps.Contains("if (!i._host && !StorySync.ClientHandlesStory && _noteAdvance(__instance)) { _setNoteAdvance(__instance, false);"), "W2B fallback unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.3", "protocol 37 / mod 0.26.1");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.4", "protocol 37 / mod 0.26.1");
     }
 
     // ---------------------------------------------------------------- helpers

@@ -26,6 +26,8 @@
 //     the original runs on Player 2 (actor effects: fragments, sound, NPC alert around Player 2). Every other instance
 //     applies the replica (WorldObjectBridge.Shatter: no NPC alert, no mission completion). A committed object refuses
 //     further original calls (replica instead); already-proposed objects ignore further swings (no double proposal).
+//   - parcel lockers (W2B): ParcelCode.OpenLocker postfix (only caller ParcelMinigame.PressNumberButton IL_016c, after the
+//     original code check) = local change; replica WorldObjectBridge.OpenLocker. The codes themselves: ParcelSync ("parcels").
 //   - Player 2 (client): story locks and mission windows (census metadata, fail closed) are blocked in the prefixes, so
 //     no private story/mission progression can start; Player 1 keeps the original behaviour.
 using System;
@@ -47,7 +49,7 @@ namespace TS2MP.Plugin
         readonly SessionNode _node; readonly InstanceLog _log; readonly WorldSync _world; readonly bool _host;
         readonly WorldObjectBridge _b; bool _ok;
         Func<object, object> _gmPs, _psAssign; Func<object, bool> _gmLoaded, _psLockpicking;
-        static readonly ObjectKind[] Kinds = { ObjectKind.Lockpick, ObjectKind.LockedWindow, ObjectKind.Breakable, ObjectKind.Door };   // apply order (W2A: a broken barrier before the doors behind it)
+        static readonly ObjectKind[] Kinds = { ObjectKind.Lockpick, ObjectKind.LockedWindow, ObjectKind.Breakable, ObjectKind.ParcelLocker, ObjectKind.Door };   // apply order (W2A: a broken barrier before the doors behind it)
         static readonly string[][] PageKeys = BuildKeys();
 
         enum Phase { Idle, Reported, Initializing, Ready }
@@ -57,7 +59,7 @@ namespace TS2MP.Plugin
         uint _reportPid; bool _initSent; uint _txn;
 
         // committed state per kind, kept from the registry pages (only changed pages are parsed, W4.2C Phase B)
-        readonly ObjectPageCache[] _com = { new ObjectPageCache(), new ObjectPageCache(), new ObjectPageCache(), new ObjectPageCache() };
+        readonly ObjectPageCache[] _com = { new ObjectPageCache(), new ObjectPageCache(), new ObjectPageCache(), new ObjectPageCache(), new ObjectPageCache() };
         readonly Func<int, StateEntry>[] _pageOf = new Func<int, StateEntry>[Kinds.Length];
         readonly List<uint>[] _changedKinds = new List<uint>[Kinds.Length];
         // local tracked states (this scene instance): locks and window glass are not reliably readable from tags
@@ -79,11 +81,12 @@ namespace TS2MP.Plugin
         long _local, _proposed, _committed, _refused, _applied, _silent, _skipLocked, _skipBusy, _unidentified, _diverged, _npcSuppressed, _storyBlocked, _gateRefused, _initEntries;
         long _localOnly, _slowApplied, _fastFinishes, _fastFinishSent; double _nextStats; long _statsSig = -1;
         long _furnitureLocal, _furnitureApplied, _inactiveSnaps; int _furnitureInScene;
-        long _breakLocal, _breakApplied;
+        long _breakLocal, _breakApplied, _lockerLocal, _lockerApplied;
+        Func<object, object> _gmStorage;   // W2B GameManager.ParcelStorag (MainScene)
         readonly Dictionary<uint, Component> _breakWait = new Dictionary<uint, Component>();   // W2A: client proposal id -> DestroyObject to break on acceptance
 
         static long Key(ObjectKind k, uint h) { return ((long)(byte)k << 32) | h; }
-        static int KI(ObjectKind k) { return k == ObjectKind.Lockpick ? 0 : k == ObjectKind.LockedWindow ? 1 : k == ObjectKind.Breakable ? 2 : 3; }   // = index in Kinds
+        static int KI(ObjectKind k) { return k == ObjectKind.Lockpick ? 0 : k == ObjectKind.LockedWindow ? 1 : k == ObjectKind.Breakable ? 2 : k == ObjectKind.ParcelLocker ? 3 : 4; }   // = index in Kinds
         static string[][] BuildKeys()
         {
             var r = new string[Kinds.Length][];
@@ -97,7 +100,7 @@ namespace TS2MP.Plugin
             _b = new WorldObjectBridge(log);
             for (int i = 0; i < Kinds.Length; i++) { int ki = i; _pageOf[i] = p => _world.Registry.Get(StateScope.Region, _region, PageKeys[ki][p]); }
             var gm = AccessTools.TypeByName("GameManager"); var ps = AccessTools.TypeByName("PlayerScript");
-            _gmPs = Fast.Getter<object>(gm, "PS"); _gmLoaded = Fast.Getter<bool>(gm, "loadedMap"); _psAssign = Fast.Getter<object>(ps, "assignDoor"); _psLockpicking = Fast.Getter<bool>(ps, "isLockpicking");
+            _gmPs = Fast.Getter<object>(gm, "PS"); _gmLoaded = Fast.Getter<bool>(gm, "loadedMap"); _psAssign = Fast.Getter<object>(ps, "assignDoor"); _gmStorage = Fast.Getter<object>(gm, "ParcelStorag"); _psLockpicking = Fast.Getter<bool>(ps, "isLockpicking");
             _ok = _b.Ok && _gmPs != null && _gmLoaded != null && _psAssign != null && _psLockpicking != null && WorldCensus.Instance != null;
             if (!_ok) { _log.Error("WOBJ original members or census missing: shared doors / locks / windows disabled"); return; }
             if (!Patch(ps)) { _ok = false; return; }
@@ -150,8 +153,12 @@ namespace TS2MP.Plugin
                 _destroyThing = _b.BreakOk ? AccessTools.Method(_b.BreakT, "Destroy_Thing") : null;
                 if (_destroyThing != null) _h.Patch(_destroyThing, prefix: hm("DestroyPre"));
                 else _log.Error("WOBJ DestroyObject.Destroy_Thing not found: breakables stay local");
+                // W2B: parcel lockers (optional as well)
+                var openLocker = _b.LockerOk ? AccessTools.Method(AccessTools.TypeByName("ParcelCode"), "OpenLocker") : null;
+                if (openLocker != null) _h.Patch(openLocker, postfix: hm("LockerOpenedPost"));
+                else _log.Error("WOBJ ParcelCode.OpenLocker not found: parcel lockers stay local");
                 _patched = true;
-                _log.Info("WOBJ hooks: DestroyObject.Destroy_Thing (W2A), Door.OpenDestroyed/ResetLock, AI.OnTriggerEnter (NPC context), Lockpick.StartLockpicking/DoorUnlock/DoorUnlockKey/BreakPadlock, PlayerScript.BreakinCrowbar, LockedWindow.BeginCut/UnlockWindow/UnlockWindowNoAlarm/BrokeWindow");
+                _log.Info("WOBJ hooks: DestroyObject.Destroy_Thing (W2A), ParcelCode.OpenLocker (W2B), Door.OpenDestroyed/ResetLock, AI.OnTriggerEnter (NPC context), Lockpick.StartLockpicking/DoorUnlock/DoorUnlockKey/BreakPadlock, PlayerScript.BreakinCrowbar, LockedWindow.BeginCut/UnlockWindow/UnlockWindowNoAlarm/BrokeWindow");
                 return true;
             }
             catch (Exception ex) { _log.Error("WOBJ Harmony patching failed: shared doors / locks / windows disabled", ex); try { if (_h != null) _h.UnpatchSelf(); } catch { } return false; }
@@ -229,7 +236,7 @@ namespace TS2MP.Plugin
         void LogStatsIfChanged()
         {
             long sig = _local + _proposed * 3 + _committed * 7 + _refused * 11 + _applied * 13 + _silent * 17 + _skipLocked * 19 + _skipBusy * 23 + _unidentified * 29
-                + _diverged * 31 + _localOnly * 37 + _fastFinishes * 41 + _fastFinishSent * 43 + _storyBlocked * 47 + _gateRefused * 53 + _furnitureLocal * 59 + _furnitureApplied * 61 + _inactiveSnaps * 67 + _breakLocal * 71 + _breakApplied * 73;
+                + _diverged * 31 + _localOnly * 37 + _fastFinishes * 41 + _fastFinishSent * 43 + _storyBlocked * 47 + _gateRefused * 53 + _furnitureLocal * 59 + _furnitureApplied * 61 + _inactiveSnaps * 67 + _breakLocal * 71 + _breakApplied * 73 + _lockerLocal * 79 + _lockerApplied * 83;
             if (sig == _statsSig) return;
             _statsSig = sig;
             _log.Info(Stats);
@@ -310,9 +317,9 @@ namespace TS2MP.Plugin
             _initEntries += all.Count;
             var chunks = ObjectInitChunk.Split(_region, _rec.Epoch, all);
             if (chunks == null) { _log.Warn("WOBJ initial state too large (" + all.Count + " objects): the region stays local"); return; }
-            int doors = 0, locks = 0, windows = 0, broken = 0;
-            foreach (var e in all) { if (e.Kind == (byte)ObjectKind.Door) doors++; else if (e.Kind == (byte)ObjectKind.Lockpick) locks++; else if (e.Kind == (byte)ObjectKind.Breakable) broken++; else windows++; }
-            _log.Info("WOBJ initializer of " + Regions.Name(_region) + " epoch " + _rec.Epoch + ": " + all.Count + " non-default object(s) (doors " + doors + ", locks " + locks + ", windows " + windows + ", broken objects " + broken + ") in " + chunks.Count + " chunk(s)");
+            int doors = 0, locks = 0, windows = 0, broken = 0, lockers = 0;
+            foreach (var e in all) { if (e.Kind == (byte)ObjectKind.Door) doors++; else if (e.Kind == (byte)ObjectKind.Lockpick) locks++; else if (e.Kind == (byte)ObjectKind.Breakable) broken++; else if (e.Kind == (byte)ObjectKind.ParcelLocker) lockers++; else windows++; }
+            _log.Info("WOBJ initializer of " + Regions.Name(_region) + " epoch " + _rec.Epoch + ": " + all.Count + " non-default object(s) (doors " + doors + ", locks " + locks + ", windows " + windows + ", broken objects " + broken + ", open parcel lockers " + lockers + ") in " + chunks.Count + " chunk(s)");
             foreach (var c in chunks)
             {
                 if (_host) { string why; var code = _world.Host.ObjectInit(_world.LocalSlot, c, now, out why); _log.Info("WOBJ host init " + (c.Index + 1) + "/" + c.Count + " -> " + code + (why != null ? " (" + why + ")" : "")); }
@@ -334,6 +341,7 @@ namespace TS2MP.Plugin
                     return _b.DoorBits(c);
                 case ObjectKind.Lockpick: return _lockLocal.TryGetValue(hash, out s) ? s : (byte)0;
                 case ObjectKind.Breakable: return _b.BreakOk && _b.Destroyed(c) ? ObjectStateRules.BreakDestroyed : ObjectStateRules.BreakIntact;
+                case ObjectKind.ParcelLocker: return _b.LockerOk && _b.LockerOpened(c) ? ObjectStateRules.LockerOpen : ObjectStateRules.LockerClosed;
                 case ObjectKind.LockedWindow:
                     byte glass = _glassLocal.TryGetValue(hash, out s) ? s : (byte)0;
                     if (glass == 0) return 0;
@@ -346,7 +354,7 @@ namespace TS2MP.Plugin
         {
             _phase = Phase.Ready; _reconciledEpoch = _rec.Epoch;
             Reconcile(census, true);
-            _log.Info("WOBJ " + Regions.Name(_region) + " ready: epoch " + _rec.Epoch + ", " + _rec + "; furniture leaves in the scene " + _furnitureInScene + "; committed doors " + _com[KI(ObjectKind.Door)].Count + ", locks " + _com[0].Count + ", windows " + _com[1].Count + ", broken objects " + _com[KI(ObjectKind.Breakable)].Count);
+            _log.Info("WOBJ " + Regions.Name(_region) + " ready: epoch " + _rec.Epoch + ", " + _rec + "; furniture leaves in the scene " + _furnitureInScene + "; committed doors " + _com[KI(ObjectKind.Door)].Count + ", locks " + _com[0].Count + ", windows " + _com[1].Count + ", broken objects " + _com[KI(ObjectKind.Breakable)].Count + ", open parcel lockers " + _com[KI(ObjectKind.ParcelLocker)].Count);
         }
 
         // ================================================================ committed -> local
@@ -429,6 +437,18 @@ namespace TS2MP.Plugin
                     if (a == BreakApply.Shatter) { _b.Shatter(c, silent); _breakApplied++; Count(silent); return true; }
                     if (a == BreakApply.SkipPending) { _skipBusy++; _retryAt = Now + 0.25; _dirty.Add(key); }
                     else if (a == BreakApply.Diverged) Diverged(key, "breakable " + Hex(hash) + " '" + c.name + "' is destroyed here but intact in the committed state");
+                    return false;
+                }
+                case ObjectKind.ParcelLocker:
+                {
+                    if (!_b.LockerOk) return false;
+                    bool open = _b.LockerOpened(c);
+                    if (want == ObjectStateRules.LockerOpen && !open)
+                    {
+                        var gm = _world.GameManagerObject;
+                        _b.OpenLocker(c, gm != null && _gmStorage != null ? _gmStorage(gm) : null, silent); _lockerApplied++; Count(silent); return true;
+                    }
+                    if (want != ObjectStateRules.LockerOpen && open && !pending) Diverged(key, "parcel locker " + Hex(hash) + " '" + c.name + "' is open here but closed in the committed state");
                     return false;
                 }
                 case ObjectKind.Door:
@@ -824,6 +844,21 @@ namespace TS2MP.Plugin
             if (!_b.Destroyed(o)) { _dirty.Add(key); _retryAt = Now; }
         }
 
+        // ---- parcel lockers (W2B): the original opening already happened (code check passed) -> committed state
+        void OnLockerOpened(object parcelCode)
+        {
+            if (!Sharing || !_b.LockerOk) return;
+            var t = _b.CodeLocker(parcelCode); var l = t != null ? t.GetComponent(_b.LockerT) : null;
+            if (l == null) return;
+            var census = WorldCensus.Instance; WorldObjectId id;
+            if (census == null || !census.TryObjectId(l, ObjectKind.ParcelLocker, out id) || id.Namespace != _region) { Unidentified(l); return; }
+            if (Committed(ObjectKind.ParcelLocker, id.Hash) == ObjectStateRules.LockerOpen) return;   // already shared open
+            _lockerLocal++;
+            _log.Info("WOBJ parcel locker " + Hex(id.Hash) + " '" + l.name + "' opened with its code here");
+            LocalChange(ObjectKind.ParcelLocker, id.Hash, ObjectStateRules.LockerOpen, ObjectOp.Set);
+        }
+        static void LockerOpenedPost(object __instance) { var i = Instance; if (i == null || WorldObjectBridge.Applying) return; try { i.OnLockerOpened(__instance); } catch (Exception ex) { i._log.Error("WOBJ hook OpenLocker", ex); } }
+
         static bool DestroyPre(object __instance)
         {
             var i = Instance; if (i == null || WorldObjectBridge.Applying) return true;
@@ -982,7 +1017,7 @@ namespace TS2MP.Plugin
             {
                 return "WOBJ_STATS phase=" + _phase + " local=" + _local + " proposed=" + _proposed + " committed=" + _committed + " refused=" + _refused + " applied=" + _applied + " restoredSilently=" + _silent
                     + " skippedLocked=" + _skipLocked + " skippedBusy=" + _skipBusy + " unidentified=" + _unidentified + " diverged=" + _diverged + " npcRelockSuppressed=" + _npcSuppressed
-                    + " storyBlocked=" + _storyBlocked + " gateRefused=" + _gateRefused + " initEntries=" + _initEntries + " localOnlyDoors=" + _localOnly + " furniture local/applied=" + _furnitureLocal + "/" + _furnitureApplied + " inactiveSnaps=" + _inactiveSnaps + " breakables local/applied/waiting=" + _breakLocal + "/" + _breakApplied + "/" + _breakWait.Count + " pagesParsed=" + (_com[0].PagesParsed + _com[1].PagesParsed + _com[2].PagesParsed + _com[3].PagesParsed) + " slowReplicas=" + _slowApplied + " fastFinish sent/applied=" + _fastFinishSent + "/" + _fastFinishes + (_host && _world.Host != null ? " | book " + _world.Host.Objects.Stats : "");
+                    + " storyBlocked=" + _storyBlocked + " gateRefused=" + _gateRefused + " initEntries=" + _initEntries + " localOnlyDoors=" + _localOnly + " furniture local/applied=" + _furnitureLocal + "/" + _furnitureApplied + " inactiveSnaps=" + _inactiveSnaps + " breakables local/applied/waiting=" + _breakLocal + "/" + _breakApplied + "/" + _breakWait.Count + " lockers local/applied=" + _lockerLocal + "/" + _lockerApplied + " pagesParsed=" + (_com[0].PagesParsed + _com[1].PagesParsed + _com[2].PagesParsed + _com[3].PagesParsed + _com[4].PagesParsed) + " slowReplicas=" + _slowApplied + " fastFinish sent/applied=" + _fastFinishSent + "/" + _fastFinishes + (_host && _world.Host != null ? " | book " + _world.Host.Objects.Stats : "");
             }
         }
 

@@ -1,6 +1,34 @@
 ﻿# PROGRESS
 
-## W2A — Shared destructible world objects — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
+## W2B — Shared parcel lockers, codes & story clues — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
+Mod **0.25.0, protocol 36** (wire change: proposal `parcelCode`, session state `parcels`, region-object kind `ParcelLocker = 22` / registry `wobj22`). Both PCs need 0.25.0. Built on `bbfe919` (W2A). Manual QA: `docs/TESTING.md` §48. Research: `docs/research/PARCEL_SYSTEM.md`.
+
+### A. Preserved (classified before the change)
+- W4.2D shared parcel loot (`WorldLootSync`: one take, taker's inventory, host `mission_strings_to_set` / `parcel_strings_to_set` mutation) VERIFIED BY USER QA earlier - unchanged and reused for "each parcel once". `Player2Inventory`, `WalletSync` (shared balance, sales once) unchanged. Region-object registry (W4.2B..W2A) reused for locker doors.
+
+### B. Original (Cecil IL + real scene files, 1.27c)
+- 14 codes in MainScene `ParcelStorage`; discovery = `ReadNote.BeginRead` (addParcelCode) or `ItemID.HackedElectronic`; code check = `ParcelMinigame.PressNumberButton` (needs `discoveredOnMap`); `SPrefs` pref 0/1/2 via `parcel_strings_to_set` / `mission_strings_to_set` at the checkpoint; `ParcelLocker.wasOpened` runtime only. 12 code notes found, incl. the first story code note `note_103` (parcel1_madison, advanceStory story14).
+
+### C. Implementation
+- `src/Shared/Parcels.cs`: `ParcelCodeRequest`, `ParcelState` (sorted unique prefs, <= 20 codes / 982 B), `IParcelHost`, `ParcelRules` (original conditions). `WorldTime.cs`: `WorldHost.DiscoverParcel` / `PublishParcels` + `parcelCode` dispatch. `WorldState.cs`: keys.
+- `src/Plugin/ParcelSync.cs`: hooks `ReadNote.BeginRead` / `ItemID.HackedElectronic` (originals run unchanged on the reader's PC); Player 2's new code proposed, Busy retried (<= 5); host applies the exact original mutation (note: `discoveredOnMap` + phone animation + `parcel_strings_to_set`; hack: queue only) and publishes its live `discoveredOnMap` set (2 s scan, publish on change). Every PC sets `discoveredOnMap = true` for shared codes (never false), silently after scene loads / joins, with the original "new code" animation for live changes.
+- Story clue: Player 2's read of an `advanceStory` note clears `advanceStory` for that call only (restored in the postfix) - no private story step; the host's own read keeps the original step and condition.
+- Locker doors: `ObjectKind.ParcelLocker` region kind (open terminal per epoch); capture `ParcelCode.OpenLocker` postfix; replica `WorldObjectBridge.OpenLocker` (both `wasOpened` flags + open sound; no statistic, no minigame).
+
+### D. Evidence
+- `tools/build.ps1 -Test`: plugin 0 warnings; **ALL 39 SUITES PASSED** incl. new `tests/W2BTests.cs` (12/12: first story note by P2, independent Hillville code by P1, maps / saves / travel / reconnect / reload, duplicates / replays, simultaneous discovery, hack path, invalid requests, story restriction, locker doors, parcel loot once, glue scans). Changed expectations only: version pins, W2A glue (apply order / census kind list).
+- Proves the host model, rules and glue structure only; no in-game run.
+
+### E. Performance
+- Client: one field read + one registry head compare per frame. Host: one 14-entry bool scan every 2 s (no allocation unless the set changed). Hooks once per note read / hack / locker opening. Traffic: <= 50 B proposal per Player-2 discovery, <= 250 B `parcels` state per change (14 codes), one 19 B `objTxn` + `wobj22` page per locker opening. FPS: no measurable impact expected; not measured in game.
+
+### F. Open / risks
+- Shared story steps (e.g. note_103 -> story14) need shared missions (W6): only the host's own read advances the story.
+- A host reload without saving loses unsaved discoveries (original rule); Player 2 keeps them until its next scene load.
+- Trust boundary: the host cannot verify that Player 2 really read the note / hacked the item (as for minigames).
+- [Q] Hacked-code items in game; `locker_myst` / `lockerMysterious` station sound (container lookup by hierarchy root).
+
+## W2A — Shared destructible world objects — **USER-VERIFIED (two-PC QA, reported 2026-11-17); region-reload reset NOT TESTED**, 2026-11-17
 Mod **0.24.0, protocol 35** (wire change: new region-object kind `Breakable = 26`, registry `wobj26[.page]`, carried by the existing `objTxn` / `objInit`). Both PCs need 0.24.0. Built on `5f5eecd` (H3). Manual QA: `docs/TESTING.md` §47.
 
 ### A. Preserved (classified before the change)

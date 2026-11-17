@@ -232,6 +232,8 @@ namespace TS2MP.Shared
         public const string Hideout = "hideout";       // Session scope (arg 0): HideoutState 8 B, host-committed shared hideout ownership (W1)
         public const string MedkitUse = "medkitUse"; // Session scope (arg = vehicle id): 1 byte 1 = Player 2 uses that car's medkit (client proposal, V1.4.1 protocol 33), never stored
         public const string Medkit = "medkit";       // Session scope (arg 0): MedkitState 4 B, host-committed single-use car medkit (V1.4.1)
+        public const string ParcelCode = "parcelCode"; // Session scope (arg 0): ParcelCodeRequest (source + pref), Player-2 parcel-code discovery (client proposal, W2B protocol 36), never stored
+        public const string Parcels = "parcels";     // Session scope (arg 0): ParcelState, host-committed shared parcel codes (host discoveredOnMap set, W2B)
         public const string VehicleBuy = "vbuy";       // Session scope (arg = vehicle id): 1 byte 1 = buy this car (client proposal, V1.2 protocol 31), never stored
         public const string VehicleRide = "vehicleRide"; // Session scope (arg = vehicle id): 1 byte 1 = reserve passenger seat, 2 = seated (confirm), 0 = leave (M4.3, protocol 10)
         public const string P2Inv = "p2inv";             // Session scope (arg 2): committed Player-2 inventory (P2Inventory), host-owned (M4.3.3, protocol 13)

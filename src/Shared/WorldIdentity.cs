@@ -67,7 +67,7 @@ namespace TS2MP.Shared
             new KindInfo(ObjectKind.Medkit,         "Medkit",              IdentityCategory.Persistent,    "car medkit; key Medkit"),
             new KindInfo(ObjectKind.HiddenItem,     "HiddenItem",          IdentityCategory.Persistent,    "hidden item; key HiddenItem"),
             new KindInfo(ObjectKind.MailBox,        "MailBox",             IdentityCategory.Static,        "mailbox / camera placement"),
-            new KindInfo(ObjectKind.ParcelLocker,   "ParcelLocker",        IdentityCategory.Static,        "parcel codes (parcel_strings_to_set)"),
+            new KindInfo(ObjectKind.ParcelLocker,   "ParcelLocker",        IdentityCategory.Static,        "parcel locker door (wasOpened); W2B region object, codes via the shared \"parcels\" record"),
             new KindInfo(ObjectKind.ItemSpawner,    "ItemSpawner",         IdentityCategory.Unsupported,   "random loot spawner (spawned items are dynamic)"),
             new KindInfo(ObjectKind.FileCabinet,    "RandomFileCabinet",   IdentityCategory.Unsupported,   "random contents"),
             new KindInfo(ObjectKind.CopCar,         "CopCar",              IdentityCategory.Dynamic,       "police car, spawned"),

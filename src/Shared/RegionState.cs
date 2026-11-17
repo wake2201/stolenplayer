@@ -58,8 +58,10 @@ namespace TS2MP.Shared
 
         // W2A: Breakable = original DestroyObject (one bit: BreakDestroyed, terminal for the region epoch).
         public const byte BreakIntact = 0, BreakDestroyed = 1;
+        // W2B: ParcelLocker = original parcel-locker door (one bit: LockerOpen = ParcelLocker.wasOpened, terminal for the epoch).
+        public const byte LockerClosed = 0, LockerOpen = 1;
 
-        public static bool SupportedKind(ObjectKind k) { return k == ObjectKind.Door || k == ObjectKind.Lockpick || k == ObjectKind.LockedWindow || k == ObjectKind.Breakable; }
+        public static bool SupportedKind(ObjectKind k) { return k == ObjectKind.Door || k == ObjectKind.Lockpick || k == ObjectKind.LockedWindow || k == ObjectKind.Breakable || k == ObjectKind.ParcelLocker; }
         // W4.2C Phase B: Madison Street (99), Hillville (97) and the hideout (0). Every rule below is per namespace; the scene
         // digest gate (OnScene) still refuses a region whose census differs between the instances (it then stays local).
         public static bool SupportedNamespace(int ns) { return ns == 99 || ns == 97 || ns == 0; }
@@ -74,6 +76,7 @@ namespace TS2MP.Shared
                 case ObjectKind.Door: return (s & ~(DoorOpen | DoorSlow | DoorBroken)) == 0 && ((s & DoorBroken) == 0 || (s & DoorOpen) != 0);
                 case ObjectKind.Lockpick: return s <= LockPadlock;
                 case ObjectKind.Breakable: return s <= BreakDestroyed;
+                case ObjectKind.ParcelLocker: return s <= LockerOpen;
                 case ObjectKind.LockedWindow:
                     if ((s & ~31) != 0) return false;
                     if ((s & GlassMask) == GlassIntact) return (s & ~GlassMask) == 0;            // a locked window has no movable sash
@@ -128,6 +131,10 @@ namespace TS2MP.Shared
                     // DestroyObject.Destroy_Thing is one-shot (destroyed guard IL_0000) and destroys the colliders: only a
                     // scene reload (= a new region epoch) restores the intact object.
                     if (cur == BreakDestroyed && next != BreakDestroyed) return "a destroyed object stays destroyed until the region reloads";
+                    return null;
+                case ObjectKind.ParcelLocker:
+                    // ParcelCode.OpenLocker only sets wasOpened; ParcelLocker.Update only lerps toward openRot: no original close.
+                    if (cur == LockerOpen && next != LockerOpen) return "an opened parcel locker stays open until the region reloads";
                     return null;
             }
             return "unsupported kind";

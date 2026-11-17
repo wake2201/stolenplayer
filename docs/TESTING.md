@@ -151,7 +151,26 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
-## 47. W2A checklist — shared destructible world objects (release `TS2-Multiplayer-0.24.0.zip` on BOTH PCs, protocol 35)
+## 48. W2B checklist — shared parcel codes, story clues, parcel lockers (release `TS2-Multiplayer-0.25.0.zip` on BOTH PCs, protocol 36)
+F8 test campaign (fresh enough that the codes below are not yet known), both players in Madison Street. Phone = the original phone's parcel-code page.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Logs after loading on both PCs | `PARCEL shared parcel codes ready`; `WOBJ hooks: ... ParcelCode.OpenLocker (W2B)`; host `PARCEL host codes published: 0 code(s)` (or the campaign's known codes) | NOT TESTED |
+| 2 | P2 reads the note in House 103 (`note_103`, first story code note) | P2: original note + "new code" animation; host: "new code" animation too, the code is on BOTH phones. P2 log `PARCEL Player-2 Note 'parcel1_madison' ... proposed`, `-> Accepted`, `story note ... stays with the host`; host log `P2 discovered code 'parcel1_madison': applied to the host campaign` | NOT TESTED |
+| 3 | P1 enters 16161 at the Madison parcel station | Locker 1 opens on BOTH PCs (animation + sound on both). P2 can take the parcel; it is gone for P1 | NOT TESTED |
+| 4 | Story: after row 2, check the host's current story objective | Unchanged by P2's read. P1 then reads the same note: original story step happens once on the host | NOT TESTED |
+| 5 | P1 reads another code note (e.g. House 106 / 110 / park bench) | P2 gets the code with the animation; P2 opens that locker with its code | NOT TESTED |
+| 6 | Both players read the same new code note at the same moment | Code known on both, one animation per PC, no error | NOT TESTED |
+| 7 | Hillville: P2 alone in Hillville reads `note_201`, P1 stays in Madison | Code on both phones; later P2 (or P1 after travel) opens Hillville locker 1 with 69999 | NOT TESTED |
+| 8 | Persistence: host saves (checkpoint), both travel to the hideout and back; then P2 disconnects + rejoins; then host quits to menu and reloads the save | All discovered codes still usable on both PCs after each step | NOT TESTED |
+| 9 | Parcel once: P1 and P2 try to take the same parcel item from an opened locker at the same time | Exactly one gets it (in their own inventory); selling it later adds money once to the shared balance | NOT TESTED |
+| 10 | Locker reset: both leave Madison and return | Opened lockers closed again (original); taken parcels stay taken; codes stay known | NOT TESTED |
+| 11 | Regression: loot, wallet, doors, breakables (W2A), heavy objects | Unchanged | NOT TESTED |
+
+Send back both `LogOutput.log` files (lines `PARCEL`, `PARCEL_STATS`, `WOBJ ... parcel locker`).
+
+## 47. W2A checklist — shared destructible world objects (release `TS2-Multiplayer-0.24.0.zip` on BOTH PCs, protocol 35) — **user-verified (reported 2026-11-17, as a whole; row 9 region-reload reset NOT TESTED)**
 F8 test campaign, both players in Madison Street near House 102 (the wooden barrier: plywood sheet in front, three nailed planks behind), both with a crowbar. "Hit" = original crowbar swing at the object.
 
 | # | Steps | Expected evidence | Result |

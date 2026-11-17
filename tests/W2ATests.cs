@@ -238,7 +238,7 @@ static class W2ATests
         // wire round trip
         var t = new ObjectTxnRequest { Txn = 9, Op = ObjectOp.Set, Kind = B, Ns = Madison, Hash = Planks, State = 1, BaseVer = 0, Epoch = 3 };
         ObjectTxnRequest back; Expect(ObjectTxnRequest.TryParse(t.ToBytes(), out back) && back.Kind == B && back.Hash == Planks && back.State == 1 && back.Epoch == 3, "objTxn carries the new kind unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 35 && ProtocolInfo.ModVersion == "0.24.0", "protocol 35 / mod 0.24.0 (new kind: both PCs need 0.24.0)");
+        Expect(ProtocolInfo.ProtocolVersion == 36 && ProtocolInfo.ModVersion == "0.25.0", "protocol 35 / mod 0.24.0 (new kind: both PCs need 0.24.0)");
     }
 
     // ---------------------------------------------------------------- 02
@@ -445,7 +445,7 @@ static class W2ATests
         var bridge = Src("WorldObjectBridge.cs"); var bcode = StripComments(bridge);
         var census = StripComments(Src("WorldCensus.cs"));
         Expect(code.Contains("AccessTools.Method(_b.BreakT, \"Destroy_Thing\")") && code.Contains("_h.Patch(_destroyThing, prefix: hm(\"DestroyPre\"))"), "prefix on the original DestroyObject.Destroy_Thing");
-        Expect(code.Contains("ObjectKind.Breakable, ObjectKind.Door };") && code.Contains("k == ObjectKind.Breakable ? 2 : 3"), "apply order locks -> windows -> breakables -> doors; KI = Kinds index");
+        Expect(code.Contains("k == ObjectKind.Breakable ? 2 : k == ObjectKind.ParcelLocker ? 3 : 4") && code.Contains("ObjectKind.Breakable, ObjectKind.ParcelLocker, ObjectKind.Door };"), "apply order locks -> windows -> breakables -> parcel lockers (W2B) -> doors; KI = Kinds index");
         Expect(code.Contains("WorldBreakRules.Gate(_host, _phase == Phase.Ready,") && code.Contains("return _lastHostCode == ProposalCode.Accepted;"), "host: original only when the in-place commit was accepted");
         Expect(code.Contains("if (pid != 0) _breakWait[pid] = o;") && sync.Contains("return false;   // ResumeBreak runs the original once the host accepted"), "Player 2: no local break before the host accepted");
         Expect(code.Contains("if (_lastHostCode == ProposalCode.Unchanged) { _dirty.Add(key); _retryAt = Now; }"), "host lost the race: replica via the reconcile, not the original");
@@ -467,7 +467,7 @@ static class W2ATests
             Expect(body.IndexOf(bad, StringComparison.Ordinal) < 0, "replica never: " + bad);
         Expect(bcode.Contains("\"activate_mission_completion\"") && bcode.Contains("if (k == ObjectKind.Breakable) return !BreakOk || _doMission(c)"), "mission flag read live, fail closed");
         Expect(bcode.Contains("BreakOk = BreakT != null &&") && code.Contains("_destroyThing = _b.BreakOk ?"), "breakables optional: doors / locks / windows unaffected when DestroyObject members are missing");
-        Expect(census.Contains("static bool Shared(ObjectKind k) { return ObjectStateRules.SupportedKind(k); }") && census.Contains("ObjectKind.LockedWindow, ObjectKind.Breakable })")
+        Expect(census.Contains("static bool Shared(ObjectKind k) { return ObjectStateRules.SupportedKind(k); }") && census.Contains("ObjectKind.LockedWindow, ObjectKind.Breakable, ObjectKind.ParcelLocker })")
             && census.Contains("if (k == ObjectKind.Breakable)") && census.Contains("_doMission == null || _doMission(c)"), "census: breakables shared, strict catalog, mission objects restricted (fail closed)");
         // no new per-frame work: the only entry points are the Harmony prefix and the existing reconcile
         foreach (var f in new[] { code, bcode })

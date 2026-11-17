@@ -540,6 +540,36 @@ namespace TS2MP.Shared
             Outbox.Add(e); return true;
         }
 
+        // ---- W2B shared parcel codes ----
+        public IParcelHost ParcelHost;   // host plugin: host ParcelStorage / GameManager lists / SPrefs (src/Plugin/ParcelSync.cs)
+        public long ParcelDiscoveries, ParcelRefusals;
+
+        // One Player-2 discovery (proposal "parcelCode"): decided and applied in this single host step -> exactly once (a
+        // retransmission is answered from the proposal cache, a second discovery of the same code is Unchanged).
+        public ProposalCode DiscoverParcel(byte slot, ParcelCodeRequest r, out string why)
+        {
+            List<string> cur;
+            bool ready = ParcelHost != null && ParcelHost.TryDiscovered(out cur);
+            var code = ParcelRules.Decide(ready, ready && ParcelHost.Known(r.Pref), out why);
+            if (code == ProposalCode.Accepted) code = ParcelRules.Code(ParcelHost.Apply(slot, r.Source, r.Pref), out why);
+            if (code == ProposalCode.Accepted) { ParcelDiscoveries++; PublishParcels(); }
+            else if (code != ProposalCode.Unchanged) ParcelRefusals++;
+            return code;
+        }
+
+        // Host: re-derive the shared code set from the host's live ParcelStorage and commit it when it changed.
+        public bool PublishParcels()
+        {
+            List<string> prefs;
+            if (ParcelHost == null || !ParcelHost.TryDiscovered(out prefs)) return false;
+            var s = ParcelState.Of(prefs);
+            var cur = Reg.Get(StateScope.Session, 0, WorldKeys.Parcels); ParcelState old;
+            if (cur != null && ParcelState.TryParse(cur.Value, out old) && old.SameAs(s)) return false;
+            var e = Reg.Commit(StateScope.Session, 0, WorldKeys.Parcels, s.ToBytes());
+            if (e == null) return false;
+            Outbox.Add(e); return true;
+        }
+
         // ---- V1.2 vehicle purchase / unlock ----
         public IVehicleShopHost Shop;   // host plugin: shared balance, garage condition, charge (original money + unlock key)
         public long Purchases, PurchaseRefusals;
@@ -1118,6 +1148,12 @@ namespace TS2MP.Shared
                 if (vid == VehicleIds.None || p.Value == null || p.Value.Length != 1 || p.Value[0] != 1) code = ProposalCode.Invalid;
                 else code = UseMedkit(senderSlot, vid, out why);
                 LastNote = "medkit car#" + vid + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : "");
+            }
+            else if (p.Scope == StateScope.Session && p.Key == WorldKeys.ParcelCode)
+            {
+                ParcelCodeRequest pr; string why = null;
+                if (p.ScopeArg != 0 || !ParcelCodeRequest.TryParse(p.Value, out pr)) { code = ProposalCode.Invalid; LastNote = "parcel code by P" + senderSlot + " -> Invalid"; }
+                else { code = DiscoverParcel(senderSlot, pr, out why); LastNote = "parcel code " + pr + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : ""); }
             }
             else if (p.Scope == StateScope.Session && p.Key == WorldKeys.VehicleBuy)
             {

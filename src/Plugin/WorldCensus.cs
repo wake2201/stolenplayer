@@ -339,7 +339,7 @@ namespace TS2MP.Plugin
             }
             _objByNs[ns] = keep;
             foreach (var kv in cats) _catalog[kv.Key] = kv.Value;
-            foreach (var k in new[] { ObjectKind.Door, ObjectKind.Lockpick, ObjectKind.LockedWindow, ObjectKind.Breakable }) if (!cats.ContainsKey(CK(k, ns))) _catalog[CK(k, ns)] = new HashSet<uint>();
+            foreach (var k in new[] { ObjectKind.Door, ObjectKind.Lockpick, ObjectKind.LockedWindow, ObjectKind.Breakable, ObjectKind.ParcelLocker }) if (!cats.ContainsKey(CK(k, ns))) _catalog[CK(k, ns)] = new HashSet<uint>();
             _restricted[ns] = restricted;
             sorted.Sort();
             uint d = IdentityHash.Fnv1a32("objects");

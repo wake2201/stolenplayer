@@ -82,4 +82,5 @@ decoded]) are presentation.
 - Re-verified IL 2026-11-17: the try block spans IL_002e..IL_006a (collider destroy + NPC alert); `dust_spawn` is only
   copied from `PlayerScript.dustSpawn`, never instantiated; `Destroy_Thing` has exactly one IL caller (`CrowbarHit` IL_068c).
 - Late joiners: silent apply (fragments shown, activated roots' AudioSource stopped). Census counts confirmed from the
-  real scene files: Madison 64, Hillville 9, hideout 7, none ambiguous. Manual QA: `docs/TESTING.md` §47.
+  real scene files: Madison 64, Hillville 9, hideout 7, none ambiguous. Manual QA: `docs/TESTING.md` §47 - user-verified
+  2026-11-17 except the region-reload reset (row 9, NOT TESTED).

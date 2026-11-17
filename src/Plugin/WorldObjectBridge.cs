@@ -20,6 +20,10 @@
 //                  minus the PlayerScript lookup / dust_spawn copy (IL_0012..IL_0029), the NPC alert around the LOCAL
 //                  player (IL_005f..IL_0065) and the mission completion (IL_00a3..IL_00b6). Silent (late join / region
 //                  ready) additionally stops the AudioSource on each activated destroyed_objects root (playOnAwake).
+//   - OpenLocker = ParcelCode.OpenLocker IL_0000..IL_0013 (W2B: wasOpened on the ParcelCode whose lockerTransform is this
+//                  locker, and on the ParcelLocker; its Update lerps the door open) + ParcelContainer.openSound like
+//                  ParcelMinigame.PressNumberButton IL_0171 - minus Inventory.parcelsOpened++ (the actor's own statistic) and
+//                  QuitMinigame. Silent (region ready / late join): no sound.
 //   - hasAlarm is cleared before any retag: Lockpick.Update would otherwise start a police chase for THIS player when the
 //     lock's own tag becomes "Door" (the actor's original path already consumed that alarm).
 using System;
@@ -36,6 +40,7 @@ namespace TS2MP.Plugin
         public readonly bool Ok;
         public readonly Type DoorT, LockpickT, WindowT, MissionItemT, BreakT;
         public readonly bool BreakOk;   // W2A: DestroyObject members found (doors / locks / windows do not depend on it)
+        public readonly Type LockerT, ParcelContainerT; public readonly bool LockerOk;   // W2B parcel lockers
 
         // Door
         readonly Func<object, bool> _open, _opening, _canUse, _broken, _slowly, _rotateOpen, _useVector, _moveOpen;
@@ -56,6 +61,9 @@ namespace TS2MP.Plugin
         // DestroyObject (W2A)
         readonly Func<object, bool> _doDestroyed, _doDetach, _doMission; readonly Action<object, bool> _doSetDestroyed;
         readonly Func<object, GameObject[]> _doNormal, _doBroken;
+        // ParcelLocker / ParcelCode / ParcelStorage / ParcelContainer (W2B)
+        readonly Func<object, bool> _plOpened; readonly Action<object, bool> _plSetOpened, _pcSetOpened;
+        readonly Func<object, Transform> _pcLocker; readonly Func<object, object> _psCodes; readonly Func<object, AudioSource> _pcoSound;
 
         public WorldObjectBridge(InstanceLog log)
         {
@@ -103,6 +111,16 @@ namespace TS2MP.Plugin
             }
             BreakOk = BreakT != null && _doDestroyed != null && _doSetDestroyed != null && _doDetach != null && _doMission != null && _doNormal != null && _doBroken != null;
             if (!BreakOk) log.Error("WOBJ original DestroyObject members not found: shared breakables disabled (they stay local)");
+            LockerT = AccessTools.TypeByName("ParcelLocker"); ParcelContainerT = AccessTools.TypeByName("ParcelContainer");
+            var pcT = AccessTools.TypeByName("ParcelCode"); var psT = AccessTools.TypeByName("ParcelStorage");
+            if (LockerT != null && pcT != null && psT != null && ParcelContainerT != null)
+            {
+                _plOpened = Fast.Getter<bool>(LockerT, "wasOpened"); _plSetOpened = Fast.Setter<bool>(LockerT, "wasOpened");
+                _pcSetOpened = Fast.Setter<bool>(pcT, "wasOpened"); _pcLocker = Fast.Getter<Transform>(pcT, "lockerTransform");
+                _psCodes = Fast.Getter<object>(psT, "parcelCodes"); _pcoSound = Fast.Getter<AudioSource>(ParcelContainerT, "openSound");
+            }
+            LockerOk = _plOpened != null && _plSetOpened != null && _pcSetOpened != null && _pcLocker != null && _psCodes != null && _pcoSound != null;
+            if (!LockerOk) log.Error("WOBJ original ParcelLocker / ParcelCode members not found: shared parcel lockers disabled (they stay local)");
         }
 
         // ---------------- readers ----------------
@@ -340,6 +358,31 @@ namespace TS2MP.Plugin
                     }
                 var normal = _doNormal(o);
                 if (normal != null) foreach (var g in normal) if (g != null) g.SetActive(false);
+            }
+            finally { Applying = false; }
+        }
+
+        // ---------------- parcel lockers (W2B) ----------------
+        public bool LockerOpened(Component l) { return _plOpened(l); }
+        public Transform CodeLocker(object parcelCode) { return _pcLocker(parcelCode); }
+
+        // Replica of an authorized locker opening (header: ParcelCode.OpenLocker + open sound, no statistic). storage = the
+        // live GameManager.ParcelStorag (MainScene); the ParcelCode is the one whose lockerTransform is this locker.
+        public void OpenLocker(Component l, object storage, bool silent)
+        {
+            if (_plOpened(l)) return;
+            Applying = true;
+            try
+            {
+                var codes = storage != null ? _psCodes(storage) as System.Collections.IList : null;
+                if (codes != null) foreach (var c in codes) if (c != null && ReferenceEquals(_pcLocker(c), l.transform)) _pcSetOpened(c, true);
+                _plSetOpened(l, true);
+                if (!silent)
+                {
+                    var box = l.transform.root.GetComponentInChildren(ParcelContainerT, true);
+                    var snd = box != null ? _pcoSound(box) : null;
+                    if (snd != null) snd.Play();
+                }
             }
             finally { Applying = false; }
         }

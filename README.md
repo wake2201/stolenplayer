@@ -44,7 +44,7 @@ Players install a drag-and-drop ZIP into the game folder and start the game norm
 Direct-IP internet play between two PCs has been used by the user since 0.14.1 (doors, lockpicking, windows and vehicle cameras confirmed in 0.14.2).
 
 **Tested game target:** Thief Simulator 2 v1.27c  
-**Current development build:** 0.24.0 · protocol 35 — shared destructible world objects: House 102 barrier stages, breakable furniture and toilets break once for both players (W2A, pending manual two-PC QA, `docs/TESTING.md` §47). H3 (0.23.0: heavy loot sale integrity, Ranger rear hatch) pending manual two-PC QA (`docs/TESTING.md` §46). S1 shared sleep control and V1.4.1 are user-verified. Version history: `ModVersion` comment in `src/Shared/Protocol.cs`.
+**Current development build:** 0.25.0 · protocol 36 — shared parcel-locker codes, story clues and parcel lockers: a code found by either player works for both, parcels are taken once (W2B, pending manual two-PC QA, `docs/TESTING.md` §48). W2A shared destructibles (0.24.0) user-verified (region-reload reset not tested). H3 (0.23.0: heavy loot sale integrity, Ranger rear hatch) pending manual two-PC QA (`docs/TESTING.md` §46). S1 shared sleep control and V1.4.1 are user-verified. Version history: `ModVersion` comment in `src/Shared/Protocol.cs`.
 
 Both instances need the same mod version and protocol.
 

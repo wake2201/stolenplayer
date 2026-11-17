@@ -356,7 +356,7 @@ static class V12Tests
         foreach (var bad in new[] { "OnGUI", "GUI.", "Time.timeScale =", "FindObjectsOfType", "SpawnMessage(" })
             Expect(!vs.Contains(bad), "VehicleShopSync contains no '" + bad + "' (no mod UI text, no scene-wide search)");
         Expect(Count(vs, "GameObject.Find(") == 1 && Body(vs, "void HideBuySign(object gm, bool once)").Contains("GameObject.Find(\"BUY VAN OBJ\")"), "the only lookup = the original sign name (Tutorial.BuyVan uses the same)");
-        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.0", "protocol 32 / mod 0.21.1");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.1", "protocol 32 / mod 0.21.1");
         Expect(WorldKeys.VehicleBuy == "vbuy", "key");
     }
 

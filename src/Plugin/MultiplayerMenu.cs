@@ -15,6 +15,11 @@
 //         loading state and its buttons take no input (JoinLoadingScreen, MenuRules.JoinLoadingScreen); cancel, timeout or
 //         a failed verification restores the menu. The host's prepared menu is never locked.
 // The join code is shown only inside this window and never written to a log.
+// W6A.1: two windows on this one session controller (one Lifecycle -> never two sessions): F8 = the public multiplayer menu
+// (normal Host / Join only, styled: MultiplayerMenu.Ui.cs), F10 = the developer menu (isolated test campaign host / join,
+// story-step selector, scenario reset, technical status: MultiplayerMenu.Dev.cs), present only with
+// Developer.EnableDeveloperMenu = true. MenuRouting (src/Shared/MultiplayerLifecycle.cs) decides the open panel, the join
+// kind check after the host's Welcome and the availability of each action.
 using System;
 using System.IO;
 using System.Reflection;
@@ -25,7 +30,7 @@ using UnityEngine.SceneManagement;
 
 namespace TS2MP.Plugin
 {
-    internal sealed class MultiplayerMenu : IDisposable
+    internal sealed partial class MultiplayerMenu : IDisposable
     {
         const string MenuScene = "MainMenuNew", WorldScene = "MainScene";
         readonly NetRunner _runner; readonly InstanceLog _log; readonly SessionSettings _settings; readonly Harmony _saveHarmony;
@@ -50,15 +55,17 @@ namespace TS2MP.Plugin
         Func<object, bool> _gmLoaded; Func<object, object> _gmPs;
         FieldInfo _fbppConfig; MethodInfo _fbppExists;
 
-        // window (main menu only)
-        bool _open; Rect _rect; GUIStyle _title, _text, _big, _err, _btn, _field; Vector2 _scroll;
+        // windows (main menu only)
+        MenuPanel _panel; bool _open { get { return _panel != MenuPanel.None; } }
+        readonly bool _devAllowed; JoinKind _joinKind = JoinKind.Public;
         double _nextIgnoredLog;
 
         public MultiplayerMenu(NetRunner runner, InstanceLog log, SessionSettings settings, Harmony saveHarmony, bool legacy)
         {
             _runner = runner; _log = log; _settings = settings; _saveHarmony = saveHarmony; _legacy = legacy;
             _lc.Legacy = legacy;
-            _port = settings.HostPort; _joinPort = NetConfig.DefaultPort.ToString();
+            _port = settings.HostPort; _joinPort = NetConfig.DefaultPort.ToString(); _portText = _port.ToString();
+            _devAllowed = MenuRouting.DevMenuAllowed(settings.DevMenuEnabled, legacy);
             ResolveTypes();
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
@@ -75,7 +82,8 @@ namespace TS2MP.Plugin
             // client waited forever). Same readiness rules as the F8 host; the client keeps retrying (HostNotReady).
             var n = runner.Node;
             if (legacy && n != null && n.Role == Role.Host) { n.HostGate = () => _hostGateReason; _legacyHostGate = true; log.Info("MENU launcher host: joins wait until the host is gameplay-ready (" + _hostGateReason + ")"); }
-            log.Info("MENU ready key=" + settings.MenuKey + (legacy ? " (launcher mode: status only)" : " isolationAvailable=" + _isolationAvailable));
+            log.Info("MENU ready key=" + settings.MenuKey + (legacy ? " (launcher mode: status only)" : " isolationAvailable=" + _isolationAvailable)
+                + "; developer menu " + (_devAllowed ? "ENABLED key=" + settings.DevMenuKey + " (Developer.EnableDeveloperMenu)" : "off"));
         }
         bool _legacyHostGate; float _nextGate; string _loggedGate;
         JoinLoadingScreen _loading;   // v0.16.1 (F8 mode only)
@@ -151,8 +159,10 @@ namespace TS2MP.Plugin
         // ---------------------------------------------------------------- per frame
         public void Update()
         {
-            if (Input.GetKeyDown(_settings.MenuKey)) { if (_open) CloseMenu("key"); else OpenMenu(); }
+            if (Input.GetKeyDown(_settings.MenuKey)) Hotkey(MenuPanel.Public);
+            else if (_devAllowed && Input.GetKeyDown(_settings.DevMenuKey)) Hotkey(MenuPanel.Developer);
             if (_open && !MenuRules.MenuOpens(Context())) CloseMenu("left the main menu");
+            SyncInputBlock();
 
             double now = Time.realtimeSinceStartup;
             if (_legacy) { LegacyHostGate(); return; }
@@ -167,7 +177,7 @@ namespace TS2MP.Plugin
                     {
                         _log.Info("DEV_AUTOJOIN joining " + parts[0] + ":" + parts[1]);
                         _joinHost = parts[0]; _joinPort = parts[1]; _joinCode = parts[2];
-                        StartJoin();
+                        StartJoin(JoinKind.Any);
                     }
                     else _log.Warn("DEV_AUTOJOIN malformed (expected host|port|code)");
                 }
@@ -186,6 +196,7 @@ namespace TS2MP.Plugin
             var s = _lc.State;   // cheap state test first: no context probe unless Player 2 is joining
             bool joining = _hostCode == null && (s == MpState.ClientConnecting || s == MpState.ClientPreparing || s == MpState.ClientSynchronizing);
             bool show = joining && MenuRules.JoinLoadingScreen(s, Context(), _lc.ContinueIssued);
+            if (show && !_loading.Shown) ReleaseInputBlock();   // the loading screen records + owns the EventSystem state from here
             if (show || _loading.Shown) _loading.Sync(show);
         }
 
@@ -207,6 +218,12 @@ namespace TS2MP.Plugin
             if (_pendingClient == null && !_mismatchChecked && (node.State == ConnState.Connected || node.State == ConnState.Preparing))
             {
                 _mismatchChecked = true;
+                string kindErr = MenuRouting.JoinMismatch(_joinKind, node.HostTestCampaign);
+                if (kindErr != null)
+                {
+                    _log.Error("JOIN refused: host test campaign=" + node.HostTestCampaign + ", join started from the " + _joinKind + " menu");
+                    _lc.Fail(kindErr, now); EndClient("campaign kind mismatch"); return;
+                }
                 if (SaveGuard.Armed && (SaveGuard.DevHost || SaveGuard.TestSandbox != node.HostTestCampaign))
                 {
                     _log.Error("JOIN refused: host test campaign=" + node.HostTestCampaign + " but this process is isolated for " + (SaveGuard.TestSandbox ? "the test campaign" : "a normal campaign"));
@@ -237,6 +254,14 @@ namespace TS2MP.Plugin
             bool wasArmed = SaveGuard.Armed;
             // W4.2B.2: a test-campaign host -> test sandbox + test records; a normal host -> the normal sandbox. Fixed per process.
             bool test = node.HostTestCampaign;
+            string kindErr = MenuRouting.JoinMismatch(_joinKind, test);   // W6A.1: F8 never joins a test campaign, F10 only test campaigns
+            if (kindErr != null)
+            {
+                _log.Error("JOIN refused: host test campaign=" + test + ", join started from the " + _joinKind + " menu");
+                node.AbortPreparation("campaign kind differs from the menu");
+                _lc.Fail(kindErr, now); EndClient("campaign kind mismatch");
+                return;
+            }
             string dataDir = test ? SaveIsolation.TestCampaignDataDir(_settings.DataDir) : _settings.DataDir;
             if (!SaveGuard.SelectClientSandbox(dataDir, test, out why))
             {
@@ -342,10 +367,15 @@ namespace TS2MP.Plugin
         {
             double now = Time.realtimeSinceStartup;
             var ctx = Context();
-            var a = MenuRules.Host(ctx, _lc.State, _legacy, _lc.ClientModeSticky);
+            var a = test ? MenuRules.Host(ctx, _lc.State, _legacy, _lc.ClientModeSticky) : MenuRouting.PublicHost(ctx, _lc.State, _legacy, _lc.ClientModeSticky, TestActive);
             if (!a.Enabled) { _hint = a.Reason; return; }
-            if (!NetConfig.ValidPort(_port)) { _hint = "Ungültiger Port (1024–65535)."; return; }
+            if (test && !_devAllowed) { _hint = "Entwicklermenü ist deaktiviert."; return; }   // never reachable from F8
+            int port;
+            if (!NetConfig.TryParsePort(_portText, out port)) { _hint = "Ungültiger Port (1024–65535)."; return; }
+            _port = port;
+            if (test && _devStory >= 0) { string r = StoryCatalog.Refusal(_devStory); if (r != null) { _hint = r; return; } }
             if (test && !_lc.TestPrepared && !PrepareTestCampaign()) return;
+            if (test && !ApplyTestStory()) { ReleaseTestIfDue("story step refused"); return; }
             string deny = _lc.RequestHost(ctx, _port, now);
             if (deny != null) { _hint = deny; ReleaseTestIfDue("host request refused"); return; }
             string code = JoinAuth.NewCode();
@@ -377,11 +407,14 @@ namespace TS2MP.Plugin
                 + (node.TestCampaign ? " - MULTIPLAYER TEST CAMPAIGN" : "") + "; joins wait for the loaded world (HOST_READINESS)");
         }
 
-        void StartJoin()
+        void StartJoin(JoinKind kind)
         {
             double now = Time.realtimeSinceStartup;
             JoinRequest req;
             if (_lc.TestPrepared) { _hint = MenuRules.TestHostJoinText; return; }
+            if (kind == JoinKind.Public && TestActive) { _hint = MenuRouting.DevActiveText; return; }
+            if (kind == JoinKind.Developer && !_devAllowed) { _hint = "Entwicklermenü ist deaktiviert."; return; }
+            _joinKind = kind;
             string deny = _lc.RequestJoin(Context(), _isolationAvailable, _joinHost, _joinPort, _joinCode, out req, now);
             if (deny != null) { _hint = deny; return; }
             var node = new SessionNode(Role.Client, "join", RandomHex(4), Application.version, req.Port, _log);
@@ -399,183 +432,11 @@ namespace TS2MP.Plugin
                 _lc.IsolationArmed(now);
             }
             else _pendingClient = node;
-            _log.Info("JOIN started from the F8 menu -> " + req.Host + ":" + req.Port + (node.AutoReady ? " (isolation already armed)" : ""));
+            _log.Info("JOIN started from the " + (kind == JoinKind.Developer ? "developer" : kind == JoinKind.Public ? "F8" : "DEV_AUTOJOIN") + " menu -> " + req.Host + ":" + req.Port + (node.AutoReady ? " (isolation already armed)" : ""));
         }
 
-        // ---------------------------------------------------------------- window
-        // W4.2B.3: only in the original main menu. Elsewhere the key press is ignored (logged at most every 30 s, BepInEx log
-        // only - no in-game text); nothing in the player, camera or input state is touched.
-        void OpenMenu()
-        {
-            var ctx = Context();
-            if (!MenuRules.MenuOpens(ctx))
-            {
-                double now = Time.realtimeSinceStartup;
-                if (now >= _nextIgnoredLog) { _nextIgnoredLog = now + 30; _log.Info("MENU " + _settings.MenuKey + " ignored outside the main menu (context " + ctx + "; multiplayer is prepared / joined in the main menu)"); }
-                return;
-            }
-            _open = true;
-            _hint = null;
-            _rect = new Rect((Screen.width - 560) / 2f, (Screen.height - 470) / 2f, 560, 470);
-        }
-
-        void CloseMenu(string why)
-        {
-            _open = false;
-            GUIUtility.keyboardControl = 0;
-        }
-
-        public void OnGUI()
-        {
-            if (!_open) return;
-            if (_title == null)
-            {
-                _title = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold, wordWrap = true };
-                _text = new GUIStyle(GUI.skin.label) { fontSize = 15, wordWrap = true };
-                _big = new GUIStyle(GUI.skin.label) { fontSize = 24, fontStyle = FontStyle.Bold };
-                _err = new GUIStyle(_text); _err.normal.textColor = new Color(1f, 0.55f, 0.5f);
-                _btn = new GUIStyle(GUI.skin.button) { fontSize = 15 };
-                _field = new GUIStyle(GUI.skin.textField) { fontSize = 16 };
-            }
-            _rect = GUI.Window(0x7532, _rect, DrawWindow, "");
-        }
-
-        void DrawWindow(int id)
-        {
-            var ctx = Context();
-            GUILayout.Label("Mehrspieler – TS2-Multiplayer " + ProtocolInfo.ModVersion, _title);
-            _scroll = GUILayout.BeginScrollView(_scroll);
-            GUILayout.Label("Status: " + (_legacy ? LegacyStatus() : _lc.Status), _text);
-            if (_lc.State == MpState.Error && _lc.Error != null) GUILayout.Label(_lc.Error, _err);
-            if (_runner.TestCampaignActive) GUILayout.Label("TESTKAMPAGNE AKTIV – isolierter Test-Spielstand, alle Fähigkeiten, Testgeld. Deine echten Spielstände werden nicht benutzt.", _err);
-            GUILayout.Space(8);
-
-            if (_legacy) GUILayout.Label(MenuRules.LegacyText, _text);
-            else if (_hostCode != null && (_lc.IsHostState || _lc.State == MpState.Connected)) DrawHosting();
-            else if (_lc.Busy() && !_lc.IsHostState) DrawClient();
-            else
-            {
-                DrawHostSection(ctx);
-                GUILayout.Space(10);
-                DrawTestSection(ctx);
-                GUILayout.Space(10);
-                DrawJoinSection(ctx);
-            }
-            if (_hint != null) { GUILayout.Space(6); GUILayout.Label(_hint, _err); }
-            GUILayout.EndScrollView();
-            if (GUILayout.Button("Schließen (" + _settings.MenuKey + ")", _btn)) CloseMenu("button");
-            GUI.DragWindow(new Rect(0, 0, 10000, 30));
-        }
-
-        string LegacyStatus()
-        {
-            var n = _runner.Node;
-            return n == null ? "kein Netzwerk" : (n.Role == Role.Host ? "Host" : "Spieler 2") + " – " + n.State;
-        }
-
-        void DrawHostSection(GameContext ctx)
-        {
-            GUILayout.Label("Spiel hosten (du bist Spieler 1)", _title);
-            var a = MenuRules.Host(ctx, _lc.State, _legacy, _lc.ClientModeSticky);
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("UDP-Port: " + _port, _text, GUILayout.Width(170));
-            GUI.enabled = a.Enabled;
-            if (GUILayout.Button("−100", _btn)) _port = Clamp(_port - 100);
-            if (GUILayout.Button("−1", _btn)) _port = Clamp(_port - 1);
-            if (GUILayout.Button("+1", _btn)) _port = Clamp(_port + 1);
-            if (GUILayout.Button("+100", _btn)) _port = Clamp(_port + 100);
-            if (GUILayout.Button("Standard", _btn)) _port = NetConfig.DefaultPort;
-            GUILayout.EndHorizontal();
-            if (GUILayout.Button(_runner.TestCampaignActive ? "Testkampagne hosten" : "Hosten vorbereiten", _btn)) StartHost(_runner.TestCampaignActive);
-            GUI.enabled = true;
-            if (!a.Enabled) GUILayout.Label(a.Reason, _text);
-            else GUILayout.Label("Danach lädst du deinen Spielstand wie gewohnt (Fortsetzen oder ein Spiel beginnen); der Mehrspieler startet automatisch, sobald deine Welt geladen ist. Der Router muss UDP " + _port + " an diesen PC weiterleiten. Der Spielverkehr ist nicht verschlüsselt.", _text);
-        }
-
-        // W4.2B.2 multiplayer test campaign (host). Explicit opt-in in the main menu; W4.2B.3: the same button prepares the host
-        // session, then the original Continue / New Game loads the isolated copy. Player 2 needs no option: the host's Welcome
-        // tells its game.
-        void DrawTestSection(GameContext ctx)
-        {
-            if (_lc.TestPrepared || ctx != GameContext.MainMenu) return;   // offered only in the main menu, while not prepared
-            var a = MenuRules.PrepareTest(ctx, _lc.State, _legacy, _lc.ClientModeSticky, _isolationAvailable, _lc.TestPrepared, _worldLoadedOnce);
-            GUILayout.Label("Mehrspieler-Testkampagne hosten (nur zum Testen)", _title);
-            GUILayout.Label("Isolierte KOPIE deines Spielstands mit allen Fähigkeiten und Testgeld für beide Spieler. Dein echter Spielstand und deine normalen Mehrspieler-Daten werden nicht verändert. Für Einzelspieler danach das Spiel neu starten.", _text);
-            GUI.enabled = a.Enabled;
-            if (GUILayout.Button("Testkampagne hosten", _btn)) StartHost(true);
-            GUI.enabled = true;
-            if (!a.Enabled) GUILayout.Label(a.Reason, _text);
-        }
-
-        bool PrepareTestCampaign()
-        {
-            var a = MenuRules.PrepareTest(Context(), _lc.State, _legacy, _lc.ClientModeSticky, _isolationAvailable, _lc.TestPrepared, _worldLoadedOnce);
-            if (!a.Enabled) { _hint = a.Reason; return false; }
-            string dir = SaveIsolation.TestCampaignDataDir(_settings.DataDir), why;
-            try { Directory.CreateDirectory(dir); } catch (Exception ex) { _hint = "Testordner konnte nicht angelegt werden: " + ex.Message; return false; }
-            bool wasArmed = SaveGuard.Armed;
-            if (!SaveGuard.PrepareTestHostSave(dir, out why))
-            {
-                _log.Error("TEST_CAMPAIGN save isolation could not be verified: " + why);
-                _hint = "Testkampagne konnte nicht sicher vorbereitet werden (siehe Log).";
-                if (SaveGuard.Armed || wasArmed) _runner.RequestQuit("SAVE_GUARD_FAILED after arming the test campaign: quitting to protect the real saves (fail closed).");
-                return false;
-            }
-            _runner.EnableTestCampaign(dir, "F8 host");
-            _lc.TestCampaignPrepared(); _hint = null;
-            RefreshContinueText();
-            _log.Info("TEST_CAMPAIGN prepared in the main menu: the original Continue / New Game now loads the isolated copy; the host session is prepared next");
-            return true;
-        }
-
-        // The main menu's save info was read from the real folder; the original LoadContinueTxt re-reads it (now redirected).
-        void RefreshContinueText()
-        {
-            try
-            {
-                var mm = _menuType != null ? UnityEngine.Object.FindObjectOfType(_menuType) : null;   // once
-                var m = _menuType != null ? AccessTools.Method(_menuType, "LoadContinueTxt") : null;
-                if (mm != null && m != null && m.GetParameters().Length == 0) m.Invoke(mm, null);
-            }
-            catch (Exception ex) { _log.Warn("TEST_CAMPAIGN main-menu save info not refreshed: " + ex.Message); }
-        }
-
-        void DrawJoinSection(GameContext ctx)
-        {
-            GUILayout.Label("Spiel beitreten (du bist Spieler 2)", _title);
-            var a = MenuRules.Join(ctx, _lc.State, _legacy, _isolationAvailable, _lc.TestPrepared);
-            if (!a.Enabled) { GUILayout.Label(a.Reason, _text); return; }
-            GUILayout.Label("Adresse des Hosts (öffentliche IPv4 oder DNS-Name):", _text);
-            _joinHost = GUILayout.TextField(_joinHost ?? "", 253, _field);
-            GUILayout.Label("UDP-Port:", _text);
-            _joinPort = GUILayout.TextField(_joinPort ?? "", 5, _field);
-            GUILayout.Label("Beitrittscode:", _text);
-            _joinCode = GUILayout.TextField(_joinCode ?? "", 40, _field);
-            if (GUILayout.Button("Verbinden", _btn)) StartJoin();
-            GUILayout.Label("Deine eigenen Einzelspieler-Spielstände bleiben unverändert (Spieler 2 nutzt einen geschützten Bereich).", _text);
-        }
-
-        void DrawHosting()
-        {
-            var node = _runner.Node;
-            GUILayout.Label("Du hostest (Spieler 1) auf UDP " + _port + (_runner.TestCampaignActive ? " – Testkampagne" : ""), _text);
-            GUILayout.Label("Beitrittscode:", _text);
-            GUILayout.Label(_hostCode, _big);
-            if (GUILayout.Button("Code in die Zwischenablage kopieren", _btn)) { GUIUtility.systemCopyBuffer = _hostCode; _hint = "Code kopiert."; }
-            GUILayout.Label("Spieler 2: " + (node != null && node.IsConnected ? "verbunden" : "nicht verbunden"), _text);
-            GUILayout.Label("Gib deinem Mitspieler deine öffentliche IPv4-Adresse (Router) oder deinen DynDNS-Namen, den Port und den Code. Der Code gilt nur für diese Sitzung.", _text);
-            GUILayout.Label("Jetzt dieses Fenster schließen und im Hauptmenü „Fortsetzen“ wählen (ohne Spielstand: ein Spiel beginnen). Zurück im Hauptmenü endet die Sitzung.", _text);
-            if (GUILayout.Button("Hosten abbrechen", _btn)) CancelHost("cancelled by the player in the main menu");
-        }
-
-        void DrawClient()
-        {
-            GUILayout.Label("Rolle: Spieler 2", _text);
-            if (GUILayout.Button(_lc.State == MpState.Connected ? "Verbindung trennen" : "Abbrechen", _btn)) StopSession("disconnected by the player");
-            if (_lc.ClientModeSticky) GUILayout.Label("Hinweis: Für Einzelspieler oder Hosten muss das Spiel danach neu gestartet werden.", _text);
-        }
-
-        static int Clamp(int p) { return Math.Max(1024, Math.Min(65535, p)); }
+        // W6A.1: a process that prepared / played the isolated test campaign never offers the normal F8 Host / Join.
+        bool TestActive { get { return _lc.TestPrepared || _runner.TestCampaignActive || (SaveGuard.Armed && SaveGuard.DevHost); } }
 
         static string RandomHex(int bytes)
         {
@@ -589,6 +450,8 @@ namespace TS2MP.Plugin
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
             if (_open) CloseMenu("shutdown");
+            ReleaseInputBlock();
+            DisposeUi();
             if (_loading != null && _loading.Shown) _loading.Sync(false);
             if (_pendingClient != null) { _pendingClient.Dispose(); _pendingClient = null; }
         }

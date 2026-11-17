@@ -77,7 +77,8 @@ $suites = @(
     @('TS2MP.H3Tests', 'H3Tests.cs', 'H3 heavy sale integrity (double / concurrent / stale / replayed sales, Player 1/2, cargo, undo, reconnect) + Ranger rear hatch door sync'),
     @('TS2MP.W2ATests', 'W2ATests.cs', 'W2A shared destructibles: House 102 barrier stages, furniture, exactly-once, concurrent / stale hits, late join, reload, mission objects'),
     @('TS2MP.W2BTests', 'W2BTests.cs', 'W2B shared parcel codes / story clues / parcel lockers: both players, first story note, maps + reloads, duplicates, hack, loot once'),
-    @('TS2MP.W6ATests', 'W6ATests.cs', 'W6A shared story foundation: note_103 / story14 by both players, exactly once, concurrent / replayed, prerequisites, host-only start effects, save / reload / reconnect, note visibility')
+    @('TS2MP.W6ATests', 'W6ATests.cs', 'W6A shared story foundation: note_103 / story14 by both players, exactly once, concurrent / replayed, prerequisites, host-only start effects, save / reload / reconnect, note visibility'),
+    @('TS2MP.W6A1Tests', 'W6A1Tests.cs', 'W6A.1 public F8 menu vs developer F10 menu: hotkeys, join routing, developer gating, test-copy isolation + reset, story catalog 0..80, step application, regressions')
 )
 foreach ($s in $suites) {
     Invoke-Csc "$($s[0]).exe" (@('/target:exe', "/out:$outTests\$($s[0]).exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\$($s[1])"))

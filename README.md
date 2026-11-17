@@ -18,7 +18,7 @@ The core two-player session is running, and several systems have been tested in-
 - **World state** — region-aware time synchronization and parts of the original world interactions.
 - **Car storage** — the original CarBox UI with host-managed, single-player-at-a-time access.
 - **Doors, locks and windows** (Madison Street) — shared doors, normal lockpicking, windows and vehicle cameras were confirmed by the user in a two-PC internet run (0.14.2); some edge cases remain under QA.
-- **Host-owned campaign** — Player 2 always loads the host's world in an isolated save sandbox; an optional isolated **multiplayer test campaign** (all skills, test money) protects real saves during testing.
+- **Host-owned campaign** — Player 2 always loads the host's world in an isolated save sandbox; an optional isolated **multiplayer test campaign** (all skills, test money, story-step selector) lives in the separate developer menu (F10, off by default) and protects real saves during testing.
 
 - **Hideout purchases** — garage and renovations bought by either player, including the original hideout rebuild (W1.1, confirmed by the user on two PCs).
 
@@ -37,14 +37,14 @@ StolenPlayer is a **BepInEx 5 / Harmony** mod for the Unity Mono version of Thie
 
 Players install a drag-and-drop ZIP into the game folder and start the game normally. **F8 works only in the main menu** (in a loaded world it does nothing):
 
-- **Player 1** chooses *Hosten vorbereiten* (or *Testkampagne hosten*) in the main menu, which opens UDP 27960 with a per-session join code, then loads the save through the original *Continue*. Multiplayer becomes active automatically; Player 2 is admitted only once the host's world is fully initialized.
+- **Player 1** opens the *Spiel hosten* tab and chooses *Sitzung vorbereiten* in the main menu, which opens UDP 27960 with a per-session join code, then loads the save through the original *Continue*. Multiplayer becomes active automatically; Player 2 is admitted only once the host's world is fully initialized.
 - **Player 2** joins from the main menu (address, port, code) and plays in an isolated save sandbox.
 - Returning to the main menu ends the session for either player.
 
 Direct-IP internet play between two PCs has been used by the user since 0.14.1 (doors, lockpicking, windows and vehicle cameras confirmed in 0.14.2).
 
 **Tested game target:** Thief Simulator 2 v1.27c  
-**Current development build:** 0.26.0 · protocol 37 — shared story foundation: one story campaign (the host's), Player 2 follows it; reading the House 103 note (story step "Disable the 104 entrance camera") advances the shared story for either player (W6A, pending manual two-PC QA, `docs/TESTING.md` §49). W2B (0.25.0): shared parcel-locker codes, story clues and parcel lockers: a code found by either player works for both, parcels are taken once (W2B, pending manual two-PC QA, `docs/TESTING.md` §48). W2A shared destructibles (0.24.0) user-verified (region-reload reset not tested). H3 (0.23.0: heavy loot sale integrity, Ranger rear hatch) pending manual two-PC QA (`docs/TESTING.md` §46). S1 shared sleep control and V1.4.1 are user-verified. Version history: `ModVersion` comment in `src/Shared/Protocol.cs`.
+**Current development build:** 0.26.1 · protocol 37 — redesigned F8 multiplayer menu (normal Host / Join only) and a separate F10 developer menu (`Developer.EnableDeveloperMenu`, default off; test campaign, story-step selector, scenario reset) (W6A.1, pending manual QA, `docs/TESTING.md` §50). W6A (0.26.0): shared story foundation: one story campaign (the host's), Player 2 follows it; reading the House 103 note (story step "Disable the 104 entrance camera") advances the shared story for either player (W6A, pending manual two-PC QA, `docs/TESTING.md` §49). W2B (0.25.0): shared parcel-locker codes, story clues and parcel lockers: a code found by either player works for both, parcels are taken once (W2B, pending manual two-PC QA, `docs/TESTING.md` §48). W2A shared destructibles (0.24.0) user-verified (region-reload reset not tested). H3 (0.23.0: heavy loot sale integrity, Ranger rear hatch) pending manual two-PC QA (`docs/TESTING.md` §46). S1 shared sleep control and V1.4.1 are user-verified. Version history: `ModVersion` comment in `src/Shared/Protocol.cs`.
 
 Both instances need the same mod version and protocol.
 

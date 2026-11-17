@@ -1,6 +1,37 @@
 ﻿# PROGRESS
 
-## W6A — Shared story progression foundation — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
+## W6A.1 — Public F8 multiplayer menu + separate F10 developer menu — **BUILT — PENDING MANUAL QA**, 2026-11-17
+Mod **0.26.1, protocol 37** (no wire change). Built on `3fd8db1` (W6A). Manual QA: `docs/TESTING.md` §50.
+
+### A. Preserved (classified before the change)
+- Session controller (`MultiplayerMenu.cs`: `Lifecycle`, host / client frames, save isolation `Prepare`, `ContinueOriginal`, `CancelHost` / `ReleaseTestIfDue`, join loading screen) VERIFIED in earlier QA - unchanged except the join-kind check and the input-block hand-over. Test-campaign preparation (`PrepareTestCampaign`, `SaveGuard.PrepareTestHostSave`, `DevTestMode` skills / money) moved unchanged into the developer partial.
+- Before: the F8 window mixed normal Host / Join with "Testkampagne hosten"; F8 joins silently switched to the test sandbox when the host played the test campaign; clicks went through the window into the original main menu (DESIGN COMPROMISE, now fixed).
+
+### B. Implementation
+- `MultiplayerMenu.Ui.cs` (new): F8 = styled IMGUI panel (charcoal / graphite, amber accent, the game's main-menu font `MainMenu.currentProfileTxt.font` and click sound `MainMenu.audioClick`, 1080p-relative scale, 0.14 s fade). Tabs *Spiel hosten* / *Spiel beitreten*, hosting view (status chip, join code, copy, cancel), client view, error banner, footer with version / protocol / status. Original main-menu input (uGUI EventSystem) blocked while a window is open, handed to the join loading screen when it shows.
+- `MultiplayerMenu.Dev.cs` (new): F10 developer window (plain IMGUI): Dev Host (test campaign + optional story step), Dev Join (test campaigns only), story selector 0-80 with support marks / reasons, scenario reset, technical status (cached 2x/s).
+- `MultiplayerMenu.cs`: one `MenuPanel` instead of `_open`, `Hotkey` routing, `JoinKind` per join, `MenuRouting.JoinMismatch` after Welcome (before any sandbox is selected / armed) and on an armed re-join, public host / join refused in a test process, story-step application between test-copy preparation and the host session (refusal releases the copy).
+- `src/Shared/MultiplayerLifecycle.cs`: `MenuPanel`, `JoinKind`, `MenuRouting` (Toggle, JoinMismatch, PublicHost / PublicJoin, DevReset, DevStoryRefusal, DevMenuAllowed). `SaveIsolation.ResetDestination`. `src/Shared/StoryCatalog.cs` (generated from `mission_catalog.json`): 81 steps, Supported / Limited / Unsupported with reasons.
+- `Plugin.cs`: `Developer.EnableDeveloperMenu` (default **false**) and `Developer.DeveloperMenuKey` (F10; never equal to the F8 key).
+
+### C. Story-step selection (research: `docs/research/STORY_SYSTEM.md` §8)
+- The step is written as `Story` / `StoryBackup` into the armed, verified isolated copy only; the original `MainMenu.Continue` -> `StoryManager.BeginStory` -> `InitiateStory` runs that step's start effects once (the same path as loading any save at that step). Earlier steps are never replayed (items, completed tasks, debt deductions, counters come from the copy) - stated in the menu for every step.
+- 16 steps refused (intro 0-2, chained items / heist scenes / jail 20, 27, 28, 35, 39, 42, 47, 52, 59, 73-75, free mode 80), each naming the step to select instead; 12 Limited (special start or copy-dependent counters / ending). Also refused: copy without a save, copy in free mode.
+- Reset moves `<TS2MP>\testcampaign` aside (`testcampaign.reset-<time>`, never deleted) while nothing uses it; the next Dev Host copies the real save again.
+
+### D. Evidence
+- `tools/build.ps1 -Test`: plugin 0 warnings; **ALL 41 SUITES PASSED** incl. new `tests/W6A1Tests.cs` (8/8: hotkey matrix, join routing, gating, isolation order + reset, catalog vs mission_catalog.json, step application, menu safety scans, W6A / W2B regressions). Changed expectations: version pins, InteractionTests 15 (menu partials may draw), LifecycleTests 21 / 25 (window plumbing in Ui.cs, 4 release paths), W42BTests 26 (preparation in Dev.cs).
+- No in-game run: look, font, focus, click blocking are PENDING MANUAL QA.
+
+### E. Performance
+- Closed: two key checks per frame. Open: IMGUI layout (~20 controls F8, ~100 rows F10), styles / textures built once per process, status strings cached; one EventSystem lookup per opening. No network traffic added.
+
+### F. Open / risks
+- The game font is taken from the main menu's profile text; if absent the Unity default font is used (logged `MENU look:`).
+- A player who enabled the developer menu and hosted a test campaign must restart the game for a normal session (unchanged process-sticky isolation).
+- Story steps are test scenarios on a copy, not authentic checkpoints: prior-step state comes from the copied save.
+
+ — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
 Mod **0.26.0, protocol 37** (wire change: proposal `storyAdvance`, session state `story`). Both PCs need 0.26.0. Built on `35adae2` (W2B). Manual QA: `docs/TESTING.md` §49. Research / mission-system map: `docs/research/STORY_SYSTEM.md`.
 
 ### A. Preserved (classified before the change)

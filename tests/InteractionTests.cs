@@ -337,7 +337,7 @@ static class InteractionTests
                 Expect(l.IndexOf("SpawnNormalText", StringComparison.Ordinal) < 0, where + " uses the game's free-text spawner");
                 // N1.2: own IMGUI drawing only in the player-opened F8 menu and the opt-in debug overlay (Plugin.cs)
                 string fn = System.IO.Path.GetFileName(f);
-                if (fn != "MultiplayerMenu.cs" && fn != "Plugin.cs")
+                if (!(fn == "MultiplayerMenu.cs" || fn == "MultiplayerMenu.Ui.cs" || fn == "MultiplayerMenu.Dev.cs") && fn != "Plugin.cs")   // W6A.1: F8 / F10 menu partials
                     Expect(l.IndexOf("GUI.Label(", StringComparison.Ordinal) < 0 && l.IndexOf("GUILayout.", StringComparison.Ordinal) < 0 && l.IndexOf("GUI.Window(", StringComparison.Ordinal) < 0 && l.IndexOf("GUI.Box(", StringComparison.Ordinal) < 0,
                         where + " draws its own UI outside the F8 menu / debug overlay");
                 Expect(l.IndexOf("ShowText(", StringComparison.Ordinal) < 0, where + " still calls ShowText");

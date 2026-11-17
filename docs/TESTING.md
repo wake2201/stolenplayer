@@ -151,7 +151,27 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
-## 49. W6A checklist — shared story progression (release `TS2-Multiplayer-0.26.0.zip` on BOTH PCs, protocol 37)
+## 50. W6A.1 checklist — F8 public menu + F10 developer menu (release `TS2-Multiplayer-0.26.1.zip` on BOTH PCs, protocol 37)
+Both PCs in the original main menu. Developer rows need `BepInEx\config\com.ts2mp.multiplayer.cfg` → `[Developer] EnableDeveloperMenu = true` on BOTH PCs (restart the game after editing). Grep tags: `MENU`, `HOST`, `JOIN`, `TEST_CAMPAIGN`, `TEST_STORY`, `TEST_RESET`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Default config: press F8, F10 | F8 opens the new panel (dark, amber accent, game font); F10 does nothing. Log `MENU ready ... developer menu off`, `MENU look: game font ...` | NOT TESTED |
+| 2 | F8 panel: hover buttons, switch tabs, type in fields, click outside the panel / on the game's menu behind it | Hover states, tabs switch; the original main menu does not react to clicks while the panel is open; it works again after closing (F8 / *Schließen*) | NOT TESTED |
+| 3 | Normal session: P1 *Spiel hosten → Sitzung vorbereiten*, *Fortsetzen*; P2 *Spiel beitreten* with address / port / code | Same behaviour as 0.26.0 (join loading screen, P2 loads the host world, W6A / W2B work). Hosting view shows code, *Kopieren*, status chip | NOT TESTED |
+| 4 | Errors: wrong code, wrong port, cancel during join, host cancel | Error banner in the panel with the original messages; main menu usable afterwards | NOT TESTED |
+| 5 | Enable the developer menu on both PCs. F10, then F8, then F8 again; while typing in an F10 field press F8 | Only one window at a time; F8 while typing in F10 is ignored; same key closes | NOT TESTED |
+| 6 | P1 F10: select step 18 (story14), *Test-Host vorbereiten mit Schritt 18*, *Fortsetzen* | Log `TEST_CAMPAIGN prepared`, `TEST_STORY isolated copy: Story n -> 18 'story14'`; HUD shows "Disable the 104 entrance camera ..."; real save untouched (check its timestamp) | NOT TESTED |
+| 7 | P2 F10 → *Testkampagne beitreten* | P2 joins, test sandbox (`JOIN ... (multiplayer test campaign)`), same objective as P1; W6A note_103 test (§49 row 2) works | NOT TESTED |
+| 8 | P2 tries F8 *Spiel beitreten* to the test host (restart P2 first) | Refused: "Der Host spielt eine Entwickler-Testkampagne ..."; P2 loads nothing | NOT TESTED |
+| 9 | Normal host (no test) + P2 F10 *Testkampagne beitreten* | Refused: "Der Host spielt keine Testkampagne ..." | NOT TESTED |
+| 10 | F10 select an unsupported step (e.g. 20, 35) | Marked X with the reason and the step to select instead; *Test-Host vorbereiten* refuses, main menu stays normal (copy released) | NOT TESTED |
+| 11 | After a test run: restart, F10 *Testszenario zurücksetzen*, then Dev Host again | Log `TEST_RESET ... moved aside`; new copy of the real save; `testcampaign.reset-<time>` folder exists | NOT TESTED |
+| 12 | In a loaded world press F8 / F10 | Nothing opens (log `MENU ... ignored outside the main menu`) | NOT TESTED |
+
+Send back both `LogOutput.log` files.
+
+ — shared story progression (release `TS2-Multiplayer-0.26.0.zip` on BOTH PCs, protocol 37)
 F8 test campaign at story step "Disable the 104 entrance camera with your drone" (stage 18 `story14`; reached after the RobTips step). Both players in Madison Street. Back up the host save first. Grep tag: `STORY`.
 
 | # | Steps | Expected evidence | Result |

@@ -65,6 +65,20 @@ namespace TS2MP.Shared
             return string.Equals(Path.GetFileName(trimmed), TestCampaignFolder, StringComparison.OrdinalIgnoreCase) ? trimmed : Path.Combine(trimmed, TestCampaignFolder);
         }
 
+        // W6A.1 developer reset: the whole test-campaign folder (host save copy, test Player-2 / fleet / spawn records, test
+        // client sandbox) is moved aside to "<folder>.reset-<stamp>" (never deleted). null = refused (reason in why).
+        public static string ResetDestination(string testDir, string realSaveDir, string gameDir, string stamp, out string why)
+        {
+            why = null;
+            if (string.IsNullOrEmpty(testDir) || string.IsNullOrEmpty(stamp)) { why = "no test folder"; return null; }
+            string t = Norm(testDir);
+            if (!string.Equals(Path.GetFileName(t), TestCampaignFolder, StringComparison.OrdinalIgnoreCase)) { why = "not the test-campaign folder: " + t; return null; }
+            if ((!string.IsNullOrEmpty(realSaveDir) && (IsUnder(t, Norm(realSaveDir)) || IsUnder(Norm(realSaveDir), t)))
+                || (!string.IsNullOrEmpty(gameDir) && (IsUnder(t, Norm(gameDir)) || IsUnder(Norm(gameDir), t)))) { why = "test folder overlaps the real save / game folder"; return null; }
+            for (int i = 0; i < stamp.Length; i++) if (!char.IsLetterOrDigit(stamp[i]) && stamp[i] != '-') { why = "bad stamp"; return null; }
+            return t + ".reset-" + stamp;
+        }
+
         // Path the game's persistentDataPath callers see: the original while disarmed (solo / host), the sandbox while armed.
         public static string Effective(bool armed, string sandbox, Func<string> original) { return armed ? sandbox : original(); }
 

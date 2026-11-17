@@ -131,6 +131,74 @@ namespace TS2MP.Shared
     public sealed class JoinRequest { public string Host; public int Port; public string Code; }
 
     // EndSession = W4.2B.3: Player 2 returned to the main menu after the world was loaded (clean session end).
+    // W6A.1: two windows on one session controller. F8 = public multiplayer menu (normal Host / Join only); F10 = developer
+    // menu (isolated test campaign, story-step selector, reset), present only with Developer.EnableDeveloperMenu = true.
+    public enum MenuPanel : byte { None, Public, Developer }
+    public enum JoinKind : byte { Public, Developer, Any }   // Any = the DEV_AUTOJOIN environment hook (launcher tests)
+
+    public static class MenuRouting
+    {
+        public const string DevActiveText = "In diesem Spiel ist eine Entwickler-Testkampagne aktiv. Für eine normale Sitzung bitte das Spiel neu starten.";
+        public const string PublicJoinTestHostText = "Der Host spielt eine Entwickler-Testkampagne. Beitritt nur über das Entwicklermenü.";
+        public const string DevJoinNormalHostText = "Der Host spielt keine Testkampagne. Über das Entwicklermenü nur Testkampagnen beitreten (normal: F8).";
+
+        // Developer menu only when explicitly configured (default off in every release) and never in launcher mode.
+        public static bool DevMenuAllowed(bool configEnabled, bool legacy) { return configEnabled && !legacy; }
+
+        // One hotkey press -> the panel that is open afterwards. Never two panels; the other panel's key is ignored while a
+        // text field has keyboard focus (typing); outside the main menu nothing opens (an open panel closes).
+        public static MenuPanel Toggle(MenuPanel current, MenuPanel pressed, bool devAllowed, bool typing, bool mainMenu)
+        {
+            if (pressed == MenuPanel.None) return current;
+            if (pressed == MenuPanel.Developer && !devAllowed) return current;
+            if (current == pressed) return MenuPanel.None;
+            if (!mainMenu) return MenuPanel.None;
+            if (typing && current != MenuPanel.None) return current;
+            return pressed;
+        }
+
+        // After the host's Welcome: does the campaign type match the menu the join came from? null = yes.
+        public static string JoinMismatch(JoinKind kind, bool hostTestCampaign)
+        {
+            if (kind == JoinKind.Public && hostTestCampaign) return PublicJoinTestHostText;
+            if (kind == JoinKind.Developer && !hostTestCampaign) return DevJoinNormalHostText;
+            return null;
+        }
+
+        // F8: never a test campaign. A process that prepared / played the test campaign offers no normal Host / Join.
+        public static Availability PublicHost(GameContext ctx, MpState s, bool legacy, bool clientModeSticky, bool testActive)
+        {
+            if (testActive && !legacy) return Availability.No(DevActiveText);
+            return MenuRules.Host(ctx, s, legacy, clientModeSticky);
+        }
+        public static Availability PublicJoin(GameContext ctx, MpState s, bool legacy, bool isolationAvailable, bool testActive)
+        {
+            if (testActive && !legacy) return Availability.No(DevActiveText);
+            return MenuRules.Join(ctx, s, legacy, isolationAvailable);
+        }
+
+        // Reset of the isolated test scenario (the test folder is moved aside, never deleted): only while nothing uses it.
+        public static Availability DevReset(GameContext ctx, MpState s, bool legacy, bool saveIsolationArmed, bool worldLoadedBefore)
+        {
+            if (legacy) return Availability.No(MenuRules.LegacyText);
+            if (MenuRules.Busy(s)) return Availability.No("Es läuft eine Mehrspieler-Sitzung.");
+            if (saveIsolationArmed) return Availability.No("Der Testordner ist in diesem Spiel in Benutzung. Spiel neu starten, dann zurücksetzen.");
+            if (ctx != GameContext.MainMenu || worldLoadedBefore) return Availability.No("Nur im Hauptmenü, bevor ein Spielstand geladen wurde (Spiel neu starten).");
+            return Availability.Yes;
+        }
+
+        // Developer test step (-1 = keep the copied save's step). null = may be applied to the isolated copy.
+        public static string DevStoryRefusal(int index, bool copyHasSave, bool copyFreeMode)
+        {
+            if (index < 0) return null;
+            string r = StoryCatalog.Refusal(index);
+            if (r != null) return r;
+            if (!copyHasSave) return "Die Testkopie hat keinen Spielstand (dein echter Spielstand fehlt oder ist leer). Erst einen Spielstand anlegen.";
+            if (copyFreeMode) return "Die Testkopie ist im Freien Modus (FreeMode = 1): StoryManager erzwingt dort Schritt 80.";
+            return null;
+        }
+    }
+
     public enum ClientAction { None, ArmIsolation, BuildSystemsAndConfirm, ContinueGame, Abort, GiveUp, EndSession }
 
     public sealed class Lifecycle

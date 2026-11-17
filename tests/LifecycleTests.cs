@@ -521,9 +521,17 @@ static class LifecycleTests
         string code = StripComments(menu);
         foreach (var k in new[] { "PMB", "PCB", "cursorLock", "isPlaying", "rewiredPlayer", "LockPlayer", ".enabled = false" })
             Expect(code.IndexOf(k, StringComparison.Ordinal) < 0, "the F8 menu no longer touches player / camera / input state: " + k);
-        int open = code.IndexOf("void OpenMenu()", StringComparison.Ordinal);
-        Expect(open > 0 && code.IndexOf("MenuRules.MenuOpens(ctx)", open, StringComparison.Ordinal) > open && code.IndexOf("MenuRules.MenuOpens(ctx)", open, StringComparison.Ordinal) < code.IndexOf("_open = true;", open, StringComparison.Ordinal), "the window opens only after the main-menu check");
-        int sh = code.IndexOf("void StartHost(bool test)", StringComparison.Ordinal), sj = code.IndexOf("void StartJoin()", StringComparison.Ordinal);
+        // W6A.1: window plumbing moved to MultiplayerMenu.Ui.cs; its only ".enabled = false" is the original main menu's uGUI
+        // EventSystem while a window is open (restored on close), never player / camera / cursor state.
+        string ui = StripComments(File.ReadAllText(Path.Combine(root, "src", "Plugin", "MultiplayerMenu.Ui.cs")));
+        foreach (var k in new[] { "PMB", "PCB", "cursorLock", "isPlaying", "rewiredPlayer", "LockPlayer" })
+            Expect(ui.IndexOf(k, StringComparison.Ordinal) < 0, "the menu windows never touch player / camera / input state: " + k);
+        Expect(ui.Replace("if (es != null && es.enabled) { es.enabled = false; _blockedEs = es; }", "").IndexOf(".enabled = false", StringComparison.Ordinal) < 0, "only the main menu's EventSystem is disabled while a window is open");
+        int open = ui.IndexOf("void Hotkey(MenuPanel pressed)", StringComparison.Ordinal);
+        int chk = open > 0 ? ui.IndexOf("bool main = MenuRules.MenuOpens(ctx);", open, StringComparison.Ordinal) : -1;
+        Expect(open > 0 && chk > open && chk < ui.IndexOf("MenuRouting.Toggle(_panel, pressed, _devAllowed, GUIUtility.keyboardControl != 0, main)", open, StringComparison.Ordinal)
+            && ui.IndexOf("OpenPanel(next)", open, StringComparison.Ordinal) > chk, "the window opens only after the main-menu check (MenuRouting.Toggle)");
+        int sh = code.IndexOf("void StartHost(bool test)", StringComparison.Ordinal), sj = code.IndexOf("void StartJoin(JoinKind kind)", StringComparison.Ordinal);
         Expect(sh > 0 && sj > sh, "StartHost found");
         string host = code.Substring(sh, sj - sh);
         int rule = host.IndexOf("MenuRules.Host(ctx", StringComparison.Ordinal), prep = host.IndexOf("PrepareTestCampaign()", StringComparison.Ordinal),
@@ -720,7 +728,8 @@ static class LifecycleTests
         string root = Repo();
         string menu = StripComments(File.ReadAllText(Path.Combine(root, "src", "Plugin", "MultiplayerMenu.cs")));
         Expect(menu.IndexOf("_testHost", StringComparison.Ordinal) < 0, "the prepared flag lives in Lifecycle (no parallel menu flag)");
-        Expect(menu.Contains("GUILayout.Button(\"Hosten abbrechen\", _btn)) CancelHost("), "cancel button -> CancelHost");
+        string ui = StripComments(File.ReadAllText(Path.Combine(root, "src", "Plugin", "MultiplayerMenu.Ui.cs"))), dev = StripComments(File.ReadAllText(Path.Combine(root, "src", "Plugin", "MultiplayerMenu.Dev.cs")));
+        Expect(ui.Contains("GUILayout.Button(\"Hosten abbrechen\", st.Secondary, GUILayout.Height(42))) { Click(); CancelHost(") && dev.Contains("GUILayout.Button(\"Hosten abbrechen\")) CancelHost("), "cancel buttons (F8 + F10) -> CancelHost");
         int ch = menu.IndexOf("void CancelHost(string why)", StringComparison.Ordinal), rl = menu.IndexOf("void ReleaseTestIfDue(string why)", StringComparison.Ordinal);
         Expect(ch > 0 && rl > ch, "CancelHost + ReleaseTestIfDue present");
         string cb = menu.Substring(ch, rl - ch);
@@ -731,9 +740,9 @@ static class LifecycleTests
             clr = rb.IndexOf("_lc.TestCampaignReleased();", StringComparison.Ordinal);
         Expect(due >= 0 && rel > due && quit > rel && dis > quit && clr > dis, "gate -> SaveGuard release (fail closed, quit on failed re-arm) -> records restored -> flag cleared");
         string sh = menu.Substring(menu.IndexOf("void StartHost(bool test)", StringComparison.Ordinal));
-        sh = sh.Substring(0, sh.IndexOf("void StartJoin()", StringComparison.Ordinal));
+        sh = sh.Substring(0, sh.IndexOf("void StartJoin(JoinKind kind)", StringComparison.Ordinal));
         int n = 0, at = 0; while ((at = sh.IndexOf("ReleaseTestIfDue(", at, StringComparison.Ordinal)) >= 0) { n++; at++; }
-        Expect(n == 3, "every failed host start after the test preparation releases it (refused / port / systems): " + n);
+        Expect(n == 4, "every failed host start after the test preparation releases it (story step refused / host refused / port / systems): " + n);
         string guard = StripComments(File.ReadAllText(Path.Combine(root, "src", "Plugin", "SaveGuard.cs")));
         int rg = guard.IndexOf("public static bool ReleaseTestHostSave(out string why)", StringComparison.Ordinal);
         Expect(rg > 0, "release present");

@@ -57,6 +57,12 @@ namespace TS2MP.Plugin
             var menuKeyName = Config.Bind("Network", "MenuKey", "F8", "Opens / closes the multiplayer menu in the main menu (prepare Host before loading the save, or Join). Does nothing in a loaded world.").Value;
             try { menuKey = (KeyCode)Enum.Parse(typeof(KeyCode), menuKeyName, true); } catch { menuKey = KeyCode.F8; }
             settings.MenuKey = menuKey;
+            // W6A.1: developer menu (isolated test campaign, story-step selector). Off by default; release packages ship no
+            // config, so players never see it unless they switch it on here explicitly.
+            settings.DevMenuEnabled = Config.Bind("Developer", "EnableDeveloperMenu", false, "Developers / testers only: enables the developer menu in the main menu (isolated multiplayer test campaign on a COPY of the save, story-step selector, scenario reset). Off for normal play.").Value;
+            KeyCode devKey;
+            try { devKey = (KeyCode)Enum.Parse(typeof(KeyCode), Config.Bind("Developer", "DeveloperMenuKey", "F10", "Opens / closes the developer menu in the main menu (only with EnableDeveloperMenu = true). F12 is avoided: Steam screenshots.").Value, true); } catch { devKey = KeyCode.F10; }
+            settings.DevMenuKey = devKey == settings.MenuKey ? KeyCode.F10 : devKey;
             int hostPort;
             settings.HostPort = NetConfig.TryParsePort(Config.Bind("Network", "HostPort", NetConfig.DefaultPort, "Default UDP port for Host Game (forward exactly this UDP port in the router). Can also be changed in the F8 menu.").Value.ToString(), out hostPort) ? hostPort : NetConfig.DefaultPort;
             settings.DataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TS2MP");
@@ -131,6 +137,7 @@ namespace TS2MP.Plugin
     {
         public SyncSettings Sync; public WorldSettings World; public VehicleSettings Vehicles;
         public KeyCode MenuKey = KeyCode.F8; public int HostPort = NetConfig.DefaultPort;
+        public bool DevMenuEnabled; public KeyCode DevMenuKey = KeyCode.F10;   // W6A.1 developer menu (default off)
         public string DataDir, LogDir;
     }
 

@@ -11,7 +11,7 @@ UPnP, DMZ ("Exposed Host"), VPN, Relay-Server oder Port-Bereiche werden **nicht*
 | --- | --- |
 | Adresse | öffentliche IPv4-Adresse des Host-Anschlusses (Router-Übersichtsseite) oder ein DynDNS-Name |
 | Port | 27960 (oder der im F8-Menü gewählte Port), UDP |
-| Beitrittscode | wird nach **F8 → Hosten vorbereiten** (im Hauptmenü) im Menü angezeigt (Format `XXXXX-XXXXX-XXXXX-XXXXX-XXXXX`) |
+| Beitrittscode | wird nach **F8 → Spiel hosten → Sitzung vorbereiten** (im Hauptmenü) im Menü angezeigt (Format `XXXXX-XXXXX-XXXXX-XXXXX-XXXXX`) |
 
 Der Beitrittscode ist **bei jedem Host-Start neu** und gilt nur für diese Sitzung. Er gehört nicht in öffentliche
 Chats oder Screenshots. Es kann immer nur **ein** Mitspieler beitreten; weitere Verbindungsversuche werden abgelehnt.
@@ -86,11 +86,11 @@ Geräten eingerichtet werden – oder das vordere Gerät in den Bridge-Modus ver
 
 ## Schritt 5: Spielen
 
-1. Host: im **Hauptmenü** **F8 → Hosten vorbereiten**. Adresse, Port und Beitrittscode an den Mitspieler schicken
-   ("Code kopieren" legt ihn in die Zwischenablage). Dann F8 schließen und den Spielstand wie gewohnt laden
+1. Host: im **Hauptmenü** **F8 → Spiel hosten → Sitzung vorbereiten**. Adresse, Port und Beitrittscode an den Mitspieler schicken
+   ("Kopieren" legt ihn in die Zwischenablage). Dann F8 schließen und den Spielstand wie gewohnt laden
    ("Fortsetzen"). Der Mehrspieler startet automatisch; Spieler 2 kann beitreten, sobald die Welt geladen ist.
    Im laufenden Spiel bewirkt F8 nichts; zurück ins Hauptmenü beendet die Sitzung.
-2. Mitspieler: im **Hauptmenü** F8 → Adresse, Port, Beitrittscode eingeben → **Verbinden**.
+2. Mitspieler: im **Hauptmenü** F8 → **Spiel beitreten** → Adresse, Port, Beitrittscode eingeben → **Verbinden**.
 3. Beide müssen dieselbe Mod-Version installiert haben (dasselbe Release-ZIP).
 
 Im selben Heimnetz kann der Mitspieler statt der öffentlichen Adresse direkt die **lokale Adresse** des Host-PCs

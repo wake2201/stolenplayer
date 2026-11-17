@@ -120,13 +120,20 @@ namespace TS2MP.Plugin
         }
 
         // ---------------------------------------------------------------- window (function first)
+        // W6A.2: a plain area instead of GUI.Window - IMGUI draws windows above every later control, which would hide the
+        // mod's pointer (DrawPointer is the last call of the frame). Fixed, centred, clamped to the screen.
         void DrawDeveloper()
         {
-            if (_devRect.width < 1) _devRect = new Rect(Mathf.Max(10, (Screen.width - 700) / 2f), Mathf.Max(10, (Screen.height - 760) / 2f), 700, Mathf.Min(760, Screen.height - 20));
-            _devRect = GUI.Window(0x7533, _devRect, DevWindow, "TS2MP Entwicklermenü (" + _settings.DevMenuKey + ")");
+            float w = Mathf.Min(720, Screen.width - 20), h = Mathf.Min(780, Screen.height - 20);
+            _devRect = new Rect(Mathf.Round((Screen.width - w) / 2f), Mathf.Round((Screen.height - h) / 2f), w, h);
+            GUI.Box(_devRect, "TS2MP Entwicklermenü (" + _settings.DevMenuKey + ")");
+            GUI.Box(_devRect, GUIContent.none);   // second pass: opaque enough over the main menu
+            GUILayout.BeginArea(new Rect(_devRect.x + 10, _devRect.y + 24, _devRect.width - 20, _devRect.height - 34));
+            DevWindow();
+            GUILayout.EndArea();
         }
 
-        void DevWindow(int id)
+        void DevWindow()
         {
             var ctx = Context();
             _devScroll = GUILayout.BeginScrollView(_devScroll);
@@ -139,9 +146,8 @@ namespace TS2MP.Plugin
             else if (_hostCode != null && (_lc.IsHostState || _lc.State == MpState.Connected))
             {
                 GUILayout.Label("HOST aktiv auf UDP " + _port + (_runner.TestCampaignActive ? " – TESTKAMPAGNE" : " – normale Kampagne") + (_appliedStory >= 0 ? ", Schritt " + _appliedStory : ""));
-                GUILayout.Label("Beitrittscode: " + _hostCode);
+                GUILayout.Label("Kein Beitrittscode nötig: Spieler 2 wählt im Entwicklermenü „Testkampagne beitreten“ mit deiner Adresse und Port " + _port + ".");
                 GUILayout.Label("Bereitschaft: " + (_hostGateReason ?? "bereit"));
-                if (GUILayout.Button("Code kopieren")) { GUIUtility.systemCopyBuffer = _hostCode; _hint = "Code kopiert."; }
                 if (GUILayout.Button("Hosten abbrechen")) CancelHost("cancelled in the developer menu");
             }
             else if (_lc.Busy() && !_lc.IsHostState)
@@ -165,7 +171,6 @@ namespace TS2MP.Plugin
             }
             GUILayout.EndScrollView();
             if (GUILayout.Button("Schließen (" + _settings.DevMenuKey + ")")) CloseMenu("button");
-            GUI.DragWindow(new Rect(0, 0, 10000, 20));
         }
 
         void DevHostSection(GameContext ctx)
@@ -210,7 +215,7 @@ namespace TS2MP.Plugin
             GUILayout.Label("Legende: OK unterstützt · ~ eingeschränkt · X nicht unterstützt");
             _stepScroll = GUILayout.BeginScrollView(_stepScroll, GUILayout.Height(190));
             for (int i = 0; i < _stepLabels.Length; i++)
-                if (GUILayout.Toggle(_devStory == i, _stepLabels[i])) { if (_devStory != i) _devStory = i; }
+                if (GUILayout.Button(_stepLabels[i], _devStory == i ? SelectedRow() : RowStyle())) _devStory = i;   // W6A.2: one selectable row per step (no checkboxes)
             GUILayout.EndScrollView();
         }
 
@@ -222,10 +227,14 @@ namespace TS2MP.Plugin
             GUILayout.BeginHorizontal();
             GUILayout.Label("Host:", GUILayout.Width(40)); _joinHost = GUILayout.TextField(_joinHost ?? "", 253, GUILayout.Width(220));
             GUILayout.Label("Port:", GUILayout.Width(36)); _joinPort = Digits(GUILayout.TextField(_joinPort ?? "", 5, GUILayout.Width(60)));
-            GUILayout.Label("Code:", GUILayout.Width(40)); _joinCode = GUILayout.TextField(_joinCode ?? "", 40, GUILayout.Width(150));
             GUILayout.EndHorizontal();
             if (GUILayout.Button("Testkampagne beitreten")) StartJoin(JoinKind.Developer);
+            GUILayout.Label("Kein Code nötig: Test-Host und Test-Beitritt verwenden einen festen Entwickler-Schlüssel. Normale F8-Hosts lehnen ihn ab.");
         }
+
+        GUIStyle _row, _rowSel;
+        GUIStyle RowStyle() { if (_row == null) { _row = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleLeft, wordWrap = false }; _row.hover.textColor = Color.white; _row.normal.textColor = new Color(0.82f, 0.82f, 0.82f); } return _row; }
+        GUIStyle SelectedRow() { if (_rowSel == null) { _rowSel = new GUIStyle(GUI.skin.button) { alignment = TextAnchor.MiddleLeft, wordWrap = false, fontStyle = FontStyle.Bold }; } return _rowSel; }
 
         // Technical status, rebuilt at most twice per second (no per-frame string building).
         string DevInfo()

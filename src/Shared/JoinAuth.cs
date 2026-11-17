@@ -81,6 +81,16 @@ namespace TS2MP.Shared
             using (var h = SHA256.Create()) return h.ComputeHash(Encoding.ASCII.GetBytes("TS2MP-N1-join-key:" + normalizedCode));
         }
 
+        // W6A.2 developer test sessions (F10 only, Developer.EnableDeveloperMenu): a fixed, domain-separated key per protocol
+        // version replaces the join code. It can never match a normal host (whose key is DeriveKey of a fresh 115-bit random
+        // code, different domain prefix), so a developer client is refused (AuthFailed) by every F8 host, and an F8 client
+        // with a code is refused by a developer host. It is NOT a secret: anyone running the same mod version with the
+        // developer menu enabled can join a developer test host while it is open (isolated test copy only).
+        public static byte[] DevTestKey(int protocol)
+        {
+            using (var h = SHA256.Create()) return h.ComputeHash(Encoding.ASCII.GetBytes("TS2MP-W6A2-devtest-key:" + protocol));
+        }
+
         public static byte[] NewNonce()
         {
             var n = new byte[NonceBytes];

@@ -92,7 +92,7 @@ static class W6A1Tests
         var code = Menu(); var ui = Strip(Src("Plugin", "MultiplayerMenu.Ui.cs")); var dev = Strip(Src("Plugin", "MultiplayerMenu.Dev.cs"));
         Expect(code.Contains("_devAllowed = MenuRouting.DevMenuAllowed(settings.DevMenuEnabled, legacy);") && code.Contains("else if (_devAllowed && Input.GetKeyDown(_settings.DevMenuKey)) Hotkey(MenuPanel.Developer);"), "F10 read only when allowed");
         Expect(code.Contains("if (test && !_devAllowed) { _hint = \"Entwicklermenü ist deaktiviert.\"; return; }"), "test host refused without the developer menu");
-        Expect(ui.Contains("if (_panel == MenuPanel.Developer) { DrawDeveloper(); return; }"), "developer window drawn only for the developer panel");
+        Expect(ui.Contains("if (_panel == MenuPanel.Developer) { DrawDeveloper(); DrawPointer(); return; }")   /* W6A.2: + own pointer */, "developer window drawn only for the developer panel");
         foreach (var bad in new[] { "StartHost(true)", "JoinKind.Developer", "StoryCatalog", "_devStory", "PrepareTestCampaign", "ResetScenario", "Testkampagne hosten", "DevInfo" })
             Expect(ui.IndexOf(bad, StringComparison.Ordinal) < 0, "F8 menu has no developer feature: " + bad);
         Expect(ui.Contains("StartHost(false);") && ui.Contains("StartJoin(JoinKind.Public);"), "F8 = normal host / join");
@@ -208,7 +208,7 @@ static class W6A1Tests
         Expect(StoryRules.Decide(true, false, 18, "story14", r, out why) == ProposalCode.Accepted && StoryRules.Decide(true, false, 19, "story15", r, out why) == ProposalCode.Stale, "W6A decision unchanged");
         var ps = Strip(Src("Plugin", "ParcelSync.cs"));
         Expect(ps.Contains("if (!i._host && !StorySync.ClientHandlesStory && _noteAdvance(__instance)) { _setNoteAdvance(__instance, false);"), "W2B fallback unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.1", "protocol 37 / mod 0.26.1");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.2", "protocol 37 / mod 0.26.1");
     }
 
     // ---------------------------------------------------------------- helpers

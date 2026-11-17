@@ -151,6 +151,18 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 51. W6A.2 checklist — menu pointer, developer join without code, story list (release `TS2-Multiplayer-0.26.2.zip` on BOTH PCs, protocol 37)
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Main menu, F8: move the mouse over tabs, buttons, fields; click a field and type; close and reopen | A light arrow pointer with a dark outline is visible and follows the mouse; hover highlights exactly under its tip; no second pointer, not the game's cursor | NOT TESTED |
+| 2 | Repeat row 1 at 1280x720, 1920x1080 and 2560x1440 (or the highest available) | Pointer tip and hit positions match at every resolution; pointer size grows with the resolution | NOT TESTED |
+| 3 | Close F8 (key, *Schließen*), move the mouse | The game's own menu cursor is back, continues near the last pointer position, the original menu buttons react again; no frozen extra cursor | NOT TESTED |
+| 4 | F10 (developer menu enabled): pointer, scroll the story list with the wheel, select rows, click buttons | Same pointer; the list shows one selectable row per step (no checkboxes); the selected row is highlighted | NOT TESTED |
+| 5 | P1 F10 *Test-Host vorbereiten* (any supported step), *Fortsetzen*; P2 F10 enters only address + port, *Testkampagne beitreten* | No code anywhere in F10; P2 joins the test campaign (log `JOIN started from the developer menu`) | NOT TESTED |
+| 6 | P1 hosts normally with F8; P2 tries F10 *Testkampagne beitreten* to it | Refused: "Unter dieser Adresse läuft kein Entwickler-Test-Host …" (log `AuthFailed`); P1's F8 session unaffected; a normal F8 join with the code still works | NOT TESTED |
+| 7 | During row 5: P2 disconnects (network off / *Verbindung trennen*) and rejoins via F10 | Rejoin works without a code (restart P2's game if it asks for it) | NOT TESTED |
+| 8 | Start *Fortsetzen* with F8 open (host prepared) | World loads; in the world the game's cursor behaviour is unchanged | NOT TESTED |
+
 ## 50. W6A.1 checklist — F8 public menu + F10 developer menu (release `TS2-Multiplayer-0.26.1.zip` on BOTH PCs, protocol 37)
 Both PCs in the original main menu. Developer rows need `BepInEx\config\com.ts2mp.multiplayer.cfg` → `[Developer] EnableDeveloperMenu = true` on BOTH PCs (restart the game after editing). Grep tags: `MENU`, `HOST`, `JOIN`, `TEST_CAMPAIGN`, `TEST_STORY`, `TEST_RESET`.
 

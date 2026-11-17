@@ -318,7 +318,7 @@ static class S1Tests
         Expect(SleepTransaction.MinAdvance == 0.05f && TimeMath.SleepCycleMinutes == 0.2f, "clock constants unchanged");
         Expect(WorldKeys.SleepShow == "sleepShow" && WorldKeys.SleepStart == "sleepStart" && WorldKeys.Sleep == "sleep", "keys unchanged (no new networking)");
         Expect(new SleepShowState { EventId = 1, Initiator = 1, TargetHour = 1, Active = true }.ToBytes().Length == 7 && SleepStart.WireSize == 5, "wire sizes unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.1", "protocol 34 / mod 0.23.0 (H3 wire change; S1 itself changed no wire values)");
+        Expect(ProtocolInfo.ProtocolVersion == 37 && ProtocolInfo.ModVersion == "0.26.2", "protocol 34 / mod 0.23.0 (H3 wire change; S1 itself changed no wire values)");
     }
 
     // ------------------------------------------------------------------------------------------------ source helpers

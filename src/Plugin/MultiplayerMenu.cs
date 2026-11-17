@@ -240,7 +240,9 @@ namespace TS2MP.Plugin
                 case ClientAction.ArmIsolation: Prepare(node, ctx, now); break;
                 case ClientAction.ContinueGame: if (!ContinueOriginal()) { _lc.Fail(_hint ?? "Laden fehlgeschlagen (siehe Log)", now); EndClient("continue failed"); } break;
                 case ClientAction.Abort: node.AbortPreparation("aborted"); EndClient("aborted: " + _lc.Error); break;
-                case ClientAction.GiveUp: EndClient("connection ended: " + _lc.Error); break;
+                case ClientAction.GiveUp:
+                    if (_joinKind == JoinKind.Developer && node.LastReject == RejectCode.AuthFailed) { _hint = MenuRouting.DevAuthFailedText; _log.Warn("JOIN developer test join refused by the host (AuthFailed): no developer test host at that address"); }
+                    EndClient("connection ended: " + _lc.Error); break;
                 case ClientAction.EndSession: StopSession("player 2 returned to the main menu"); break;
             }
         }
@@ -328,7 +330,7 @@ namespace TS2MP.Plugin
             _lc.BeginStop(Time.realtimeSinceStartup);
             if (_pendingClient != null) { _pendingClient.Dispose(); _pendingClient = null; }
             _runner.DetachSession(why);
-            _hostCode = null; _hint = null;
+            _hostCode = null; _hint = null; _devHosting = false;
             _lc.Stopped(Time.realtimeSinceStartup);
         }
 
@@ -381,7 +383,8 @@ namespace TS2MP.Plugin
             string code = JoinAuth.NewCode();
             var node = new SessionNode(Role.Host, RandomHex(6), RandomHex(4), Application.version, _port, _log);
             node.BindAddress = "0.0.0.0";
-            node.JoinKey = JoinAuth.DeriveKey(code);
+            if (test) node.JoinKey = MenuRouting.SessionKey(true, null);   // W6A.2: developer key, no code (F10 Test Join)
+            else node.JoinKey = JoinAuth.DeriveKey(code);
             node.HostGate = () => _hostGateReason;
             node.TestCampaign = _lc.TestPrepared && SaveGuard.DevHost && _runner.TestCampaignActive;   // W4.2B.2: told to Player 2 in Welcome
             _hostGateReason = "Host startet";
@@ -399,7 +402,7 @@ namespace TS2MP.Plugin
                 ReleaseTestIfDue("host systems failed");
                 return;
             }
-            _hostCode = JoinAuth.Format(code);
+            _hostCode = test ? DevHostLabel : JoinAuth.Format(code); _devHosting = test;
             _hint = null;
             _loggedGate = null; _nextGate = 0;
             _lc.HostStarted(true, null, now);
@@ -415,11 +418,12 @@ namespace TS2MP.Plugin
             if (kind == JoinKind.Public && TestActive) { _hint = MenuRouting.DevActiveText; return; }
             if (kind == JoinKind.Developer && !_devAllowed) { _hint = "Entwicklermenü ist deaktiviert."; return; }
             _joinKind = kind;
-            string deny = _lc.RequestJoin(Context(), _isolationAvailable, _joinHost, _joinPort, _joinCode, out req, now);
+            string deny = kind == JoinKind.Developer ? _lc.RequestDevJoin(Context(), _isolationAvailable, _joinHost, _joinPort, out req, now)
+                : _lc.RequestJoin(Context(), _isolationAvailable, _joinHost, _joinPort, _joinCode, out req, now);
             if (deny != null) { _hint = deny; return; }
             var node = new SessionNode(Role.Client, "join", RandomHex(4), Application.version, req.Port, _log);
             node.ConnectAddress = req.Host;
-            node.JoinKey = JoinAuth.DeriveKey(req.Code);
+            node.JoinKey = kind == JoinKind.Developer ? MenuRouting.SessionKey(true, null) : JoinAuth.DeriveKey(req.Code);
             node.AutoReady = SaveGuard.Armed;   // already isolated earlier in this process: no new preparation needed
             _mismatchChecked = false;
             if (!node.Start()) { node.Dispose(); _lc.Fail("Netzwerk konnte nicht gestartet werden", now); return; }

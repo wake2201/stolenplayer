@@ -23,6 +23,109 @@ namespace TS2MP.Plugin
         Behaviour _blockedEs; bool _blockTried;
         Font _gameFont; AudioSource _click; bool _assetsTried;
         string _footer;
+        const string DevHostLabel = "(Entwickler-Test – kein Code)";
+        bool _devHosting;
+
+        // ---------------------------------------------------------------- pointer (W6A.2)
+        // Root cause of the invisible pointer (IL 1.27c): MainMenu.Update IL_0000 sets Cursor.visible = false EVERY frame; the
+        // main menu's pointer is a software cursor - Cooldhands.UICursorStandaloneInputModule (on the EventSystem) moves the UI
+        // image UICursorInputModule.m_cursor from its own axis input (m_inputX / m_inputY * speed, UpdateModule IL_004c..00b4)
+        // and also hides the hardware pointer (IL_0000..0027). With a window open the EventSystem is disabled (no click-through),
+        // so that image freezes (and IMGUI is drawn over it), while IMGUI hit-tests the hidden HARDWARE pointer.
+        // Fix: while a window is open the mod draws its own pointer (not the game's image) at Event.mousePosition - the very
+        // position IMGUI uses for hover / click / text / scroll hit tests - as the last IMGUI call (top-most); the game's
+        // software cursor image is hidden; Cursor.lockState is forced to None. On close: lockState / visibility restored, the
+        // game's cursor image re-shown and moved to the pointer position (UICursorStandaloneInputModule.SetCursorPosition), the
+        // EventSystem re-enabled (SyncInputBlock).
+        static readonly string[] PointerMask =
+        {
+            "X           ", "XX          ", "X.X         ", "X..X        ", "X...X       ", "X....X      ", "X.....X     ",
+            "X......X    ", "X.......X   ", "X........X  ", "X.........X ", "X......XXXXX", "X...X..X    ", "X..XX..X    ",
+            "X.X  X..X   ", "XX   X..X   ", "X     X..X  ", "      X..X  ", "       XX   ",
+        };
+        Texture2D _pointer;
+        bool _cursorOwned; bool _prevVisible; CursorLockMode _prevLock; GameObject _gameCursor; bool _gameCursorWasActive; Component _cursorModule;
+        static Type _uiModuleT; static Func<object, object> _uiCursorField; static System.Reflection.MethodInfo _uiSetPos; static bool _uiResolved;
+
+        Texture2D PointerTexture()
+        {
+            if (_pointer != null) return _pointer;
+            int w = PointerMask[0].Length, h = PointerMask.Length;
+            var t = new Texture2D(w, h, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave, filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+            var fill = Hex(0xF4EFE6); var edge = Hex(0x0B0B0C); var none = new Color(0, 0, 0, 0);
+            for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) { char c = PointerMask[y][x]; t.SetPixel(x, h - 1 - y, c == 'X' ? edge : c == '.' ? fill : none); }
+            t.Apply(); _textures.Add(t); _pointer = t; return t;
+        }
+
+        // Called every frame while a window is open (Update) and once on close.
+        void SyncCursor()
+        {
+            if (_open && !_cursorOwned)
+            {
+                _cursorOwned = true; _prevVisible = Cursor.visible; _prevLock = Cursor.lockState;
+                HideGameCursor();
+            }
+            if (_open)
+            {
+                if (Cursor.lockState != CursorLockMode.None) Cursor.lockState = CursorLockMode.None;   // pointer must move freely
+                if (Cursor.visible) Cursor.visible = false;   // never a second (hardware) pointer next to the mod's
+                return;
+            }
+            if (!_cursorOwned) return;
+            _cursorOwned = false;
+            Cursor.lockState = _prevLock; Cursor.visible = _prevVisible;
+            RestoreGameCursor();
+        }
+
+        static void ResolveUiCursor()
+        {
+            if (_uiResolved) return;
+            _uiResolved = true;
+            _uiModuleT = AccessTools.TypeByName("Cooldhands.UICursorInputModule") ?? AccessTools.TypeByName("UICursorInputModule");
+            var st = AccessTools.TypeByName("Cooldhands.UICursorStandaloneInputModule") ?? AccessTools.TypeByName("UICursorStandaloneInputModule");
+            if (_uiModuleT != null) _uiCursorField = Fast.Getter<object>(_uiModuleT, "m_cursor");
+            if (st != null) _uiSetPos = AccessTools.Method(st, "SetCursorPosition", new[] { typeof(Vector2) });
+        }
+
+        void HideGameCursor()
+        {
+            _gameCursor = null; _cursorModule = null;
+            try
+            {
+                ResolveUiCursor();
+                var es = CurrentEventSystem();
+                if (es == null || _uiModuleT == null || _uiCursorField == null) return;
+                _cursorModule = es.GetComponent(_uiModuleT);
+                var cur = _cursorModule != null ? _uiCursorField(_cursorModule) as Component : null;
+                if (cur == null) return;
+                _gameCursor = cur.gameObject; _gameCursorWasActive = _gameCursor.activeSelf;
+                if (_gameCursorWasActive) _gameCursor.SetActive(false);
+            }
+            catch (Exception ex) { _log.Warn("MENU game cursor not hidden: " + ex.Message); }
+        }
+
+        void RestoreGameCursor()
+        {
+            try
+            {
+                if (_gameCursor != null && Alive(_gameCursor) && _gameCursorWasActive) _gameCursor.SetActive(true);
+                if (_cursorModule != null && Alive(_cursorModule) && _uiSetPos != null && _uiSetPos.DeclaringType.IsInstanceOfType(_cursorModule))
+                    _uiSetPos.Invoke(_cursorModule, new object[] { (Vector2)Input.mousePosition });   // continue where the mod's pointer was
+            }
+            catch (Exception ex) { _log.Warn("MENU game cursor not restored: " + ex.Message); }
+            _gameCursor = null; _cursorModule = null;
+        }
+
+        // Last IMGUI call of the frame (identity matrix, screen pixels): drawn exactly at the IMGUI hit-test position.
+        void DrawPointer()
+        {
+            if (Event.current.type != EventType.Repaint) return;
+            var m = Event.current.mousePosition;
+            float s = Mathf.Max(1f, Mathf.Round(Screen.height / 1080f * 1.6f * 2f) / 2f);
+            var old = GUI.color; GUI.color = Color.white;
+            GUI.DrawTexture(new Rect(Mathf.Round(m.x), Mathf.Round(m.y), PointerMask[0].Length * s, PointerMask.Length * s), PointerTexture());
+            GUI.color = old;
+        }
 
         // ---------------------------------------------------------------- open / close / hotkeys
         void Hotkey(MenuPanel pressed)
@@ -53,11 +156,13 @@ namespace TS2MP.Plugin
             _panel = MenuPanel.None;
             GUIUtility.keyboardControl = 0;
             ReleaseInputBlock();
+            SyncCursor();   // restore lockState / visibility / the game's cursor image
         }
 
         // The original main menu (uGUI) must not react to clicks through the window.
         void SyncInputBlock()
         {
+            SyncCursor();
             bool want = _open && !(_loading != null && _loading.Shown);
             if (!want) { if (_blockedEs != null) ReleaseInputBlock(); return; }
             if (_blockedEs != null || _blockTried) return;
@@ -177,7 +282,7 @@ namespace TS2MP.Plugin
         public void OnGUI()
         {
             if (!_open) return;
-            if (_panel == MenuPanel.Developer) { DrawDeveloper(); return; }
+            if (_panel == MenuPanel.Developer) { DrawDeveloper(); DrawPointer(); return; }
             if (_styles == null) _styles = BuildStyles();
             var st = _styles;
             float scale = Mathf.Clamp(Screen.height / 1080f, 0.75f, 2.5f);
@@ -196,6 +301,7 @@ namespace TS2MP.Plugin
             DrawPublic(st);
             GUILayout.EndArea();
             GUI.matrix = old; GUI.color = oldColor;
+            DrawPointer();
         }
 
         static void DrawBorder(Rect r, Texture2D line)
@@ -307,12 +413,16 @@ namespace TS2MP.Plugin
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
             GUILayout.Space(16);
-            GUILayout.Label("BEITRITTSCODE", st.Label);
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(_hostCode, st.Code, GUILayout.Height(64));
-            GUILayout.Space(10);
-            if (GUILayout.Button("Kopieren", st.Secondary, GUILayout.Width(120), GUILayout.Height(64))) { Click(); GUIUtility.systemCopyBuffer = _hostCode; _hint = "Code kopiert."; }
-            GUILayout.EndHorizontal();
+            if (_devHosting) GUILayout.Label("Entwickler-Testsitzung: kein Beitrittscode. Spieler 2 tritt über das Entwicklermenü bei.", st.Info);
+            else
+            {
+                GUILayout.Label("BEITRITTSCODE", st.Label);
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(_hostCode, st.Code, GUILayout.Height(64));
+                GUILayout.Space(10);
+                if (GUILayout.Button("Kopieren", st.Secondary, GUILayout.Width(120), GUILayout.Height(64))) { Click(); GUIUtility.systemCopyBuffer = _hostCode; _hint = "Code kopiert."; }
+                GUILayout.EndHorizontal();
+            }
             GUILayout.Space(12);
             GUILayout.Label("Port: UDP " + _port + "   ·   Spieler 2: " + (p2 ? "verbunden" : "nicht verbunden"), st.Body);
             GUILayout.Space(8);

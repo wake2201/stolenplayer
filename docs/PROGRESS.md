@@ -1,5 +1,25 @@
 ﻿# PROGRESS
 
+## W6A.2 — Menu pointer, developer join without code, story list cleanup — **BUILT — PENDING MANUAL QA**, 2026-11-17
+Mod **0.26.2, protocol 37** (no wire change). Built on `6a32ddf` (W6A.1). Manual QA: `docs/TESTING.md` §51.
+
+### A. Root causes (IL 1.27c)
+- **Invisible pointer:** `MainMenu.Update` IL_0000 sets `Cursor.visible = false` every frame. The main-menu pointer is a software cursor: `Cooldhands.UICursorStandaloneInputModule` (on the EventSystem) moves the UI image `UICursorInputModule.m_cursor` from its own axis input (`UpdateModule` IL_004c..00b4) and hides the hardware pointer (IL_0000..0027). W6A.1 disables the EventSystem while a window is open (no click-through), so that image freezes under the IMGUI panel, while IMGUI hit-tests the hidden hardware pointer: clicks worked, nothing was visible.
+- **Checkboxes under the story selector:** they were the 81 story-step rows themselves, drawn with `GUILayout.Toggle` (default IMGUI checkbox) in W6A.1. "14 story10 – Buy a basic lockpicking tool ..." is step 14's row. Each only set `_devStory` (the selected step); none touched skills, prerequisites, saves or test preparation. Function needed (step choice), presentation misleading -> replaced.
+
+### B. Implementation
+- `MultiplayerMenu.Ui.cs`: own pointer (procedural arrow texture, point-filtered, scaled with the screen height) drawn as the LAST IMGUI call at `Event.current.mousePosition` = the exact hover / click / text / scroll hit-test position, matrix restored first. While a window is open: the game's cursor image (`m_cursor` GameObject) is hidden, `Cursor.lockState` forced to None, `Cursor.visible` kept false (no second pointer). On close (button, key, scene change, shutdown): lockState / visibility restored, the game's cursor image re-shown and moved to the pointer position (`UICursorStandaloneInputModule.SetCursorPosition`), EventSystem re-enabled. The game's cursor is never drawn or reused by the menus.
+- `MultiplayerMenu.Dev.cs`: plain area instead of `GUI.Window` (windows draw above later controls and would cover the pointer); story list = one selectable row per step (selected row highlighted); no join-code field; host view without code.
+- Developer session key: `JoinAuth.DevTestKey(protocol)` (fixed, domain-separated) for the F10 test host and F10 test join only (`MenuRouting.SessionKey`, `Lifecycle.RequestDevJoin` = address + port). Normal F8 host / join keys and code validation unchanged. A developer client at a normal host fails authentication (`AuthFailed`, clear message); an F8 client with a code at a developer host fails too; routing (`JoinMismatch`) stays as the second check.
+
+### C. Evidence
+- `tools/build.ps1 -Test`: plugin 0 warnings; **ALL 42 SUITES PASSED** incl. new `tests/W6A2Tests.cs` (8/8: key separation over 2000 codes, request validation, real loopback handshakes: developer connect, no bypass of F8 hosts both ways, reconnect after client / host restart; glue, pointer, story list). W6A 11/11, W2B 12/12, W6A.1 8/8 (pin for the pointer call).
+- No in-game run: pointer look / accuracy at several resolutions PENDING MANUAL QA.
+
+### D. Limitations / risks
+- The developer key is not a secret: while an F10 test host is open, anyone with the same mod version and the developer menu enabled who knows the address can join it (isolated test copy only). Normal F8 sessions keep code security.
+- If the game's cursor module is absent (other build), only the mod pointer is drawn; the hardware pointer stays hidden by the original MainMenu.
+
 ## W6A.1 — Public F8 multiplayer menu + separate F10 developer menu — **BUILT — PENDING MANUAL QA**, 2026-11-17
 Mod **0.26.1, protocol 37** (no wire change). Built on `3fd8db1` (W6A). Manual QA: `docs/TESTING.md` §50.
 

@@ -141,6 +141,15 @@ namespace TS2MP.Shared
         public const string DevActiveText = "In diesem Spiel ist eine Entwickler-Testkampagne aktiv. Für eine normale Sitzung bitte das Spiel neu starten.";
         public const string PublicJoinTestHostText = "Der Host spielt eine Entwickler-Testkampagne. Beitritt nur über das Entwicklermenü.";
         public const string DevJoinNormalHostText = "Der Host spielt keine Testkampagne. Über das Entwicklermenü nur Testkampagnen beitreten (normal: F8).";
+        // W6A.2: a developer join (fixed developer key) reaching a normal F8 host fails authentication.
+        public const string DevAuthFailedText = "Unter dieser Adresse läuft kein Entwickler-Test-Host (Authentifizierung abgelehnt). Normale Sitzungen nur über F8 mit Beitrittscode.";
+
+        // Key of a join / host session: normal = code-derived (unchanged), developer = JoinAuth.DevTestKey. null = refuse.
+        public static byte[] SessionKey(bool developer, string normalizedCode)
+        {
+            if (developer) return JoinAuth.DevTestKey(ProtocolInfo.ProtocolVersion);
+            return normalizedCode != null ? JoinAuth.DeriveKey(normalizedCode) : null;
+        }
 
         // Developer menu only when explicitly configured (default off in every release) and never in launcher mode.
         public static bool DevMenuAllowed(bool configEnabled, bool legacy) { return configEnabled && !legacy; }
@@ -260,6 +269,22 @@ namespace TS2MP.Shared
         }
 
         // ---- client ----
+        // W6A.2: developer test join (F10): address + port only; the developer key (JoinAuth.DevTestKey) replaces the code.
+        public string RequestDevJoin(GameContext ctx, bool isolationAvailable, string host, string portText, out JoinRequest req, double now)
+        {
+            req = null;
+            var a = MenuRules.Join(ctx, State, Legacy, isolationAvailable);
+            if (!a.Enabled) return a.Reason;
+            host = (host ?? "").Trim();
+            if (!NetConfig.ValidConnectAddress(host)) return "Ungültige Adresse (IPv4 oder DNS-Name, ohne Port).";
+            int port;
+            if (!NetConfig.TryParsePort(portText, out port)) return "Ungültiger Port (1024–65535).";
+            req = new JoinRequest { Host = host, Port = port, Code = null };
+            Error = null; _continued = false; _hostWaitSeen = false; _clientWorldEntered = false; _clientMenuSince = -1;
+            Set(MpState.ClientConnecting, "Verbinde mit Test-Host " + host + ":" + port + " …", now);
+            return null;
+        }
+
         public string RequestJoin(GameContext ctx, bool isolationAvailable, string host, string portText, string codeText, out JoinRequest req, double now)
         {
             req = null;

@@ -56,7 +56,10 @@ namespace TS2MP.Shared
         // LockedWindow state: bits 0-1 glass, bits 2-4 sash (open / slow / broken hinge)
         public const byte GlassMask = 3, GlassIntact = 0, GlassInside = 1, GlassCut = 2, GlassBroken = 3, SashOpen = 4, SashSlow = 8, SashBroken = 16;
 
-        public static bool SupportedKind(ObjectKind k) { return k == ObjectKind.Door || k == ObjectKind.Lockpick || k == ObjectKind.LockedWindow; }
+        // W2A: Breakable = original DestroyObject (one bit: BreakDestroyed, terminal for the region epoch).
+        public const byte BreakIntact = 0, BreakDestroyed = 1;
+
+        public static bool SupportedKind(ObjectKind k) { return k == ObjectKind.Door || k == ObjectKind.Lockpick || k == ObjectKind.LockedWindow || k == ObjectKind.Breakable; }
         // W4.2C Phase B: Madison Street (99), Hillville (97) and the hideout (0). Every rule below is per namespace; the scene
         // digest gate (OnScene) still refuses a region whose census differs between the instances (it then stays local).
         public static bool SupportedNamespace(int ns) { return ns == 99 || ns == 97 || ns == 0; }
@@ -70,6 +73,7 @@ namespace TS2MP.Shared
             {
                 case ObjectKind.Door: return (s & ~(DoorOpen | DoorSlow | DoorBroken)) == 0 && ((s & DoorBroken) == 0 || (s & DoorOpen) != 0);
                 case ObjectKind.Lockpick: return s <= LockPadlock;
+                case ObjectKind.Breakable: return s <= BreakDestroyed;
                 case ObjectKind.LockedWindow:
                     if ((s & ~31) != 0) return false;
                     if ((s & GlassMask) == GlassIntact) return (s & ~GlassMask) == 0;            // a locked window has no movable sash
@@ -119,6 +123,11 @@ namespace TS2MP.Shared
                     if ((cur & GlassMask) != GlassIntact && (next & GlassMask) == GlassIntact) return "an unlocked window cannot be locked again";
                     if ((cur & GlassMask) != GlassIntact && (next & GlassMask) != (cur & GlassMask)) return "the glass of an opened window cannot change";
                     if ((cur & SashBroken) != 0 && (next & SashBroken) == 0) return "a broken sash stays broken";
+                    return null;
+                case ObjectKind.Breakable:
+                    // DestroyObject.Destroy_Thing is one-shot (destroyed guard IL_0000) and destroys the colliders: only a
+                    // scene reload (= a new region epoch) restores the intact object.
+                    if (cur == BreakDestroyed && next != BreakDestroyed) return "a destroyed object stays destroyed until the region reloads";
                     return null;
             }
             return "unsupported kind";
@@ -773,6 +782,34 @@ namespace TS2MP.Shared
             return desired == ObjectStateRules.LockLocked ? LockApply.Relock : LockApply.Unlock;
         }
     }
+
+    // W2A: committed Breakable state -> local DestroyObject. local = DestroyObject.destroyed of this scene instance.
+    // A destroyed object can never be restored in the same scene instance (colliders destroyed, fragments released), so a
+    // local destruction the host did not commit is only reported (Diverged). The sync never lets that happen on its own:
+    // the original Destroy_Thing runs only after the host committed it (Player 2) or in the same call as the commit (host).
+    public enum BreakApply : byte { None, Shatter, SkipPending, Diverged }
+    public static class WorldBreakRules
+    {
+        public static BreakApply Decide(byte desired, bool localDestroyed, bool pending)
+        {
+            bool want = desired == ObjectStateRules.BreakDestroyed;
+            if (want == localDestroyed) return BreakApply.None;
+            if (!want) return BreakApply.Diverged;
+            return pending ? BreakApply.SkipPending : BreakApply.Shatter;   // our own proposal runs the original on its result
+        }
+
+        // Prefix decision for an original Destroy_Thing call on a shared object of a ready region.
+        //   committed = the host already committed it destroyed (a replica is due: the original call does nothing here);
+        //   waiting   = this instance already proposed it (a second swing during the round trip does nothing).
+        public static BreakGate Gate(bool host, bool ready, bool committed, bool waiting)
+        {
+            if (!ready) return BreakGate.Refuse;
+            if (committed) return BreakGate.ApplyCommitted;
+            if (host) return BreakGate.CommitThenRun;
+            return waiting ? BreakGate.Refuse : BreakGate.ProposeThenRun;
+        }
+    }
+    public enum BreakGate : byte { Refuse, ApplyCommitted, CommitThenRun, ProposeThenRun }
 
     public enum WindowApply : byte { None, Glass, SkipBusy, SkipPending, Diverged }
     public static class WorldWindowRules

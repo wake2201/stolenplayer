@@ -74,3 +74,12 @@ decoded]) are presentation.
 - [Q] Which Madison `DestroyObject`s set `activate_mission_completion` (asset field layouts vary; decode per object or
   read the live component at census time).
 - [A] Fragment AudioSource plays on activation.
+
+## 8. Status after W2A (0.24.0, 2026-11-17) [M]
+- Implemented as designed in §5 with one change: capture is a **prefix** (not a postfix) on `Destroy_Thing`, because the
+  original is irreversible - the host commits in the prefix and lets the original run in the same call; Player 2 proposes
+  and runs the original only after the host accepted (no local break before authorization). Replica = `WorldObjectBridge.Shatter`.
+- Re-verified IL 2026-11-17: the try block spans IL_002e..IL_006a (collider destroy + NPC alert); `dust_spawn` is only
+  copied from `PlayerScript.dustSpawn`, never instantiated; `Destroy_Thing` has exactly one IL caller (`CrowbarHit` IL_068c).
+- Late joiners: silent apply (fragments shown, activated roots' AudioSource stopped). Census counts confirmed from the
+  real scene files: Madison 64, Hillville 9, hideout 7, none ambiguous. Manual QA: `docs/TESTING.md` §47.

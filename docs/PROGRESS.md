@@ -1,5 +1,35 @@
 ﻿# PROGRESS
 
+## W2A — Shared destructible world objects — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
+Mod **0.24.0, protocol 35** (wire change: new region-object kind `Breakable = 26`, registry `wobj26[.page]`, carried by the existing `objTxn` / `objInit`). Both PCs need 0.24.0. Built on `5f5eecd` (H3). Manual QA: `docs/TESTING.md` §47.
+
+### A. Preserved (classified before the change)
+- Region-object registry, epochs, initializer, reconcile, door / furniture / lock / window paths (`WorldObjectSync`, `RegionStateBook`, `WorldObjectBridge`): IMPLEMENTED BUT UNVERIFIED for furniture, user-tested for doors / locks / windows - kept unchanged; breakables are one more kind on the same machinery (apply order locks -> windows -> breakables -> doors).
+
+### B. Original mechanism (Cecil IL 1.27c, re-verified 2026-11-17)
+- Only caller of `DestroyObject.Destroy_Thing` is `PlayerScript.CrowbarHit` IL_068c (tag `Destructible` / `DrinkBottle`); afterwards the actor's crowbar sound, shake, `MakeNoise += 0.75`, `brokeLoud` (IL_0691..IL_06eb, actor only, untouched).
+- `Destroy_Thing`: one-shot `destroyed` guard; `FindGameObjectWithTag("Player")`; destroy own `BoxCollider` / `MeshCollider` + `AlertNPCs_DistanceBased(1)` (try/catch); activate `destroyed_objects` (+ detach); `Mission_Item.Mission_Complete` if `activate_mission_completion`; deactivate `normal_objects`. No save key.
+- House 102: two independent components (`PLANK DESTROYABLE/plywood_001a`, `DESTROYABLE PLANKS/Destroy`; stage 2 switches off the blocking `Collider`) - two ids, two independent one-bit states. Census counts from the real scene files: Madison 64, Hillville 9, hideout 7 DestroyObject; 0 ambiguous.
+
+### C. Implementation
+- `WorldIdentity.cs`: census kind `Breakable = 26` (`DestroyObject`, static identity). `RegionState.cs`: `SupportedKind` + one-bit state (`BreakDestroyed`, terminal for the epoch: `CheckTransition` refuses destroyed -> intact), `WorldBreakRules.Decide` (apply) / `Gate` (prefix decision). Host book, epochs, catalog, restriction, rate limit, capacity: unchanged code.
+- `WorldCensus.cs`: breakables shared (`Shared` = `ObjectStateRules.SupportedKind`); `activate_mission_completion` / `Mission_Item` breakables restricted for Player 2 (fail closed).
+- `WorldObjectSync.cs`: Harmony **prefix** on `Destroy_Thing` (`AllowBreak`). Host: in-place commit, original runs in the same call only when Accepted (Unchanged = Player 2 won the race -> replica). Player 2: proposal, the swing breaks nothing until the host accepted (`_breakWait`), then the original runs once via the bypass (`ResumeBreak`: actor fragments, sound, NPC alert around Player 2). Further swings while waiting / on a committed object never run the original. Hook exception: Player 2 fails closed. Initializer reports locally broken objects; full reconcile applies committed breaks silently.
+- `WorldObjectBridge.cs`: `Shatter` = `Destroy_Thing` IL_000b..IL_00d7 minus PlayerScript lookup, NPC alert and mission completion; silent mode stops the activated roots' AudioSource. `BreakOk` separate: missing DestroyObject members only disable breakables.
+
+### D. Evidence
+- `tools/build.ps1 -Test`: plugin 0 warnings; **ALL 38 SUITES PASSED** incl. new `tests/W2ATests.cs` (11/11: House 102 both stages / both players, furniture, exactly-once, retransmission, concurrent hits both orders, stale epoch / region / state / NPC op, late join silent, reload / disconnect reset, mission restriction, initializer, capacity + rate limit, glue scans). Updated only version pins (protocol 35 / 0.24.0) and W4.2D A2 (real scene-file census now includes DestroyObject: MadisonSt 711D4CF3/2575, PlayerHideout 4FB73DBB/81; MainScene unchanged).
+- Proves the host model, rules and glue structure only; no in-game run.
+
+### E. Performance
+- Hot paths: none per frame. Prefix once per crowbar hit on a DestroyObject (dictionary lookups, one bool read). Host decision incl. registry page commit 3.0-3.7 us per object (offline, 64 objects). Reconcile: only changed `wobj26` pages parsed; full region-ready pass 64 / 9 / 7 objects once per visit. Census: one more `GetComponentsInChildren` type per scene load (once). Traffic: one 19 B `objTxn` proposal + one `wobj26` page delta (<= 804 B; 516 B with 64 broken) per break. GC: one small proposal + page buffer per break. FPS: no measurable impact expected; not measured in game.
+
+### F. Open / risks
+- [Q] Whether stage 2 can be hit through the intact plywood (original sensor reach) - the sync does not force an order (neither does the IL).
+- Player 2's break shows after one host round trip (fragments + alert delayed by the RTT); the crowbar swing sound / noise play at once (original, after `Destroy_Thing`).
+- Mission-completing breakables (e.g. House 101 AC): Player 2 refused (nothing happens); the host keeps the original incl. its own `Mission_Complete`, replicated to Player 2 without mission effect (same rule as story locks).
+- Late-join replica fragments start from their authored pose (fall / settle locally); debris positions may differ between PCs (local physics, presentation only).
+
 ## H3 — Heavy loot sale integrity + Ranger rear hatch sync — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
 Mod **0.23.0, protocol 34** (wire change: `heavyTxn` ops Sell = 7 / Unsell = 8; `vdoor` mask v2). Both PCs need 0.23.0. Built on `63dadf8` (S1). Manual QA: `docs/TESTING.md` §46.
 

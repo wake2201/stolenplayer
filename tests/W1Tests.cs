@@ -280,7 +280,7 @@ static class W1Tests
         int hi = p.IndexOf("_hideout = new HideoutSync(node, log, _world, _sync)", StringComparison.Ordinal), wi = p.IndexOf("_wallet = new WalletSync(node, log, _world)", StringComparison.Ordinal);
         Expect(hi > 0 && wi > hi, "HideoutSync built before WalletSync (claims exist when the wallet policy installs)");
         Expect(Src("Plugin", "WorldSync.cs").Contains("ProposalResultHook9 != null && ProposalResultHook9(id, code)"), "proposal results routed");
-        Expect(WorldKeys.HideoutBuy == "hbuy" && WorldKeys.Hideout == "hideout" && ProtocolInfo.ProtocolVersion == 34 && ProtocolInfo.ModVersion == "0.23.0", "keys / protocol 32 / mod 0.21.1");
+        Expect(WorldKeys.HideoutBuy == "hbuy" && WorldKeys.Hideout == "hideout" && ProtocolInfo.ProtocolVersion == 35 && ProtocolInfo.ModVersion == "0.24.0", "keys / protocol 32 / mod 0.21.1");
     }
 
     static void Regressions()

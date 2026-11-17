@@ -102,10 +102,10 @@ namespace TS2MP.Plugin
         readonly Dictionary<int, uint> _objDigest = new Dictionary<int, uint>();
         readonly Dictionary<int, int> _objCount = new Dictionary<int, int>();
         readonly HashSet<int> _late = new HashSet<int>();
-        Func<object, bool> _lpStory, _lpTut, _lwMission, _lwTut; Func<object, string> _lpStoryName; Type _missionItemT;
+        Func<object, bool> _lpStory, _lpTut, _lwMission, _lwTut, _doMission; Func<object, string> _lpStoryName; Type _missionItemT;
         public event Action<int, bool> ObjectsCensused;   // (namespace, late)
 
-        static bool Shared(ObjectKind k) { return k == ObjectKind.Door || k == ObjectKind.Lockpick || k == ObjectKind.LockedWindow; }
+        static bool Shared(ObjectKind k) { return ObjectStateRules.SupportedKind(k); }   // doors, locks, windows, W2A breakables
         static long CK(ObjectKind k, int ns) { return ((long)(byte)k << 32) | (uint)ns; }
 
         void ForgetObjects(int ns)
@@ -144,6 +144,8 @@ namespace TS2MP.Plugin
             if (lp != null) { _lpStory = Fast.Getter<bool>(lp, "on_unlock_advance_story"); _lpStoryName = Fast.Getter<string>(lp, "story_name"); _lpTut = Fast.Getter<bool>(lp, "is_tutorial"); }
             if (lw != null) { _lwMission = Fast.Getter<bool>(lw, "complete_mission"); _lwTut = Fast.Getter<bool>(lw, "isTutorial"); }
             _missionItemT = AccessTools.TypeByName("Mission_Item");
+            var dob = AccessTools.TypeByName("DestroyObject");
+            if (dob != null) _doMission = Fast.Getter<bool>(dob, "activate_mission_completion");
         }
 
         // Fail closed: when the metadata cannot be read the object counts as story-critical.
@@ -153,6 +155,9 @@ namespace TS2MP.Plugin
                 return _lpStory == null || _lpStoryName == null || _lpTut == null || _lpStory(c) || !string.IsNullOrEmpty(_lpStoryName(c)) || _lpTut(c);
             if (k == ObjectKind.LockedWindow)
                 return _lwMission == null || _lwTut == null || _lwMission(c) || _lwTut(c) || (_missionItemT != null && c.GetComponent(_missionItemT) != null);
+            // W2A: DestroyObject.Destroy_Thing IL_00a3..IL_00b6 calls Mission_Item.Mission_Complete when this flag is set.
+            if (k == ObjectKind.Breakable)
+                return _doMission == null || _doMission(c) || (_missionItemT != null && c.GetComponent(_missionItemT) != null);
             return false;
         }
 
@@ -334,7 +339,7 @@ namespace TS2MP.Plugin
             }
             _objByNs[ns] = keep;
             foreach (var kv in cats) _catalog[kv.Key] = kv.Value;
-            foreach (var k in new[] { ObjectKind.Door, ObjectKind.Lockpick, ObjectKind.LockedWindow }) if (!cats.ContainsKey(CK(k, ns))) _catalog[CK(k, ns)] = new HashSet<uint>();
+            foreach (var k in new[] { ObjectKind.Door, ObjectKind.Lockpick, ObjectKind.LockedWindow, ObjectKind.Breakable }) if (!cats.ContainsKey(CK(k, ns))) _catalog[CK(k, ns)] = new HashSet<uint>();
             _restricted[ns] = restricted;
             sorted.Sort();
             uint d = IdentityHash.Fnv1a32("objects");

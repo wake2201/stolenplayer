@@ -74,7 +74,8 @@ $suites = @(
     @('TS2MP.W1Tests', 'W1Tests.cs', 'W1 shared hideout: garage / additions / repairs / wallpapers purchases, coordinated original rebuild, persistence'),
     @('TS2MP.V14Tests', 'V14Tests.cs', 'V1.4 hideout parking layout: both cars separated and identical on both PCs, proxies, arrival orders, persistence'),
     @('TS2MP.S1Tests', 'S1Tests.cs', 'S1 shared sleep control: both sleeper roles, cancellation ownership, completion, regions, simultaneous, busy retry, reconnect'),
-    @('TS2MP.H3Tests', 'H3Tests.cs', 'H3 heavy sale integrity (double / concurrent / stale / replayed sales, Player 1/2, cargo, undo, reconnect) + Ranger rear hatch door sync')
+    @('TS2MP.H3Tests', 'H3Tests.cs', 'H3 heavy sale integrity (double / concurrent / stale / replayed sales, Player 1/2, cargo, undo, reconnect) + Ranger rear hatch door sync'),
+    @('TS2MP.W2ATests', 'W2ATests.cs', 'W2A shared destructibles: House 102 barrier stages, furniture, exactly-once, concurrent / stale hits, late join, reload, mission objects')
 )
 foreach ($s in $suites) {
     Invoke-Csc "$($s[0]).exe" (@('/target:exe', "/out:$outTests\$($s[0]).exe", "/r:$lnl") + $shared + @("$RepoRoot\tests\$($s[1])"))

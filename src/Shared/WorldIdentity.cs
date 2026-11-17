@@ -31,7 +31,8 @@ namespace TS2MP.Shared
         Pickupable = 1, Door = 2, Lockpick = 3, LockedWindow = 4, Safe = 5, SecurityCamera = 6, SecurityPanel = 7,
         LightSwitch = 8, FuseBox = 9, Alarm = 10, Residence = 11, Resident = 12, Guard = 13, Dog = 14, Police = 15,
         Pedestrian = 16, StoryObject = 17, StoryActivator = 18, Medkit = 19, HiddenItem = 20, MailBox = 21,
-        ParcelLocker = 22, ItemSpawner = 23, FileCabinet = 24, CopCar = 25
+        ParcelLocker = 22, ItemSpawner = 23, FileCabinet = 24, CopCar = 25,
+        Breakable = 26   // W2A: original DestroyObject (crowbar-breakable furniture, toilets, House 102 barrier stages)
     }
 
     public sealed class KindInfo
@@ -70,6 +71,7 @@ namespace TS2MP.Shared
             new KindInfo(ObjectKind.ItemSpawner,    "ItemSpawner",         IdentityCategory.Unsupported,   "random loot spawner (spawned items are dynamic)"),
             new KindInfo(ObjectKind.FileCabinet,    "RandomFileCabinet",   IdentityCategory.Unsupported,   "random contents"),
             new KindInfo(ObjectKind.CopCar,         "CopCar",              IdentityCategory.Dynamic,       "police car, spawned"),
+            new KindInfo(ObjectKind.Breakable,      "DestroyObject",       IdentityCategory.Static,        "crowbar breakable (DestroyObject.Destroy_Thing); no save key, rebuilt on every scene load"),
         };
 
         public static KindInfo Get(ObjectKind k) { foreach (var i in All) if (i.Kind == k) return i; return null; }

@@ -15,6 +15,11 @@
 //   - Padlock    = Lockpick.BreakPadlock IL_0001..IL_0079 minus MakeNoise (IL_007c..).
 //   - Glass      = LockedWindow.UnlockWindow IL_0010..IL_00b8 / UnlockWindowNoAlarm / BrokeWindow IL_0015..IL_0164 minus
 //                  CheckAlarm, AlertNPCsOnPossesion, MakeNoise and Mission_Complete.
+//   - Shatter    = DestroyObject.Destroy_Thing IL_000b..IL_00d7 (W2A): destroyed = true, own BoxCollider / MeshCollider
+//                  destroyed, destroyed_objects activated (+ detached when detach_destroyed), normal_objects deactivated -
+//                  minus the PlayerScript lookup / dust_spawn copy (IL_0012..IL_0029), the NPC alert around the LOCAL
+//                  player (IL_005f..IL_0065) and the mission completion (IL_00a3..IL_00b6). Silent (late join / region
+//                  ready) additionally stops the AudioSource on each activated destroyed_objects root (playOnAwake).
 //   - hasAlarm is cleared before any retag: Lockpick.Update would otherwise start a police chase for THIS player when the
 //     lock's own tag becomes "Door" (the actor's original path already consumed that alarm).
 using System;
@@ -29,7 +34,8 @@ namespace TS2MP.Plugin
     {
         public static bool Applying;   // the hooks ignore calls made while the bridge applies a replica
         public readonly bool Ok;
-        public readonly Type DoorT, LockpickT, WindowT, MissionItemT;
+        public readonly Type DoorT, LockpickT, WindowT, MissionItemT, BreakT;
+        public readonly bool BreakOk;   // W2A: DestroyObject members found (doors / locks / windows do not depend on it)
 
         // Door
         readonly Func<object, bool> _open, _opening, _canUse, _broken, _slowly, _rotateOpen, _useVector, _moveOpen;
@@ -47,6 +53,9 @@ namespace TS2MP.Plugin
         // LockedWindow
         readonly Func<object, GameObject[]> _windows; readonly Func<object, bool> _noDoor, _unconvex, _instGlass, _brokeGlass, _lwMission, _lwTut;
         readonly Action<object, bool> _setBrokeGlass, _lwSetAlarm; readonly Func<object, GameObject> _enterables;
+        // DestroyObject (W2A)
+        readonly Func<object, bool> _doDestroyed, _doDetach, _doMission; readonly Action<object, bool> _doSetDestroyed;
+        readonly Func<object, GameObject[]> _doNormal, _doBroken;
 
         public WorldObjectBridge(InstanceLog log)
         {
@@ -85,6 +94,15 @@ namespace TS2MP.Plugin
                 && _windows != null && _noDoor != null && _unconvex != null && _instGlass != null && _brokeGlass != null && _setBrokeGlass != null && _lwSetAlarm != null && _enterables != null
                 && _lwMission != null && _lwTut != null;
             if (!Ok) log.Error("WOBJ original Door / Lockpick / LockedWindow members not found: shared doors, locks and windows disabled");
+            BreakT = AccessTools.TypeByName("DestroyObject");
+            if (BreakT != null)
+            {
+                _doDestroyed = Fast.Getter<bool>(BreakT, "destroyed"); _doSetDestroyed = Fast.Setter<bool>(BreakT, "destroyed"); _doDetach = Fast.Getter<bool>(BreakT, "detach_destroyed");
+                _doMission = Fast.Getter<bool>(BreakT, "activate_mission_completion");
+                _doNormal = Fast.Getter<GameObject[]>(BreakT, "normal_objects"); _doBroken = Fast.Getter<GameObject[]>(BreakT, "destroyed_objects");
+            }
+            BreakOk = BreakT != null && _doDestroyed != null && _doSetDestroyed != null && _doDetach != null && _doMission != null && _doNormal != null && _doBroken != null;
+            if (!BreakOk) log.Error("WOBJ original DestroyObject members not found: shared breakables disabled (they stay local)");
         }
 
         // ---------------- readers ----------------
@@ -113,6 +131,7 @@ namespace TS2MP.Plugin
             if (c == null) return true;
             if (k == ObjectKind.Lockpick) return _lpStory(c) || !string.IsNullOrEmpty(_lpStoryName(c)) || _lpTut(c);
             if (k == ObjectKind.LockedWindow) return _lwMission(c) || _lwTut(c) || (MissionItemT != null && c.GetComponent(MissionItemT) != null);
+            if (k == ObjectKind.Breakable) return !BreakOk || _doMission(c) || (MissionItemT != null && c.GetComponent(MissionItemT) != null);
             return false;
         }
 
@@ -294,6 +313,35 @@ namespace TS2MP.Plugin
             Unconvex(lw);
             if (glass == ObjectStateRules.GlassInside && g0 != null) g0.SetActive(true);   // opened from inside: the glass stays
             UnityEngine.Object.Destroy(lw);
+        }
+
+        // ---------------- breakables (W2A) ----------------
+        public bool Destroyed(Component o) { return _doDestroyed(o); }
+
+        // Replica of an authorized destruction (see the header: Destroy_Thing minus actor / mission effects). Idempotent: the
+        // original one-shot guard (destroyed) is honoured, so an object that is already broken here is left alone.
+        public void Shatter(Component o, bool silent)
+        {
+            if (_doDestroyed(o)) return;
+            Applying = true;
+            try
+            {
+                _doSetDestroyed(o, true);
+                var box = o.GetComponent<BoxCollider>(); if (box != null) UnityEngine.Object.Destroy(box);
+                var mesh = o.GetComponent<MeshCollider>(); if (mesh != null) UnityEngine.Object.Destroy(mesh);
+                var broken = _doBroken(o); bool detach = _doDetach(o);
+                if (broken != null)
+                    foreach (var g in broken)
+                    {
+                        if (g == null) continue;
+                        g.SetActive(true);
+                        if (detach) g.transform.parent = null;
+                        if (silent) { var a = g.GetComponent<AudioSource>(); if (a != null) a.Stop(); }
+                    }
+                var normal = _doNormal(o);
+                if (normal != null) foreach (var g in normal) if (g != null) g.SetActive(false);
+            }
+            finally { Applying = false; }
         }
 
         void OpenSash(Component lw, bool setLayer)

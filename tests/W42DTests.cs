@@ -25,7 +25,7 @@ static class W42DTests
     {
         _managed = args.Length > 0 ? args[0] : null;
         Run("A1 real scene files: build order from BuildSettings, every census scene parses with exact byte layouts", RealFilesParse);
-        Run("A2 real scene files = in-game census: MadisonSt 50D2F273/2511, PlayerHideout C14C64A1/74, MainScene 4A364B6F/217 (real logs)", RealDigestsMatchLogs);
+        Run("A2 real scene files = in-game census: MadisonSt 711D4CF3/2575, PlayerHideout 4FB73DBB/81, MainScene 4A364B6F/217 (0.23.0 real logs + W2A DestroyObject kind)", RealDigestsMatchLogs);
         Run("A3 real loot catalogs = in-game WORLD_LOOT_FLAGS (Madison 869 / MainScene 39 / Hideout 2; Hillville 598 = UnityPy count)", RealLootMatchesLogs);
         Run("A4 host never visited the region: P1 in Madison, P2 picks Hillville loot -> validated against the host's file catalog", HostNeverVisited);
         Run("A5 client metadata is never trusted: wrong digest / item / unknown id / region refused", NoClientTrust);
@@ -107,11 +107,15 @@ static class W42DTests
 
     static void RealDigestsMatchLogs()
     {
-        // WORLD_CENSUS lines of the real 1.27c game (BepInEx LogOutput.log, 2026-11-14/15)
-        var m = Real("MadisonSt"); Expect(m.Digest == 0x50D2F273 && m.Table.Count == 2511, "MadisonSt " + m.Digest.ToString("X8") + "/" + m.Table.Count);
-        var h = Real("PlayerHideout"); Expect(h.Digest == 0xC14C64A1 && h.Table.Count == 74, "PlayerHideout " + h.Digest.ToString("X8") + "/" + h.Table.Count);
+        // WORLD_CENSUS lines of the real 1.27c game (BepInEx LogOutput.log, 2026-11-14/15: MadisonSt 50D2F273/2511, PlayerHideout
+        // C14C64A1/74 before W2A). W2A (0.24.0) adds the census kind Breakable (DestroyObject): exactly the research-doc counts
+        // (Madison 64, Hillville 9, hideout 7) join the tables; the new digests below are computed from the real scene files
+        // and must reappear in the first 0.24.0 game log (docs/TESTING.md §47).
+        var m = Real("MadisonSt"); Expect(m.Digest == 0x711D4CF3 && m.Table.Count == 2511 + 64, "MadisonSt " + m.Digest.ToString("X8") + "/" + m.Table.Count);
+        var h = Real("PlayerHideout"); Expect(h.Digest == 0x4FB73DBB && h.Table.Count == 74 + 7, "PlayerHideout " + h.Digest.ToString("X8") + "/" + h.Table.Count);
+        Expect(m.Table.CountOf(ObjectKind.Breakable) == 64 && h.Table.CountOf(ObjectKind.Breakable) == 7 && Real("Hillville").Table.CountOf(ObjectKind.Breakable) == 9, "DestroyObject counts = DESTRUCTIBLES_SYSTEM.md (64 / 7 / 9)");
         var s = Real("MainScene"); Expect(s.Digest == 0x4A364B6F && s.Table.Count == 217, "MainScene " + s.Digest.ToString("X8") + "/" + s.Table.Count);
-        Expect(m.Table.CountOf(IdentityCategory.Static) == 1591 && m.Table.CountOf(IdentityCategory.Persistent) == 879 && m.Table.CountOf(IdentityCategory.TimeDependent) == 33 && m.Table.CountOf(IdentityCategory.Unsupported) == 8, "Madison category split 1591/879/33/8");
+        Expect(m.Table.CountOf(IdentityCategory.Static) == 1591 + 64 && m.Table.CountOf(IdentityCategory.Persistent) == 879 && m.Table.CountOf(IdentityCategory.TimeDependent) == 33 && m.Table.CountOf(IdentityCategory.Unsupported) == 8, "Madison category split 1591/879/33/8");
         Expect(s.Table.CountOf(IdentityCategory.Dynamic) == 4 && s.Table.CountOf(IdentityCategory.TimeDependent) == 116, "MainScene dynamic 4 / time 116");
     }
 

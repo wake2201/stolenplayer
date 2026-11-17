@@ -151,6 +151,26 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 47. W2A checklist — shared destructible world objects (release `TS2-Multiplayer-0.24.0.zip` on BOTH PCs, protocol 35)
+F8 test campaign, both players in Madison Street near House 102 (the wooden barrier: plywood sheet in front, three nailed planks behind), both with a crowbar. "Hit" = original crowbar swing at the object.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | Logs after loading Madison on both PCs | `WORLD_CENSUS_KINDS MadisonSt ... Breakable=64`; `WORLD_CENSUS ... MadisonSt` digest `711D4CF3` / 2575 objects on both; `WOBJ hooks: DestroyObject.Destroy_Thing (W2A), ...`; `WOBJ MadisonSt ready ... broken objects 0` | NOT TESTED |
+| 2 | P2 hits the plywood (stage 1) | Plywood breaks on BOTH PCs (fragments + sound on both); planks still intact and blocking. P2 log `WOBJ proposed #n Set Breakable MadisonSt:<hash> -> 1` then `breakable ... accepted: original destruction runs`; host log `WOBJ update: 1 object(s)` | NOT TESTED |
+| 3 | P1 hits the planks (stage 2) | Planks break on BOTH PCs; the opening is passable for BOTH players (walk through on each PC). Host log `WOBJ host Set Breakable MadisonSt:<hash> -> 1 ... -> Accepted` | NOT TESTED |
+| 4 | Reverse roles after a region reload (row 9): P1 stage 1, P2 stage 2 | Same as rows 2-3 with roles swapped | NOT TESTED |
+| 5 | Both hit the same intact stage at the same moment | Breaks once; one set of fragments per PC; no error. One log `-> Unchanged` on the loser is fine | NOT TESTED |
+| 6 | P2 hits a stage repeatedly / very fast | Breaks once; extra swings only make the crowbar sound (log `swing ignored: already waiting for the host` allowed) | NOT TESTED |
+| 7 | NPC reaction: with a resident inside House 102, P2 breaks a stage | Only NPCs near P2 react on P2's PC (original alert); the host PC shows the break but does not replay an alert around P1 | NOT TESTED |
+| 8 | Late join: P1 breaks stage 1 while P2 is in the hideout; P2 then travels to Madison | P2 arrives with stage 1 already broken (no break sound on arrival), stage 2 intact; P2 can then break stage 2 | NOT TESTED |
+| 9 | Region reset: both players leave Madison (e.g. both to the hideout), wait 5 s, return | Both stages intact again on both PCs (original reload). Host stays while P2 leaves and returns: stages stay broken | NOT TESTED |
+| 10 | Furniture / toilet: each player breaks one breakable chair / toilet / plate stack in a Madison house; one in Hillville | Broken on both PCs; no money / XP / item change | NOT TESTED |
+| 11 | Mission object (House 101 AC, if available): P2 hits it | Nothing breaks (crowbar sound only); P2 log `is a story/mission object`. P1 hitting it: original behaviour, P2 sees it broken | NOT TESTED |
+| 12 | Regression: doors, drawers, locks, windows, loot, heavy objects in Madison | Unchanged | NOT TESTED |
+
+Send back both `LogOutput.log` files (lines `WOBJ`, `WOBJ_STATS ... breakables local/applied/waiting`).
+
 ## 46. H3 checklist — heavy loot sale integrity + Ranger rear hatch (release `TS2-Multiplayer-0.23.0.zip` on BOTH PCs, protocol 34)
 F8 test campaign, both players in the hideout, Ranger in the hideout with at least two heavy objects in its cargo bed (e.g. two TVs + one other item; load them in Madison first). "Heavy shop" = the hideout's original heavy-item sale area + sale screen used in the 0.22.1 test. Grep tags: `HEAVY Player 1 sells`, `HEAVY Player-2 sale`, `HEAVY Player 2 sold`, `refused`, `Unsell`, `HEAVY_STATS ... sold / saleRefused / unsold`, `WALLET Player-2 money change`, `DOOR ... rear hatch`, `vdoor`.
 

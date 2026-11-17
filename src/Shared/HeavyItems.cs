@@ -40,7 +40,10 @@ namespace TS2MP.Shared
     public enum HeavyState : byte { Carried = 1, Placed = 2, Removed = 3 }
     // Drop = the original release happened at Pos (H1.1: committed at once, the object is Moving); Settle = exact rest pose.
     // Load (H2) = the holder's object came to rest in a supported car's cargo bed (Digest = vehicle id, Pos / Rot = car-local pose).
-    public enum HeavyOp : byte { Lease = 1, Drop = 2, Release = 3, Remove = 4, Settle = 5, Load = 6 }
+    // Sell (H3) = the seller's ORIGINAL heavy shop sale of this resting object (Lease = the record lease the seller saw, 0 = no
+    // record: untouched census object). Unsell (H3, Player 2 only) = its granted sale could not run any more (shop closed in
+    // the round trip): the object returns exactly as it was, within HeavyBook.UnsellWindow.
+    public enum HeavyOp : byte { Lease = 1, Drop = 2, Release = 3, Remove = 4, Settle = 5, Load = 6, Sell = 7, Unsell = 8 }
 
     // One touched heavy object. Actor: Carried -> carrier slot; Placed -> simulating slot (0 = nobody, presented at rest);
     // Removed -> 0. HasPose: the object has a committed pose (Carried keeps the previous one: restored if the carry ends
@@ -130,7 +133,7 @@ namespace TS2MP.Shared
             t = default(HeavyTxnRequest);
             if (v == null || v.Length != WireSize) return false;
             int op = v[0] & ~CargoFlag;
-            if (op < 1 || op > 6) return false;
+            if (op < 1 || op > (int)HeavyOp.Unsell) return false;
             try
             {
                 var r = new NetDataReader(v);
@@ -140,7 +143,7 @@ namespace TS2MP.Shared
             }
             catch { return false; }
         }
-        public override string ToString() { return Op + " " + IdentityNamespace.Name(Ns) + ":" + (Cargo ? "cargo " : "") + Hash.ToString("X8") + (Op == HeavyOp.Lease ? "" : " lease " + Lease) + (Op == HeavyOp.Drop || Op == HeavyOp.Settle ? " at " + Pos : "") + (Op == HeavyOp.Load ? " into vehicle " + Digest + " at local " + Pos : ""); }
+        public override string ToString() { return Op + " " + IdentityNamespace.Name(Ns) + ":" + (Cargo ? "cargo " : "") + Hash.ToString("X8") + (Op == HeavyOp.Lease ? "" : (Op == HeavyOp.Sell || Op == HeavyOp.Unsell) && Lease == 0 ? " (untouched)" : " lease " + Lease) + (Op == HeavyOp.Drop || Op == HeavyOp.Settle ? " at " + Pos : "") + (Op == HeavyOp.Load ? " into vehicle " + Digest + " at local " + Pos : ""); }
     }
 
     // H1.1 movement snapshot of one heavy object from its simulating holder (MsgType.HeavyMotion, unreliable: the per-object
@@ -368,6 +371,7 @@ namespace TS2MP.Shared
         public int ReleaseSlot(byte slot, int otherRegion, StateRegistry reg, List<StateEntry> outbox)
         {
             int n = 0;
+            DropPending(Regions.None, slot);   // H3: a seller that left can no longer undo a granted sale
             foreach (var kv in _byRegion)
             {
                 var l = kv.Value; bool changed = false;
@@ -386,6 +390,7 @@ namespace TS2MP.Shared
         public int ClearRegion(int ns, StateRegistry reg, List<StateEntry> outbox)
         {
             List<HeavyRecord> l;
+            DropPending(ns, 0);
             if (!_byRegion.TryGetValue(ns, out l) || l.Count == 0) return 0;
             int n = l.Count; l.Clear(); Cleared += n;
             Commit(ns, l, reg, outbox);
@@ -394,6 +399,89 @@ namespace TS2MP.Shared
 
         static byte Other(byte slot) { return (byte)(slot == 1 ? 2 : 1); }
         int _revertNs;
+
+        // ---- H3 heavy sale (original: Inventory.Sell_Item_NewSystem adds the money, then FindHeavyInShopAndDestroy destroys the
+        // first object of that item in the HeavyShopTrigger sensor). Root cause of the 0.22.1 duplication: the seller's
+        // original destroyed its local copy only; the record stayed Placed, so the other PC kept showing it and the seller's
+        // own HeavySync / HeavyCargoSync presented it again from the record -> the same object was sellable without limit.
+        // Sell consumes the authoritative record exactly once (first committed wins): a cargo object's record is deleted (its
+        // synthetic object is removed on both PCs), a census object becomes Removed (hidden everywhere; the original region
+        // reload restores it like in single player). Only a resting object, or one the seller itself still simulates, can be
+        // sold; the seller must have seen the current record (lease) - repeated, concurrent, stale and replayed sales are Stale.
+        sealed class PendingSale { public int Ns; public uint Hash; public byte Seller; public ushort Seen; public bool HadRecord; public HeavyRecord Before; public double At; }
+        readonly List<PendingSale> _pending = new List<PendingSale>();
+        public const int MaxPendingSales = 16;
+        public const double UnsellWindow = 10.0;   // s: a Player-2 grant arrives within one round trip; later undo is refused
+        public long Sold, SaleRefused, Unsold;
+        public int PendingSales { get { return _pending.Count; } }
+
+        public ProposalCode Sell(byte slot, int slotRegion, int ns, uint hash, ushort seen, bool known, bool cargo, double now, StateRegistry reg, List<StateEntry> outbox, out string why)
+        {
+            why = null;
+            if (slot < 1 || slot > 2) { why = "slot"; return ProposalCode.Invalid; }
+            if (ns == Regions.None || slotRegion != ns) { SaleRefused++; why = "seller not in " + IdentityNamespace.Name(ns); return ProposalCode.NotAuthorized; }
+            var l = List(ns); int i = Find(l, hash);
+            var p = new PendingSale { Ns = ns, Hash = hash, Seller = slot, Seen = seen, HadRecord = i >= 0, At = now };
+            if (i < 0)
+            {
+                if (cargo) { SaleRefused++; why = "no record (already sold, back in a car or region reset)"; return ProposalCode.Stale; }
+                if (!known) { SaleRefused++; why = "not a supported census heavy object"; return ProposalCode.NotAuthorized; }
+                if (seen != 0) { SaleRefused++; why = "seller saw lease " + seen + " but the record is gone (already sold or region reset)"; return ProposalCode.Stale; }
+                if (l.Count >= HeavyList.MaxPerRegion) { SaleRefused++; why = "region heavy-object limit " + HeavyList.MaxPerRegion + " reached"; return ProposalCode.Busy; }
+                l.Add(new HeavyRecord { Hash = hash, State = HeavyState.Removed, Lease = NextLease(), Rot = new Quat16 { W = 32767 } });
+            }
+            else
+            {
+                var r = l[i];
+                if (r.Cargo != cargo) { SaleRefused++; why = "id kind mismatch (" + r + ")"; return ProposalCode.Stale; }
+                if (r.State == HeavyState.Removed) { SaleRefused++; why = "already sold / in host-local storage"; return ProposalCode.Stale; }
+                if (r.State == HeavyState.Carried) { SaleRefused++; why = "carried by P" + r.Actor; return ProposalCode.Stale; }
+                if (r.Lease != seen) { SaleRefused++; why = "stale view: seller saw " + (seen == 0 ? "no record" : "lease " + seen) + ", record " + r; return ProposalCode.Stale; }
+                if (r.Moving && r.Actor != slot) { SaleRefused++; why = "still moving (simulated by P" + r.Actor + ")"; return ProposalCode.Busy; }
+                p.Before = r;
+                if (cargo) l.RemoveAt(i);
+                else { r.State = HeavyState.Removed; r.Actor = 0; r.HasPose = false; r.Moving = false; r.Lease = NextLease(); l[i] = r; }
+            }
+            Sold++;
+            if (slot == 2)
+            {
+                for (int k = _pending.Count - 1; k >= 0; k--) if (_pending[k].Ns == ns && _pending[k].Hash == hash) _pending.RemoveAt(k);
+                if (_pending.Count >= MaxPendingSales) _pending.RemoveAt(0);
+                _pending.Add(p);
+            }
+            Commit(ns, l, reg, outbox);
+            return ProposalCode.Accepted;
+        }
+
+        // Player 2 only: its granted sale could not run (the original shop UI was closed / the object vanished during the round
+        // trip, so no money was paid). The record returns exactly as it was before that sale (resting, simulated by nobody);
+        // an untouched census object returns to its scene pose. Refused if anything changed since the sale or it is too old.
+        public ProposalCode Unsell(byte slot, int ns, uint hash, ushort seen, double now, StateRegistry reg, List<StateEntry> outbox, out string why)
+        {
+            why = null;
+            int k = -1;
+            for (int j = 0; j < _pending.Count; j++) { var q = _pending[j]; if (q.Ns == ns && q.Hash == hash && q.Seller == slot && q.Seen == seen) { k = j; break; } }
+            if (k < 0) { why = "no pending sale of P" + slot + " for that view"; return ProposalCode.Stale; }
+            var p = _pending[k]; _pending.RemoveAt(k);
+            if (now - p.At > UnsellWindow) { why = "sale is " + (now - p.At).ToString("0.0") + " s old"; return ProposalCode.Stale; }
+            var l = List(ns); int i = Find(l, hash);
+            if (p.HadRecord && p.Before.Cargo)
+            {
+                if (i >= 0) { why = "id in use again"; return ProposalCode.Stale; }
+                if (l.Count >= HeavyList.MaxPerRegion) { why = "region heavy-object limit " + HeavyList.MaxPerRegion + " reached"; return ProposalCode.Busy; }
+                var r = p.Before; r.Actor = 0; r.Moving = false; r.Lease = NextLease(); l.Add(r);
+            }
+            else
+            {
+                if (i < 0 || l[i].State != HeavyState.Removed) { why = "record changed since the sale"; return ProposalCode.Stale; }
+                if (p.HadRecord) { var r = p.Before; r.Actor = 0; r.Moving = false; r.Lease = NextLease(); l[i] = r; }
+                else l.RemoveAt(i);
+            }
+            Unsold++;
+            Commit(ns, l, reg, outbox);
+            return ProposalCode.Accepted;
+        }
+        void DropPending(int ns, byte slot) { for (int k = _pending.Count - 1; k >= 0; k--) if ((ns != Regions.None && _pending[k].Ns == ns) || (slot != 0 && _pending[k].Seller == slot)) _pending.RemoveAt(k); }
 
         // ---- H2 vehicle cargo (WorldHost.HeavyTransaction validates vehicle / capacity first, then calls these) ----
         // The slot holds this record (carrying it, or simulating it after its own drop) with this lease.

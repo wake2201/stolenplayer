@@ -463,7 +463,7 @@ static class HandoffTests
 
     static void Regressions()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 33 && ProtocolInfo.ModVersion == "0.22.1", "protocol 32 / mod 0.21.1");
+        Expect(ProtocolInfo.ProtocolVersion == 34 && ProtocolInfo.ModVersion == "0.23.0", "protocol 32 / mod 0.21.1");
         var s = Snap(Ranger, 5, Madison); s.Flags = VehicleStateFlags.Moving | VehicleStateFlags.Driven | VehicleStateFlags.EngineOn;
         var w = new NetDataWriter(); s.Write(w);
         Expect(w.Length == VehicleSnapshot.WireSize && w.Length == 39, "39 bytes (M5.0 steer)");
@@ -676,7 +676,7 @@ static class HandoffTests
     {
         var wh = Both(Madison);
         string why;
-        Expect(DoorP(wh, 2, Ranger, 2, true, 1) == ProposalCode.Invalid, "door index out of range");
+        Expect(DoorP(wh, 2, Ranger, 3, true, 1) == ProposalCode.Invalid, "door index out of range (door 2 = rear hatch since protocol 34)");
         uint rev; int sr; float sh;
         var bad = new StateEntry { Scope = StateScope.Session, ScopeArg = Ranger, Key = WorldKeys.VehicleDoor, Value = new byte[] { 0, 2 } };
         Expect(wh.HandleProposal("cli", 2, ++_pid, bad, 1, out rev, out sr, out sh) == ProposalCode.Invalid, "malformed value");
@@ -691,7 +691,7 @@ static class HandoffTests
         Expect(g.Outcome == TravelOutcome.Carry && wh.DoorMask(Ranger) == 0, "door state reset when the car changes region");
         Expect(DoorP(wh, 2, Ranger, 0, true, 7) != ProposalCode.Accepted, "old region: no door changes of the departed car");
         byte m;
-        Expect(VehicleDoors.TryParseState(new byte[] { 3 }, out m) && m == 3 && VehicleDoors.TryParseState(new byte[] { 0x0F }, out m) && !VehicleDoors.TryParseState(new byte[] { 16 }, out m) && !VehicleDoors.TryParseState(null, out m), "state codec (M4.3.1: slow bits 2-3)");
+        Expect(VehicleDoors.TryParseState(new byte[] { 3 }, out m) && m == 3 && VehicleDoors.TryParseState(new byte[] { 0x3F }, out m) && !VehicleDoors.TryParseState(new byte[] { 64 }, out m) && !VehicleDoors.TryParseState(null, out m), "state codec (H3 protocol 34: open bits 0-2, slow bits 3-5)");
         var old = new StateEntry { Scope = StateScope.Session, ScopeArg = Ranger, Key = WorldKeys.VehicleDoor, Value = new byte[] { 0, 1 } };
         Expect(wh.HandleProposal("cli", 2, ++_pid, old, 8, out rev, out sr, out sh) == ProposalCode.Invalid, "protocol-10 2-byte door proposal rejected");
         Expect(VehicleDoors.With(0, 1, true) == 2 && VehicleDoors.With(3, 0, false) == 2 && VehicleDoors.IsOpen(2, 1) && !VehicleDoors.IsOpen(2, 0), "mask helpers");

@@ -644,8 +644,11 @@ namespace TS2MP.Shared
     }
 
     // M5.0 car doors: the original Door components referenced by CarController.car_door_L (0) / car_door_R (1).
+    // H3 (protocol 34): door 2 = the Ranger rear hatch, the car's only other Door child with isCarDoor (MainScene
+    // PLAYER CAR/.../Car04_Door_Back/Car04_Door_Back_LOD0; no CarController field references it, no VanDoor / VanDoorTrigger
+    // exists on the Ranger - VanDoor is never instantiated in any 1.27c scene). Cars without such a door leave slot 2 empty.
     // Committed state = registry key "vdoor" (Session scope, arg = vehicle id): 1 byte, bit n = door n open,
-    // bit 2 + n = the last change of door n was the original SLOW (hold-E, quiet) movement and has not been finished fast.
+    // bit Count + n = the last change of door n was the original SLOW (hold-E, quiet) movement and has not been finished fast.
     // Proposal (client -> host) = 3 bytes {door, open, mode}. Host-validated in WorldHost.SetDoor. (M4.3.1, protocol 11)
     // Original (Door.Update / Door.SlowFailed / Door.Use IL): E held >= 0.15 s toggles isOpen at once and swings slowly
     // (openSpeed 17 x speedMultiplier, quiet squeak); releasing E before slowMoving > 0.8 calls SlowFailed, which finishes
@@ -655,12 +658,15 @@ namespace TS2MP.Shared
 
     public static class VehicleDoors
     {
-        public const int Count = 2;
-        public const byte OpenBits = 0x03, SlowBits = 0x0C;
+        public const int Count = 3;                 // L, R, rear hatch (H3)
+        public const int Left = 0, Right = 1, Hatch = 2;
+        public const byte OpenBits = 0x07, SlowBits = 0x38;
+        public static byte SlowBit(int door) { return (byte)(1 << (Count + door)); }
         public static bool IsOpen(byte mask, int door) { return ((mask >> door) & 1) != 0; }
-        public static bool IsSlow(byte mask, int door) { return ((mask >> (2 + door)) & 1) != 0; }
+        public static bool IsSlow(byte mask, int door) { return (mask & SlowBit(door)) != 0; }
         public static byte With(byte mask, int door, bool open) { return open ? (byte)(mask | (1 << door)) : (byte)(mask & ~(1 << door)); }
-        static byte WithSlow(byte mask, int door, bool slow) { return slow ? (byte)(mask | (1 << (2 + door))) : (byte)(mask & ~(1 << (2 + door))); }
+        static byte WithSlow(byte mask, int door, bool slow) { return slow ? (byte)(mask | SlowBit(door)) : (byte)(mask & ~SlowBit(door)); }
+        public static string Name(int door) { return door == Left ? "L" : door == Right ? "R" : door == Hatch ? "rear hatch" : "#" + door; }
 
         // Next committed mask for one reported door change. A state change records whether it was slow; FastFinish only
         // clears the slow mark of a door whose slow movement is committed (same target state); anything else is no change.
@@ -730,7 +736,7 @@ namespace TS2MP.Shared
             {
                 var st = Plan(d);
                 bool keep = st == DoorStep.OpenSlow || st == DoorStep.CloseSlow || (st == DoorStep.None && VehicleDoors.IsSlow(AppliedSlow, d) && VehicleDoors.IsSlow(Committed, d));
-                if (keep) slow |= (byte)(1 << (2 + d));
+                if (keep) slow |= VehicleDoors.SlowBit(d);
             }
             Local = (byte)(Committed & VehicleDoors.OpenBits);
             AppliedSlow = slow;
@@ -738,7 +744,7 @@ namespace TS2MP.Shared
         }
 
         // The local slow swing of a door ended (reached its state): forget it, a later fast-finish commit is then moot.
-        public void SlowEnded(int door) { AppliedSlow = (byte)(AppliedSlow & ~(1 << (2 + door))); }
+        public void SlowEnded(int door) { AppliedSlow = (byte)(AppliedSlow & ~VehicleDoors.SlowBit(door)); }
     }
 
     // M4.3.1 passenger interaction rules (pure; the plugin supplies what the original PlayerScript.Update interaction ray

@@ -117,7 +117,9 @@ static class H1Tests
         e[0] = 0; Expect(!HeavyTxnRequest.TryParse(e, out t2), "op 0 refused");
         e[0] = 5; Expect(HeavyTxnRequest.TryParse(e, out t2) && t2.Op == HeavyOp.Settle, "op 5 = H1.1 Settle");
         e[0] = 6; Expect(HeavyTxnRequest.TryParse(e, out t2) && t2.Op == HeavyOp.Load, "op 6 = H2 Load");
-        e[0] = 7; Expect(!HeavyTxnRequest.TryParse(e, out t2), "op 7 refused");
+        e[0] = 7; Expect(HeavyTxnRequest.TryParse(e, out t2) && t2.Op == HeavyOp.Sell, "op 7 = H3 Sell");
+        e[0] = 8; Expect(HeavyTxnRequest.TryParse(e, out t2) && t2.Op == HeavyOp.Unsell, "op 8 = H3 Unsell");
+        e[0] = 9; Expect(!HeavyTxnRequest.TryParse(e, out t2), "op 9 refused");
         var wh = Host(Madison, Madison);
         uint rev; int sr; float sh;
         Expect(wh.HandleProposal("cli", 2, ++_pid, new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.HeavyTxn, Value = new byte[] { 1, 2 } }, 1, out rev, out sr, out sh) == ProposalCode.Invalid, "short proposal Invalid");

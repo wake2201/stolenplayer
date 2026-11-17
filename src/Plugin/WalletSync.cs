@@ -254,6 +254,16 @@ namespace TS2MP.Plugin
             var p2 = Player2Sync.Instance; if (p2 != null) p2.ReportNow();
         }
 
+        // H3: an original sale that ran outside the usual frame order (HeavySync's granted Player-2 heavy sale): count the money
+        // change now and send the report at once, so both PCs show the new shared balance without waiting for the next frame.
+        public void CountNow(string why)
+        {
+            if (!_ok || _host || !_cw.Active) return;
+            var ps = Ps(); if (ps == null) return;
+            Observe(ps);
+            var p2 = Player2Sync.Instance; if (p2 != null) p2.ReportNow();
+        }
+
         public string Stats
         {
             get

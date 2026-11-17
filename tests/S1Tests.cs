@@ -27,7 +27,7 @@ static class S1Tests
         Run("09 observer reaches the target first: holds until the sleeper's end, bounded", Hold);
         Run("10 disconnect / reconnect: host drops the client's sleep and its event; client re-presents a still running sleep", Reconnect);
         Run("11 glue: control gate, own-sleep refusal, retries, disconnect stop, short cancel report, no mod UI", Glue);
-        Run("12 regressions: clock rules, sleepStart validation, wire unchanged (protocol 33), version 0.22.1", Regressions);
+        Run("12 regressions: clock rules, sleepStart validation, wire unchanged by S1 (protocol 34 since H3), version 0.23.0", Regressions);
         Console.WriteLine();
         Console.WriteLine("RESULT: " + _passed + " passed, " + _failed + " failed");
         return _failed == 0 ? 0 : 1;
@@ -318,7 +318,7 @@ static class S1Tests
         Expect(SleepTransaction.MinAdvance == 0.05f && TimeMath.SleepCycleMinutes == 0.2f, "clock constants unchanged");
         Expect(WorldKeys.SleepShow == "sleepShow" && WorldKeys.SleepStart == "sleepStart" && WorldKeys.Sleep == "sleep", "keys unchanged (no new networking)");
         Expect(new SleepShowState { EventId = 1, Initiator = 1, TargetHour = 1, Active = true }.ToBytes().Length == 7 && SleepStart.WireSize == 5, "wire sizes unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 33 && ProtocolInfo.ModVersion == "0.22.1", "protocol 33 / mod 0.22.1");
+        Expect(ProtocolInfo.ProtocolVersion == 34 && ProtocolInfo.ModVersion == "0.23.0", "protocol 34 / mod 0.23.0 (H3 wire change; S1 itself changed no wire values)");
     }
 
     // ------------------------------------------------------------------------------------------------ source helpers

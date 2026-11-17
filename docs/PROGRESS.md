@@ -1,6 +1,32 @@
 ﻿# PROGRESS
 
-## S1 — Shared sleep control — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-16
+## H3 — Heavy loot sale integrity + Ranger rear hatch sync — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
+Mod **0.23.0, protocol 34** (wire change: `heavyTxn` ops Sell = 7 / Unsell = 8; `vdoor` mask v2). Both PCs need 0.23.0. Built on `63dadf8` (S1). Manual QA: `docs/TESTING.md` §46.
+
+### A. Heavy sale - root cause (evidence: host `LogOutput (2).log`, ilspycmd 1.27c)
+- Original: `Inventory.OpenShop` marks heavy objects in the `HeavyShopTrigger` sensor (`ItemID.heavy_in_shop` / `heavyAmountInShop`); `Inventory.Sell_Item_NewSystem` adds the value to `PlayerScript.moneyAm`, then `FindHeavyInShopAndDestroy` destroys the first sensor object of that item. No mod hook existed on this path.
+- In a session the sale destroyed only the seller's copy. `HeavySync.SimFrame` then sent `Release ... (object destroyed)`; `HeavyBook.Release` kept the record Placed at its pose, so the other PC kept the TV and the seller's `HeavySync.Get` -> `HeavyCargoSync.SyntheticObject` re-created the cargo object from the record (log: `Release Hideout:cargo 801C0001 lease 11 (object destroyed) -> Accepted`, CARGO `spawned` 2 -> 11, shared balance +298 per sale on both PCs). Classification of the touched systems: HeavySync / HeavyCargoSync leases, drops, cargo = IMPLEMENTED BUT UNVERIFIED, kept unchanged; the missing sale consumption = DEFECTIVE (fixed). WalletSync money flow = kept (Player-2 sale money still travels in the p2report, `MoneyPolicy.Count`).
+
+### B. Heavy sale - fix
+- `HeavyBook.Sell` (host, `src/Shared/HeavyItems.cs`): consumes the record once (first committed wins): cargo object -> record deleted (its synthetic object is removed on both PCs, never back in a car); census object -> `Removed` (hidden; original region reload restores it). Requires a resting object (or one the seller itself simulates), the seller's view of the record lease (0 = untouched census object, host catalog check for Player 2). Repeated / concurrent / stale / replayed sales -> Stale; moving under the other player -> Busy; carried -> Stale.
+- `HeavySaleSync.cs` (partial `HeavySync`): `Inventory.Sell_Item_NewSystem(bool)` prefix on both roles, target resolved with the original selection rule. Host: decided in place, then the original sale runs once (money on the shared balance, original destroy / XP / story). Client: original refused, `heavyTxn Sell` proposal; on Accepted the original runs exactly once if the same item / object is still selected (`WalletSync.CountNow` sends the money report at once); otherwise `Unsell` returns the object (no money paid; host undo window 10 s, seller only, nothing changed since). A pending sale keeps its object shown (`Reconcile` hold). Untracked heavy objects: host original only, Player 2 refused. A listed heavy item whose object is gone is refused in a session.
+
+### C. Ranger rear hatch
+- Original component: plain `Door` (`isCarDoor`, `openRotation` -114.5) on `PLAYER CAR/.../Car04_Body/Car04_Door_Back/Car04_Door_Back_LOD0` (MainScene scan). No `CarController` field references it; `VanDoor` / `VanDoorTrigger` exist only as scripts and are instantiated in no 1.27c scene. Existing `vdoor` covered only `car_door_L/R` (DEFECTIVE for the hatch, side doors kept).
+- `VehicleDoors.Count` 3 (door 2 = hatch, open bits 0-2, slow bits 3-5); `VehicleSync.FindHatch` binds the only other `isCarDoor` Door child once per car binding; the existing replica (quick / slow / fast finish, moving-car rule, region reset) drives it. `CloseDoorsLocal` (entry close) stays L/R only like the original.
+
+### D. Evidence
+- `tools/build.ps1 -Test`: plugin 0 warnings; **ALL 37 SUITES PASSED** incl. new `tests/H3Tests.cs` (11/11: double / concurrent / stale / replayed sales, Player 1/2, cargo, undo, reconnect / reload, hatch sync, glue scans). Updated expectations only where the wire changed: H1 op 7, InteractionTests / HandoffTests door masks, version pins.
+- Proves the host model and glue structure only; no in-game run.
+
+### E. Performance
+- Hot paths: none per frame except a null check (`SaleFrame`); sale prefix once per sale click (field reads, one `FindGameObjectWithTag`, one sensor list walk); host decision measured 0.58 us incl. registry commit (offline). `FindHatch` once per car binding. Traffic: one 35 B proposal + one `wheavy` update per sale; `vdoor` unchanged size (1 B). FPS impact: not measured in game (expected none).
+
+### F. Open
+- A census heavy object sold on one PC stays listed (hidden) in the other PC's already open sale screen; clicking it does nothing. Region reload restores sold scene heavy objects like the original reload (single-player rule).
+- Disconnect between a Player-2 grant and its original sale: the object is consumed without money (no duplication).
+
+## S1 — Shared sleep control — **USER-VERIFIED (two-PC QA, reported 2026-11-17)**, 2026-11-16
 Mod **0.22.1, protocol 33 (wire unchanged; no new keys)**. Both PCs need 0.22.1. Built on `cbb4e43` (V1.4.1). Manual QA: `docs/TESTING.md` §45.
 
 ### A. Classification of the existing sleep sync (kept)
@@ -34,7 +60,7 @@ New `src/Plugin/SleepControlIL.cs`, `tests/S1Tests.cs`. Changed `src/Plugin/Slee
 - The PassStart refusal relies on the committed `sleepStart` / `sleepShow`; within one round trip both players can press Start - the host returns `Busy` to the client (existing re-adopt path, client snaps back after its local fast-forward).
 - If the 1.27c `PassTime.Update` IL pattern differs, the Esc gate is not applied (logged `SLEEP_CONTROL ... gate: esc=.. rule=..`); the button prefixes still apply.
 
-## V1.4.1 — First-arrival hideout main spot + Player-2 medkit — **USER-VERIFIED (two-PC QA, 2026-11-16); Ranger rear hatch NOT TESTED**, 2026-11-16
+## V1.4.1 — First-arrival hideout main spot + Player-2 medkit — **USER-VERIFIED (two-PC QA, 2026-11-16); Ranger rear hatch: not synchronized at the time (fixed in H3)**, 2026-11-16
 Mod **0.22.0, protocol 33** (new proposal `medkitUse`, new state `medkit`). Both PCs need 0.22.0. Built on `841fe9e` (V1.4 follow-up). Manual QA: `docs/TESTING.md` §44.
 
 ### A. Hideout parking (change of the V1.4 rule)

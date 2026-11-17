@@ -185,7 +185,7 @@ static class InteractionTests
     {
         byte m = 0;
         m = VehicleDoors.Next(m, 1, true, DoorMode.Slow);
-        Expect(VehicleDoors.IsOpen(m, 1) && VehicleDoors.IsSlow(m, 1) && m == 0x0A, "slow open of R: open + slow mark");
+        Expect(VehicleDoors.IsOpen(m, 1) && VehicleDoors.IsSlow(m, 1) && m == 0x12, "slow open of R: open + slow mark (H3 mask v2: slow bits 3-5)");
         Expect(VehicleDoors.Next(m, 1, true, DoorMode.Slow) == m, "duplicate slow report: no new revision");
         byte f = VehicleDoors.Next(m, 1, true, DoorMode.FastFinish);
         Expect(f == 0x02, "E released early: slow mark cleared, still open");
@@ -196,7 +196,7 @@ static class InteractionTests
         byte both = VehicleDoors.Next(VehicleDoors.Next(0, 0, true, DoorMode.Quick), 1, false, DoorMode.Slow);
         Expect(both == 0x01, "slow 'close' of a closed door: unchanged; L stays quick-open");
         byte sc = VehicleDoors.Next(0x01, 0, false, DoorMode.Slow);
-        Expect(sc == 0x04, "slow close of L: closed + slow mark (quiet close replayed)");
+        Expect(sc == 0x08, "slow close of L: closed + slow mark (quiet close replayed)");
     }
 
     static void SlowDoorReplica()
@@ -204,7 +204,7 @@ static class InteractionTests
         // observer replays a slow open
         var o = new DoorReplica(); o.Bind(0); o.OnCommitted(0); o.Applied();   // scene bound, first state applied
         byte want;
-        o.OnCommitted(0x0A);
+        o.OnCommitted(0x12);
         Expect(o.Wanted(out want) && o.Plan(1) == DoorStep.OpenSlow && o.Plan(0) == DoorStep.None, "remote slow open -> slow swing (not a normal-speed swing)");
         o.Applied();
         Expect(!o.Wanted(out want) && VehicleDoors.IsSlow(o.AppliedSlow, 1), "slow replay in progress, nothing more to apply");
@@ -215,18 +215,18 @@ static class InteractionTests
         Expect(!o.Wanted(out want) && o.AppliedSlow == 0, "finished fast once, no repeat");
         // fast finish arriving after the local replay already reached its state: nothing
         var o2 = new DoorReplica(); o2.Bind(0); o2.OnCommitted(0); o2.Applied();
-        o2.OnCommitted(0x0A); o2.Applied(); o2.SlowEnded(1);
+        o2.OnCommitted(0x12); o2.Applied(); o2.SlowEnded(1);
         o2.OnCommitted(0x02);
         Expect(!o2.Wanted(out want), "replay already finished: a late fast finish is moot");
         // rapid toggling: slow open then quick close before the replay ends
         var o3 = new DoorReplica(); o3.Bind(0); o3.OnCommitted(0); o3.Applied();
-        o3.OnCommitted(0x0A); o3.Applied();
+        o3.OnCommitted(0x12); o3.Applied();
         o3.OnCommitted(0x00);
         Expect(o3.Wanted(out want) && o3.Plan(1) == DoorStep.CloseQuick, "quick close interrupts the slow replay");
         o3.Applied();
         Expect(o3.AppliedSlow == 0 && !o3.Wanted(out want), "converged closed");
         // late join / fresh scene objects: committed slow mark is NOT replayed slowly
-        var late = new DoorReplica(); late.OnCommitted(0x0A); late.Bind(0);
+        var late = new DoorReplica(); late.OnCommitted(0x12); late.Bind(0);
         Expect(late.Wanted(out want) && late.Plan(1) == DoorStep.OpenQuick, "late joiner: door just swings to its state");
         late.Applied();
         Expect(!late.Wanted(out want) && late.AppliedSlow == 0, "late joiner does not wait for a fast finish");
@@ -235,14 +235,14 @@ static class InteractionTests
         // the reporter itself (local slow open) never replays its own change
         var me = new DoorReplica(); me.Bind(0); me.OnCommitted(0); me.Applied();
         Expect(me.TakeLocalChanges(0x02) == 0x02, "local slow open detected (isOpen toggles at the start)");
-        me.OnCommitted(0x0A);                                                  // host commits in place
+        me.OnCommitted(0x12);                                                  // host commits in place
         Expect(!me.Wanted(out want), "own slow change: no echo");
         me.OnCommitted(0x02);
         Expect(!me.Wanted(out want), "own fast finish: no echo");
         // client reporter with reports in flight
         var cl = new DoorReplica(); cl.Bind(0); cl.OnCommitted(0); cl.Applied();
         cl.TakeLocalChanges(0x02); cl.Sent();
-        cl.OnCommitted(0x0A);
+        cl.OnCommitted(0x12);
         Expect(!cl.Wanted(out want), "in flight: nothing applied");
         cl.Result();
         Expect(!cl.Wanted(out want), "after the result: converged");
@@ -257,7 +257,7 @@ static class InteractionTests
         Expect(!VehicleDoors.TryParseProposal(new byte[] { 0, 1 }, out d, out open, out mode), "protocol-10 proposal rejected");
         var wh = Both(Madison);
         string why;
-        Expect(DoorP(wh, 2, Ranger, 1, true, 1, DoorMode.Slow) == ProposalCode.Accepted && wh.DoorMask(Ranger) == 0x0A, "client slow open committed with slow mark");
+        Expect(DoorP(wh, 2, Ranger, 1, true, 1, DoorMode.Slow) == ProposalCode.Accepted && wh.DoorMask(Ranger) == 0x12, "client slow open committed with slow mark");
         Expect(DoorP(wh, 2, Ranger, 1, true, 1.5, DoorMode.FastFinish) == ProposalCode.Accepted && wh.DoorMask(Ranger) == 0x02, "client fast finish committed");
         Expect(DoorP(wh, 2, Ranger, 1, true, 1.6, DoorMode.FastFinish) == ProposalCode.Unchanged, "duplicate fast finish: unchanged");
         uint pid = 4242;
@@ -267,7 +267,7 @@ static class InteractionTests
         _pid = 5000;                                                          // proposal ids increase per client instance
         wh.Motion.Report(Ranger, true, true, 3);
         Expect(DoorP(wh, 2, Ranger, 0, true, 3.1, DoorMode.Slow) == ProposalCode.Busy, "moving car: slow open refused like a quick one");
-        Expect(wh.SetDoor(1, Ranger, 1, false, DoorMode.Slow, 3.2, out why) == ProposalCode.Accepted && wh.DoorMask(Ranger) == 0x08, "holder's slow close while driving");
+        Expect(wh.SetDoor(1, Ranger, 1, false, DoorMode.Slow, 3.2, out why) == ProposalCode.Accepted && wh.DoorMask(Ranger) == 0x10, "holder's slow close while driving (slow bit of R = bit 4 since protocol 34)");
     }
 
     static void Cost()
@@ -275,7 +275,7 @@ static class InteractionTests
         const int N = 1000000;
         var fp = Near(InteractTarget.None);
         var sp = new SeatProbe { Gates = true, FirstPerson = true, Ray = InteractTarget.CarBox };
-        var rep = new DoorReplica(); rep.Bind(0); rep.OnCommitted(0x0A);
+        var rep = new DoorReplica(); rep.Bind(0); rep.OnCommitted(0x12);
         int gc0 = GC.CollectionCount(0);
         var sw = System.Diagnostics.Stopwatch.StartNew();
         int acc = 0;

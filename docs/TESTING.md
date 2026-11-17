@@ -151,7 +151,27 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
-## 45. S1 checklist — shared sleep control (release `TS2-Multiplayer-0.22.1.zip` on BOTH PCs, protocol 33)
+## 46. H3 checklist — heavy loot sale integrity + Ranger rear hatch (release `TS2-Multiplayer-0.23.0.zip` on BOTH PCs, protocol 34)
+F8 test campaign, both players in the hideout, Ranger in the hideout with at least two heavy objects in its cargo bed (e.g. two TVs + one other item; load them in Madison first). "Heavy shop" = the hideout's original heavy-item sale area + sale screen used in the 0.22.1 test. Grep tags: `HEAVY Player 1 sells`, `HEAVY Player-2 sale`, `HEAVY Player 2 sold`, `refused`, `Unsell`, `HEAVY_STATS ... sold / saleRefused / unsold`, `WALLET Player-2 money change`, `DOOR ... rear hatch`, `vdoor`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | P1 takes TV 1 out of the Ranger, puts it in the heavy shop area, opens the sale screen, sells TV 1 | Money +value once on BOTH PCs; TV 1 gone on BOTH PCs and does not come back (wait 5 s, walk around). Host log `HEAVY Player 1 sells 'TV...' ... consumed once`; no `Release ... (object destroyed)`; CARGO `spawned` does not grow | NOT TESTED |
+| 2 | Right after row 1, P1 and P2 each try to sell TV 1 again (sale screen still open / reopened) | Nothing happens, no money. Logs `refused` / `object is no longer at the heavy shop` | NOT TESTED |
+| 3 | P2 takes TV 2 out, puts it in the area, sells it | Money +value once on BOTH PCs within ~1 s; TV 2 gone on both. P2 log `HEAVY Player 2 sold ... original sale ran once`, host log `WALLET Player-2 money change ... +value` once | NOT TESTED |
+| 4 | Concurrent: one object in the area, both players open the sale screen and click Sell at the same time | Exactly one sale, one money increase; the other click does nothing | NOT TESTED |
+| 5 | P2 clicks Sell and immediately closes the sale screen (Esc) | Either sold once (money once) or not sold (object back, log `Unsell`); never money without the object leaving, never the object gone without money | NOT TESTED |
+| 6 | Legit flows: sell a different heavy object of another type; load an unsold object back into the Ranger and out again; drop / carry / hand over in the hideout | Unchanged H1 / H2 behaviour; the other object sells once | NOT TESTED |
+| 7 | Reload / reconnect: after rows 1-3, P2 disconnects and rejoins; then host saves, quits to menu and reloads | Sold objects stay gone, money unchanged by the reload / rejoin; unsold cargo still in the Ranger | NOT TESTED |
+| 8 | Rear hatch: P1 opens the Ranger's small rear hatch (E), then closes it; then P2 does the same | Hatch opens / closes on BOTH PCs with the original animation and sound. Logs `DOOR Ranger: rear hatch 'Car04_Door_Back_LOD0' ... synchronized as door 2`, `vdoor` commits | NOT TESTED |
+| 9 | Rear hatch slow open (hold E) by P2, release early once | Observer replays the slow swing, then finishes fast like the side doors | NOT TESTED |
+| 10 | Hatch + doors: open the hatch, then both front doors, enter as driver, close; drive off | Side doors close on entry as before; the hatch stays as set; a moving car refuses the other player's hatch open (log `car is moving`) | NOT TESTED |
+| 11 | Hatch + cargo: with the hatch open and closed, load and unload a heavy object | Cargo load / unload unchanged | NOT TESTED |
+| 12 | Regression: ordinary (non-heavy) item sales by both players, Shadowhawk door, medkit, CarBox, travel | Unchanged | NOT TESTED |
+
+Send back both `LogOutput.log` files.
+
+## 45. S1 checklist — shared sleep control (release `TS2-Multiplayer-0.22.1.zip` on BOTH PCs, protocol 33) — **user-verified (reported 2026-11-17, as a whole; rows not reported individually)**
 F8 test campaign, normal mode (not survival). Sleep = hideout bed or the car (driver, `Parking`). Grep tags: `SLEEP_CONTROL` (`installed`, `observer EscKey/StopIt/QuitIt refused`, `own sleep refused`), `SLEEP_SHOW` (`presenting`, `not presented yet (...)`, `holding`, `ended (...)`), `SLEEP_START`, `SLEEP accepted`, `SLEEP end`.
 
 | # | Steps | Expected evidence | Result |

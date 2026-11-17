@@ -68,7 +68,7 @@ namespace TS2MP.Plugin
         Func<object, LayerMask> _psMask; Func<object, UnityEngine.Object> _psCam;   // PlayerScript.mask / cam (E raycast), diagnostics only
         // M5.0 original doors (CarController.car_door_L/R, Door fields used by Door.Use / Door.Update) and EVP steering/wheels
         Func<object, UnityEngine.Object> _carDoorL, _carDoorR, _drivetrain, _doorSound, _doorClipOpen, _doorClipClose;
-        Func<object, bool> _doorIsOpen, _doorLoadSlow, _doorSlowly;
+        Func<object, bool> _doorIsOpen, _doorLoadSlow, _doorSlowly, _doorIsCarDoor;
         Action<object, bool> _doorSetOpen, _doorSetOpening, _doorSetByPlayer, _doorSetCanUse;
         Action<object, float> _doorSetSpeed; Func<object, float> _doorSpeedMul, _doorVolume, _evpSteer;
         FieldInfo _evpWheels, _wCol, _wT, _wSteer;
@@ -124,7 +124,7 @@ namespace TS2MP.Plugin
             public bool SavedKinematic; public RigidbodyInterpolation SavedInterp; public CollisionDetectionMode SavedDetect;
             public List<Behaviour> Paused; public List<Collider> WheelCols; public bool SavedLoadTrunk;
             public WheelVis[] Wheels; public Vector3 WheelLastPos; public bool WheelHasPos; public float SteerTarget, Steer;
-            // M5.0 doors: original Door components (car_door_L, car_door_R) and their replicated state
+            // M5.0 doors: original Door components (car_door_L, car_door_R; H3: + the Ranger rear hatch) and their replicated state
             public Component[] Doors; public bool DoorsBound; public readonly DoorReplica DoorRep = new DoorReplica();
             // M4.3 passenger seat: remote avatar anchor (original associateSitPos, Codename root) and the local first-person
             // player root (car-local), created on demand as a child of the car
@@ -135,7 +135,7 @@ namespace TS2MP.Plugin
             public float GroundY;                                  // M4.3.2a car-local ground level (lowest wheel contact)
             // W4.2B.3 ground diagnostics: last logged pose, wheel bindings for the driver side, observer wheel-ray outcomes since then
             public Vector3 GroundLogPos; public double GroundLogAt = -100; public WheelVis[] DiagWheels; public int RayGround, RayOwnSkipped, RayKept, RayMiss;
-            public readonly double[] SlowAt = { -1, -1 }; public readonly bool[] SlowRep = new bool[2];
+            public readonly double[] SlowAt = { -1, -1, -1 }; public readonly bool[] SlowRep = new bool[VehicleDoors.Count];
             public bool Active { get { return Go != null && Go.activeInHierarchy; } }
             public bool Placed;   // V1.2: the original (InitiateMainCar) or the mod gave the object a valid pose in this scene
             public bool Arranged; // V1.4: the hideout layout fixed its place in this scene (never rearranged afterwards)
@@ -355,6 +355,7 @@ namespace TS2MP.Plugin
                     _doorSound = Fast.Getter<UnityEngine.Object>(_doorT, "DoorSound");
                     _doorClipOpen = Fast.Getter<UnityEngine.Object>(_doorT, "DoorOpen"); _doorClipClose = Fast.Getter<UnityEngine.Object>(_doorT, "DoorClose");
                     _doorLoadSlow = Fast.Getter<bool>(_doorT, "load_slow"); _doorSlowly = Fast.Getter<bool>(_doorT, "openingSlowly");
+                    _doorIsCarDoor = Fast.Getter<bool>(_doorT, "isCarDoor");
                 }
                 var evp = AccessTools.TypeByName("EVP.VehicleController");
                 if (evp != null)
@@ -1278,7 +1279,7 @@ namespace TS2MP.Plugin
             if (_warned.Add(90000 + lc.Kind))
                 _log.Info("OBSERVED " + CarName(lc.Id) + ": kinematic=" + (lc.Rb != null) + " paused=" + string.Join(",", names.ToArray()) + " wheelColliders=" + lc.WheelCols.Count
                     + " bodyColliders=" + lc.Solid.Count + " storageColliders=" + lc.Blocked.Count + " wheelVisuals=" + (lc.Wheels != null ? lc.Wheels.Length : 0)
-                    + " doors=" + (_carDoorL != null && _carDoorL(lc.Car) != null ? "L" : "-") + (_carDoorR != null && _carDoorR(lc.Car) != null ? "R" : "-"));
+                    + " doors=" + (_carDoorL != null && _carDoorL(lc.Car) != null ? "L" : "-") + (_carDoorR != null && _carDoorR(lc.Car) != null ? "R" : "-") + (lc.Doors != null && lc.Doors.Length > VehicleDoors.Hatch && lc.Doors[VehicleDoors.Hatch] != null ? "H" : "-"));
         }
 
         void ExitObserved(LocalCar lc)
@@ -1668,10 +1669,10 @@ namespace TS2MP.Plugin
                 if (!lc.DoorsBound)
                 {
                     lc.DoorsBound = true;
-                    var dl = _carDoorL(lc.Car) as Component; var dr = _carDoorR(lc.Car) as Component;
-                    lc.Doors = dl != null || dr != null ? new[] { dl, dr } : null;
+                    var dl = _carDoorL(lc.Car) as Component; var dr = _carDoorR(lc.Car) as Component; var dh = FindHatch(lc, dl, dr);
+                    lc.Doors = dl != null || dr != null || dh != null ? new[] { dl, dr, dh } : null;
                     if (lc.Doors != null) lc.DoorRep.Bind(ReadDoors(lc));
-                    lc.SlowAt[0] = lc.SlowAt[1] = SlowNone; lc.SlowRep[0] = lc.SlowRep[1] = false;
+                    for (int d = 0; d < VehicleDoors.Count; d++) { lc.SlowAt[d] = SlowNone; lc.SlowRep[d] = false; }
                 }
                 if (lc.Doors == null) continue;
                 byte actual = ReadDoors(lc);
@@ -1698,6 +1699,24 @@ namespace TS2MP.Plugin
                 if (lc.DoorRep.Wanted(out want) && !DoorBusy(lc)) ApplyDoors(lc);
                 SlowDoorFrame(lc);
             }
+        }
+
+        // H3: the car's rear hatch = its only Door child with isCarDoor that is neither car_door_L nor car_door_R (Ranger:
+        // PLAYER CAR/.../Car04_Body/Car04_Door_Back/Car04_Door_Back_LOD0, openRotation -114.5; the Shadowhawk has none). Same
+        // original Door component as the side doors, so the existing vdoor replica drives it (quick / slow / fast finish).
+        // Once per car binding (scene event), never per frame. Two or more candidates -> no hatch (ambiguous, logged).
+        Component FindHatch(LocalCar lc, Component dl, Component dr)
+        {
+            if (_doorT == null || _doorIsCarDoor == null || lc.Car == null) return null;
+            Component found = null;
+            foreach (var c in lc.Car.GetComponentsInChildren(_doorT, true))
+            {
+                if (c == null || ReferenceEquals(c, dl) || ReferenceEquals(c, dr) || !_doorIsCarDoor(c)) continue;
+                if (found != null) { if (_warned.Add(93000 + lc.Kind)) _log.Warn("DOOR " + CarName(lc.Id) + ": more than one extra car door (" + found.name + ", " + c.name + ") - rear hatch not synchronized"); return null; }
+                found = c;
+            }
+            if (found != null && _warned.Add(94000 + lc.Kind)) _log.Info("DOOR " + CarName(lc.Id) + ": rear hatch '" + found.name + "' (original Door) synchronized as door 2 of vdoor");
+            return found;
         }
 
         byte ReadDoors(LocalCar lc)
@@ -1728,7 +1747,7 @@ namespace TS2MP.Plugin
                 else if (code != ProposalCode.Unchanged)
                 {
                     _doorRefused++;
-                    _log.Info("DOOR " + CarName(lc.Id) + " " + (door == 0 ? "L" : "R") + (open ? " open" : " close") + " " + mode + " refused: " + code + (why != null ? " (" + why + ")" : ""));
+                    _log.Info("DOOR " + CarName(lc.Id) + " " + VehicleDoors.Name(door) + (open ? " open" : " close") + " " + mode + " refused: " + code + (why != null ? " (" + why + ")" : ""));
                     if (code == ProposalCode.Busy) Quiet("Multiplayer: the car is moving");
                 }
                 return;
@@ -2164,10 +2183,11 @@ namespace TS2MP.Plugin
         }
 
         // CarController.L_/R_Door_Close_Delay (IL): an open door is closed after entry (reported through the door sync).
+        // Only the side doors: the original never closes the rear hatch on entry (H3).
         void CloseDoorsLocal(LocalCar lc)
         {
             if (!DoorApi || lc.Doors == null) return;
-            for (int d = 0; d < VehicleDoors.Count; d++) { var o = lc.Doors[d]; if (o != null && _doorIsOpen(o) && !_doorLoadSlow(o) && !_doorSlowly(o)) SwingDoor(o, false); }
+            for (int d = VehicleDoors.Left; d <= VehicleDoors.Right; d++) { var o = lc.Doors[d]; if (o != null && _doorIsOpen(o) && !_doorLoadSlow(o) && !_doorSlowly(o)) SwingDoor(o, false); }
         }
 
         // CarController.Set_TPP (IL) camera part only: TPP = main camera off, PlayerCameraBehavior + HandCamera off, the shared

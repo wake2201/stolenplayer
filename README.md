@@ -44,7 +44,7 @@ Players install a drag-and-drop ZIP into the game folder and start the game norm
 Direct-IP internet play between two PCs has been used by the user since 0.14.1 (doors, lockpicking, windows and vehicle cameras confirmed in 0.14.2).
 
 **Tested game target:** Thief Simulator 2 v1.27c  
-**Current development build:** 0.22.1 · protocol 33 — shared sleep control: only the sleeper can cancel, both players see the original sleep UI (S1, pending manual two-PC QA, `docs/TESTING.md` §45). V1.4.1 (first car home takes the main hideout spot, Player-2 car medkit) is user-verified; the Ranger rear hatch is not tested. Version history: `ModVersion` comment in `src/Shared/Protocol.cs`.
+**Current development build:** 0.23.0 · protocol 34 — heavy loot sale integrity (each heavy object sells once on both PCs) and the Ranger rear hatch synchronized (H3, pending manual two-PC QA, `docs/TESTING.md` §46). S1 shared sleep control and V1.4.1 are user-verified. Version history: `ModVersion` comment in `src/Shared/Protocol.cs`.
 
 Both instances need the same mod version and protocol.
 

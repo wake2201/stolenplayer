@@ -892,6 +892,23 @@ namespace TS2MP.Shared
                 case HeavyOp.Settle: lease = t.Lease; return Heavy.Settle(slot, region, t.Ns, t.Hash, t.Lease, t.Pos, t.Rot, Reg, Outbox, out why);
                 case HeavyOp.Release: lease = t.Lease; return Heavy.Release(slot, t.Ns, t.Hash, t.Lease, RegionOfSlot((byte)(slot == 1 ? 2 : 1)), Reg, Outbox, out why);   // H1.1: a moving object goes to the other player if it is there
                 case HeavyOp.Remove: lease = t.Lease; return Heavy.Remove(slot, t.Ns, t.Hash, t.Lease, Reg, Outbox, out why);
+                case HeavyOp.Sell:
+                {
+                    // H3: the seller's original heavy shop sale; the host consumes the record once (HeavyBook.Sell). An untouched
+                    // census object of Player 2 is checked against the host's scene-file catalog like a Lease.
+                    lease = t.Lease;
+                    if (t.Cargo) { ushort car; CargoEntry ce; if (Cargo.TryFind(HeavyCargo.IdOf(t.Hash), out car, out ce)) { Heavy.SaleRefused++; why = "cargo object is in vehicle " + car; return ProposalCode.Stale; } }
+                    HeavyRecord sr; bool known = slot == 1 || t.Cargo || Heavy.TryGet(t.Ns, t.Hash, out sr);
+                    if (!known)
+                    {
+                        if (HeavyCatalog == null) { why = "heavy-object sync unavailable on the host"; return ProposalCode.NotAuthorized; }
+                        var c = HeavyCatalog(t.Ns, t.Hash, t.Digest, out why);
+                        if (c != ProposalCode.Accepted) { Heavy.SaleRefused++; return c; }
+                        known = true;
+                    }
+                    return Heavy.Sell(slot, region, t.Ns, t.Hash, t.Lease, known, t.Cargo, now, Reg, Outbox, out why);
+                }
+                case HeavyOp.Unsell: lease = t.Lease; return Heavy.Unsell(slot, t.Ns, t.Hash, t.Lease, now, Reg, Outbox, out why);
                 default: why = "op"; return ProposalCode.Invalid;
             }
         }

@@ -243,7 +243,7 @@ static class W6B2Tests
         ushort seen = Rec(wh, tv, Hideout).Lease;
         Expect(P2(wh, Req(HeavyOp.Sell, tv, seen, Hideout, true), 2) == ProposalCode.Accepted && wh.Heavy.PendingSales == 1, "H3 sale keeps its undo right");
         Expect(P2(wh, Req(HeavyOp.Unsell, tv, seen, Hideout, true), 2.1) == ProposalCode.Accepted, "H3 undo unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 39 && ProtocolInfo.ModVersion == "0.28.0", "protocol 39 / mod 0.28.0");
+        Expect(ProtocolInfo.ProtocolVersion == 40 && ProtocolInfo.ModVersion == "0.29.0", "protocol 39 / mod 0.28.0");
     }
 
     static string Root()

@@ -31,7 +31,7 @@ using UnityEngine;
 
 namespace TS2MP.Plugin
 {
-    internal sealed class StorySync : IDisposable, IStoryHost
+    internal sealed partial class StorySync : IDisposable, IStoryHost
     {
         public static StorySync Instance;
         // ParcelSync: when true, Player 2's note story step is handled here (W2B suppression no longer needed).
@@ -92,6 +92,7 @@ namespace TS2MP.Plugin
                 _h.Patch(beginRead, prefix: new HarmonyMethod(AccessTools.Method(typeof(StorySync), "NoteReadPre")), postfix: new HarmonyMethod(AccessTools.Method(typeof(StorySync), "NoteReadPost")));
                 _h.Patch(noteStart, postfix: new HarmonyMethod(AccessTools.Method(typeof(StorySync), "NoteStartPost")));
                 PatchCalls(gm);
+                PatchMissions();   // W6B.3 (src/Plugin/StoryMissions.cs)
                 if (_host && world.Host != null) world.Host.StoryHost = this;
                 else world.ProposalResultHook12 = OnProposalResult;
                 node.RemoteDisconnected += OnDisconnected;
@@ -276,6 +277,11 @@ namespace TS2MP.Plugin
             _suppressed++;
             int idx; string key; bool free;
             if (!Local(out idx, out key, out free)) return;
+            if (_missionResume)
+            {   // W6B.3: the original MissionComplete1 after the host commit - the host already ran AdvanceStory once
+                _log.Info("STORY Player-2 story step '" + key + "' (" + idx + ") from the committed task completion: not advanced here (the host advanced once, this PC follows)");
+                return;
+            }
             var t = _ctxPath != null ? StoryTriggers.Find(key, _ctxKind, _ctxPath) : null;
             if (t == null && WorldObjectSync.InCameraDisable)
             {   // W6B.1: SecurityCamera.DisableCamera onDisableAdvanceStory on Player 2 - the shared camera commit decides on the host
@@ -306,6 +312,7 @@ namespace TS2MP.Plugin
         {
             StoryCallState cs;
             if (_callPending.TryGetValue(id, out cs)) { _callPending.Remove(id); _log.Info("STORY call answer #" + id + " " + cs + " -> " + code); return true; }
+            if (!_host && OnMissionResult(id, code)) return true;   // W6B.3
             Pending p;
             if (_host || !_pending.TryGetValue(id, out p)) return false;
             _pending.Remove(id);
@@ -317,7 +324,7 @@ namespace TS2MP.Plugin
             return true;
         }
 
-        void OnDisconnected(string reason) { _pending.Clear(); _retry.Clear(); _callPending.Clear(); }
+        void OnDisconnected(string reason) { _pending.Clear(); _retry.Clear(); _callPending.Clear(); _missionsDirty = true; }
 
         // ================================================================ per frame (Plugin.Update)
         public void Update()
@@ -328,6 +335,7 @@ namespace TS2MP.Plugin
             if (!ReferenceEquals(sm, _boundSm)) { _boundSm = sm; _lastLocal = int.MinValue; _seenHead = uint.MaxValue; }
             int local = _smStory(sm);
             if (_callOk && (_host || _world.Synced)) { try { CallTick(); } catch (Exception ex) { _callOk = false; _log.Error("STORY call sync failed: story calls stay per PC", ex); } }
+            if (_missionsOk && (_host || _world.Synced)) { try { MissionFrame(Now); } catch (Exception ex) { _missionsOk = false; _log.Error("STORY mission sync failed: cooperative missions disabled", ex); } }
             if (_host)
             {
                 if (local == _lastLocal || _world.Host == null) return;
@@ -402,17 +410,18 @@ namespace TS2MP.Plugin
 
         string Committed() { var e = _world.Registry.Get(StateScope.Session, 0, WorldKeys.Story); StoryState s; return e != null && StoryState.TryParse(e.Value, out s) ? s.ToString() : "none"; }
 
-        public string Stats { get { return "STORY_STATS " + (_host ? "host" : "client") + " suppressed " + _suppressed + " proposed " + _proposed + " ok " + _accepted + " stale " + _stale + " refused " + _refused + " published " + _published + " followed " + _followed + " notesKept " + _notesKept + " calls answered/mirrored/bypassed " + _callsAnswered + "/" + _callsMirrored + "/" + _callsBypassed + (_host && _world.Host != null ? " hostApplied " + _world.Host.StoryAdvances : "") + " | " + Committed(); } }
+        public string Stats { get { return "STORY_STATS " + (_host ? "host" : "client") + " suppressed " + _suppressed + " proposed " + _proposed + " ok " + _accepted + " stale " + _stale + " refused " + _refused + " published " + _published + " followed " + _followed + " notesKept " + _notesKept + " calls answered/mirrored/bypassed " + _callsAnswered + "/" + _callsMirrored + "/" + _callsBypassed + (_host && _world.Host != null ? " hostApplied " + _world.Host.StoryAdvances : "") + MissionStats + " | " + Committed(); } }
 
         public void Dispose()
         {
-            if (ReferenceEquals(Instance, this)) { Instance = null; _ctxPath = null; _applying = false; }
+            if (ReferenceEquals(Instance, this)) { Instance = null; _ctxPath = null; _applying = false; _ctxPlant = null; _missionResume = false; }
             if (_ok)
             {
                 _node.RemoteDisconnected -= OnDisconnected;
                 if (_world.ProposalResultHook12 == (Func<uint, ProposalCode, bool>)OnProposalResult) _world.ProposalResultHook12 = null;
             }
             if (_world.Host != null && ReferenceEquals(_world.Host.StoryHost, this)) _world.Host.StoryHost = null;
+            if (_world.Host != null && ReferenceEquals(_world.Host.MissionHost, this)) _world.Host.MissionHost = null;
             if (_h != null) { _h.UnpatchSelf(); _h = null; }
         }
     }

@@ -7,6 +7,12 @@
 //       original feedback (fade + cut sound) on acceptance; its box vanishes with the consumed record (HeavySync reconcile).
 //   CardboardMinigame.SpawnItem / SpawnItemOnStart    prefix (Player 2): never - the contents exist only in the host campaign
 //       (story item 91; the mirrored ItemCardboard key would otherwise re-create a second package at load).
+//                                                     postfix (host, W6B.3): the ORIGINAL object the host's SpawnItem /
+//       SpawnItemOnStart created (spawnedObj1) becomes ONE shared item (WorldItemSync.HostRegisterContents): Player 2 sees the
+//       original drop_object at the same pose, either player picks it up with the normal claim (one winner, Player 2's record).
+//       1 Hz host check: an unregistered live spawnedObj1 in the hideout (registry region cleared, load before the host region was
+//       known) is registered again. Taken by either player -> host ItemCardboard = -1 at once (as the original TrySaveItem would
+//       write after the pickup), so a host save / reload never re-creates a collected package.
 // Untracked boxes (MainScene / ambiguous id): host = vanilla local original; Player 2 = refused (fail closed).
 // Cost: hooks only at an open / load; per frame one null check of the pending request.
 using System;
@@ -25,6 +31,9 @@ namespace TS2MP.Plugin
         sealed class UnpackReq { public uint Id; public int Ns; public uint Hash; public bool Cargo; public object Mg; public double At; public string Name; }
         UnpackReq _unpack;
         long _unpackHost, _unpackRequested, _unpackGranted, _unpackHostRuns, _unpackRefused, _unpackUntracked, _spawnBlocked;
+        // W6B.3 shared contents (host)
+        Func<object, object> _mgSpawned; Func<object, int> _mgItemId, _itemIdOf, _pickItemId; Action<string, int> _prefSetInt;
+        int _contentsItem, _contentsGo, _takenGo, _failedGo, _waitGo; uint _contentsWid; double _nextContentsCheck; long _contentsRegistered, _contentsTaken, _contentsFailed;
         public const double UnpackTimeout = 15.0;
 
         void InitUnpack()
@@ -47,12 +56,103 @@ namespace TS2MP.Plugin
             var pre = new HarmonyMethod(AccessTools.Method(typeof(HeavySync), "UnpackPrefix"));
             _h.Patch(skip, pre); _h.Patch(won, pre);
             var sp = new HarmonyMethod(AccessTools.Method(typeof(HeavySync), "SpawnPrefix"));
-            _h.Patch(spawn, sp); _h.Patch(spawnStart, sp);
+            if (_host && InitContents(it))
+            {
+                _h.Patch(spawn, sp, new HarmonyMethod(AccessTools.Method(typeof(HeavySync), "SpawnPostfix")));
+                _h.Patch(spawnStart, sp, new HarmonyMethod(AccessTools.Method(typeof(HeavySync), "SpawnStartPostfix")));
+            }
+            else { _h.Patch(spawn, sp); _h.Patch(spawnStart, sp); }
             if (_host && _world.Host != null) _world.Host.UnpackHost = this;
             _unpackOk = true;
         }
 
         static bool UnpackBlockedPrefix() { return false; }
+
+        // ---------------- W6B.3 shared contents (host)
+        bool InitContents(Type itemT)
+        {
+            _mgSpawned = Fast.Getter<object>(_mgT, "spawnedObj1"); _mgItemId = Fast.Getter<int>(_mgT, "currentItemID");
+            _itemIdOf = Fast.Getter<int>(itemT, "item_ID"); _pickItemId = Fast.Getter<int>(_pickT, "item_ID");
+            var sp = AccessTools.TypeByName("SPrefs"); var si = sp != null ? AccessTools.Method(sp, "SetInt", new[] { typeof(string), typeof(int) }) : null;
+            if (si != null) _prefSetInt = (Action<string, int>)Delegate.CreateDelegate(typeof(Action<string, int>), si);
+            var items = WorldItemSync.Instance;
+            if (_mgSpawned == null || _mgItemId == null || _itemIdOf == null || _pickItemId == null || _prefSetInt == null || items == null)
+            {
+                _log.Warn("HEAVY mission-box contents not shared (CardboardMinigame / WorldItemSync members missing): the contents stay host-local as in 0.28.0");
+                return false;
+            }
+            items.HostItemTaken = OnContentsTaken;
+            return true;
+        }
+
+        // After the host's ORIGINAL SpawnItem (Player 1's SkipMinigameWin / MinigameWon, or RunUnpack for Player 2): current_box is
+        // still alive here (SkipMinigameWin destroys it after SpawnItem).
+        static void SpawnPostfix(object __instance)
+        {
+            var hs = Instance; if (hs == null) return;
+            try
+            {
+                var box = hs._mgBox(__instance) as GameObject; var pick = box != null ? box.GetComponent(hs._pickT) : null;
+                var item = pick != null ? hs._pickScript(pick) : null; var spawnItem = item != null ? hs._itemSpawn(item) : null;
+                hs.RegisterContents(__instance, spawnItem != null ? hs._itemIdOf(spawnItem) : 0, "original SpawnItem");
+            }
+            catch (Exception ex) { hs._contentsFailed++; hs._log.Error("HEAVY mission-box contents registration failed (contents stay host-local)", ex); }
+        }
+
+        // After the host's ORIGINAL SpawnItemOnStart (load: ItemCardboard > 0 -> the unpicked contents again).
+        static void SpawnStartPostfix(object __instance)
+        {
+            var hs = Instance; if (hs == null) return;
+            try { int id = hs._mgItemId(__instance); hs.RegisterContents(__instance, id, "original SpawnItemOnStart (ItemCardboard " + id + ")"); }
+            catch (Exception ex) { hs._contentsFailed++; hs._log.Error("HEAVY mission-box contents registration at load failed (retried)", ex); }
+        }
+
+        // itemHint: the contents item id known by the caller (box's cardboard_spawn_item_ID / currentItemID), 0 = unknown.
+        void RegisterContents(object mg, int itemHint, string why)
+        {
+            var go = _mgSpawned(mg) as GameObject; var items = WorldItemSync.Instance;
+            if (go == null || items == null) return;
+            int gid = go.GetInstanceID();
+            if (gid == _takenGo || items.HostHasContents(go)) return;   // already claimed (original pickup still running) / already shared
+            var pick = go.GetComponent(_pickT);
+            if (itemHint > 0) _contentsItem = itemHint;
+            else if (gid != _contentsGo || _contentsItem <= 0) { int cur = _mgItemId(mg); _contentsItem = cur > 0 ? cur : pick != null ? _pickItemId(pick) : 0; }
+            _contentsGo = gid;   // the object whose contents item id is known
+            if (_world.LocalRegion != TravelRules.Hideout)
+            {
+                if (_waitGo != gid) { _waitGo = gid; _log.Info("HEAVY mission-box contents '" + go.name + "' (" + why + "): host not in the hideout yet - registered when it is"); }
+                return;
+            }
+            uint wid; string err;
+            if (!items.HostRegisterContents(go, _contentsItem, out wid, out err))
+            {
+                _contentsFailed++;
+                if (_failedGo != gid) { _failedGo = gid; _log.Warn("HEAVY mission-box contents '" + go.name + "' item " + _contentsItem + " not shared (" + err + "): retried every second (logged once)"); }
+                return;
+            }
+            _contentsWid = wid; _failedGo = 0; _contentsRegistered++;
+            _log.Info("HEAVY mission-box contents '" + go.name + "' item " + _contentsItem + " (" + why + ") shared as world item #" + wid + " at " + go.transform.position.ToString("F2") + ": one logical item, Player 2 sees the original drop_object, either player can pick it up once");
+        }
+
+        void ContentsFrame(double now)
+        {
+            if (!_host || _mgSpawned == null || now < _nextContentsCheck) return;
+            _nextContentsCheck = now + 1.0;
+            var ps = Ps(); var mg = ps != null ? _psMg(ps) : null;
+            if (mg == null || _world.LocalRegion != TravelRules.Hideout) return;
+            var go = _mgSpawned(mg) as GameObject; var items = WorldItemSync.Instance;
+            if (go == null || items == null || items.HostHasContents(go)) return;
+            RegisterContents(mg, 0, "host check: live original contents not in the registry");
+        }
+
+        void OnContentsTaken(uint wid, byte slot)
+        {
+            if (wid == 0 || wid != _contentsWid) return;
+            _contentsWid = 0; _takenGo = _contentsGo; _contentsTaken++;
+            try { _prefSetInt("ItemCardboard", -1); }   // CardboardMinigame.TrySaveItem writes -1 once spawnedObj1 is gone (original)
+            catch (Exception ex) { _log.Error("HEAVY ItemCardboard reset failed", ex); }
+            _log.Info("HEAVY mission-box contents #" + wid + " (item " + _contentsItem + ") picked up by Player " + slot + ": host ItemCardboard = -1 (no second package after a save / reload)");
+        }
 
         static bool UnpackPrefix(object __instance)
         {
@@ -139,12 +239,13 @@ namespace TS2MP.Plugin
                 var cut = _mgCut(q.Mg) as AudioSource; if (cut != null) cut.Play();
             }
             catch (Exception ex) { _log.Error("HEAVY unpack feedback failed (no gameplay effect)", ex); }
-            _log.Info("HEAVY unpack of '" + q.Name + "' by Player 2 granted (" + ((Now - q.At) * 1000).ToString("0") + " ms): the host created the contents once; this box disappears with the consumed record");
+            _log.Info("HEAVY unpack of '" + q.Name + "' by Player 2 granted (" + ((Now - q.At) * 1000).ToString("0") + " ms): the host created the contents once (shown here as the shared world item); this box disappears with the consumed record");
             return true;
         }
 
         void UnpackFrame(double now)
         {
+            ContentsFrame(now);
             if (_unpack == null || (Live && now - _unpack.At <= UnpackTimeout)) return;
             _unpackRefused++;
             _log.Warn("HEAVY unpack of '" + _unpack.Name + "' by Player 2 unanswered" + (Live ? " after " + UnpackTimeout + " s" : " (disconnected)") + ": abandoned locally (a late grant was already applied by the host exactly once)");
@@ -199,6 +300,6 @@ namespace TS2MP.Plugin
             _log.Info("HEAVY unpack of '" + box.name + "' (" + IdentityNamespace.Name(ns) + ":" + (cargo ? "cargo " : "") + hash.ToString("X8") + ") opened by Player 2: host original SpawnItem created the contents once on the host's table (host-owned)");
         }
 
-        string UnpackStats { get { return " | unpack host " + _unpackHost + " req " + _unpackRequested + " granted " + _unpackGranted + " hostRuns " + _unpackHostRuns + " refused " + _unpackRefused + " untracked " + _unpackUntracked + " spawnBlocked " + _spawnBlocked; } }
+        string UnpackStats { get { return " | unpack host " + _unpackHost + " req " + _unpackRequested + " granted " + _unpackGranted + " hostRuns " + _unpackHostRuns + " refused " + _unpackRefused + " untracked " + _unpackUntracked + " spawnBlocked " + _spawnBlocked + " contents shared " + _contentsRegistered + " taken " + _contentsTaken + " failed " + _contentsFailed; } }
     }
 }

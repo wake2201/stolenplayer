@@ -194,18 +194,18 @@ static class W6A1Tests
         foreach (var bad in new[] { "FindObjectsOfType", "GameObject.Find(", "Resources.FindObjectsOfTypeAll" }) Expect(ui.IndexOf(bad, StringComparison.Ordinal) < 0, "no scene-wide search in the menu UI: " + bad);
         var dev = Strip(Src("Plugin", "MultiplayerMenu.Dev.cs"));
         Expect(dev.Contains("if (_devInfo != null && now < _devInfoAt) return _devInfo;") && dev.Contains("if (_stepLabels == null)"), "developer status / list strings cached");
-        Expect(ProtocolInfo.ProtocolVersion == 39, "no wire change (protocol 37)");
+        Expect(ProtocolInfo.ProtocolVersion == 40, "no wire change (protocol 37)");
     }
 
     // ---------------------------------------------------------------- 08
     static void Regressions()
     {
-        Expect(StoryTriggers.All.Length == 1 && StoryTriggers.Find("story14", StoryTriggerKind.ReadNote, "DOMY/Dom 103/Interior_103/story object 103 notka/pPlane3") != null, "W6A trigger table unchanged");
+        Expect(StoryTriggers.All.Length == 2 && StoryTriggers.Find("story14", StoryTriggerKind.ReadNote, "DOMY/Dom 103/Interior_103/story object 103 notka/pPlane3") != null, "W6A trigger table unchanged");
         string why; var r = new StoryAdvanceRequest { FromIndex = 18, StageKey = "story14", Kind = StoryTriggerKind.ReadNote, Path = "Interior_103/story object 103 notka/pPlane3" };
         Expect(StoryRules.Decide(true, false, 18, "story14", r, out why) == ProposalCode.Accepted && StoryRules.Decide(true, false, 19, "story15", r, out why) == ProposalCode.Stale, "W6A decision unchanged");
         var ps = Strip(Src("Plugin", "ParcelSync.cs"));
         Expect(ps.Contains("if (!i._host && !StorySync.ClientHandlesStory && _noteAdvance(__instance)) { _setNoteAdvance(__instance, false);"), "W2B fallback unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 39 && ProtocolInfo.ModVersion == "0.28.0", "protocol 37 / mod 0.26.1");
+        Expect(ProtocolInfo.ProtocolVersion == 40 && ProtocolInfo.ModVersion == "0.29.0", "protocol 37 / mod 0.26.1");
     }
 
     // ---------------------------------------------------------------- helpers

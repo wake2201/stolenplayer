@@ -337,7 +337,7 @@ namespace TS2MP.Plugin
             catch (Exception ex) { log.Error("MEDKIT init failed (shared medkit disabled)", ex); _medkit = null; }
             try { _parcels = new ParcelSync(node, log, _world); if (!_parcels.Ready) { _parcels.Dispose(); _parcels = null; } }
             catch (Exception ex) { log.Error("PARCEL init failed (shared parcel codes disabled)", ex); _parcels = null; }
-            try { _story = new StorySync(node, log, _world); if (!_story.Ready) { _story.Dispose(); _story = null; } }
+            try { _story = new StorySync(node, log, _world); if (!_story.Ready) { _story.Dispose(); _story = null; } else _story.Players = _sync; }
             catch (Exception ex) { log.Error("STORY init failed (shared story disabled)", ex); _story = null; }
             try { _wallet = new WalletSync(node, log, _world); }
             catch (Exception ex) { log.Error("WALLET init failed (shared money disabled)", ex); _wallet = null; }

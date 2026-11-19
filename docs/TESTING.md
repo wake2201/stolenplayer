@@ -151,6 +151,27 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 57. W6B.3 checklist — shared box contents, story16-18 by either player, checkpoint (release `TS2-Multiplayer-0.29.0.zip` on BOTH PCs)
+Grep tags: `HEAVY mission-box contents`, `HEAVY unpack`, `WITEM`, `STORY task`, `STORY Player-2 mission`, `STORY host completed`, `STORY shared missions`, `STORY_STATS` (`missions …`), `WALLET`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | story15/16: box on the hideout table, P1 opens it | Both PCs: box gone, ONE package on the table at the same spot. P1 log `HEAVY mission-box contents '…' item 91 (original SpawnItem) shared as world item #N`; P2 shows it (no `contents not created` duplicate) | NOT TESTED |
+| 2 | Fresh: P2 opens it (P1 in the hideout) | Same as row 1 (P2 gets fade + cut sound). P1 log `opened by Player 2` + `shared as world item` | NOT TESTED |
+| 3 | After row 1 or 2: P2 picks the package | P2 inventory +1 black package; it vanishes on P1. P1 log `taken by Player 2: host original object removed`, `ItemCardboard = -1` | NOT TESTED |
+| 4 | Fresh: P1 picks it instead | P1 inventory +1; vanishes on P2; P2 cannot pick anything there. Also check: after P2 opened, does P1 ever still see the closed box? (report the host log around `opened by Player 2`) | NOT TESTED |
+| 5 | Both press interact on the package at once | One inventory gets it; the other's pickup does nothing (`WITEM … -> Stale`) | NOT TESTED |
+| 6 | Package on the table, P1 bed-saves, both quit, reload, P2 rejoins | One package on both PCs (P1 log `original SpawnItemOnStart (ItemCardboard 91) shared`) | NOT TESTED |
+| 7 | Package on the table, both travel to Madison and back | Package still there once on both (host log may show `host check: … not in the registry` re-share) | NOT TESTED |
+| 8 | story16: P2 (holding the package) sells it on Blackbay | Both HUDs story17 once; shared money +250 once. P2 log `STORY Player-2 story 20 'story16' via BlackbaySale … proposed`, `-> Accepted` | NOT TESTED |
+| 9 | story17: P2 plants the package at 110 | P2: original mission-complete UI; both HUDs story18 once; money +250 once. P2 log `STORY Player-2 mission 110[0] Plant … proposed`, `committed by the host`; P1 log `STORY host completed 110[0]`. P1 at 110 sees the planted object | NOT TESTED |
+| 10 | Fresh story17: P1 plants instead | Original on P1; P2 log `STORY task 110[0] … key 1 -> 2 (host campaign), completion shown`; P2's marker gone, P2 cannot plant again | NOT TESTED |
+| 11 | story18: P2 photographs the 105 kitchen (photo mode, aim at the kitchen target) | Both story19 once; +250 once; P2 log `105[0] Photo … proposed`, host `completed 105[0]` | NOT TESTED |
+| 12 | Fresh story18: P1 photographs instead | P2 follows (`key 1 -> 2`), no second payout | NOT TESTED |
+| 13 | Invalid: P2 photographs another kitchen / 110's photo target at story18; P2 plants while P1 already did | Nothing happens on either PC; P2 log `refused before the host` or `-> Stale`, plant objects restored | NOT TESTED |
+| 14 | After row 9: P1 gets caught or loads the last save (checkpoint) | Both back to the saved story (e.g. 21) and money; P2 log `STORY task 110[0] key 2 -> 1 … host checkpoint restored the task`; the task can be done once more | NOT TESTED |
+| 15 | Regression: drone flights, 104 camera + story14 by P2, cargo, heavy sale, F8 join, F10 scenarios, story calls | Unchanged (§55, §56) | NOT TESTED |
+
 ## 56. W6B.2 checklist — mission box unpacking (release `TS2-Multiplayer-0.28.0.zip` on BOTH PCs, story15 or later)
 Grep tags: `HEAVY unpack`, `HEAVY_STATS` (`unpack host / req / granted / hostRuns / refused / spawnBlocked`), `CARGO`.
 

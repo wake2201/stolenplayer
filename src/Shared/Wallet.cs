@@ -187,7 +187,7 @@ namespace TS2MP.Shared
             // ---- not shared yet: the original runs, the money change is reverted on the client ----
             new MoneyWriter("SaveGame", "Update", MoneyPolicy.Exclude, "IL_0112 rent 600 / IL_012b rent 150, timeTillRentPayment = 168", "rent is a household cost charged once by the host"),
             new MoneyWriter("SaveGame", "SaveGameNewSystem", MoneyPolicy.Exclude, "IL_036b-0374 if (moneyAm < 0) moneyAm = 0", "the negative-money clamp belongs to the shared balance: the host's own saves apply it"),
-            new MoneyWriter("Mission_Item", "MissionComplete1", MoneyPolicy.Exclude, "IL_0087", "missions / story are host-owned, not synchronized (would be repeatable)"),
+            new MoneyWriter("Mission_Item", "MissionComplete1", MoneyPolicy.Exclude, "IL_0087", "missions are host-owned: listed story tasks are paid once by the host (W6B.3 missionAct), the client copy is reverted; unlisted tasks are not shared"),
             new MoneyWriter("JobOffer", "ClaimRewards", MoneyPolicy.Exclude, "IL_0013 += pay", "jobs are host-owned, not synchronized"),
             new MoneyWriter("ContractUIObj", "ClaimReward", MoneyPolicy.Exclude, "IL_008f / IL_013f", "contracts are host-owned, not synchronized"),
             new MoneyWriter("Payphone", "Success", MoneyPolicy.Exclude, "IL_0092 += PayphoneMission.pay", "payphone missions are host-owned, not synchronized"),

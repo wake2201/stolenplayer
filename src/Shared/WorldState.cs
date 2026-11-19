@@ -238,6 +238,8 @@ namespace TS2MP.Shared
         public const string Story = "story";         // Session scope (arg 0): StoryState, host-committed shared story index + stage key (host StoryManager.story, W6A)
         public const string StoryCallAnswer = "storyCallAnswer"; // Session scope (arg 0): StoryCallState, Player-2 answered the story call (client proposal, W6B protocol 38), never stored
         public const string StoryCall = "storyCall";  // Session scope (arg 0): StoryCallState, host-committed "this stage's call was answered" (W6B)
+        public const string MissionAction = "missionAct"; // Session scope (arg 0): MissionActionRequest, Player-2 original mission completion (client proposal, W6B.3 protocol 40), never stored
+        public const string Missions = "missions";      // Session scope (arg 0): MissionState, host-committed mission keys of the listed cooperative tasks (W6B.3)
         public const string VehicleBuy = "vbuy";       // Session scope (arg = vehicle id): 1 byte 1 = buy this car (client proposal, V1.2 protocol 31), never stored
         public const string VehicleRide = "vehicleRide"; // Session scope (arg = vehicle id): 1 byte 1 = reserve passenger seat, 2 = seated (confirm), 0 = leave (M4.3, protocol 10)
         public const string P2Inv = "p2inv";             // Session scope (arg 2): committed Player-2 inventory (P2Inventory), host-owned (M4.3.3, protocol 13)

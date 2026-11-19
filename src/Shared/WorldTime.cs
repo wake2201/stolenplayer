@@ -589,6 +589,37 @@ namespace TS2MP.Shared
             return code;
         }
 
+        // ---- W6B.3 cooperative story missions (src/Shared/Missions.cs) ----
+        public IMissionHost MissionHost;   // host plugin: residence mission keys, payout, world objects (src/Plugin/StoryMissions.cs)
+        public long MissionCompletions, MissionRefusals;
+
+        // One Player-2 mission action (proposal "missionAct"): decided and applied in this single host step (campaign key 1 -> 2,
+        // shared payout, AdvanceStory) -> exactly once (retransmission: proposal cache; replay / concurrent: key 2 -> Stale).
+        public ProposalCode CompleteMission(byte slot, MissionActionRequest r, out string why)
+        {
+            int idx = 0; string key = null; bool free = false;
+            bool ready = StoryHost != null && MissionHost != null && StoryHost.TryCurrent(out idx, out key, out free);
+            var t = MissionTargets.Find(r.House, r.Mission);
+            int pref = 0; bool known = ready && t != null && MissionHost.TryMissionPref(t, out pref);
+            string nearWhy = null; bool near = ready && t != null && MissionHost.PlayerNear(slot, t, out nearWhy);
+            var code = MissionRules.Decide(ready, free, idx, key, r, t, known, pref, near, nearWhy, out why);
+            if (code == ProposalCode.Accepted && !MissionHost.Complete(t, slot, out why)) code = ProposalCode.Busy;
+            if (code == ProposalCode.Accepted) { MissionCompletions++; MissionHost.Publish(); PublishStory(slot); }
+            else if (code != ProposalCode.Unchanged && code != ProposalCode.Stale) MissionRefusals++;
+            return code;
+        }
+
+        // Host: commit the listed tasks' mission keys when they changed (own completion, Player-2 commit, checkpoint reload).
+        public bool PublishMissions(MissionState s)
+        {
+            if (s == null) return false;
+            var cur = Reg.Get(StateScope.Session, 0, WorldKeys.Missions); MissionState old;
+            if (cur != null && MissionState.TryParse(cur.Value, out old) && old.SameAs(s)) return false;
+            var e = Reg.Commit(StateScope.Session, 0, WorldKeys.Missions, s.ToBytes());
+            if (e == null) return false;
+            Outbox.Add(e); return true;
+        }
+
         // ---- W6B cooperative story call: one committed answer per stage call (either player) ----
         public long CallAnswers, CallRefusals;
         public ProposalCode AnswerStoryCall(byte slot, StoryCallState req, out string why)
@@ -1238,6 +1269,12 @@ namespace TS2MP.Shared
                 StoryAdvanceRequest sr; string why = null;
                 if (p.ScopeArg != 0 || !StoryAdvanceRequest.TryParse(p.Value, out sr)) { code = ProposalCode.Invalid; LastNote = "story advance by P" + senderSlot + " -> Invalid"; }
                 else { code = AdvanceStory(senderSlot, sr, out why); LastNote = sr + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : ""); }
+            }
+            else if (p.Scope == StateScope.Session && p.Key == WorldKeys.MissionAction)
+            {
+                MissionActionRequest mr; string why = null;
+                if (p.ScopeArg != 0 || senderSlot != 2 || !MissionActionRequest.TryParse(p.Value, out mr)) { code = ProposalCode.Invalid; LastNote = "mission action by P" + senderSlot + " -> Invalid"; }
+                else { code = CompleteMission(senderSlot, mr, out why); LastNote = mr + " by P" + senderSlot + " -> " + code + (why != null ? " (" + why + ")" : ""); }
             }
             else if (p.Scope == StateScope.Session && p.Key == WorldKeys.StoryCallAnswer)
             {

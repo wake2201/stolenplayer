@@ -33,7 +33,7 @@ using System.Text;
 
 namespace TS2MP.Shared
 {
-    public enum StoryTriggerKind : byte { ReadNote = 1 }
+    public enum StoryTriggerKind : byte { ReadNote = 1, BlackbaySale = 2 }   // BlackbaySale: W6B.3
 
     // One verified external story trigger: the stage key it advances, the original class, and the object path suffix
     // (scene hierarchy below the scene root, matched as a suffix of the client's transform path).
@@ -50,6 +50,9 @@ namespace TS2MP.Shared
         {
             new StoryTrigger("story14", StoryTriggerKind.ReadNote, "Interior_103/story object 103 notka/pPlane3",
                 "stage 18 story14; MadisonSt DOMY/Dom 103/Interior_103/story object 103 notka/pPlane3 ReadNote advanceStory, storyDesc story14 (note_103, parcel1_madison); ReadNote.BeginRead IL_015a..IL_0195"),
+            // W6B.3: Player 2 may hold the shared mission-box contents (91 black_package) -> its original Blackbay sale advances story16.
+            new StoryTrigger("story16", StoryTriggerKind.BlackbaySale, "OTHERS/Viewport/Content/PACKAGE",
+                "stage 20 story16; MainScene .../blackbay.xyz/blackbay/BG/WINDOW RIGHT/OTHERS/Viewport/Content/PACKAGE BlackBay_Object on_sell_advance_story, story_name story16, value 250, xp 50; BlackBay_Object.SellIt: sold latch, money (wallet Count), items removed, on_sell_advance_story && current story == story_name -> AdvanceStory"),
         };
 
         // The listed trigger for (stage key, kind, client path), or null. Path: the client's transform path (any depth),
@@ -91,7 +94,7 @@ namespace TS2MP.Shared
         public static bool TryParse(byte[] b, out StoryAdvanceRequest r)
         {
             r = default(StoryAdvanceRequest);
-            if (b == null || b.Length < 8 || b[0] != Version || b[3] != (byte)StoryTriggerKind.ReadNote) return false;
+            if (b == null || b.Length < 8 || b[0] != Version || (b[3] != (byte)StoryTriggerKind.ReadNote && b[3] != (byte)StoryTriggerKind.BlackbaySale)) return false;
             int kl = b[4]; if (kl < 1 || kl > MaxKeyChars || 5 + kl >= b.Length) return false;
             int pl = b[5 + kl]; if (pl < 1 || pl > MaxPathChars || 6 + kl + pl != b.Length) return false;
             string k, p;

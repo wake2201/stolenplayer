@@ -211,7 +211,7 @@ static class W6ATests
         Expect(StoryState.TryParse(s.ToBytes(), out back) && back.SameAs(s) && back.By == 2 && s.ToBytes().Length < 40, "state round trip, " + s.ToBytes().Length + " B");
         Expect(!StoryState.TryParse(new byte[] { 1, 0, 0, 3, 1, 65 }, out back) && !StoryState.TryParse(new byte[] { 2, 0, 0, 0, 1, 65 }, out back) && !StoryState.TryParse(new byte[] { 1, 0, 0, 0, 2, 65 }, out back), "bad by / version / truncated refused");
         var rnd = new Random(11); for (int i = 0; i < 4000; i++) { var x = new byte[rnd.Next(0, 60)]; rnd.NextBytes(x); StoryState.TryParse(x, out back); StoryAdvanceRequest.TryParse(x, out b); }
-        Expect(StoryTriggers.All.Length == 1 && StoryTriggers.Find("story14", StoryTriggerKind.ReadNote, Note103.Path) != null && StoryTriggers.Find("story14", StoryTriggerKind.ReadNote, P103) != null, "note_103 listed (full path and canonical suffix)");
+        Expect(StoryTriggers.All.Length == 2 && StoryTriggers.Find("story14", StoryTriggerKind.ReadNote, Note103.Path) != null && StoryTriggers.Find("story14", StoryTriggerKind.ReadNote, P103) != null, "note_103 listed (full path and canonical suffix)");
         Expect(StoryTriggers.Find("story15", StoryTriggerKind.ReadNote, Note103.Path) == null && StoryTriggers.Find("story14", StoryTriggerKind.ReadNote, "X" + P103) == null
             && StoryTriggers.Find("story14", StoryTriggerKind.ReadNote, Note108.Path) == null && StoryTriggers.Find("story14", StoryTriggerKind.ReadNote, null) == null, "other stage / partial name / other note refused");
         string why;
@@ -220,7 +220,7 @@ static class W6ATests
             && StoryRules.Decide(true, false, S15, "story15", r, out why) == ProposalCode.Stale && StoryRules.Decide(true, false, S14, "story13", r, out why) == ProposalCode.Stale
             && StoryRules.Decide(true, false, S14, "story14", Req(S14, "story14", "pPlane3"), out why) == ProposalCode.Invalid, "decide: busy / free / stale index / stale key / unlisted");
         Expect(WorldKeys.StoryAdvance == "storyAdvance" && WorldKeys.Story == "story", "keys");
-        Expect(ProtocolInfo.ProtocolVersion == 39 && ProtocolInfo.ModVersion == "0.28.0", "protocol 37 / mod 0.26.0 (new proposal + state: both PCs need 0.26.0)");
+        Expect(ProtocolInfo.ProtocolVersion == 40 && ProtocolInfo.ModVersion == "0.29.0", "protocol 37 / mod 0.26.0 (new proposal + state: both PCs need 0.26.0)");
     }
 
     // ---------------------------------------------------------------- 02

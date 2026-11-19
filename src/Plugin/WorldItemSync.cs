@@ -18,6 +18,10 @@
 // obstacle whenever the dropper stayed in the menu or a settle report was skipped.
 // Not shared (original local behaviour, logged): heavy items, stolen cars, drones, story / mission items, items without a
 // drop_object - they use special original mechanics.
+// W6B.3 exception: the ORIGINAL mission-box contents the host's CardboardMinigame.SpawnItem / SpawnItemOnStart created (HeavyUnpackSync)
+// are registered here as ONE host item (origin P1, txn 0, Keep): Player 2 sees the original drop_object at the same pose and either
+// player claims it with the normal pickup transaction. Keep: the host's original object is never destroyed by a region change /
+// region clear (the original ItemCardboard save reads CardboardMinigame.spawnedObj1), only when Player 2 took it.
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -44,6 +48,7 @@ namespace TS2MP.Plugin
         sealed class Bound
         {
             public uint Id; public int ItemId; public GameObject Go; public Component Pick; public Rigidbody Rb; public bool Own, Claiming, Reported, Settled, Diag;
+            public bool Keep; public int Region;   // W6B.3 host: original mission-box contents (CardboardMinigame.spawnedObj1), never destroyed by a region change
             public Vector3 LastPos, DropPos, SrcPos; public Quaternion LastRot, SrcRot; public double NextCheck, LastTick, UnpausedFor, BornAt;
         }
         readonly Dictionary<uint, Bound> _bound = new Dictionary<uint, Bound>();
@@ -269,6 +274,37 @@ namespace TS2MP.Plugin
             return n + " (" + trig + " trigger, " + off + " disabled)";
         }
         uint _bindAfterDrop; bool _dropsOn = true;
+        public Action<uint, byte> HostItemTaken;   // W6B.3 host: a registry item was claimed (world id, slot) - HeavyUnpackSync clears ItemCardboard
+
+        // W6B.3 host: register the ORIGINAL mission-box contents object as one shared item of the host's current region.
+        public bool HostRegisterContents(GameObject go, int itemId, out uint wid, out string why)
+        {
+            wid = 0; why = null;
+            if (!_ok || !_host || _world.Host == null) { why = "no host registry"; return false; }
+            var pick = go != null ? go.GetComponent(_pickT) : null;
+            if (pick == null) { why = "no Pickupable"; return false; }
+            var item = ItemOf(itemId);
+            if (item == null || _itemDrop(item) as GameObject == null) { why = "item " + itemId + " has no drop_object (Player 2 could not show it)"; return false; }
+            int region = _world.LocalRegion;
+            if (region == Regions.None) { why = "host region unknown (loading)"; return false; }
+            uint old; if (_byObject.TryGetValue(go.GetInstanceID(), out old)) Unbind(old, false);
+            var p = go.transform.position; var q = go.transform.rotation;
+            var t = new ItemTxnRequest { Op = ItemOp.Drop, Txn = 0, ItemId = itemId, Region = region, Pos = new Vec3(p.x, p.y, p.z), Rot = Quat16.From(q.x, q.y, q.z, q.w) };
+            var code = _world.Host.ItemTransaction(_me, t, _world.Clock, out why); _world.FlushOutbox();
+            if (code != ProposalCode.Accepted) { why = code + (why != null ? " (" + why + ")" : ""); return false; }
+            wid = _world.Host.Items.LastApplied;
+            Bind(wid, itemId, pick, true);
+            Bound b; if (_bound.TryGetValue(wid, out b)) { b.Keep = true; b.Region = region; b.Diag = _diag.Want(wid); }
+            _drops++;
+            return true;
+        }
+
+        // W6B.3 host: is this original object currently a live registry item (bound and still in the host registry)?
+        public bool HostHasContents(GameObject go)
+        {
+            uint wid; WorldItem it; int r;
+            return _host && _world.Host != null && go != null && _byObject.TryGetValue(go.GetInstanceID(), out wid) && _world.Host.Items.TryGet(wid, out it, out r);
+        }
 
         // ======================================================================== pickup
         static bool PickPrefix(object __instance)
@@ -299,6 +335,7 @@ namespace TS2MP.Plugin
                 if (code != ProposalCode.Accepted) { _refused++; _log.Info("WITEM host pickup of #" + wid + " refused: " + code + " (" + why + ")"); Unbind(wid, true); return false; }
                 Unbind(wid, false);                                        // the original coroutine destroys the object
                 if (known && it.Origin == 2) { _p1ExpectItem = it.ItemId; _p1ExpectUntil = Now + 6.0; }
+                if (HostItemTaken != null) HostItemTaken(wid, 1);
                 _pickups++;
                 _log.Info("WITEM host picked up #" + wid + " item " + b.ItemId + (known ? " (dropped by P" + it.Origin + ")" : ""));
                 return true;
@@ -462,6 +499,7 @@ namespace TS2MP.Plugin
             int n = 0;
             foreach (var it in _world.Host.Items.InRegion(region))
             {
+                Bound kb; if (_bound.TryGetValue(it.Id, out kb) && kb.Keep) continue;   // W6B.3: original mission-box contents (not a dropped item; original ItemCardboard save)
                 var item = ItemOf(it.ItemId);
                 if (item == null) continue;
                 int before = _itemLocker(item);
@@ -491,7 +529,13 @@ namespace TS2MP.Plugin
                     WorldItem it; int r;
                     if (!_world.Host.Items.TryGet(t.WorldId, out it, out r)) return ProposalCode.Stale;
                     if (slot == 1) return ProposalCode.Accepted;
-                    return p2 != null ? p2.HostP2ItemTxn(ItemOp.Pickup, t.Txn, it.ItemId, it.Origin, it.OriginTxn) : ProposalCode.NotAuthorized;
+                    var pc = p2 != null ? p2.HostP2ItemTxn(ItemOp.Pickup, t.Txn, it.ItemId, it.Origin, it.OriginTxn) : ProposalCode.NotAuthorized;
+                    if (pc == ProposalCode.Accepted)
+                    {
+                        Bound kb; if (_bound.TryGetValue(t.WorldId, out kb) && kb.Keep) { kb.Keep = false; Unbind(t.WorldId, true); _log.Info("WITEM mission-box contents #" + t.WorldId + " (item " + it.ItemId + ") taken by Player 2: host original object removed"); }
+                        if (HostItemTaken != null) HostItemTaken(t.WorldId, 2);
+                    }
+                    return pc;
                 }
                 case ItemOp.Convert:
                     if (slot == 2) { int n = HostConvert(t.Region, "Player 2 saved in " + Regions.Name(t.Region)); _log.Info("WITEM conversion requested by Player 2 in " + Regions.Name(t.Region) + ": " + n + " item(s) moved into the host locker"); }
@@ -558,7 +602,7 @@ namespace TS2MP.Plugin
                 Spawn(it);
             }
             var drop = new List<uint>();
-            foreach (var kv in _bound) if (!keep.Contains(kv.Key) && !kv.Value.Claiming) drop.Add(kv.Key);
+            foreach (var kv in _bound) if (!keep.Contains(kv.Key) && !kv.Value.Claiming && !kv.Value.Keep) drop.Add(kv.Key);
             foreach (var id in drop) Unbind(id, true);
         }
 
@@ -672,8 +716,13 @@ namespace TS2MP.Plugin
         void DropAll(bool destroy)
         {
             if (_bound.Count == 0) return;
-            foreach (var id in new List<uint>(_bound.Keys)) Unbind(id, destroy);
-            _byObject.Clear();
+            foreach (var id in new List<uint>(_bound.Keys))
+            {
+                var b = _bound[id];
+                if (b.Keep && b.Go != null) continue;   // W6B.3: the original contents object stays (re-registered by HeavyUnpackSync when needed)
+                Unbind(id, destroy);
+            }
+            if (_bound.Count == 0) _byObject.Clear();
         }
 
         // The simulating (dropper's) instance reports the rest pose of its own ORIGINAL object (W3.2, SettleRules):
@@ -688,7 +737,7 @@ namespace TS2MP.Plugin
             bool paused = Time.timeScale <= 0f;
             foreach (var b in _bound.Values)
             {
-                if (!b.Own || b.Claiming || b.Go == null) continue;
+                if (!b.Own || b.Claiming || b.Go == null || (b.Keep && b.Region != region)) continue;
                 if (!paused) b.UnpausedFor += now - b.LastTick;
                 b.LastTick = now;
                 if (now < b.NextCheck) continue;

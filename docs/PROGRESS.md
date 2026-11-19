@@ -1,5 +1,42 @@
 ﻿# PROGRESS
 
+## W6B.3 — Shared mission-box contents, cooperative story tasks (story16-18), checkpoint check — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-19
+Mod **0.29.0, protocol 40** (new `missionAct` proposal + `missions` state, `storyAdvance` kind 2; both PCs need 0.29.0). Built on `5289ca7` (W6B.2). Manual QA: `docs/TESTING.md` §57.
+
+### A. Root causes (confirmed from code + the 0.28.0 P2 log)
+- **Contents invisible on P2:** W6B.2 created the package only with the host's original `SpawnItem` and blocked `SpawnItem` on P2 (correct, prevents a second package), but nothing presented the host's object to P2. `WorldItemSync` excluded story items (`Shareable`: `isStoryItem`), so the package was never a shared world object. DEFECTIVE in 0.28.0 (design gap, not a race).
+- **"P1 still saw the box closed":** NOT reproduced from evidence. The only log is P2's; the P2-open path destroys the host's box in `RunUnpack` and consumes the record. Kept as a QA row (§57 row 4) with the host log line to check.
+- **Story17/18 not shared:** `Mission_Item.Mission_Complete` on P2 ran the original locally (UI, key 2 in the sandbox), its `AdvanceStory` was suppressed (unlisted trigger) and its 250 payout reverted (`MoneyPolicy.Exclude`). No host path existed, so only the host's own completion counted. INCOMPLETE in 0.28.0.
+- **Story16 by P2:** once P2 can hold the package, its original `BlackBay_Object.SellIt` advance would be suppressed the same way -> would block the campaign. Added as a listed trigger.
+- **Story 22 -> 21:** legitimate vanilla rollback. `GameManager.LoadCheckpoint` (caught / manual load, `GameManager.cs` caller after copying `saveDataN.thief`) reloads `MainScene` from the last save; the P2 log shows the host's new save history (`MIRROR_SNAPSHOT … gen=5`), day 2 -> 1, money -250 and story 22 -> 21 in the same step. Not a multiplayer persistence bug; story and money already followed it. Mission keys now follow too.
+
+### B. Original methods inspected (ilspycmd 1.27c + byte-exact scene decode)
+`CardboardMinigame` (`SpawnItem`, `SpawnItemOnStart`, `SkipMinigameWin`, `MinigameWon`, `TrySaveItem`, `Start`), `PlaceCardboard.Update`, `SaveGame` (`TrySaveItem` caller), `Mission_Item` (`Mission_Complete`, `MissionComplete1`, `LoadAll`), `Mission_Inventory`, `Mission_UI_Object.Accept_Job`, `StoryManager.InitiateStory` (accept_job_on_start), `PlantEvidence.Planted`, `PlayerScript.Update` (`PlantEvidence` ray 2.25 m, `GM.plantPackageItem` = `ITEM IDs/347_item_plant` item_amount--), `PlayerScript.PhotoFlash` (`takingPhoto`), `Photograph.Update`, `BlackBay_Object.SellIt`, `ItemID.Start` (story item weight), `SelectResidence.Start` (`<house>_mission_<i>`), `GameManager.LoadCheckpoint`. Scene data: MainScene `RESIDENCES SCRIPTS/110`, `/105`, `PACKAGE` Blackbay listing (story16, 250), MadisonSt `DOM 110/MISSION PLANT/Fake|Trigger`, `Soda Store/STORY PHOTOGRAPH/GameObject/PHOTOGRAPH MISSION` (`docs/research/STORY_SYSTEM.md` §4c/§4d).
+
+### C. Implementation
+- **Contents (Phase A):** host postfixes on the ORIGINAL `SpawnItem` / `SpawnItemOnStart` register `spawnedObj1` as ONE host world item (`WorldItemSync.HostRegisterContents`, origin P1, txn 0, flag `Keep`). P2 sees the original `drop_object` (`paczka_1_a_low`) at the host's pose (settle reports as for dropped items); either player claims it with the existing W3 pickup transaction (one winner, P2 record durable). `Keep`: the host's original object is never destroyed by a region change / region clear / dropped-item conversion; it is destroyed only when P2 took it. Taken by anyone -> host `ItemCardboard = -1` at once. 1 Hz host check re-registers a live unregistered `spawnedObj1` in the hideout (load before region known, region cleared). P2's `SpawnItem` / `SpawnItemOnStart` stay blocked. W6B.2 exactly-once box consumption unchanged.
+- **Tasks (Phase B):** registry `MissionTargets` (2 entries): 110[0] plant (story17), 105[0] kitchen photo (story18). P2: `Mission_Complete` prefix withholds the original, validates the original trigger (plant: inside `PlantEvidence.Planted` for this mission; photo: `takingPhoto` + the task's `Photograph`), stage key, connection; proposes `missionAct`. Host (`WorldHost.CompleteMission` + `MissionRules.Decide`): listed, live index/stage, host key == 1, P2 in MadisonSt, distance (only when the host shares the scene) -> key 2, `display_as_complete`, payout to the shared balance once (`moneyAm`, `AddMoneyMade`), `AdvanceStory` as `MissionComplete1`, world part on loaded objects; publishes `missions`. P2 on acceptance runs its ORIGINAL `Mission_Complete` (UI, own XP; money reverted by the wallet; story follows host). Refusal / timeout: the original interaction is undone (plant objects + `item_plant` count, photo trigger re-enabled). P1's own original completion publishes `missions`; P2 writes the host key into its sandbox and shows the completion on loaded objects. Story16: `StoryTriggers` entry `BlackbaySale` for the PACKAGE listing.
+- **Checkpoint:** no forced monotonic progress; `missions` follows the host's restored keys (rollback logged, P2 objects refresh at its next scene load).
+
+### D. Status
+| Subsystem | Status |
+|---|---|
+| One shared contents item, visible on both, claim once | IMPLEMENTED BUT UNVERIFIED (PENDING MANUAL QA) |
+| Box transition on both PCs | IMPLEMENTED BUT UNVERIFIED (W6B.2 path unchanged; P1-side report not reproduced) |
+| Story16 Blackbay sale by P2 | IMPLEMENTED BUT UNVERIFIED |
+| 110 plant / 105 photo by either player, payout + story once | IMPLEMENTED BUT UNVERIFIED |
+| Checkpoint rollback | VERIFIED CORRECT as vanilla behaviour (log + IL); mission-key follow IMPLEMENTED BUT UNVERIFIED |
+| Distance check when host is in another scene | DESIGN COMPROMISE (necessary): region check only, logged |
+| P2 objects after a rollback | DESIGN COMPROMISE (avoidable later): key restored at once, loaded objects refresh at the next scene load |
+| P2 inventory vs host checkpoint (P2 picked the package, host reloads an older save with `ItemCardboard` > 0) | HIGH-RISK, pre-existing W4.1 class: a second package can reappear on the host after such a reload |
+| Phone calls answered separately, stale minimap markers | INCOMPLETE — follow-up milestones, not touched |
+
+### E. Performance
+Hot paths: host 1 Hz `ContentsFrame` (one field read + dictionary lookup), host 1 Hz `missions` publish check (2 `SPrefs.GetInt`, no allocation unless changed), client per-frame registry head compare (no allocation). Scene searches (`FindObjectsOfType`) only at a commit / follow event. Network: `missionAct` 15 B per task, `missions` 10 B per change, contents = one W3 item record (37 B txn). No in-game FPS measurement (PENDING MANUAL QA).
+
+### F. Tests
+`tools/build.ps1 -Test`: all suites PASS, new `W6B3Tests` 10/10 (codecs, exactly-once, P1/P2 order, refusals, checkpoint, Blackbay, contents claims, Unity glue scans, regressions). Offline only.
+
 ## W6B.2 — Mission box unpacking exactly once — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-17
 Mod **0.28.0, protocol 39** (new heavyTxn op 9 Unpack; both PCs need 0.28.0). Built on `19942bb` (W6B.1). Manual QA: `docs/TESTING.md` §56.
 

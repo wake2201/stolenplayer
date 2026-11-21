@@ -205,7 +205,7 @@ static class W6A1Tests
         Expect(StoryRules.Decide(true, false, 18, "story14", r, out why) == ProposalCode.Accepted && StoryRules.Decide(true, false, 19, "story15", r, out why) == ProposalCode.Stale, "W6A decision unchanged");
         var ps = Strip(Src("Plugin", "ParcelSync.cs"));
         Expect(ps.Contains("if (!i._host && !StorySync.ClientHandlesStory && _noteAdvance(__instance)) { _setNoteAdvance(__instance, false);"), "W2B fallback unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.30.0", "protocol 37 / mod 0.26.1");
+        Expect(ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.31.0", "protocol 37 / mod 0.26.1");
     }
 
     // ---------------------------------------------------------------- helpers

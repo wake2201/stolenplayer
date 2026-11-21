@@ -1,5 +1,42 @@
 ﻿# PROGRESS
 
+## W6C.1 — Multiplayer-safe death / arrest without world rollback — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-21
+Mod **0.31.0, protocol 41** (no wire change; the handshake requires equal mod versions, so both PCs need 0.31.0). Manual QA: `docs/TESTING.md` §59.
+
+### A. Verified root cause (0.30.0 client log `20261121-222911_game_19076` + IL + `level1` button bindings)
+- **LoadCheckpoint #1 (21:32:12, host caught):** `GotCaught` -> caught-screen button `CAUGHT /Buttons*/Buttons/LOAD CHECKPOINT` (persistent call `GameManager.LoadCheckpoint`) -> `LoadCheckpointIE` -> `Application.LoadLevel("MainScene")` **without a save**: FBPP re-reads the disk file, every in-memory change since the host's last save is gone. The host's `WorldKeyMirror` rebases on every replaced FBPP model (new generation: `MIRROR_SNAPSHOT gen=3 keys=0` + 31-key delta) and Player 2 followed it. Lost: story 19 -> 18 (re-advanced by the persistent camera state 55 ms later, call replayed), P2's take of the story box (`ItemDay_CardboardBox_FlybyLiteDrone`): the box re-appeared at House 104 on the host while P2 already had it in the Ranger (`CARGO #1`). The host later took that copy (`CARGO #2`, 21:37:05) -> second unpack -> contents item 91 twice (`WITEM pickup #1`, `#2`). DEFECTIVE since W6B.3 (that milestone classified the reload as vanilla behaviour; in a session it is not acceptable).
+- **LoadCheckpoint #2 (21:34:39, `gen=5`, host in the hideout, reloaded into the hideout):** no `CAUGHT` before it, so not the caught screen. The only other callers (verified): `PAUSE MENU/Load save?/Yes` (button -> `LoadCheckpoint`) and the pause-menu save-slot load (`GameManager.LoadProfile` IL_009f, after `File.Copy` of the slot). The 0.30.0 log line cannot tell these two apart (no host log on this PC); 0.31.0 logs the exact source.
+- **Not a load:** every other mirror generation in that log is a host travel (`Select*` saves first; snapshot identical). The story 20 -> 19 -> 20 at 21:37:05-09 is a host travel race: an advance after the travel save (LoadWait waits 0.35 s) is not in the save, the fresh StoryManager starts one lower and the original re-advances.
+
+### B. Original paths examined (Mono.Cecil IL, 1.27c; scene `level1`)
+`GameManager.GotCaught` (whole method), `LoadCheckpoint`, `<LoadCheckpointIE>`, `LoadProfile`, `SelectJail`, `SelectHideout`, `<LoadWait>`, `LoadMenu`, callers of `GotCaught` / `LoadCheckpoint` / `SelectJail` / `SelectHideout` / `End_Chase`; `PlayerScript.GetTazed`, `CollapseFromGas`, `Update` (blood IL_0ce3..0d67, caughtUp branch IL_9089..9180, bail IL_543d..54a8), field writers of `caught` / `caughtUp` (never cleared outside a scene load); `Police_Manager.End_Chase` (escape achievement + `CheckPoliceEscaped` + autosave: unusable for a respawn); `StoryManager.RespawnOnDetect`; `SaveGame.Reset*Position` / `LoadPlayerPosition`; GleyLocalization `UnityUILocalizationComponent`; localization keys `load_checkpoint`, `go_to_jail`, `Continue` (no "respawn" key exists).
+
+### C. Implementation
+- `src/Shared/Death.cs` (new): `DeathRules` (load routing, reason keys, DEATH/CAUGHT, jail offer), `DeathEpisode` (one choice per caught screen, duplicate / timeout / failure), `StoryLoadRule`.
+- `src/Plugin/DeathSync.cs` (new, installed only with the session systems): `GotCaught` prefix/postfix (diagnostics; the two `LOAD CHECKPOINT` buttons show the game's own `Continue` text), `LoadCheckpoint` prefix (caught screen -> **Respawn** = original `SelectHideout`, the game's own hardcore respawn and jail exit: live state saved, then hideout load, spawn `SpawnHideoutPlayer`; pause-menu load refused), `LoadProfile` prefix (refused before the file copy), `SelectJail` prefix/postfix (original kept, one choice), `LoadMenu` prefix (log). Exceptions fail closed (no reload). Label restored at session end.
+- `src/Plugin/StorySync.cs`: host holds a LOWER story index for 5 s after its own scene load (published only if it stays lower; never a max() merge). `CommittedText`, `heldLoads` stat.
+- `src/Plugin/TravelHooks.cs`: no longer patches `GotCaught` / `LoadCheckpoint` (DeathSync owns them). `HeavySync` / `HeavyCargoSync`: `IdentityText` for the diagnostics. `Plugin.cs`: build / update / release / PERF.
+- Versions 0.31.0 / 41, pins in tests + `package-test.ps1`; new `tests/W6C1Tests.cs` (12) in `tools/build.ps1`.
+
+### D. Status
+| Subsystem | Status |
+|---|---|
+| Caught screen in a session: Respawn (no LoadCheckpoint), Go to Jail, Quit | IMPLEMENTED BUT UNVERIFIED (PENDING MANUAL QA) |
+| Shared world kept on respawn / jail (story, box take, cargo, contents once) | IMPLEMENTED BUT UNVERIFIED (offline model of the original save semantics) |
+| Pause-menu / slot loads refused during a session | IMPLEMENTED BUT UNVERIFIED |
+| Host story hold after its own scene load | IMPLEMENTED BUT UNVERIFIED |
+| Respawn location = hideout, not near the arrest place | DESIGN COMPROMISE (necessary: an in-place respawn leaves the original `caught` / `caughtUp` set and the police chase running; ending it with `End_Chase` grants the "escaped" achievement / story check. The hideout transition is the original's own respawn; all local state is rebuilt by the original scene start) |
+| Vanilla personal consequence of a reload (lose unsaved loot) | DESIGN COMPROMISE (necessary: it IS the rollback). Normal-mode respawn has no extra penalty; jail keeps all original jail consequences |
+| Hardcore (no caught screen; jail confiscation of P2 items into P2's sandbox `ItemJail` keys) | INCOMPLETE / HIGH-RISK for P2 hardcore only (unchanged original path) |
+| Caught while seated in a car (scripted transition leaves the car) | IMPLEMENTED BUT UNVERIFIED (existing scripted-travel path, as jail / hardcore before) |
+| Durability | The respawn / jail transition writes the host's live state to its save (as every travel). A crash between a P2 action and the next host save still loses that action (unchanged W4 durability rules). |
+
+### E. Performance
+Per frame: `DeathSync.Update` = one bool check while no caught screen is open; one reference compare while it is open. Hooks run only on death / clicks / loads (event-driven logs, one `GetComponentsInChildren<Transform>` on the caught screen once). StorySync: one comparison per frame only when the host index changes. Network: no new traffic. GC: none per frame. FPS: not measured (PENDING MANUAL QA).
+
+### F. Tests
+`tools/build.ps1 -Test`: plugin 0 warnings, **ALL 50 SUITES PASSED** (new W6C1 12/12), release `build/release/TS2-Multiplayer-0.31.0.zip`. One earlier run hit a pre-existing probabilistic failure in `NetAuthTests` 02 (random join code, 771/775 typos detected vs >= 772 required; untouched file); the rerun passed. Offline only - no in-game run.
+
 ## W6B.4 — Shared original story calls, mission minimap markers — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-21
 Mod **0.30.0, protocol 41** (`storyCall` / `storyCallAnswer` record v2; both PCs need 0.30.0). Built on the 0.29.0 tree (no git in this checkout: not committed, see D). Manual QA: `docs/TESTING.md` §58.
 

@@ -10,7 +10,7 @@
 //   Tutorial.BuyVan()                     : V1.2, the original Shadowhawk purchase button (Auto Shop sign "BUY VAN OBJ"):
 //                                           host -> original + fleet unlock; client -> host transaction "vbuy" (fail closed)
 // Hooks fall back to the original behaviour if the handler throws, except menu travel clicks (held) and driver seating
-// on arrival (skipped). SelectJail is never patched (arrest path).
+// on arrival (skipped). SelectJail is never patched here (arrest path; W6C.1 DeathSync logs it).
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -82,13 +82,9 @@ namespace TS2MP.Plugin
             _h.Patch(spawn, new HarmonyMethod(AccessTools.Method(typeof(TravelHooks), "SpawnAtCarPrefix")));
             _h.Patch(enter, new HarmonyMethod(AccessTools.Method(typeof(TravelHooks), "EnterPrefix")));
             Patched += 4;
-            // M5 hotfix: log-only labels for the next arrival (verified IL: GotCaught shows the caught screen whose Load button
-            // calls GameManager.LoadCheckpoint -> LoadCheckpointIE -> Application.LoadLevel("MainScene"), no save).
-            var caught = AccessTools.Method(gm, "GotCaught", new[] { typeof(int) });
-            var loadCp = AccessTools.Method(gm, "LoadCheckpoint", Type.EmptyTypes);
+            // M5 hotfix: log-only label for the next arrival. W6C.1: GotCaught / LoadCheckpoint / LoadProfile / SelectJail are
+            // owned by DeathSync (multiplayer respawn, CAUGHT / CHECKPOINT_LOAD diagnostics; it sets LastLoadReason).
             var loadMenu = AccessTools.Method(gm, "LoadMenu", Type.EmptyTypes);
-            if (caught != null) { _h.Patch(caught, null, new HarmonyMethod(AccessTools.Method(typeof(TravelHooks), "CaughtPostfix"))); Patched++; }
-            if (loadCp != null) { _h.Patch(loadCp, new HarmonyMethod(AccessTools.Method(typeof(TravelHooks), "LoadCheckpointPrefix"))); Patched++; }
             if (loadMenu != null) { _h.Patch(loadMenu, new HarmonyMethod(AccessTools.Method(typeof(TravelHooks), "LoadMenuPrefix"))); Patched++; }
             if (townA != null && townB != null)   // optional: without them a seated passenger may see the menu (its clicks stay refused)
             {
@@ -109,8 +105,6 @@ namespace TS2MP.Plugin
         public static string LastLoadReason;   // consumed by the next arrival diagnostic (VehicleSync.AllowStartingCar)
         public static Action<string> Log;
 
-        static void CaughtPostfix(int __0) { try { LastLoadReason = "caught (GotCaught " + __0 + ")"; if (Log != null) Log("CAUGHT GameManager.GotCaught(" + __0 + "): original caught screen / jail path"); } catch { } }
-        static void LoadCheckpointPrefix() { try { LastLoadReason = "caught screen Load (GameManager.LoadCheckpoint: MainScene reload, last checkpoint of this instance's save)"; if (Log != null) Log("LOAD GameManager.LoadCheckpoint: original reload of the last checkpoint"); } catch { } }
         static void LoadMenuPrefix() { try { LastLoadReason = "main menu + Continue"; } catch { } }
 
         public static void Uninstall() { if (_h != null) { _h.UnpatchSelf(); _h = null; } Handler = null; Log = null; LastLoadReason = null; Patched = 0; TownSelectionPatched = false; BuyVanPatched = false; SelectByDest.Clear(); }

@@ -481,6 +481,18 @@ namespace TS2MP.Plugin
 
         static string V3(Vector3 v) { return v.x.ToString("0.00") + "," + v.y.ToString("0.00") + "," + v.z.ToString("0.00"); }
 
+        // W6C.1 death / respawn diagnostics: cargo identities shown in this PC's car (host list)
+        internal string IdentityText
+        {
+            get
+            {
+                var sb = new System.Text.StringBuilder("cargo vehicle " + _vid + " entries " + _entries.Count);
+                for (int i = 0; i < _entries.Count && i < 8; i++) sb.Append(i == 0 ? " [" : ",").Append('#').Append(_entries[i].Id).Append(" item ").Append(_entries[i].ItemId);
+                if (_entries.Count > 0) sb.Append(']');
+                return sb.ToString();
+            }
+        }
+
         public string Stats
         {
             get

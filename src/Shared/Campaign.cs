@@ -33,8 +33,8 @@
 //     Shop 3 / heists / jail / intro use FIXED original spawns; Verwood 1 keeps the MainScene default; Madison 99 (Story > 3)
 //     and Hillville 97: Saved_Pos == 0 -> CarController.IsStartingCar (seated in the car at leavePoints[MadisonPoint /
 //     HillvillePoint], <ContinueButtonActivate>), else SaveGame.LoadPlayerPosition (XPlayer..ZPlayer).
-//   Checkpoint after being caught: GameManager.LoadCheckpoint -> Application.LoadLevel("MainScene") with the in-memory model
-//     (= the same checkpoint keys).
+//   Checkpoint after being caught: GameManager.LoadCheckpoint -> Application.LoadLevel("MainScene") without a save (FBPP re-reads the disk save;
+//     the position keys are the same checkpoint keys). W6C.1: never during a multiplayer session (src/Shared/Death.cs).
 // Multiplayer rule: Player 2 never has a save point of its own. A Player-2 join into a host world session that Player 2 has
 // not played in yet follows the HOST CHECKPOINT with the original rule above (HostCheckpoint -> Checkpoint spawn); only while
 // that host world keeps running does a rejoin resume Player 2's last live position (memory only, never written to disk, gone

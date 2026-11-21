@@ -238,7 +238,7 @@ static class W2ATests
         // wire round trip
         var t = new ObjectTxnRequest { Txn = 9, Op = ObjectOp.Set, Kind = B, Ns = Madison, Hash = Planks, State = 1, BaseVer = 0, Epoch = 3 };
         ObjectTxnRequest back; Expect(ObjectTxnRequest.TryParse(t.ToBytes(), out back) && back.Kind == B && back.Hash == Planks && back.State == 1 && back.Epoch == 3, "objTxn carries the new kind unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.30.0", "protocol 35 / mod 0.24.0 (new kind: both PCs need 0.24.0)");
+        Expect(ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.31.0", "protocol 35 / mod 0.24.0 (new kind: both PCs need 0.24.0)");
     }
 
     // ---------------------------------------------------------------- 02

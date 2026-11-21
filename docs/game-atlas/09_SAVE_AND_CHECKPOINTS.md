@@ -15,7 +15,7 @@ Foundation: `docs/WORLD_SYNC_AUDIT.md` §B–C (save system, persistence matrix)
 | Profile slots | `GameManager.SaveToProfile/LoadProfile` (`File.Copy`/`Delete`) | – | yes |
 | Ending | `GameManager.EndingFade` → `SaveGameNewSystem`; `Credits.Start` → `Story+1`, `CurrentLocation=0`, `FBPP.Save` | – | yes (twice) |
 | Hideout summary | `GameManager.SaveAll` (no static caller; UI event INFERRED) | `Item_` counts of the outing, `StealthRating`, `FBPP.Save` | yes |
-| Caught / checkpoint reload | `GameManager.LoadCheckpoint` | MainScene reload from the **in-memory** model | no |
+| Caught / checkpoint reload | `GameManager.LoadCheckpoint` | MainScene reload WITHOUT a save: FBPP reads the **disk** save again (unsaved changes dropped; W6C.1 evidence). Refused / replaced by Respawn during a multiplayer session | no |
 | New game / free mode | `MainMenu.StartNewGame` / `StartFreeMode` (`DeleteAll`, initial keys, `SPrefs.Save`) | – | yes |
 
 `CheckIfCanSave` refuses in a vehicle with a blocked door ray, during a police chase, when seen by an NPC, inside a possession zone, while sleeping, while bleeding, with a drone active, on a stage with `block_saving`, or while hiding.

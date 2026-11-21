@@ -27,7 +27,7 @@ static class W6B4Tests
         Run("11 mission box lifecycle on both PCs: house -> P1 / P2 carry -> Ranger cargo -> driving -> hideout -> table -> unpack -> contents -> collected: one marker at the right place", BlipLifecycle);
         Run("12 repeated / reordered presentation events, reconnect re-reconcile, scene reload: no duplicate, no stale marker", BlipIdempotent);
         Run("13 Unity glue: original bl_MiniMapItem / Diamond_Marker toggled on hide / show, Target retargeted to the avatar, event-only", BlipGlue);
-        Run("14 regressions + versions: protocol 41 / mod 0.30.0, heavy presentation unchanged, other wire records unchanged", Versions);
+        Run("14 regressions + versions: protocol 41 / mod 0.31.0, heavy presentation unchanged, other wire records unchanged", Versions);
         Console.WriteLine(_failed == 0 ? "W6B4 TESTS PASSED (" + _passed + ")" : "W6B4 TESTS FAILED: " + _failed + " of " + (_passed + _failed));
         return _failed == 0 ? 0 : 1;
     }
@@ -332,7 +332,7 @@ static class W6B4Tests
 
     static void Versions()
     {
-        Expect(ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.30.0", "protocol 41 / mod 0.30.0 (story call record v2: both PCs need 0.30.0)");
+        Expect(ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.31.0", "protocol 41 / mod 0.30.0 (story call record v2: both PCs need 0.30.0)");
         Expect(WorldKeys.StoryCall == "storyCall" && WorldKeys.StoryCallAnswer == "storyCallAnswer" && WorldKeys.Heavy == "wheavy", "keys unchanged");
         Expect(HeavyRules.Present(true, Rec(HeavyState.Removed, 0), 1, false) == HeavyRules.Show.Hidden && HeavyRules.Present(true, Rec(HeavyState.Carried, 2), 1, false) == HeavyRules.Show.Hidden
             && HeavyRules.Present(true, Rec(HeavyState.Carried, 1), 1, false) == HeavyRules.Show.Own, "heavy presentation unchanged");

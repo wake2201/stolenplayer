@@ -151,6 +151,30 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 59. W6C.1 checklist — death / arrest without world rollback (release `TS2-Multiplayer-0.31.0.zip` on BOTH PCs, protocol 41)
+Grep tags: `CAUGHT P`, `DEATH P`, `DEATH_SCREEN`, `RESPAWN begin`, `RESPAWN complete`, `RESPAWN failure`, `JAIL begin`, `JAIL complete`, `CHECKPOINT_LOAD`, `STORY host scene load`, `STORY host story back at`, `DEATH_STATS`.
+Each `before:` / `after:` line carries `story <committed>`, `worldRev`, `heavy …` and `cargo …` identities.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | story15: **P2** takes the box at House 104 and carries it. **P1** gets caught by police | P1 caught screen: button text "Continue" (game text) instead of "Load checkpoint", "Go to jail", "Quit to menu". P2 keeps playing (moves, carries). P1 log `CAUGHT P1 GotCaught(0) …`, `DEATH_SCREEN P1 shown: options Respawn …` | NOT TESTED |
+| 2 | P1 clicks "Continue" (Respawn) | Original loading screen, P1 appears in the hideout with full control (move, look, interact, inventory). P1 log `DEATH_SCREEN P1 choice Respawn`, `GameManager.LoadCheckpoint NOT called`, `RESPAWN begin`, then `RESPAWN complete … region Hideout`; the story in `before:` and `after:` is the same; P2 log has NO `MIRROR … new host history` with fewer keys and NO `STORY followed host story 18` | NOT TESTED |
+| 3 | After row 2: P1 travels to Madison | House 104 box NOT there on P1; P2 still holds it where it is; one minimap marker, on P2 | NOT TESTED |
+| 4 | Box into the Ranger, drive to the hideout, unpack (either player) | Unpacked once; exactly ONE package (item 91), claimed once; never a second box or `CARGO #2` | NOT TESTED |
+| 5 | Repeat rows 1-4 with roles swapped: **P2** caught, P1 continues | P2: same caught screen + respawn in the hideout; P1 unaffected; P2 log `CAUGHT P2 …`, `RESPAWN complete` | NOT TESTED |
+| 6 | Caught by police, choose "Go to jail" (P1, then later P2) | Original jail scene + bail exit to the hideout; story / box / cargo / money unchanged except the original jail effects (crowbar 0, alerts cleared, bail cost). Log `JAIL begin` / `JAIL complete … region Jail`; the other player continues | NOT TESTED |
+| 7 | Die from bleeding (shot) or gas | Caught screen with "Continue" (no jail button); respawn as row 2 | NOT TESTED |
+| 8 | During P1's caught screen: P2 picks up / drops world items, loads cargo, answers a story call | All committed by the host while P1 waits (P2 logs `-> Accepted`); P1 sees the results after respawning | NOT TESTED |
+| 9 | Both caught at about the same time; both respawn (or one jail) | Independent screens, one transition each; no duplicates | NOT TESTED |
+| 10 | Double-click "Continue" / click "Continue" then "Go to jail" quickly | One transition only (`repeated choice ignored`) | NOT TESTED |
+| 11 | Host: pause menu "Load" (save slot) and "Load save?" -> Yes during the session | Nothing happens (menu stays), log `CHECKPOINT_LOAD … refused during the multiplayer session` | NOT TESTED |
+| 12 | Disconnect P2 while P1 is on the caught screen; respawn; P2 reconnects | Respawn works offline; after reconnect P2 sees the same story / box / cargo | NOT TESTED |
+| 13 | Travel races: host travels right after a story advance (e.g. box into the car) | No `STORY shared story` going down on P2; host log may show `STORY host scene load: local story … held` then `back at …` | NOT TESTED |
+| 14 | End the session (F8), single-player: get caught | Original "Load checkpoint" text and behaviour (reload), no `DEATH_SCREEN` log | NOT TESTED |
+| 15 | Regression: W6B.4 calls + markers, drone, cameras, vehicles, wallet, inventories, save isolation | Unchanged | NOT TESTED |
+
+Performance to note: `DEATH_STATS`, `STORY_STATS heldLoads`; FPS before/after with both PCs in Madison (no new per-frame work expected).
+
 ## 58. W6B.4 checklist — shared story calls + mission minimap markers (release `TS2-Multiplayer-0.30.0.zip` on BOTH PCs, protocol 41)
 Grep tags: `STORY call ringing here`, `STORY shared call`, `answered the call`, `finished the call`, `conversation over here`, `ring skipped`, `original decline branch`, `original answer branch`, `original bypass branch`, `STORY_STATS` (`calls answered/mirrored/bypassed/silenced/finished`), `BLIP '`, `BLIP_STATS`.
 

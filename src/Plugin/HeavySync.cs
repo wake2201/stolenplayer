@@ -995,6 +995,16 @@ namespace TS2MP.Plugin
             return ProposalCode.Accepted;
         }
 
+        // W6C.1 death / respawn diagnostics: heavy-object identity (host book = authoritative leases / rest poses)
+        internal string IdentityText
+        {
+            get
+            {
+                var b = _host && _world.Host != null ? _world.Host.Heavy : null;
+                return "heavy tracked " + _objs.Count + " held " + _sims.Count + (b != null ? " book records " + b.Total + " leases " + b.Leases + " removes " + b.Removes : "");
+            }
+        }
+
         public string Stats
         {
             get

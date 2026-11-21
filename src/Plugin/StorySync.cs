@@ -387,13 +387,21 @@ namespace TS2MP.Plugin
             if (!_ok) return;
             var gm = _world.GameManagerObject; if (gm == null || !_gmLoaded(gm)) return;
             var sm = _gmStory(gm); if (sm == null) return;
-            if (!ReferenceEquals(sm, _boundSm)) { _boundSm = sm; _lastLocal = int.MinValue; _seenHead = uint.MaxValue; }
+            if (!ReferenceEquals(sm, _boundSm)) { _boundSm = sm; _lastLocal = int.MinValue; _seenHead = uint.MaxValue; _boundAt = Now; _bindCommitted = CommittedIndex(); _held = false; }
             int local = _smStory(sm);
             if (_callOk && (_host || _world.Synced)) { try { CallTick(); } catch (Exception ex) { _callOk = false; _log.Error("STORY call sync failed: story calls stay per PC", ex); } }
             if (_missionsOk && (_host || _world.Synced)) { try { MissionFrame(Now); } catch (Exception ex) { _missionsOk = false; _log.Error("STORY mission sync failed: cooperative missions disabled", ex); } }
             if (_host)
             {
                 if (local == _lastLocal || _world.Host == null) return;
+                // W6C.1: a lower index right after this host's own scene load is held back (StoryLoadRule, src/Shared/Death.cs)
+                if (StoryLoadRule.Decide(local, _bindCommitted >= 0, _bindCommitted, _boundAt, Now) == StoryLoadDecision.Hold)
+                {
+                    if (!_held) { _held = true; _heldLoads++; _log.Info("STORY host scene load: local story " + local + " below the committed " + Committed() + ": not published for up to " + StoryLoadRule.Window + " s (the original re-advances an advance made after the transition save)"); }
+                    return;
+                }
+                if (_held && local >= _bindCommitted) { _held = false; _log.Info("STORY host story back at " + local + " after the scene load: the lower index was never published"); }
+                else if (_held) { _held = false; _log.Warn("STORY host story still " + local + " below the committed " + Committed() + " " + StoryLoadRule.Window + " s after the scene load: published (host state)"); }
                 if (_world.Host.PublishStory(0)) { _published++; _hostLocal++; _world.FlushOutbox(); _log.Info("STORY host published " + Committed()); }
                 int idx; string key; bool free;
                 if (Local(out idx, out key, out free)) _lastLocal = local;   // inconsistent while loading: try again next frame
@@ -463,9 +471,12 @@ namespace TS2MP.Plugin
             return moved;
         }
 
+        internal string CommittedText { get { return Committed(); } }   // W6C.1 death / respawn diagnostics
+        int CommittedIndex() { var e = _world.Registry.Get(StateScope.Session, 0, WorldKeys.Story); StoryState s; return e != null && StoryState.TryParse(e.Value, out s) ? s.Index : -1; }
+        double _boundAt; int _bindCommitted = -1; bool _held; long _heldLoads;
         string Committed() { var e = _world.Registry.Get(StateScope.Session, 0, WorldKeys.Story); StoryState s; return e != null && StoryState.TryParse(e.Value, out s) ? s.ToString() : "none"; }
 
-        public string Stats { get { return "STORY_STATS " + (_host ? "host" : "client") + " suppressed " + _suppressed + " proposed " + _proposed + " ok " + _accepted + " stale " + _stale + " refused " + _refused + " published " + _published + " followed " + _followed + " notesKept " + _notesKept + " calls answered/mirrored/bypassed/silenced/finished " + _callsAnswered + "/" + _callsMirrored + "/" + _callsBypassed + "/" + _callsSilenced + "/" + _callsFinished +(_host && _world.Host != null ? " hostApplied " + _world.Host.StoryAdvances : "") + MissionStats + " | " + Committed(); } }
+        public string Stats { get { return "STORY_STATS " + (_host ? "host" : "client") + " suppressed " + _suppressed + " proposed " + _proposed + " ok " + _accepted + " stale " + _stale + " refused " + _refused + " published " + _published + " followed " + _followed + " notesKept " + _notesKept + " heldLoads " + _heldLoads + " calls answered/mirrored/bypassed/silenced/finished " + _callsAnswered + "/" + _callsMirrored + "/" + _callsBypassed + "/" + _callsSilenced + "/" + _callsFinished +(_host && _world.Host != null ? " hostApplied " + _world.Host.StoryAdvances : "") + MissionStats + " | " + Committed(); } }
 
         public void Dispose()
         {

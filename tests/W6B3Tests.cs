@@ -120,7 +120,7 @@ static class W6B3Tests
             && StoryTriggers.Find("story16", StoryTriggerKind.BlackbaySale, ".../OTHERS/Viewport/Content/BRIEFCASE") == null && StoryTriggers.Find("story26", StoryTriggerKind.BlackbaySale, "OTHERS/Viewport/Content/BRIEFCASE") == null, "story16 PACKAGE listed, other listings not");
         var sr = new StoryAdvanceRequest { FromIndex = S16, StageKey = "story16", Kind = StoryTriggerKind.BlackbaySale, Path = "OTHERS/Viewport/Content/PACKAGE" }; StoryAdvanceRequest sb;
         Expect(StoryAdvanceRequest.TryParse(sr.ToBytes(), out sb) && sb.Kind == StoryTriggerKind.BlackbaySale, "storyAdvance kind 2 round trip");
-        Expect(WorldKeys.MissionAction == "missionAct" && WorldKeys.Missions == "missions" && ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.30.0", "keys / protocol 40 / mod 0.29.0");
+        Expect(WorldKeys.MissionAction == "missionAct" && WorldKeys.Missions == "missions" && ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.31.0", "keys / protocol 40 / mod 0.29.0");
     }
 
     // ---------------------------------------------------------------- 02

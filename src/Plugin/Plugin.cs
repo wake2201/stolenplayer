@@ -213,6 +213,8 @@ namespace TS2MP.Plugin
         MedkitSync _medkit;      // V1.4.1 shared single-use car medkit
         ParcelSync _parcels;     // W2B shared parcel-locker codes
         StorySync _story;        // W6A shared story progression
+        DeathSync _death;        // W6C.1 multiplayer death / arrest: Respawn instead of the checkpoint reload
+        bool _deathErr;
         HideoutSync _hideout;    // W1 shared hideout purchases / renovations (before WalletSync: it claims its money writers)
         HeavyCargoSync _cargo;   // H2 shared heavy vehicle cargo (needs HeavySync: loads / unloads are heavy-lease operations)
         CampaignBootstrap _campaign;
@@ -339,6 +341,8 @@ namespace TS2MP.Plugin
             catch (Exception ex) { log.Error("PARCEL init failed (shared parcel codes disabled)", ex); _parcels = null; }
             try { _story = new StorySync(node, log, _world); if (!_story.Ready) { _story.Dispose(); _story = null; } else _story.Players = _sync; }
             catch (Exception ex) { log.Error("STORY init failed (shared story disabled)", ex); _story = null; }
+            try { _death = new DeathSync(node, log, _world); if (!_death.Ready) { _death.Dispose(); _death = null; } }
+            catch (Exception ex) { log.Error("DEATH init failed (multiplayer respawn NOT installed)", ex); _death = null; }
             try { _wallet = new WalletSync(node, log, _world); }
             catch (Exception ex) { log.Error("WALLET init failed (shared money disabled)", ex); _wallet = null; }
             try { _p2 = new Player2Sync(node, log, _world, _settings.DataDir); }
@@ -402,7 +406,7 @@ namespace TS2MP.Plugin
         void DisposeSystems()
         {
             Release(ref _doors, "WOBJ"); Release(ref _campaign, "CAMPAIGN"); Release(ref _cargo, "CARGO"); Release(ref _heavy, "HEAVY"); Release(ref _loot, "WLOOT"); Release(ref _mirror, "MIRROR");
-            Release(ref _census, "CENSUS"); Release(ref _items, "WITEM"); Release(ref _carbox, "CARBOX"); Release(ref _p2, "P2INV"); Release(ref _wallet, "WALLET"); Release(ref _hideout, "HIDEOUT"); Release(ref _medkit, "MEDKIT"); Release(ref _parcels, "PARCEL"); Release(ref _story, "STORY");
+            Release(ref _census, "CENSUS"); Release(ref _items, "WITEM"); Release(ref _carbox, "CARBOX"); Release(ref _p2, "P2INV"); Release(ref _wallet, "WALLET"); Release(ref _hideout, "HIDEOUT"); Release(ref _medkit, "MEDKIT"); Release(ref _parcels, "PARCEL"); Release(ref _story, "STORY"); Release(ref _death, "DEATH");
             Release(ref _vehicles, "VEHICLE"); Release(ref _world, "WORLD"); Release(ref _sync, "SYNC");
         }
 
@@ -449,6 +453,7 @@ namespace TS2MP.Plugin
             if (_medkit != null) _log.Info("PERF " + _medkit.Stats);
             if (_parcels != null) _log.Info("PERF " + _parcels.Stats);
             if (_story != null) _log.Info("PERF " + _story.Stats);
+            if (_death != null) _log.Info("PERF " + _death.Stats);
             _modCost.Reset(); _gc0 = g0; _gc1 = g1; _gc2 = g2; _netOut0 = outB; _netIn0 = inB;
         }
 
@@ -510,6 +515,11 @@ namespace TS2MP.Plugin
             {
                 try { _story.Update(); }
                 catch (Exception ex) { _log.Error("STORY update exception (shared story disabled)", ex); _story.Dispose(); _story = null; }
+            }
+            if (_death != null)
+            {
+                try { _death.Update(); }
+                catch (Exception ex) { if (!_deathErr) { _deathErr = true; _log.Error("DEATH update exception (completion / timeout diagnostics off; the hooks stay installed: checkpoint loads stay refused)", ex); } }
             }
             if (_hideout != null)
             {

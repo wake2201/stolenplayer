@@ -60,6 +60,7 @@ namespace TS2MP.Plugin
             public HeavyRules.Show Shown = HeavyRules.Show.ScenePose; public Vector3 ShownPos; public Quaternion ShownRot;
             public bool InterpOff; public RigidbodyInterpolation OrigInterp;   // H1.1: interpolation off while followed (transform-driven kinematic)
             public bool Synthetic;   // H2: a cargo object outside its car (no scene pose: without a record it is hidden, HeavyCargoSync owns it)
+            public readonly MarkerState Markers = new MarkerState();   // W6B.4: its original minimap / diamond markers while hidden
         }
         readonly Dictionary<uint, Obj> _objs = new Dictionary<uint, Obj>();
         int _objNs = Regions.None;
@@ -679,7 +680,11 @@ namespace TS2MP.Plugin
         {
             if (o.Go == null) return;
             var p = new Vector3(r.Pos.X, r.Pos.Y, r.Pos.Z); var q = new Quaternion(r.Rot.Fx, r.Rot.Fy, r.Rot.Fz, r.Rot.Fw);
-            if (show == o.Shown && (show != HeavyRules.Show.AtPose || ((p - o.ShownPos).sqrMagnitude < 1e-6f && Quaternion.Angle(q, o.ShownRot) < 0.5f))) return;
+            if (show == o.Shown && (show != HeavyRules.Show.AtPose || ((p - o.ShownPos).sqrMagnitude < 1e-6f && Quaternion.Angle(q, o.ShownRot) < 0.5f)))
+            {
+                if (show == HeavyRules.Show.Hidden) MissionMarkers.Hide(_log, o.Go, o.Markers, Carrier(show, r), MarkerWhy(r));   // e.g. carried by the other -> loaded into the car
+                return;
+            }
             var t = o.Go.transform;
             switch (show)
             {
@@ -690,7 +695,7 @@ namespace TS2MP.Plugin
                     Capture(o);
                     if (t.parent != null) t.SetParent(null, true);
                     Freeze(o);
-                    Hide(o); _hidden++;
+                    Hide(o, Carrier(show, r), MarkerWhy(r)); _hidden++;
                     break;
                 case HeavyRules.Show.AtPose:
                 {
@@ -813,16 +818,29 @@ namespace TS2MP.Plugin
             return snapshotItem == _suppressItem ? -1 : snapshotItem;
         }
 
-        void Hide(Obj o)
+        void Hide(Obj o, Transform follow = null, string why = "hidden")
         {
             foreach (var r in o.Go.GetComponentsInChildren<Renderer>(true)) if (r.enabled) { r.enabled = false; o.HiddenRenderers.Add(r); }
             foreach (var c in o.Go.GetComponentsInChildren<Collider>(true)) if (c.enabled) { c.enabled = false; o.HiddenColliders.Add(c); }
+            MissionMarkers.Hide(_log, o.Go, o.Markers, follow, why);   // W6B.4: no marker stays at the hidden place
         }
         void Unhide(Obj o)
         {
             foreach (var r in o.HiddenRenderers) if (r != null) r.enabled = true;
             foreach (var c in o.HiddenColliders) if (c != null) c.enabled = true;
             o.HiddenRenderers.Clear(); o.HiddenColliders.Clear();
+            MissionMarkers.Show(o.Go, o.Markers, "shown again");
+        }
+
+        // W6B.4 (MarkerRules): the other player carries it and its avatar is shown here -> that avatar, else null (marker off)
+        Transform Carrier(HeavyRules.Show show, HeavyRecord r)
+        {
+            var av = RemoteGear.CurrentAvatar; bool shown = av != null && av.gameObject.activeInHierarchy;
+            return MarkerRules.For(show, true, r, Me, shown) == MarkerMode.FollowCarrier ? av : null;
+        }
+        static string MarkerWhy(HeavyRecord r)
+        {
+            return r.State == HeavyState.Carried ? "carried by P" + r.Actor : r.State == HeavyState.Removed ? (r.Cargo ? "cargo record removed" : "removed: in a car / unpacked / sold") : "hidden";
         }
 
         // original scene pose and physics state (the original reload would show exactly this)
@@ -984,7 +1002,7 @@ namespace TS2MP.Plugin
                 var b = _host && _world.Host != null ? _world.Host.Heavy : null;
                 return "HEAVY_STATS " + (_host ? "p1Leases " + _p1Leases : "requests " + _p2Requests + " granted " + _p2Granted + " refused " + _p2Refused + " grantAborted " + _grantAborted + " lost " + _lost + " dropRefused " + _dropRefused + " depositBlocked " + _depositBlocked)
                     + " held " + _sims.Count + " drops " + _drops + " settles " + _settles + " moves " + _moves + " releases " + _releases + " removes " + _removes + " forcedEnds " + _forcedEnds + " associateBlocked " + _associateBlocked
-                    + " shown hidden/placed/restored " + _hidden + "/" + _placed + "/" + _restored + " tracked " + _objs.Count
+                    + " shown hidden/placed/restored " + _hidden + "/" + _placed + "/" + _restored + " tracked " + _objs.Count + " | " + MissionMarkers.Stats
                     + " | motion sent " + _motionSent + " (" + _motionSentBytes + " B) recv " + _motionRecv + " (" + _motionRecvBytes + " B) stale " + _filter.Stale + " rejected " + _filter.Rejected + " malformed " + _motionMalformed + " unknown " + _motionUnknown
                     + " following " + _motions.Count + " followed " + _followed + " maxCorrection " + _correctionMax.ToString("0.000") + "m adopted " + _adopted
                     + " | cargo loads sent " + _loadsSent + " done " + _loadsDone + " refused " + _loadsRefused + " picks " + _cargoPicks

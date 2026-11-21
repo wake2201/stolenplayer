@@ -621,7 +621,7 @@ namespace TS2MP.Shared
         }
 
         // ---- W6B cooperative story call: one committed answer per stage call (either player) ----
-        public long CallAnswers, CallRefusals;
+        public long CallAnswers, CallFinishes, CallRefusals;
         public ProposalCode AnswerStoryCall(byte slot, StoryCallState req, out string why)
         {
             int idx = 0; string key = null; bool free = false;
@@ -631,9 +631,11 @@ namespace TS2MP.Shared
             var code = StoryCallRules.Decide(ready, free, key, cur, req, out why);
             if (code == ProposalCode.Accepted)
             {
-                var c = Reg.Commit(StateScope.Session, 0, WorldKeys.StoryCall, new StoryCallState { Key = req.Key, Seq = req.Seq, By = slot }.ToBytes());
+                var c = Reg.Commit(StateScope.Session, 0, WorldKeys.StoryCall, StoryCallRules.Merge(cur, req, slot).ToBytes());
                 if (c == null) { why = "commit failed"; return ProposalCode.Busy; }
-                Outbox.Add(c); CallAnswers++;
+                Outbox.Add(c);
+                if (cur == null || !cur.SameCall(req)) CallAnswers++;
+                if (req.Phase == StoryCallState.Finished) CallFinishes++;
             }
             else if (code != ProposalCode.Unchanged && code != ProposalCode.Stale) CallRefusals++;
             return code;

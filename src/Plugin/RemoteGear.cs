@@ -44,6 +44,7 @@ namespace TS2MP.Plugin
         readonly Dictionary<int, Func<object, object>> _toolGetters = new Dictionary<int, Func<object, object>>();
 
         GameObject _avatarGo; Transform _hand, _palmRef, _index1, _pinky1, _upperArm, _chest;
+        public static Transform CurrentAvatar;   // the remote avatar currently shown (Unity-null once destroyed)
         readonly Dictionary<int, GameObject> _tools = new Dictionary<int, GameObject>();   // pooled held-tool copies (built once per avatar)
         readonly Dictionary<long, GameObject> _carries = new Dictionary<long, GameObject>(); // pooled carried-item copies (key: item id, or H1 scene object)
         int _shownTool = -1; long _shownCarry = -1;
@@ -108,6 +109,7 @@ namespace TS2MP.Plugin
         {
             // copies of the previous avatar were children of it (destroyed with it)
             _avatarGo = avatar; _tools.Clear(); _carries.Clear();
+            CurrentAvatar = avatar != null ? avatar.transform : null;   // W6B.4: target of a carried object's original minimap marker
             _shownTool = -1; _shownCarry = -1; _lastSwing = -1; _swingT = -1f; _holding = false;
             var t = avatar.transform;
             _hand = FindBone(t, "mixamorig:RightHand"); _palmRef = FindBone(t, "mixamorig:RightHandMiddle1"); _upperArm = FindBone(t, "mixamorig:RightArm");

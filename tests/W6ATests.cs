@@ -220,7 +220,7 @@ static class W6ATests
             && StoryRules.Decide(true, false, S15, "story15", r, out why) == ProposalCode.Stale && StoryRules.Decide(true, false, S14, "story13", r, out why) == ProposalCode.Stale
             && StoryRules.Decide(true, false, S14, "story14", Req(S14, "story14", "pPlane3"), out why) == ProposalCode.Invalid, "decide: busy / free / stale index / stale key / unlisted");
         Expect(WorldKeys.StoryAdvance == "storyAdvance" && WorldKeys.Story == "story", "keys");
-        Expect(ProtocolInfo.ProtocolVersion == 40 && ProtocolInfo.ModVersion == "0.29.0", "protocol 37 / mod 0.26.0 (new proposal + state: both PCs need 0.26.0)");
+        Expect(ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.30.0", "protocol 37 / mod 0.26.0 (new proposal + state: both PCs need 0.26.0)");
     }
 
     // ---------------------------------------------------------------- 02

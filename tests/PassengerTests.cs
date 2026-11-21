@@ -1,4 +1,4 @@
-﻿// M4.3 Phase A offline tests: host-authoritative passenger seat (reservation, confirmation, release, timeout,
+// M4.3 Phase A offline tests: host-authoritative passenger seat (reservation, confirmation, release, timeout,
 // disconnect), driver/passenger/holder separation, role symmetry, driver exit with a passenger aboard, camera-mode
 // replication (record + snapshot flag), remote occupant presentation, door rule "stopped", Phase A travel guard.
 // Pure logic only: no Unity physics, cameras, animation or rendering is exercised here.
@@ -348,7 +348,7 @@ static class PassengerTests
         Expect(VehicleRecord.TryParse(r.ToBytes(), out p) && p.PassengerPending && p.Tpp && p.Passenger == 2, "record round trip with the new flags");
         var b = r.ToBytes(); b[1] = 0x20;
         Expect(!VehicleRecord.TryParse(b, out p), "unknown record flag bits rejected");
-        Expect(ProtocolInfo.ProtocolVersion == 40 && ProtocolInfo.ModVersion == "0.29.0", "protocol 32 / mod 0.21.1");
+        Expect(ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.30.0", "protocol 32 / mod 0.21.1");
         Expect(WorldKeys.VehicleRide == "vehicleRide", "key");
     }
 

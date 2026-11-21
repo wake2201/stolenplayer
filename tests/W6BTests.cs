@@ -317,9 +317,12 @@ static class W6BTests
 
     static void Calls()
     {
-        var st = new StoryCallState { Key = "story14", Seq = 12, By = 2 };
-        StoryCallState back; Expect(StoryCallState.TryParse(st.ToBytes(), out back) && back.SameCall(st) && back.By == 2, "codec");
-        Expect(!StoryCallState.TryParse(new byte[] { 1, 12, 3, 1, 65 }, out back) && !StoryCallState.TryParse(new byte[] { 2, 12, 2, 1, 65 }, out back), "bad slot / version refused");
+        // W6B.4: identity = stage key + sequence path hash (StorySequences index replaced); full matrix in W6B4Tests
+        uint h = StoryCallRules.PathHash("MANAGERS/STORY MANAGER/CALL 14");
+        var st = new StoryCallState { Key = "story14", Stage = 18, Seq = h, By = 2 };
+        StoryCallState back; Expect(StoryCallState.TryParse(st.ToBytes(), out back) && back.SameCall(st) && back.By == 2 && back.Stage == 18, "codec");
+        var bad = st.ToBytes(); bad[2] = 3; var badV = st.ToBytes(); badV[0] = 1;
+        Expect(!StoryCallState.TryParse(bad, out back) && !StoryCallState.TryParse(badV, out back), "bad slot / old version refused");
 
         // P2 answers first
         var wh = new WorldHost(61); var sh = new StoryHost(); wh.StoryHost = sh;
@@ -327,27 +330,27 @@ static class W6BTests
         Expect(P2Answer(wh, st, pid) == ProposalCode.Accepted && Committed(wh).By == 2, "P2 answer committed");
         Expect(P2Answer(wh, st, pid) == ProposalCode.Accepted && wh.CallAnswers == 1, "retransmission: cached, counted once");
         Expect(P2Answer(wh, st, _pid++) == ProposalCode.Unchanged, "second answer of the same call: Unchanged");
-        string why; Expect(wh.AnswerStoryCall(1, new StoryCallState { Key = "story14", Seq = 12, By = 1 }, out why) == ProposalCode.Unchanged, "host answering later: Unchanged (P2 won)");
-        Expect(P2Answer(wh, new StoryCallState { Key = "story13", Seq = 12, By = 2 }, _pid++) == ProposalCode.Stale, "late answer of an older stage: Stale");
+        string why; Expect(wh.AnswerStoryCall(1, new StoryCallState { Key = "story14", Seq = h, By = 1 }, out why) == ProposalCode.Unchanged, "host answering later: Unchanged (P2 won)");
+        Expect(P2Answer(wh, new StoryCallState { Key = "story13", Seq = h, By = 2 }, _pid++) == ProposalCode.Stale, "late answer of an older stage: Stale");
         Expect(Propose(wh, 2, new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.StoryCallAnswer, Value = new StoryCallState { Key = "story14", Seq = 3, By = 1 }.ToBytes() }, 1) == ProposalCode.Invalid, "P2 cannot claim the host answered");
         Expect(Propose(wh, 2, new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.StoryCall, Value = st.ToBytes() }, 1) == ProposalCode.NotAuthorized, "the committed record is host-only");
         sh.Free = true; Expect(wh.AnswerStoryCall(1, new StoryCallState { Key = "story14", Seq = 1, By = 1 }, out why) == ProposalCode.Unchanged, "free mode: no story calls");
 
         // mirror decisions on the other PC
         var p2c = Committed(wh);
-        Expect(StoryCallRules.Decide(p2c, 1, "story14", 12, true, false, false) == CallMirror.AnswerRinging, "host still ringing -> original answer branch");
-        Expect(StoryCallRules.Decide(p2c, 1, "story14", 12, false, true, false) == CallMirror.AnswerWhenRung, "host ring pending (busy) -> bypass branch when it would ring");
-        Expect(StoryCallRules.Decide(p2c, 2, "story14", 12, true, false, false) == CallMirror.None, "own answer never mirrored");
-        Expect(StoryCallRules.Decide(p2c, 1, "story14", 12, false, false, true) == CallMirror.None, "already in the conversation (both answered): nothing");
-        Expect(StoryCallRules.Decide(p2c, 1, "story15", 12, true, false, false) == CallMirror.None, "different stage (story moved on): nothing");
-        Expect(StoryCallRules.Decide(p2c, 1, "story14", 11, true, false, false) == CallMirror.None, "different sequence: nothing");
-        Expect(StoryCallRules.Decide(p2c, 1, "story14", 12, false, false, false) == CallMirror.None, "call declined / over here: no replay");
+        Expect(StoryCallRules.Decide(p2c, 1, "story14", h, true, false, false, false, true) == CallMirror.AnswerRinging, "host still ringing -> original answer branch");
+        Expect(StoryCallRules.Decide(p2c, 1, "story14", h, false, true, false, false, true) == CallMirror.AnswerWhenRung, "host ring pending (busy) -> bypass branch when it would ring");
+        Expect(StoryCallRules.Decide(p2c, 2, "story14", h, true, false, false, false, true) == CallMirror.None, "own answer never mirrored");
+        Expect(StoryCallRules.Decide(p2c, 1, "story14", h, false, false, true, false, true) == CallMirror.None, "already in the conversation (both answered): nothing");
+        Expect(StoryCallRules.Decide(p2c, 1, "story15", h, true, false, false, false, true) == CallMirror.None, "different stage (story moved on): nothing");
+        Expect(StoryCallRules.Decide(p2c, 1, "story14", h + 1, true, false, false, false, true) == CallMirror.None, "different sequence: nothing");
+        Expect(StoryCallRules.Decide(p2c, 1, "story14", h, false, false, false, false, true) == CallMirror.None, "call declined / over here: no replay");
 
         // host answers first
         var wh2 = new WorldHost(62); wh2.StoryHost = new StoryHost();
-        Expect(wh2.AnswerStoryCall(1, new StoryCallState { Key = "story14", Seq = 12, By = 1 }, out why) == ProposalCode.Accepted && Committed(wh2).By == 1, "host answer committed");
+        Expect(wh2.AnswerStoryCall(1, new StoryCallState { Key = "story14", Seq = h, By = 1 }, out why) == ProposalCode.Accepted && Committed(wh2).By == 1, "host answer committed");
         Expect(P2Answer(wh2, st, _pid++) == ProposalCode.Unchanged, "P2's simultaneous answer: Unchanged (both in the dialogue, one record)");
-        Expect(StoryCallRules.Decide(Committed(wh2), 2, "story14", 12, true, false, false) == CallMirror.AnswerRinging, "P2 ringing -> answer branch");
+        Expect(StoryCallRules.Decide(Committed(wh2), 2, "story14", h, true, false, false, false, true) == CallMirror.AnswerRinging, "P2 ringing -> answer branch");
         Expect(wh2.CallAnswers == 1, "one committed answer");
     }
 
@@ -370,7 +373,8 @@ static class W6BTests
         string mirror = ss.Substring(m, ss.IndexOf("void CallTick()", m, StringComparison.Ordinal) - m);
         int a = mirror.IndexOf("_setCalling(seq, false);", StringComparison.Ordinal), b = mirror.IndexOf("pick.Play();", StringComparison.Ordinal), c = mirror.IndexOf("_seqBeginn(seq);", StringComparison.Ordinal), d = mirror.IndexOf("vib.Stop();", StringComparison.Ordinal), e = mirror.IndexOf("_psStopCall(ps);", StringComparison.Ordinal);
         Expect(a > 0 && b > a && c > b && d > c && e > d, "mirror = StorySequence.Update answer branch order (isCalling=false, pickUp, Beginn, vibrate stop, StopPhoneCall)");
-        Expect(ss.IndexOf("ForceStop", StringComparison.Ordinal) < 0 || !ss.Contains("Fast.Call0(seq, \"ForceStop\")"), "declining is never shared");
+        int fs = ss.IndexOf("_seqForceStop(seq);", StringComparison.Ordinal), sr = ss.IndexOf("void SilenceRinging(object seq)", StringComparison.Ordinal);
+        Expect(fs > sr && sr > 0 && ss.IndexOf("_seqForceStop(", fs + 1, StringComparison.Ordinal) < 0 && !ss.Contains("Patch(AccessTools.Method(seq, \"ForceStop\""), "declining is never shared (W6B.4: ForceStop only puts down a ring whose shared conversation is already over)");
         Expect(ss.Contains("if (reg.HeadRev != _callHead || reg.Epoch != _callEpoch)"), "call state parsed only on registry change");
     }
 
@@ -396,7 +400,7 @@ static class W6BTests
         Expect(ps.Contains("DRONE remote flight shown (item ") && ps.Contains("DRONE remote flight hidden"), "remote presentation transitions");
         Expect(wo.Contains("disable proposed #") && wo.Contains("accepted: original DisablePermamently runs") && wo.Contains("disabled from the shared state") && wo.Contains("disabled locally only: region "), "camera paths: proposed, accepted, replica, local-only");
         Expect(ss.Contains("from SecurityCamera onDisableAdvanceStory: not advanced here") && wo.Contains("InCameraDisable = run; return run;") && wo.Contains("finalizer: hm(\"CamDisableFinal\")"), "P2 camera story step logged precisely (replaces the misleading 'unlisted trigger' line)");
-        Expect(ss.Contains("STORY call ringing here: stage '") && ss.Contains("answered the ") && ss.Contains("ringing here -> original answer branch"), "ring start / answer / mirror");
+        Expect(ss.Contains("STORY call ringing here: stage '") && ss.Contains("Commit(st, \"answered\")") &&ss.Contains("ringing here -> original answer branch"), "ring start / answer / mirror");
         Expect(p2.Contains("P2INV drone item ") && p2.Contains("if (flying != _flightCounted)"), "inventory flight accounting logged on change only");
     }
 
@@ -405,7 +409,7 @@ static class W6BTests
         Expect(PlayerStateCodec.WireSize == 34, "on-foot snapshot size unchanged");
         foreach (var k in new[] { ObjectKind.Door, ObjectKind.Lockpick, ObjectKind.LockedWindow, ObjectKind.Breakable, ObjectKind.ParcelLocker }) Expect(ObjectStateRules.SupportedKind(k), k + " still shared");
         Expect(!ObjectStateRules.SupportedKind(ObjectKind.SecurityPanel), "security panels not shared (not in scope)");
-        Expect(ProtocolInfo.ProtocolVersion == 40 && ProtocolInfo.ModVersion == "0.29.0", "protocol 38 / mod 0.27.0");
+        Expect(ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.30.0", "protocol 38 / mod 0.27.0");
     }
 
     // ---------------------------------------------------------------- helpers

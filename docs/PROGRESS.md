@@ -1,5 +1,37 @@
 ﻿# PROGRESS
 
+## W6B.4 — Shared original story calls, mission minimap markers — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-21
+Mod **0.30.0, protocol 41** (`storyCall` / `storyCallAnswer` record v2; both PCs need 0.30.0). Built on the 0.29.0 tree (no git in this checkout: not committed, see D). Manual QA: `docs/TESTING.md` §58.
+
+### A. Verified root causes
+- **Calls answered only locally (DEFECTIVE since W6B):** the call identity was the sequence's index in `GameManager.StorySequences`. IL: that array is read only by `StorySequence.SequenceBegin` (force-stop list) and holds no story call -> index -1 -> `not shared` (0.29.0 logs, story15..18). The `call_sequence` reference is not stable either: `InitiateStory` IL_03c9..IL_03d0 nulls it once `<key>_Call >= 1`.
+- **Ghost / duplicate minimap markers (DEFECTIVE since H1/H2):** `HeavySync.Hide` hid a heavy object by disabling renderers + colliders only. Its `STORY MARKER`'s `bl_MiniMapItem` icon lives under the minimap UI (not a child) and `Diamond_Marker.Update` re-enables its sprite every frame, so the marker stayed where the object was hidden: house (other player carries it), car (loaded = Removed; synthetic copy without record), table (unpacked). The cargo `drop_object` copy shows its own original marker -> second marker.
+
+### B. Original methods examined (Mono.Cecil IL dump, 1.27c)
+`StorySequence` (`PhoneCall`, `PhoneCall1`, `Beginn`, `<CallDelayLittle>`, `ForceStop`, `SequenceBegin`, `Update`), `StoryManager.InitiateStory` (call block IL_038c..IL_042c), callers of `StorySequence::*` (`Payphone.TryActivate`, `Tutorial_PC.Check`, `GetStoryCalls.SetLombardi`), `bl_MiniMapItem` (`OnEnable`, `OnDisable`, `CreateIcon`, `FixedUpdate`, `OnUpdateItem`, `HideItem`, `ShowItem`, `DestroyItem`, `OnDestroy`, `TargetPosition`), `Diamond_Marker` (`Start`, `Update`), game users of `bl_MiniMapItem`; scene index `docs/game-atlas/data/instances/MadisonSt.json` (story box + `STORY MARKER`s).
+
+### C. Changes
+- `src/Shared/Story.cs`: `StoryCallState` v2 (key, stage, FNV-1a scene-path hash, by, phase Answered / Finished), `StoryCallRules.PathHash / Decide (finish) / Merge`, mirror `Decide(…, played, sawLive)` with `CallMirror.Silence`.
+- `src/Shared/WorldTime.cs`: `AnswerStoryCall` commits `Merge` (first answerer kept), counts `CallFinishes`.
+- `src/Plugin/StorySync.cs` (call section rewritten): ring record at `PhoneCall1` (key/stage at ring time + path hash); answer = original answer branch detection as before; host commits / P2 proposes; other PC: original answer branch (ringing) / bypass branch (ring pending); `FinishCheck` reports Finished when `having_phone_convo` drops; a finished call never seen live or already played here -> ring skipped / original decline branch. `GameManager.StorySequences` no longer read.
+- `src/Shared/HeavyItems.cs`: `MarkerMode` / `MarkerRules.For`.
+- `src/Plugin/MissionMarkers.cs` (new): toggles the ORIGINAL `bl_MiniMapItem` / `Diamond_Marker` behaviours of a hidden object; follow mode retargets the same icon to the remote avatar. `HeavySync.Hide / Unhide / Apply` call it; `RemoteGear.CurrentAvatar`.
+- Versions: `Protocol.cs` 41 / 0.30.0; version pins in tests; `tests/package-test.ps1`. New `tests/W6B4Tests.cs` (14), `W6BTests` call tests moved to the v2 API; `tools/build.ps1` suite list.
+
+### D. Status / evidence
+| Subsystem | Status |
+|---|---|
+| Shared story call (either answers, other stops ringing, one record) | IMPLEMENTED BUT UNVERIFIED (PENDING MANUAL QA) |
+| No replay after reconnect / reload; reused call objects distinct | IMPLEMENTED BUT UNVERIFIED |
+| Both PCs hear the dialogue | IMPLEMENTED BUT UNVERIFIED (original branches; start offset = network delay) |
+| Mission box marker: one marker, follows carrier / car / table, none left behind | IMPLEMENTED BUT UNVERIFIED |
+| Carrier avatar not shown here (other scene / spawning) | DESIGN COMPROMISE: marker off until the next heavy-registry change, never stale |
+| Commit | **NOT DONE**: `D:\stolenplayer-main` has no `.git` and no git executable is installed (BLOCKER for the commit step only) |
+`tools/build.ps1 -Test`: plugin 0 warnings, **ALL 49 SUITES PASSED** (W6B4 14/14, W6B 13/13), release `build/release/TS2-Multiplayer-0.30.0.zip`. Offline only - no in-game run.
+
+### E. Performance
+Calls: ring / answer / finish are events; `CallTick` 4 Hz walks <= a few ring records (no allocation when idle); wire: one 9 B + key record per answer and per finish. Markers: only on heavy presentation changes (one `GetComponentsInChildren` pair per hidden object), no per-frame work, no scene scans. FPS: not measured (PENDING MANUAL QA).
+
 ## W6B.3 — Shared mission-box contents, cooperative story tasks (story16-18), checkpoint check — **BUILT — PENDING MANUAL TWO-PC QA**, 2026-11-19
 Mod **0.29.0, protocol 40** (new `missionAct` proposal + `missions` state, `storyAdvance` kind 2; both PCs need 0.29.0). Built on `5289ca7` (W6B.2). Manual QA: `docs/TESTING.md` §57.
 

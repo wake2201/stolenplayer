@@ -186,61 +186,94 @@ namespace TS2MP.Shared
     //     pickUp.Play, Beginn (dialogue: speakSource clip, subtitles, nextSequence chain, end: GM.CheckStory), vibrate stop,
     //     PlayerScript.StopPhoneCall. cancel_phone -> ForceStop (personal: not shared).
     //   No campaign effect lives in the answer: <key>_Call is written when the ring starts (World key, host campaign); the
-    //   dialogue and CheckStory are presentation on each PC. So the shared part is only "this stage's call was answered".
-    // Identity: stage key + index of the sequence in GameManager.StorySequences (the same MainScene data on both PCs).
+    //   dialogue and CheckStory are presentation on each PC. So the shared part is only "this stage's call was answered"
+    //   (+ W6B.4 "its conversation is over", so a reconnect / reload never replays it).
+    // Identity (W6B.4, verified 1.27c IL): GameManager.StorySequences is read only by StorySequence.SequenceBegin (ForceStop
+    //   list) and does NOT contain the story call sequences (0.29.0 logs: index -1 for story15..18). StoryScript.call_sequence
+    //   is nulled by InitiateStory IL_03c9..IL_03d0 once <key>_Call >= 1 (call_only_once), so a runtime reference is not
+    //   stable either. A call is therefore: stage key (+ index) at ring time + FNV-1a hash of the StorySequence's scene
+    //   hierarchy path (the same MainScene data on both PCs). Two stages that reuse one sequence object stay distinct (key).
     public sealed class StoryCallState
     {
-        public const byte Version = 1;
-        public string Key; public byte Seq; public byte By;   // By: 1 host, 2 Player 2
+        public const byte Version = 2;
+        public const byte Answered = 1, Finished = 2;
+        public string Key; public byte Stage; public uint Seq; public byte By; public byte Phase = Answered;   // By: 1 host, 2 Player 2 (who answered)
 
         public byte[] ToBytes()
         {
             var k = Encoding.ASCII.GetBytes(Key ?? "");
-            var b = new byte[4 + k.Length];
-            b[0] = Version; b[1] = Seq; b[2] = By; b[3] = (byte)k.Length; Buffer.BlockCopy(k, 0, b, 4, k.Length);
+            var b = new byte[9 + k.Length];
+            b[0] = Version; b[1] = Stage; b[2] = By; b[3] = Phase;
+            b[4] = (byte)Seq; b[5] = (byte)(Seq >> 8); b[6] = (byte)(Seq >> 16); b[7] = (byte)(Seq >> 24);
+            b[8] = (byte)k.Length; Buffer.BlockCopy(k, 0, b, 9, k.Length);
             return b;
         }
 
         public static bool TryParse(byte[] b, out StoryCallState s)
         {
             s = null;
-            if (b == null || b.Length < 5 || b[0] != Version || b[2] < 1 || b[2] > 2) return false;
-            int kl = b[3]; string k;
-            if (kl < 1 || kl > StoryAdvanceRequest.MaxKeyChars || 4 + kl != b.Length || !StoryState.TryText(b, 4, kl, false, out k)) return false;
-            s = new StoryCallState { Seq = b[1], By = b[2], Key = k };
+            if (b == null || b.Length < 10 || b[0] != Version || b[2] < 1 || b[2] > 2 || b[3] < Answered || b[3] > Finished) return false;
+            int kl = b[8]; string k;
+            if (kl < 1 || kl > StoryAdvanceRequest.MaxKeyChars || 9 + kl != b.Length || !StoryState.TryText(b, 9, kl, false, out k)) return false;
+            s = new StoryCallState { Stage = b[1], By = b[2], Phase = b[3], Seq = (uint)(b[4] | b[5] << 8 | b[6] << 16 | b[7] << 24), Key = k };
             return true;
         }
 
         public bool SameCall(StoryCallState o) { return o != null && o.Seq == Seq && string.Equals(o.Key, Key, StringComparison.Ordinal); }
-        public override string ToString() { return "call '" + Key + "' sequence " + Seq + " answered by P" + By; }
+        public string Id { get { return Key + "|" + Seq.ToString("X8"); } }
+        public override string ToString() { return "call '" + Key + "' (" + Stage + ") sequence " + Seq.ToString("X8") + " " + (Phase == Finished ? "finished" : "answered") + " by P" + By; }
     }
 
-    public enum CallMirror : byte { None, AnswerRinging, AnswerWhenRung }
+    // None: nothing. AnswerRinging: original answer branch. AnswerWhenRung: original bypassCall branch at PhoneCall1.
+    // Silence: the conversation is already over (seen only after it ended: late join / reconnect / reload) - the ring never
+    // starts (PhoneCall1 skipped) or a ringing phone is put down with the original decline branch; no dialogue replay.
+    public enum CallMirror : byte { None, AnswerRinging, AnswerWhenRung, Silence }
 
     public static class StoryCallRules
     {
-        // Host decision for "this stage's call was answered" (by either player). Exactly one committed answer per call.
+        // FNV-1a 32 of the StorySequence's hierarchy path ("A/B/C").
+        public static uint PathHash(string path)
+        {
+            uint h = 2166136261;
+            if (path != null) for (int i = 0; i < path.Length; i++) { h ^= path[i]; h *= 16777619; }
+            return h;
+        }
+
+        // Host decision for "this stage's call was answered / finished" (by either player). Exactly one committed answer per
+        // call; Finished only advances the committed answer of the same call (or commits answered + finished at once).
         public static ProposalCode Decide(bool hostReady, bool freeMode, string hostKey, StoryCallState committed, StoryCallState req, out string why)
         {
             why = null;
             if (!hostReady) { why = "host story not ready"; return ProposalCode.Busy; }
-            if (req == null || string.IsNullOrEmpty(req.Key)) { why = "malformed"; return ProposalCode.Invalid; }
+            if (req == null || string.IsNullOrEmpty(req.Key) || req.Phase < StoryCallState.Answered || req.Phase > StoryCallState.Finished) { why = "malformed"; return ProposalCode.Invalid; }
             if (freeMode) { why = "free mode: no story calls"; return ProposalCode.Unchanged; }
             if (!string.Equals(hostKey, req.Key, StringComparison.Ordinal)) { why = "stale: host stage '" + hostKey + "', call of '" + req.Key + "'"; return ProposalCode.Stale; }
-            if (committed != null && committed.SameCall(req)) { why = "already answered by P" + committed.By; return ProposalCode.Unchanged; }
+            if (committed != null && committed.SameCall(req))
+            {
+                if (req.Phase == StoryCallState.Finished && committed.Phase == StoryCallState.Answered) return ProposalCode.Accepted;
+                why = committed.Phase == StoryCallState.Finished ? "already finished (answered by P" + committed.By + ")" : "already answered by P" + committed.By;
+                return ProposalCode.Unchanged;
+            }
             return ProposalCode.Accepted;
         }
 
-        // What this PC does with a committed answer of the OTHER player. Only for its current stage and the same sequence,
-        // never after this PC answered / is talking itself: ringing -> the original answer branch; ring pending (tryToCall,
-        // player busy) -> the original bypassCall branch when the ring would start (no ring, dialogue at once).
-        public static CallMirror Decide(StoryCallState committed, byte localSlot, string localKey, int seqIndex, bool isCalling, bool tryToCall, bool inConversation)
+        // The record the host commits for an accepted request: the first answerer stays the answerer.
+        public static StoryCallState Merge(StoryCallState committed, StoryCallState req, byte slot)
         {
-            if (committed == null || committed.By == localSlot || seqIndex < 0 || seqIndex != committed.Seq) return CallMirror.None;
-            if (!string.Equals(committed.Key, localKey, StringComparison.Ordinal) || inConversation) return CallMirror.None;
-            if (isCalling) return CallMirror.AnswerRinging;
-            if (tryToCall) return CallMirror.AnswerWhenRung;
-            return CallMirror.None;
+            var by = committed != null && committed.SameCall(req) ? committed.By : slot;
+            return new StoryCallState { Key = req.Key, Stage = req.Stage, Seq = req.Seq, By = by, Phase = req.Phase };
+        }
+
+        // What this PC does with a committed call for its own ringing / pending sequence (identity seqHash, local stage key).
+        // played: this PC already ran that call's dialogue (own answer or mirror). sawLive: this PC saw the call ANSWERED while
+        // connected (then it still gets the dialogue when it becomes free, even if the conversation ended meanwhile).
+        public static CallMirror Decide(StoryCallState committed, byte localSlot, string localKey, uint seqHash, bool isCalling, bool tryToCall, bool inConversation, bool played, bool sawLive)
+        {
+            if (committed == null || seqHash != committed.Seq || !string.Equals(committed.Key, localKey, StringComparison.Ordinal) || inConversation) return CallMirror.None;
+            if (!isCalling && !tryToCall) return CallMirror.None;
+            if (played || (committed.Phase == StoryCallState.Finished && !sawLive)) return CallMirror.Silence;   // no replay
+            if (committed.By == localSlot) return CallMirror.None;   // own answer, not played here (cannot happen in practice): vanilla
+            return isCalling ? CallMirror.AnswerRinging : CallMirror.AnswerWhenRung;
         }
     }
 }

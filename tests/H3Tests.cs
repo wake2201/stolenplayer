@@ -140,7 +140,7 @@ static class H3Tests
         Expect(VehicleDoors.TryParseProposal(VehicleDoors.Proposal(2, true, DoorMode.Slow), out d, out open, out mode) && d == 2 && open && mode == DoorMode.Slow, "door 2 proposal");
         Expect(!VehicleDoors.TryParseProposal(new byte[] { 3, 1, 0 }, out d, out open, out mode), "door 3 refused");
         Expect(VehicleDoors.Name(2) == "rear hatch" && VehicleDoors.Name(0) == "L" && VehicleDoors.Name(1) == "R", "log names");
-        Expect(ProtocolInfo.ProtocolVersion == 40 && ProtocolInfo.ModVersion == "0.29.0", "protocol 34 / mod 0.23.0 (wire change: both PCs need 0.23.0)");
+        Expect(ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.30.0", "protocol 34 / mod 0.23.0 (wire change: both PCs need 0.23.0)");
         Expect(Validation.Check(new Hello { ModVersion = "0.22.1", ClientNonce = new byte[JoinAuth.NonceBytes], InstanceId = "x" }, null, null, "h", false) == RejectCode.ModVersionMismatch, "0.22.1 client refused");
     }
 

@@ -151,6 +151,27 @@ Setup: both instances need plugin **0.3.1** (older builds are refused with `Prot
 
 Known/expected: shared calendar, rent and bank interest advance only from the host's clock (see PROGRESS "Known limitations"). Send back both `plugin.log` files and the times you noted in rows 6, 10, 12, 14.
 
+## 58. W6B.4 checklist — shared story calls + mission minimap markers (release `TS2-Multiplayer-0.30.0.zip` on BOTH PCs, protocol 41)
+Grep tags: `STORY call ringing here`, `STORY shared call`, `answered the call`, `finished the call`, `conversation over here`, `ring skipped`, `original decline branch`, `original answer branch`, `original bypass branch`, `STORY_STATS` (`calls answered/mirrored/bypassed/silenced/finished`), `BLIP '`, `BLIP_STATS`.
+
+| # | Steps | Expected evidence | Result |
+|---|---|---|---|
+| 1 | F10 story15 (or any stage with a call): both PCs on foot when it rings; **P1** answers | P2 stops ringing at once and hears the same dialogue + subtitles; P1 log `STORY host answered the call 'story15' … -> Accepted`; P2 log `STORY shared call …`, `ringing here -> original answer branch`. Later both logs `conversation over here`, one `finished the call … -> Accepted` | NOT TESTED |
+| 2 | Next call: **P2** answers | Same as row 1 with roles swapped (P2 `proposed #N`, `-> Accepted`) | NOT TESTED |
+| 3 | Both press accept at the same moment | One dialogue per PC (not two overlapping); one log `-> Accepted`, the other `-> Unchanged` or `answered here too` | NOT TESTED |
+| 4 | P2 sits in a car while P1 answers; P2 leaves the car during / after the call | P2 never rings; when on foot it gets the dialogue once (`ring pending here -> original bypass branch`) | NOT TESTED |
+| 5 | After a finished call: P2 disconnects and rejoins (or reloads) at the same stage | No ring / no dialogue replay on P2 (`ring skipped` or `original decline branch (no replay)`) | NOT TESTED |
+| 6 | Decline (cancel) on one PC while the call rings | Only that PC stops ringing; the other can still answer (decline is personal) | NOT TESTED |
+| 7 | story15 box marker: P1 picks the box in House 104 | Both minimaps: ONE story marker, on P1 (P2 log `BLIP 'CardboardBox_FlybyLiteDrone' … follow …`); no marker left in the house | NOT TESTED |
+| 8 | P1 drops it, P2 picks it up | One marker, now on P2, on both PCs | NOT TESTED |
+| 9 | Box into the Ranger cargo, drive to the hideout | One marker on the car on both PCs, moving with it; nothing left at 104 (logs `BLIP … hidden (removed: in a car …)`) | NOT TESTED |
+| 10 | Unload at the hideout, carry (either player), place on the table | Marker follows the carrier, then on the table; no marker at the parked car | NOT TESTED |
+| 11 | Open the box (either player) | Box marker gone on both; only the package's original marker (if any) at the table; pick it up -> no marker left | NOT TESTED |
+| 12 | Travel Madison <-> hideout, P2 rejoin, bed-save + reload during rows 9-11 | Never two markers, never a marker at an old place | NOT TESTED |
+| 13 | Regression: drone + camera story14, cardboard unpack once, package claim once, story16-18 tasks + one $250 payout each, heavy cargo, P2 inventory, save isolation, F8 join, F10 developer session, payphone | Unchanged (§55–57) | NOT TESTED |
+
+Performance to note: `STORY_STATS` / `HEAVY_STATS` lines (no per-frame BLIP lines); FPS before/after with both PCs in the hideout.
+
 ## 57. W6B.3 checklist — shared box contents, story16-18 by either player, checkpoint (release `TS2-Multiplayer-0.29.0.zip` on BOTH PCs)
 Grep tags: `HEAVY mission-box contents`, `HEAVY unpack`, `WITEM`, `STORY task`, `STORY Player-2 mission`, `STORY host completed`, `STORY shared missions`, `STORY_STATS` (`missions …`), `WALLET`.
 

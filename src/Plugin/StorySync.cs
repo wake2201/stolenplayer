@@ -19,6 +19,9 @@
 //     bypass branch and the nextSequence chain call it without). The answer is committed once ("storyCall": host directly,
 //     Player 2 by proposal). The other PC mirrors it with the original answer branch (ringing) or, when its ring is still
 //     pending, with the original bypassCall branch at PhoneCall1 (no ring, dialogue at once). Declining stays personal.
+//   - W6B.4: call identity = stage key/index at ring time + hash of the StorySequence scene path (GameManager.StorySequences
+//     never held the story calls: 0.29.0 shared nothing). The PC whose conversation ends first reports "finished"; a ring
+//     of a finished call that this PC never saw live (late join / reconnect / reload) or already played is skipped.
 // Cost: per frame one int field read (+ client: one registry head compare); hooks once per AdvanceStory / note read / note
 // Start / call answer / ring start. Network: one <= 140 B proposal per Player-2 trigger, one <= 40 B state per story change.
 using System;
@@ -48,10 +51,16 @@ namespace TS2MP.Plugin
         static StoryTriggerKind _ctxKind; static string _ctxPath; static bool _applying;
 
         // W6B story call
-        static Func<object, object> _seqManager, _smPickUp, _smVibrate, _smPs, _gmSeqs; static Func<object, bool> _seqCalling, _seqTry, _psIncoming, _psConvo;
-        static Action<object, bool> _setCalling; static Action<object> _seqBeginn, _psStopCall; static bool _callOk, _mirroring;
-        StoryCallState _call; string _mirroredCall; uint _callHead = uint.MaxValue, _callEpoch; double _nextCallCheck; readonly Dictionary<uint, StoryCallState> _callPending = new Dictionary<uint, StoryCallState>();
-        long _callsAnswered, _callsMirrored, _callsBypassed;
+        static Func<object, object> _seqManager, _seqGm, _smPickUp, _smVibrate, _smPs; static Func<object, bool> _seqCalling, _seqTry, _psIncoming, _psConvo;
+        static Action<object, bool> _setCalling; static Action<object> _seqBeginn, _seqForceStop, _psStopCall, _gmCheckStory; static bool _callOk, _mirroring;
+        StoryCallState _call; uint _callHead = uint.MaxValue, _callEpoch; double _nextCallCheck; readonly Dictionary<uint, StoryCallState> _callPending = new Dictionary<uint, StoryCallState>();
+        // W6B.4: ring records (sequence -> identity at ring time), calls whose dialogue ran here, calls seen answered live,
+        // the conversation running here (finish report when PlayerScript.having_phone_convo drops)
+        readonly Dictionary<UnityEngine.Object, StoryCallState> _rings = new Dictionary<UnityEngine.Object, StoryCallState>();
+        readonly HashSet<string> _played = new HashSet<string>(StringComparer.Ordinal), _sawLive = new HashSet<string>(StringComparer.Ordinal);
+        readonly List<UnityEngine.Object> _ringScratch = new List<UnityEngine.Object>(4);
+        StoryCallState _active; UnityEngine.Object _activeSeq;
+        long _callsAnswered, _callsMirrored, _callsBypassed, _callsSilenced, _callsFinished;
         object _boundSm; int _lastLocal = int.MinValue; uint _seenHead = uint.MaxValue, _seenEpoch; StoryState _committed; double _nextApply;
         sealed class Pending { public StoryAdvanceRequest Req; public int Tries; public double At; }
         readonly Dictionary<uint, Pending> _pending = new Dictionary<uint, Pending>();
@@ -102,20 +111,20 @@ namespace TS2MP.Plugin
             catch (Exception ex) { _log.Error("STORY init failed: shared story disabled", ex); _ok = false; if (_h != null) { _h.UnpatchSelf(); _h = null; } }
         }
 
-        // ================================================================ W6B story call
+        // ================================================================ W6B / W6B.4 story call
         void PatchCalls(Type gm)
         {
             try
             {
                 var seq = AccessTools.TypeByName("StorySequence"); var sm = AccessTools.TypeByName("StoryManager"); var ps = AccessTools.TypeByName("PlayerScript");
-                _seqManager = Fast.Getter<object>(seq, "Manager"); _seqCalling = Fast.Getter<bool>(seq, "isCalling"); _setCalling = Fast.Setter<bool>(seq, "isCalling");
-                _seqTry = Fast.Getter<bool>(seq, "tryToCall"); _seqBeginn = Fast.Call0(seq, "Beginn");
+                _seqManager = Fast.Getter<object>(seq, "Manager"); _seqGm = Fast.Getter<object>(seq, "GM"); _seqCalling = Fast.Getter<bool>(seq, "isCalling"); _setCalling = Fast.Setter<bool>(seq, "isCalling");
+                _seqTry = Fast.Getter<bool>(seq, "tryToCall"); _seqBeginn = Fast.Call0(seq, "Beginn"); _seqForceStop = Fast.Call0(seq, "ForceStop");
                 _smPickUp = Fast.Getter<object>(sm, "pickUp"); _smVibrate = Fast.Getter<object>(sm, "phoneVibrateSource"); _smPs = Fast.Getter<object>(sm, "PS");
                 _psIncoming = Fast.Getter<bool>(ps, "callIncoming"); _psConvo = Fast.Getter<bool>(ps, "having_phone_convo"); _psStopCall = Fast.Call0(ps, "StopPhoneCall");
-                _gmSeqs = Fast.Getter<object>(gm, "StorySequences");
+                _gmCheckStory = Fast.Call0(gm, "CheckStory");
                 var beginn = seq != null ? AccessTools.Method(seq, "Beginn", Type.EmptyTypes) : null; var ring = seq != null ? AccessTools.Method(seq, "PhoneCall1", Type.EmptyTypes) : null;
-                _callOk = _seqManager != null && _seqCalling != null && _setCalling != null && _seqTry != null && _seqBeginn != null && _smPickUp != null && _smVibrate != null && _smPs != null
-                    && _psIncoming != null && _psConvo != null && _psStopCall != null && _gmSeqs != null && beginn != null && ring != null;
+                _callOk = _seqManager != null && _seqGm != null && _seqCalling != null && _setCalling != null && _seqTry != null && _seqBeginn != null && _seqForceStop != null && _smPickUp != null
+                    && _smVibrate != null && _smPs != null && _psIncoming != null && _psConvo != null && _psStopCall != null && _gmCheckStory != null && beginn != null && ring != null;
                 if (!_callOk) { _log.Warn("STORY call members not found: story calls stay per PC"); return; }
                 _h.Patch(beginn, prefix: new HarmonyMethod(AccessTools.Method(typeof(StorySync), "CallBeginnPre")));
                 _h.Patch(ring, prefix: new HarmonyMethod(AccessTools.Method(typeof(StorySync), "CallRingPre")));
@@ -123,11 +132,17 @@ namespace TS2MP.Plugin
             catch (Exception ex) { _callOk = false; _log.Error("STORY call hooks failed: story calls stay per PC", ex); }
         }
 
-        int SeqIndex(object seq)
+        byte Slot { get { return _host ? (byte)1 : (byte)2; } }
+
+        // W6B.4 identity: the ring record of this sequence (stage at ring time) or, when the ring started before this session
+        // saw it, the current stage. Sequence = FNV-1a of its scene path (StoryCallState comment, src/Shared/Story.cs).
+        StoryCallState Identity(object seq, byte phase)
         {
-            var gm = _world.GameManagerObject; var arr = gm != null ? _gmSeqs(gm) as Array : null;
-            if (arr == null) return -1;
-            int i = Array.IndexOf(arr, seq); return i >= 0 && i < 256 ? i : -1;
+            StoryCallState r; var uo = seq as UnityEngine.Object;
+            if (uo != null && _rings.TryGetValue(uo, out r)) return new StoryCallState { Key = r.Key, Stage = r.Stage, Seq = r.Seq, By = Slot, Phase = phase };
+            int idx; string key; bool free;
+            if (!Local(out idx, out key, out free) || free) return null;
+            return new StoryCallState { Key = key, Stage = (byte)Math.Min(idx, 255), Seq = StoryCallRules.PathHash(PathOf(((Component)seq).transform)), By = Slot, Phase = phase };
         }
 
         static void CallBeginnPre(object __instance)
@@ -136,59 +151,63 @@ namespace TS2MP.Plugin
             try
             {
                 var sm = _seqManager(__instance); var ps = sm != null ? _smPs(sm) : null; var vib = sm != null ? _smVibrate(sm) as AudioSource : null;
-                bool answer = (ps != null && _psIncoming(ps)) || (vib != null && vib.isPlaying);   // original answer branch (not bypass / chain)
+                bool answer = (ps != null && _psIncoming(ps)) || (vib != null && vib.isPlaying);   // original answer branch (not bypass / chain / payphone)
                 if (answer) i.OnLocalAnswer(__instance);
             }
             catch (Exception ex) { i._log.Error("STORY hook StorySequence.Beginn", ex); }
         }
 
-        // Ring about to start (StorySequence.Update tryToCall branch): the other player already answered this call -> the
-        // original bypassCall branch instead (isCalling = false, pickUp.Play, Beginn), no ring on this PC.
+        // Ring about to start (StorySequence.Update tryToCall branch, after the original wrote <key>_Call = 1): record the call
+        // identity; the other player already answered -> the original bypassCall branch (no ring, dialogue); the conversation
+        // is already over and was never live here (late join / reconnect / reload) or already played here -> no ring at all.
         static bool CallRingPre(object __instance)
         {
             var i = Instance; if (i == null || !_callOk) return true;
-            if (i._call == null) { i.LogRing(null, __instance); return true; }
             try
             {
                 int idx; string key; bool free;
-                if (!i.Local(out idx, out key, out free)) return true;
-                var m = StoryCallRules.Decide(i._call, i.Slot, key, i.SeqIndex(__instance), false, true, false);
-                if (m != CallMirror.AnswerWhenRung) { i.LogRing(key, __instance); return true; }
-                i.Mirror(__instance, false);
-                i._callsBypassed++;
-                return false;
+                if (!i.Local(out idx, out key, out free) || free) return true;
+                var uo = (UnityEngine.Object)__instance;
+                var id = new StoryCallState { Key = key, Stage = (byte)Math.Min(idx, 255), Seq = StoryCallRules.PathHash(PathOf(((Component)__instance).transform)) };
+                if (i._rings.Count > 16) i._rings.Clear();
+                i._rings[uo] = id;
+                var m = StoryCallRules.Decide(i._call, i.Slot, key, id.Seq, false, true, false, i._played.Contains(id.Id), i._sawLive.Contains(id.Id));
+                if (m == CallMirror.AnswerWhenRung) { i.Mirror(__instance, false); i._callsBypassed++; return false; }
+                if (m == CallMirror.Silence)
+                {
+                    i._callsSilenced++;
+                    i._log.Info("STORY " + i._call + ": already over / played here -> ring skipped on this PC (no replay; original <key>_Call already written)");
+                    return false;
+                }
+                i._log.Info("STORY call ringing here: stage '" + key + "' (" + idx + ") sequence " + id.Seq.ToString("X8") + " '" + PathOf(((Component)__instance).transform) + "' (original PhoneCall1; answer on either PC is shared)");
+                return true;
             }
             catch (Exception ex) { i._log.Error("STORY hook StorySequence.PhoneCall1", ex); return true; }
         }
 
-        byte Slot { get { return _host ? (byte)1 : (byte)2; } }
-
-        // W6B.1 diagnostics: one line per ring start (event, not per frame)
-        void LogRing(string key, object seq)
-        {
-            if (key == null) { int idx; bool free; Local(out idx, out key, out free); }
-            _log.Info("STORY call ringing here: stage '" + (key ?? "?") + "' sequence " + SeqIndex(seq) + " (original PhoneCall1; answer on either PC is shared)");
-        }
-
         void OnLocalAnswer(object seq)
         {
-            int idx; string key; bool free;
-            if (!Local(out idx, out key, out free) || free) return;
-            int si = SeqIndex(seq); if (si < 0) { _log.Info("STORY call answered here (sequence not in GameManager.StorySequences: not shared)"); return; }
-            var st = new StoryCallState { Key = key, Seq = (byte)si, By = Slot };
-            _callsAnswered++;
-            if (_call != null && _call.SameCall(st)) return;   // the other player answered first: nothing to commit
+            var st = Identity(seq, StoryCallState.Answered);
+            if (st == null) { _log.Info("STORY call answered here outside a story stage (free mode / loading): personal, not shared"); return; }
+            _callsAnswered++; _played.Add(st.Id); _active = st; _activeSeq = seq as UnityEngine.Object;
+            if (_call != null && _call.SameCall(st)) { _log.Info("STORY " + st.Id + " answered here too: the other player's answer is already committed (" + _call + "), nothing to commit"); return; }
+            Commit(st, "answered");
+        }
+
+        // Host: commit directly. Player 2: propose. Used for answers and finish reports.
+        void Commit(StoryCallState st, string what)
+        {
             if (_host)
             {
                 string why = null; var code = _world.Host != null ? _world.Host.AnswerStoryCall(1, st, out why) : ProposalCode.Busy;
                 _world.FlushOutbox();
-                _log.Info("STORY host answered the " + st + " -> " + code + (code != ProposalCode.Accepted && why != null ? " (" + why + ")" : ""));
+                _log.Info("STORY host " + what + " the " + st + " -> " + code + (code != ProposalCode.Accepted && why != null ? " (" + why + ")" : ""));
                 return;
             }
             if (!_node.IsConnected || !_world.Synced) { _log.Info("STORY " + st + " not shared: not connected"); return; }
             uint id = _world.SendProposal(new StateEntry { Scope = StateScope.Session, ScopeArg = 0, Key = WorldKeys.StoryCallAnswer, Value = st.ToBytes() });
             _callPending[id] = st;
-            _log.Info("STORY Player-2 answered the " + st + ": proposed #" + id);
+            _log.Info("STORY Player-2 " + what + " the " + st + ": proposed #" + id);
         }
 
         // The original answer branch (ringing) / bypass branch (ring pending), run for the other player's committed answer.
@@ -205,8 +224,20 @@ namespace TS2MP.Plugin
                 if (ringing) { if (vib != null) vib.Stop(); if (ps != null) _psStopCall(ps); }
             }
             finally { _mirroring = false; }
-            _callsMirrored++; _mirroredCall = _call.Key + "|" + _call.Seq;
+            _callsMirrored++; _played.Add(_call.Id); _active = _call; _activeSeq = seq as UnityEngine.Object;
             _log.Info("STORY " + _call + ": " + (ringing ? "ringing here -> original answer branch" : "ring pending here -> original bypass branch (no ring)") + ", same dialogue on both PCs");
+        }
+
+        // A ringing phone whose conversation is already over: the original decline branch (StorySequence.Update IL_0306..IL_0324:
+        // ForceStop, isCalling = false, StopPhoneCall, GM.CheckStory). Never used for a live call (declining stays personal).
+        void SilenceRinging(object seq)
+        {
+            var sm = _seqManager(seq); var ps = sm != null ? _smPs(sm) : null; var gm = _seqGm(seq);
+            _seqForceStop(seq); _setCalling(seq, false);
+            if (ps != null) _psStopCall(ps);
+            if (gm != null) _gmCheckStory(gm);
+            _callsSilenced++;
+            _log.Info("STORY " + _call + ": ringing here but the conversation is already over -> original decline branch (no replay)");
         }
 
         void CallTick()
@@ -217,18 +248,42 @@ namespace TS2MP.Plugin
             {
                 _callHead = reg.HeadRev; _callEpoch = reg.Epoch;
                 var e = reg.Get(StateScope.Session, 0, WorldKeys.StoryCall); StoryCallState s;
-                if (e != null && StoryCallState.TryParse(e.Value, out s) && (_call == null || !_call.SameCall(s) || _call.By != s.By)) { _call = s; _log.Info("STORY shared " + s); }
+                if (e != null && StoryCallState.TryParse(e.Value, out s) && (_call == null || !_call.SameCall(s) || _call.By != s.By || _call.Phase != s.Phase))
+                {
+                    _call = s; _log.Info("STORY shared " + s);
+                    if (s.Phase == StoryCallState.Answered) _sawLive.Add(s.Id);
+                }
             }
-            if (_call == null || _call.By == Slot || _mirroredCall == _call.Key + "|" + _call.Seq) return;
             double now = Now; if (now < _nextCallCheck) return; _nextCallCheck = now + 0.25;
+            if (_active != null) FinishCheck();
+            if (_call == null || _rings.Count == 0) return;
             int idx; string key; bool free;
             if (!Local(out idx, out key, out free)) return;
-            var gm = _world.GameManagerObject; var arr = gm != null ? _gmSeqs(gm) as Array : null;
-            if (arr == null || _call.Seq >= arr.Length) return;
-            var seq = arr.GetValue(_call.Seq); if (seq == null) return;
-            var sm = _seqManager(seq); var ps = sm != null ? _smPs(sm) : null;
-            var m = StoryCallRules.Decide(_call, Slot, key, _call.Seq, _seqCalling(seq), _seqTry(seq), ps != null && _psConvo(ps));
-            if (m == CallMirror.AnswerRinging) Mirror(seq, true);
+            _ringScratch.Clear(); _ringScratch.AddRange(_rings.Keys);
+            for (int k = 0; k < _ringScratch.Count; k++)
+            {
+                var seq = _ringScratch[k];
+                if (seq == null) { _rings.Remove(seq); continue; }   // destroyed with its scene
+                bool calling = _seqCalling(seq);
+                if (!calling) { if (!_seqTry(seq)) _rings.Remove(seq); continue; }   // answered / declined / over: record done
+                var id = _rings[seq]; var sm = _seqManager(seq); var ps = sm != null ? _smPs(sm) : null;
+                var m = StoryCallRules.Decide(_call, Slot, key, id.Seq, true, false, ps != null && _psConvo(ps), _played.Contains(id.Id), _sawLive.Contains(id.Id));
+                if (m == CallMirror.AnswerRinging) Mirror(seq, true);
+                else if (m == CallMirror.Silence) SilenceRinging(seq);
+            }
+        }
+
+        // The conversation running here ended (StorySequence.Update IL_0220: having_phone_convo = false at the end of the
+        // nextSequence chain): report "finished" once, so a later ring (reconnect / reload) is never replayed.
+        void FinishCheck()
+        {
+            if (_activeSeq == null) { _log.Info("STORY " + _active.Id + " conversation object unloaded (scene change): no finish report"); _active = null; return; }
+            var sm = _seqManager(_activeSeq); var ps = sm != null ? _smPs(sm) : null;
+            if (ps == null || _psConvo(ps)) return;
+            var done = _active; _active = null; _activeSeq = null; _callsFinished++;
+            _log.Info("STORY " + done.Id + " conversation over here");
+            if (_call != null && _call.SameCall(done) && _call.Phase == StoryCallState.Finished) return;
+            Commit(new StoryCallState { Key = done.Key, Stage = done.Stage, Seq = done.Seq, By = Slot, Phase = StoryCallState.Finished }, "finished");
         }
 
         // ================================================================ hooks
@@ -410,7 +465,7 @@ namespace TS2MP.Plugin
 
         string Committed() { var e = _world.Registry.Get(StateScope.Session, 0, WorldKeys.Story); StoryState s; return e != null && StoryState.TryParse(e.Value, out s) ? s.ToString() : "none"; }
 
-        public string Stats { get { return "STORY_STATS " + (_host ? "host" : "client") + " suppressed " + _suppressed + " proposed " + _proposed + " ok " + _accepted + " stale " + _stale + " refused " + _refused + " published " + _published + " followed " + _followed + " notesKept " + _notesKept + " calls answered/mirrored/bypassed " + _callsAnswered + "/" + _callsMirrored + "/" + _callsBypassed + (_host && _world.Host != null ? " hostApplied " + _world.Host.StoryAdvances : "") + MissionStats + " | " + Committed(); } }
+        public string Stats { get { return "STORY_STATS " + (_host ? "host" : "client") + " suppressed " + _suppressed + " proposed " + _proposed + " ok " + _accepted + " stale " + _stale + " refused " + _refused + " published " + _published + " followed " + _followed + " notesKept " + _notesKept + " calls answered/mirrored/bypassed/silenced/finished " + _callsAnswered + "/" + _callsMirrored + "/" + _callsBypassed + "/" + _callsSilenced + "/" + _callsFinished +(_host && _world.Host != null ? " hostApplied " + _world.Host.StoryAdvances : "") + MissionStats + " | " + Committed(); } }
 
         public void Dispose()
         {

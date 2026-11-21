@@ -208,7 +208,7 @@ static class W6A3Tests
         Expect(code.Contains("else node.JoinKey = JoinAuth.DeriveKey(code);") && code.Contains(": _lc.RequestJoin(Context(), _isolationAvailable, _joinHost, _joinPort, _joinCode, out req, now);"), "F8 host / join keys and code validation unchanged");
         Expect(ui.Contains("StartHost(false);") && ui.Contains("StartJoin(JoinKind.Public);") && ui.IndexOf("DevPrepare", StringComparison.Ordinal) < 0 && ui.IndexOf("DevAutoLoad", StringComparison.Ordinal) < 0, "F8 never reaches the developer flow");
         Expect(MenuRouting.JoinMismatch(JoinKind.Public, true) != null && MenuRouting.JoinMismatch(JoinKind.Public, false) == null, "routing unchanged");
-        Expect(ProtocolInfo.ProtocolVersion == 40 && ProtocolInfo.ModVersion == "0.29.0", "protocol 37 / mod 0.26.4");
+        Expect(ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.30.0", "protocol 37 / mod 0.26.4");
     }
 
     // ---------------------------------------------------------------- helpers

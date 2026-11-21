@@ -187,7 +187,7 @@ static class W6A2Tests
         int a = dev.IndexOf("void DevStorySelector()", StringComparison.Ordinal);
         string sel = dev.Substring(a, dev.IndexOf("void DevJoinSection(", a, StringComparison.Ordinal) - a);
         foreach (var bad in new[] { "_spSet(", "SaveGuard.", "Learn_Skill", "StartHost(", "moneyAm" }) Expect(sel.IndexOf(bad, StringComparison.Ordinal) < 0, "the selector itself writes nothing: " + bad);
-        Expect(StoryCatalog.Steps.Length == 81 && ProtocolInfo.ProtocolVersion == 40 && ProtocolInfo.ModVersion == "0.29.0", "81 steps; protocol 37 / mod 0.26.2");
+        Expect(StoryCatalog.Steps.Length == 81 && ProtocolInfo.ProtocolVersion == 41 && ProtocolInfo.ModVersion == "0.30.0", "81 steps; protocol 37 / mod 0.26.2");
     }
 
     // ---------------------------------------------------------------- helpers

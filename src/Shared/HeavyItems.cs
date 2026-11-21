@@ -248,6 +248,20 @@ namespace TS2MP.Shared
         }
     }
 
+    // W6B.4 original minimap / diamond markers of a presented heavy object (src/Plugin/MissionMarkers.cs). A hidden object never
+    // keeps a marker at its hidden place: the other player carries it -> its original icon follows that player's avatar (when
+    // shown in this scene), otherwise (cargo copy / unpacked / sold / synthetic outside its car) the marker is off - the object
+    // that represents it now (cargo copy, contents, the object itself again) shows its own original marker.
+    public enum MarkerMode : byte { Original = 0, Off = 1, FollowCarrier = 2 }
+    public static class MarkerRules
+    {
+        public static MarkerMode For(HeavyRules.Show show, bool hasRecord, HeavyRecord r, byte me, bool carrierShown)
+        {
+            if (show != HeavyRules.Show.Hidden) return MarkerMode.Original;
+            return hasRecord && r.State == HeavyState.Carried && r.Actor != me && r.Actor != 0 && carrierShown ? MarkerMode.FollowCarrier : MarkerMode.Off;
+        }
+    }
+
     // Host-only lease book. Pure: single winner, stale guard, region lifetime, registry commits.
     public sealed class HeavyBook
     {
